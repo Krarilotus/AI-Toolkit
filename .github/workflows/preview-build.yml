@@ -1,0 +1,26 @@
+name: Castle controls preview
+on:
+  push:
+    branches: [build/castle-controls-preview]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npx electron-builder --win zip --x64
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AI-Toolkit-castle-controls-preview
+          path: dist/*.zip
+          retention-days: 30
