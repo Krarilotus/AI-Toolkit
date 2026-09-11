@@ -1,5 +1,23 @@
 # Castle editing controls
 
+## Two castles side by side
+
+With the Castle workspace active, use **File > Load In New Window**
+(**Ctrl+Shift+O**) to open the second castle without replacing the first.
+Snap one editor window left and the other right using Windows+Left/Right.
+Select placements in the source and press **Ctrl+C**. In the destination,
+move the pointer to the desired position and press **Ctrl+V**, or click
+**Clipboard**, then click the map. The newest copied group is shared between
+windows; the existing placement checks and undo still apply. The Keep and
+unit rally points are excluded from this building-copy operation.
+
+The main startup window automatically reopens the last successfully opened
+AI project, its selected castle and workspace. This stores file references,
+not unsaved edits. Explicit new windows remain independent. Missing projects
+or castles are reported without silently opening a different castle, and
+interacting during startup cancels automatic restoration. On the first run
+after upgrading, open your project once so it can be remembered.
+
 In **Customize Castle Shortcuts**, choose **Arrow keys + wheel zoom** to pan
 with the arrow keys and zoom at the pointer with the mouse wheel. Individual
 camera keys and pan speed can be edited in the same dialog. Shift accelerates
@@ -75,9 +93,10 @@ inspection of a running game or automatic resolution of the UCP load order.
 
 Resource-building and selection fixes (2026-09-12)
 
-The native codec already mapped farms and resource buildings, but editor constants and save templates omitted mapper IDs 56, 70–73, 90 and 91. These now use the game's placement footprints from getBuildingSizeForCommandBuildingType (0x004FA550): quarry 6, wheat/hop 9, apple 11, dairy 10, iron/pitch 4 tiles per side. AIV IDs are 62, 73, 75, 71, 72, 64 and 65 respectively. Names, palette membership, worker counts and executable-derived building prices are included.
+The native codec already mapped farms and resource buildings, but editor constants and save templates omitted mapper IDs 56, 70â€“73, 90 and 91. These now use the game's placement footprints from getBuildingSizeForCommandBuildingType (0x004FA550): quarry 6, wheat/hop 9, apple 11, dairy 10, iron/pitch 4 tiles per side. AIV IDs are 62, 73, 75, 71, 72, 64 and 65 respectively. Names, palette membership, worker counts and executable-derived building prices are included.
 
-Farm 2.5D previews contain the actual static 3×3 farm building, anchored at the origin of its full field, with the full field outlined. These previews do not simulate crop growth, livestock or the game's changing fence layouts. GM1 source: tile_buildings2.gm1, zero-based groups 390, 399, 408 and 417; BuildingDefinedData sprite tables at +0x2E6C/+0x3024. Component assembly follows Gm1KonverterCrossPlatform's DecodedFile.CreateTileImage. The native field dimensions also drive plan rendering, selection, placement collision and save templates, so an imported farm no longer becomes a one-tile placeholder.
+Farm 2.5D previews contain the actual static 3Ã—3 farm building, anchored at the origin of its full field, with the full field outlined. These previews do not simulate crop growth, livestock or the game's changing fence layouts. GM1 source: tile_buildings2.gm1, zero-based groups 390, 399, 408 and 417; BuildingDefinedData sprite tables at +0x2E6C/+0x3024. Component assembly follows Gm1KonverterCrossPlatform's DecodedFile.CreateTileImage. The native field dimensions also drive plan rendering, selection, placement collision and save templates, so an imported farm no longer becomes a one-tile placeholder.
 
 Ctrl-click (Command-click where supported) toggles one placement without starting a move; Shift-click remains additive. Ctrl-drag toggles placements covered by the selection rectangle. Delete mode uses the existing castleProjectChoice dropdown style in both themes.
-`nThe new plan/palette skins reuse the existing Food (80.png) and Industry (52.png) category artwork, sized by the native footprint.
+
+The new plan/palette skins reuse the existing Food (80.png) and Industry (52.png) category artwork, sized by the native footprint.
