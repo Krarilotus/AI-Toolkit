@@ -26,6 +26,14 @@ require('../main');
       window.addEventListener('error',event=>errors.push(event.message));
       window.addEventListener('unhandledrejection',event=>errors.push(String(event.reason)));
       window.alert=message=>{throw new Error(message)};
+      window.appWorkspace.setActive('character');
+      const search=document.getElementById('search');search.value='wood';
+      document.dispatchEvent(new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true,cancelable:true}));
+      if(document.activeElement!==search || search.selectionStart!==0 || search.selectionEnd!==4)throw new Error('Character Ctrl+F did not focus and select the search');
+      search.value='';window.appWorkspace.setActive('castle');search.blur();
+      const otherFind=new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true,cancelable:true});
+      document.dispatchEvent(otherFind);
+      if(otherFind.defaultPrevented || document.activeElement===search)throw new Error('Character search stole another workspace shortcut');
       let atlasDraws=0;
       const original=CanvasRenderingContext2D.prototype.drawImage;
       CanvasRenderingContext2D.prototype.drawImage=function(image,...args){

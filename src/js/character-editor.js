@@ -115,6 +115,16 @@ function setActiveTemplateButton(type) {
   }
 }
 
+document.addEventListener('keydown', event => {
+  if (window.appWorkspace?.getActive() !== 'character' || event.defaultPrevented ||
+      !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey ||
+      event.key.toLowerCase() !== 'f' || document.querySelector('dialog[open]')) return;
+  const search = document.getElementById('search');
+  event.preventDefault();
+  search.focus();
+  search.select();
+});
+
 let searchQuery = "";
 document.getElementById("search").oninput = (e)=>{
   searchQuery = e.target.value.toLowerCase();
