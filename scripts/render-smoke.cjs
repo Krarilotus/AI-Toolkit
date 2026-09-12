@@ -56,6 +56,21 @@ require('../main');
       slider.value=slider.max;slider.dispatchEvent(new Event('input',{bubbles:true}));
       await pause();window.isoView.paint();await pause();
       const lastStepStatus=document.getElementById('isoDockStatus').textContent;
+      const unchangedRow=document.getElementById('castleBuildList').firstElementChild;
+      const completeScene=canvas.toDataURL();
+      slider.value='1';slider.dispatchEvent(new Event('input',{bubbles:true}));
+      await pause();window.isoView.paint();await pause();
+      const incrementalScene=canvas.toDataURL();
+      const fitBefore=window.isoView.groundIsStretched()?'stretch':'tile';
+      window.isoView.setGroundFit(fitBefore==='tile'?'stretch':'tile');
+      window.isoView.setGroundFit(fitBefore);
+      if(canvas.toDataURL()!==incrementalScene)throw new Error('Incremental step differs from a full scene rebuild');
+
+      slider.value=slider.max;slider.dispatchEvent(new Event('input',{bubbles:true}));
+      await pause();window.isoView.paint();await pause();
+      if(document.getElementById('castleBuildList').firstElementChild!==unchangedRow)throw new Error('Stepping recreated the build list');
+      if(canvas.toDataURL()!==completeScene)throw new Error('Step round-trip changed scene pixels');
+
       for(const id of ['castleShowFire','castleShowRoutes']) {
         const toggle=document.getElementById(id);
         if(!toggle)throw new Error('Missing checkbox '+id);
@@ -96,13 +111,13 @@ require('../main');
       window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}],pathTerrain:{blocked:encode(new Uint8Array(160000)),heights:encode(new Uint8Array(160000))}});
       window.isoView.setMapTiles({path:'camera-fixture.map',atlas:mapAtlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16});
       if(window.isoView.turnView(1)!==null)throw new Error('Saved terrain must not masquerade as native directional graphics');
+      mapDraws.length=0;
       window.isoView.setMapTiles({path:'camera-fixture.map',nativeRenderer:true,cameras:mapAtlases.map(atlas=>({atlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16}))});
       await pause();
       for(let turn=0;turn<=4;turn++){
-        mapDraws.length=0;
-        if(turn)window.isoView.turnView(1); else window.isoView.refresh();
+        if(turn){mapDraws.length=0;window.isoView.turnView(1);}
         await pause();window.isoView.paint();
-        cameraFrames.push({orientation:window.isoView.viewRotation(),tiles:mapDraws.slice(),png:canvas.toDataURL('image/png')});
+        cameraFrames.push({orientation:window.isoView.viewRotation(),tiles:[...new Map(mapDraws.map(tile=>[tile.tile,tile])).values()],png:canvas.toDataURL('image/png')});
       }
       mapDraws.length=0;
       window.isoView.paint();

@@ -188,3 +188,23 @@ keep transform aligns these layers with the current AIV. Saved building/path
 layers are not used because they describe a different castle. Gates are assumed
 open, the castle intact, and traffic/ownership changes are not simulated. Without
 a map, paths are a castle-only estimate on flat terrain.
+
+
+## Incremental build-step rendering
+
+Selecting a step updates the existing list rows instead of recreating their DOM
+and event handlers. The 2.5D view records the existing sprite draw calls at native
+scale, retaining their exact anchors and source rectangles. Terrain commands
+are retained across step changes. Changed or removed building commands (including
+neighbour-dependent wall/stair variants) determine a damaged pixel rectangle.
+Only intersecting terrain and building commands are replayed, in their shared
+depth order, within that rectangle. Foreground rocks and trees still occlude
+buildings correctly. Camera, map, image and surface-size changes rebuild fully.
+No per-step full-size canvas cache is allocated.
+
+GamerGrill's offscreen software-rendering check with Gatekeeper and both overlays
+active measured step changes at about 40 ms mean / 49 ms maximum, down from the
+previous 196 ms mean. The measurement includes two animation frames; it is not
+a claim of a 40 ms drawing call. Cached paints averaged 4.5 ms. Pixel comparison
+checks that stepping backward then forward restores an identical scene. Large
+step jumps and rotations can still require substantially more drawing.

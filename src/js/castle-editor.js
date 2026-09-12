@@ -2083,7 +2083,7 @@
     });
   }
 
-  function renderBuildList() {
+  function renderBuildList(selectionOnly = false) {
     const mergeButton = document.getElementById('castleMergeSteps');
     try {
       geometry.mergeBuildSteps(frames(), selectedBuildFrameIndexes(), mergeableTypes());
@@ -2091,7 +2091,6 @@
     } catch { mergeButton.disabled = true; }
     updatePopulationPanel();
     updateCostPanel();
-    els.buildList.innerHTML = '';
     const activeStep = Number.isInteger(state.insertionFrameIndex) && state.insertionFrameIndex >= 0 && state.insertionFrameIndex < frames().length
       ? state.insertionFrameIndex
       : null;
@@ -2102,6 +2101,18 @@
     els.buildSliderValue.textContent = activeStep == null ? 'No step selected' : `Step ${activeStep + 1}`;
     const rallypointCount = state.document.miscItems.filter(item => isUnitType(item.itemType)).length;
     els.buildCount.textContent = `${frames().length} step${frames().length === 1 ? '' : 's'}`;
+    if(selectionOnly && els.buildList.children.length===frames().length) {
+      for(const row of els.buildList.children) {
+        const fi=Number(row.dataset.index),frame=frames()[fi];
+        const all=frame.tilePositionOfsets?.length>0 && frame.tilePositionOfsets.every((_off,oi)=>state.selected.has(frameRefKey(fi,oi)));
+        row.classList.toggle('selected',all || fi===activeStep);
+        row.classList.toggle('future',activeStep!=null && fi>activeStep);
+        row.classList.toggle('current',fi===activeStep);
+        if(fi===activeStep)row.setAttribute('aria-current','step');else row.removeAttribute('aria-current');
+      }
+      return;
+    }
+    els.buildList.innerHTML = '';
     frames().forEach((frame, fi) => {
       const type = Number(frame.itemType);
       const count = (frame.tilePositionOfsets || []).length;
@@ -2148,7 +2159,7 @@
 
       row.addEventListener('click', event => {
         const selectedFrames = updateBuildSelection(fi, event);
-        renderBuildList();
+        renderBuildList(true);
         scheduleDraw();
         setStatus(selectedFrames.length > 1
           ? `Selected ${selectedFrames.length} build steps — drag or use the arrows to move them together`
@@ -2188,7 +2199,7 @@
     if (els.buildSlider.disabled || frames().length === 0) return;
     const frameIndex = Math.max(0, Math.min(frames().length - 1, Number(els.buildSlider.value) - 1));
     selectBuildFrame(frameIndex);
-    renderBuildList();
+    renderBuildList(true);
     els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`)?.scrollIntoView({ block: 'nearest' });
     scheduleDraw();
     setStatus(`Selected build step ${frameIndex + 1} — new buildings will be inserted after it`);

@@ -66,7 +66,7 @@
     let img = state.images.get(filename);
     if (img) return img;
     img = new Image();
-    img.onload = () => refresh();
+    img.onload = () => { state.imageRevision=(state.imageRevision||0)+1; refresh(); };
     img.onerror = () => onImageFailed(filename);
     // A ground the user picked arrives as a whole data: URL, not as the name
     // of a file next to the sprites. Prefixing the sprite path to it would
@@ -529,7 +529,7 @@
     if (!daten) { state.kachelVorrat = null; paint(); return; }
     function cameraStock(daten) {
       const bild = new Image();
-      bild.onload = () => refresh();
+      bild.onload = () => { state.imageRevision=(state.imageRevision||0)+1; refresh(); };
       bild.src = daten.atlas;
       const upperImage = daten.upper?.dataUrl ? image(daten.upper.dataUrl) : null;
       return {
@@ -612,25 +612,25 @@
         const tileWidth = kw * state.view.zoom;
         const tileLeft = px - tileWidth / 2;
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
-        state.mapScenery.push({ gx, gy, tiles: 1, layer: 0, draw: () => {
+        state.mapScenery.push({ gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
         if (cliff && v.upperImage?.complete && v.upperImage.naturalWidth) {
           const lift = v.hoehen[feld];
           for (let row = 0; row < lift; row += cliff.height) {
             const rows = Math.min(cliff.height, lift - row);
-            ctx.drawImage(v.upperImage, cliff.x, cliff.y, cliff.width, rows,
+            target.drawImage(v.upperImage, cliff.x, cliff.y, cliff.width, rows,
               tileLeft, py - hebung + (cliff.dy + row) * state.view.zoom,
               tileWidth, rows * state.view.zoom);
           }
         }
-        ctx.drawImage(v.bild,
+        target.drawImage(v.bild,
           (platz % v.spalten) * kw, Math.floor(platz / v.spalten) * kh, kw, kh,
           tileLeft, py - hebung, tileWidth, kh * state.view.zoom);
         }});
         const upper = v.upperEntries[platz];
         if (upper && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ gx, gy, tiles: 1, draw: () => {
+          state.mapScenery.push({ gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
-            ctx.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
+            target.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
               tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
               upper.width * scaleX, upper.height * scaleY);
           }});
@@ -638,9 +638,9 @@
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
         if (treePicture && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ gx, gy, tiles: 1, draw: () => {
+          state.mapScenery.push({ gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
-            ctx.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
+            target.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
               tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
               treePicture.width * scaleX, treePicture.height * scaleY);
           }});
@@ -792,7 +792,7 @@
     if (!target) return;
     const { width, height, ctx } = target;
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
-    const key = [currentRotation(), terrainKey(), mapMode(), groundFit()].join('/');
+    const key = [currentRotation(), terrainKey(), mapMode(), groundFit(),state.imageRevision||0].join('/');
     const cache = state.sceneCache;
     if (!cache || state.sceneDirty || cache.key !== key || cache.stock !== state.kachelVorrat
         || cache.terrain !== state.terrain || cache.ground !== groundSource()) {
@@ -805,7 +805,9 @@
       const worldWidth = extent * 32 + overhang * 2;
       const worldHeight = extent * 16 + 255 + overhang * 2;
       const canvas = cache?.canvas || document.createElement('canvas');
-      canvas.width = worldWidth; canvas.height = worldHeight;
+      const reusable=cache && cache.key===key && cache.stock===state.kachelVorrat && cache.terrain===state.terrain
+        && cache.ground===groundSource() && canvas.width===worldWidth && canvas.height===worldHeight;
+      if(!reusable) {canvas.width=worldWidth;canvas.height=worldHeight;}
       const sceneView = { zoom: 1, panX: worldWidth / 2, panY: overhang + 255 + MAP_MARGIN * 16 };
       const view = state.view;
       let scene;
@@ -813,7 +815,7 @@
         state.view = sceneView;
         const sceneContext = canvas.getContext('2d');
         sceneContext.imageSmoothingEnabled = false;
-        scene = paintScene(sceneContext, worldWidth, worldHeight);
+        scene = paintScene(sceneContext, worldWidth, worldHeight, reusable ? cache : null);
       } finally { state.view = view; }
       state.sceneCache = { key, canvas, view: sceneView, ...scene, stock: state.kachelVorrat,
         terrain: state.terrain, ground: groundSource() };
@@ -862,7 +864,8 @@
     ctx.restore();
   }
 
-  function paintScene(ctx, width, height) {
+  function paintScene(ctx, width, height, previous = null) {
+    const patches=window.scenePatches;
     ctx.beginPath();
     [[0, 0], [geo.GRID, 0], [geo.GRID, geo.GRID], [0, geo.GRID]].forEach(([cx, cy], index) => {
       const [px, py] = geo.isoPoint(cx, cy, state.view);
@@ -870,7 +873,14 @@
     });
     ctx.closePath();
     // Native tiles cover the AIV footprint plus its five-tile margin.
-    if (!paintMapTiles(ctx, width, height)) paintGround(ctx, width, height);
+    let terrain=previous?.terrainCommands;
+    let nativeGround=previous?.nativeGround;
+    if(!terrain) {
+      nativeGround=paintMapTiles(ctx,width,height);
+      terrain=(state.mapScenery||[]).map((item,index)=>({...item,key:'terrain:'+index,...patches.capture(target=>item.draw(target))})).sort(geo.renderOrder);
+    }
+    // Floor height data must be ready before capturing building anchors.
+    if(!nativeGround && !previous) paintGround(ctx,width,height);
 
     // Die Bodenplatten haengen an der GEDREHTEN Ecke ihres Gebaeudes, und ihr
     // eigener Versatz wird NICHT mitgedreht.
@@ -906,20 +916,35 @@
       const loaded = parts.map(part => image(part.bild));
       if (!loaded.every(img => img?.complete && img.naturalWidth)) return [item];
       const lift = bauHoehe(item.gx, item.gy, item.tiles);
-      return parts.map((part, index) => ({ ...part, layer: item.layer ?? 2, draw: () => {
-        drawNativePart(ctx, part, loaded[index], lift);
+      return parts.map((part, index) => ({ ...part, layer: item.layer ?? 2, draw: (target) => {
+        drawNativePart(target, part, loaded[index], lift);
       }}));
     });
-    // Scenery is no longer flattened underneath every building. Each upper
-    // tile participates in the same depth order as the castle sprites.
-    for (const item of [...(state.mapScenery || []), ...buildingSprites].sort(geo.renderOrder)) {
-      if (item.draw) { item.draw(); continue; }
-      if (item.entry && drawSprite(ctx, item.entry, item.gx, item.gy, item.tiles, mauerAn, hoeheAn)) continue;
-      drawDiamond(ctx, item.gx, item.gy, item.tiles, 'rgba(210,170,90,.55)');
-      missing++;
+    const buildings=buildingSprites.map((item,index)=>{
+      const captured=patches.capture(target=>{
+        if(item.draw) {item.draw(target);return;}
+        if(item.entry && drawSprite(target,item.entry,item.gx,item.gy,item.tiles,mauerAn,hoeheAn))return;
+        drawDiamond(target,item.gx,item.gy,item.tiles,'rgba(210,170,90,.55)');missing++;
+      });
+      return {...item,key:'building:'+index,...captured};
+    });
+    const dirty=previous ? patches.damage(previous.buildingCommands,buildings) : {left:0,top:0,right:width,bottom:height};
+    if(dirty) {
+      ctx.save();ctx.beginPath();ctx.rect(dirty.left,dirty.top,dirty.right-dirty.left,dirty.bottom-dirty.top);ctx.clip();
+      ctx.clearRect(dirty.left,dirty.top,dirty.right-dirty.left,dirty.bottom-dirty.top);
+      if(!nativeGround) {
+        ctx.beginPath();
+        [[0,0],[geo.GRID,0],[geo.GRID,geo.GRID],[0,geo.GRID]].forEach(([x,y],i)=>{
+          const point=geo.isoPoint(x,y,state.view);if(i)ctx.lineTo(...point);else ctx.moveTo(...point);
+        });ctx.closePath();paintGround(ctx,width,height);
+      }
+      // Redraw every overlapping sprite, including foreground rocks/trees,
+      // in the unchanged depth order. No flattened terrain-over-building hack.
+      for(const item of patches.merge(terrain,[...buildings].sort(geo.renderOrder),geo.renderOrder))
+        if(patches.intersects(item.bounds,dirty))patches.replay(ctx,item);
+      ctx.restore();
     }
-
-    return { items, missing };
+    return { items, missing, terrainCommands:terrain,buildingCommands:buildings,nativeGround };
   }
 
   function paintInteraction(ctx, items) {
