@@ -230,6 +230,7 @@
           px0: Number(terrain.px0) || 0, py0: Number(terrain.py0) || 0,
           cells: Number(terrain.cells) || geo.MAP_PREVIEW_EDGE,
           top: Number(terrain.top) || 0,
+          floor: Number(terrain.floor) || 0,
           village: dorfHoehen(terrain.village) }
       : null;
     paint();
@@ -283,6 +284,10 @@
       : null;
     // Das Gelaende der alten Karte zeigt die alte Karte. Es jetzt stehen zu
     // lassen hiesse, die neue Karte mit fremdem Boden zu zeigen.
+    if (state.kachelVorrat && state.kachelVorrat.path !== state.gameMap?.path) {
+      if (state.kachelVorrat.upperImage) state.images.delete(state.kachelVorrat.upperImage.src);
+      state.kachelVorrat = null;
+    }
     setTerrain(null);
     rememberGameMap();
     if (state.gameMap && state.ground) setGround(null);   // paints as well
@@ -358,7 +363,12 @@
     if (!rotation) return list;
     return list.map(item => {
       const turned = geo.rotateGrid(item.gx, item.gy, item.tiles, rotation);
-      return { ...item, gx: turned.gx, gy: turned.gy };
+      // A quarter turn changes a gate's passage axis. Resolve drawbridge
+      // attachment after this swap, in the same coordinates as the map.
+      const gateType = [144, 145, 146, 147].includes(Number(item.itemType)) && rotation % 4 === 2
+        ? (Number(item.itemType) ^ 1) : item.itemType;
+      return { ...item, gx: turned.gx, gy: turned.gy, itemType: gateType,
+        entry: state.catalogue?.gegenstaende[gateType] || item.entry };
     });
   }
 
@@ -403,26 +413,8 @@
     // gemalt - dieselbe Rechnung legt sie an dieselbe Stelle.
     const rect = geo.mapImageRect(currentKeep(), state.view, picture.px0, picture.py0, picture.cells, picture.top);
     ctx.save();
-    // Beschnitten wird auf die Raute des Dorfes - aber der Boden liegt nicht
-    // mehr in ihrer Ebene. Er steht zwischen dem tiefsten Feld (floor) und dem
-    // hoechsten (top) darueber, und der Beschnitt muss genau diesen Streifen
-    // freigeben: oben, sonst saegt er jede Bergkuppe waagerecht ab; unten,
-    // sonst bleibt am Suedrand ein dunkler Saum, weil der Boden dort um seine
-    // Grundhoehe hochgerueckt ist. Aus der Raute wird damit ein Sechseck.
-    if (picture.top > 0) {
-      const oben = picture.top * state.view.zoom;
-      const unten = (picture.floor || 0) * state.view.zoom;
-      const punkt = (cx, cy, hoch) => {
-        const [px, py] = geo.isoPoint(cx, cy, state.view);
-        return [px, py - (hoch ? oben : unten)];
-      };
-      ctx.beginPath();
-      [punkt(0, 0, true), punkt(geo.GRID, 0, true), punkt(geo.GRID, 0, false),
-       punkt(geo.GRID, geo.GRID, false), punkt(0, geo.GRID, false), punkt(0, geo.GRID, true)]
-        .forEach(([px, py], index) => { if (index === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
-      ctx.closePath();
-    }
-    ctx.clip();
+    // The canvas viewport clips the map. The editable village boundary is
+    // not a terrain boundary: hills and scenery may extend beyond it.
     // Ein Vorschaupunkt ist ein ganzes Feld und muss ein hartes Quadrat bleiben
     // - geglaettet schmierte der Rand eines Feldes ueber seinen Nachbarn. Das
     // Gelaende ist ein echtes Bild aus Kacheln des Spiels und wird geglaettet,
@@ -455,12 +447,19 @@
   }
 
   function setMapTiles(daten) {
+    if (daten?.path && daten.path !== gameMap()?.path) return;
+    if (state.kachelVorrat?.upperImage) state.images.delete(state.kachelVorrat.upperImage.src);
     if (!daten) { state.kachelVorrat = null; paint(); return; }
     const bild = new Image();
     bild.onload = () => paint();
     bild.src = daten.atlas;
+    const upperImage = daten.upper?.dataUrl ? image(daten.upper.dataUrl) : null;
     state.kachelVorrat = {
+      path: daten.path,
       bild,
+      upperImage, upperEntries: daten.upper?.entries || [],
+      treeSprites: new Map((daten.treeSprites || []).map(tree => [tree[1] * KARTE_FELDER + tree[0], tree])),
+      cliffSprites: ausBase64(daten.cliffSprites, Uint16Array),
       plaetze: ausBase64(daten.plaetze, Uint16Array),
       hoehen: daten.hoehen ? ausBase64(daten.hoehen, Uint8Array) : null,
       spalten: Number(daten.spalten) || 64,
@@ -489,6 +488,7 @@
   }
 
   function paintMapTiles(ctx, width, height) {
+    state.mapScenery = [];
     const v = vorrat();
     const map = gameMap();
     const keep = currentKeep();
@@ -523,9 +523,45 @@
         if (platz === 0xffff) continue;
         const hebung = (v.hoehen ? v.hoehen[feld] : 0) * state.view.zoom;
         const [px, py] = geo.isoPoint(gx, gy, state.view, 0);
+        // The game advances 32 pixels between tiles on a screen row, but
+        // a GM1 diamond contains only 30 pixels. Do not stretch those pixels
+        // (or the attached scenery) to fill the grid pitch.
+        const tileWidth = kw * state.view.zoom;
+        const tileLeft = px - tileWidth / 2;
+        const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
+        state.mapScenery.push({ gx, gy, tiles: 1, layer: 0, draw: () => {
+        if (cliff && v.upperImage?.complete && v.upperImage.naturalWidth) {
+          const lift = v.hoehen[feld];
+          for (let row = 0; row < lift; row += cliff.height) {
+            const rows = Math.min(cliff.height, lift - row);
+            ctx.drawImage(v.upperImage, cliff.x, cliff.y, cliff.width, rows,
+              tileLeft, py - hebung + (cliff.dy + row) * state.view.zoom,
+              tileWidth, rows * state.view.zoom);
+          }
+        }
         ctx.drawImage(v.bild,
           (platz % v.spalten) * kw, Math.floor(platz / v.spalten) * kh, kw, kh,
-          px - hw, py - hebung, 2 * hw, 2 * hh);
+          tileLeft, py - hebung, tileWidth, kh * state.view.zoom);
+        }});
+        const upper = v.upperEntries[platz];
+        if (upper && v.upperImage?.complete && v.upperImage.naturalWidth) {
+          state.mapScenery.push({ gx, gy, tiles: 1, draw: () => {
+            const scaleX = state.view.zoom, scaleY = state.view.zoom;
+            ctx.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
+              tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
+              upper.width * scaleX, upper.height * scaleY);
+          }});
+        }
+        const tree = v.treeSprites.get(feld);
+        const treePicture = tree && v.upperEntries[tree[2]];
+        if (treePicture && v.upperImage?.complete && v.upperImage.naturalWidth) {
+          state.mapScenery.push({ gx, gy, tiles: 1, draw: () => {
+            const scaleX = state.view.zoom, scaleY = state.view.zoom;
+            ctx.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
+              tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
+              treePicture.width * scaleX, treePicture.height * scaleY);
+          }});
+        }
         gemalt += 1;
       }
     }
@@ -593,7 +629,23 @@
     return bodenHoehe(gx + (tiles || 1) - 1, gy + (tiles || 1) - 1);
   }
 
-  function drawSprite(ctx, sprite, gx, gy, tiles, mauerAn, hoeheAn) {
+  function drawNativePart(ctx, part, img, lift) {
+    const [x, y] = geo.isoPoint(part.gx, part.gy, state.view, lift);
+    const z = state.view.zoom;
+    ctx.drawImage(img, part.sx, part.sy, part.breite, part.hoehe,
+      x + part.dx * z, y + part.dy * z, part.breite * z, part.hoehe * z);
+  }
+
+  function drawSprite(ctx, sprite, gx, gy, tiles, mauerAn, hoeheAn, layoutIndex = 0) {
+    const parts = geo.buildingParts({ entry: sprite, gx, gy, layoutIndex });
+    if (parts) {
+      const loaded = new Map(parts.map(part => [part.bild, image(part.bild)]));
+      if ([...loaded.values()].every(img => img?.complete && img.naturalWidth)) {
+        const lift = bauHoehe(gx, gy, tiles);
+        for (const part of parts.sort(geo.renderOrder)) drawNativePart(ctx, part, loaded.get(part.bild), lift);
+        return true;
+      }
+    }
     const variant = geo.variantFor(sprite, gx, gy, mauerAn, hoeheAn);
     const img = image(variant.bild);
     if (!img || !img.complete || !img.naturalWidth) return false;
@@ -678,10 +730,9 @@
     // das Spiel setzt ihn immer gleich hin. Genau diese 7/2 stehen auch im
     // Katalog. Wer die Platten mitdreht, schiebt den Lagerplatz von der Karte.
     const gerade = geo.collectItems(currentDocument(), state.catalogue);
-    const items = turnedTiles(gerade);
+    const items = geo.attachDrawbridges(turnedTiles(gerade));
+    state.renderItems = items;
     const plates = geo.collectPlates(items);
-    for (const plate of plates.sort(geo.byDepth))
-      drawSprite(ctx, plate.sprite, plate.gx, plate.gy, plate.tiles);
 
     // Welche Felder Mauer tragen. Ein Mauerfeld waehlt sein Bild nach seinen
     // Nachbarn - laeuft die Mauer durch, wird sie eine durchgehende Flaeche
@@ -695,10 +746,21 @@
     state.hoeheAn = hoeheAn;
 
     let missing = 0;
-    for (const item of items.sort(geo.byDepth)) {
-      // Farms reserve a much larger field than their 3x3 building sprite.
-      // Keep the complete placement area visible without inventing crop state.
-      if (item.entry?.fieldFootprint) drawDiamond(ctx, item.gx, item.gy, item.tiles, 'rgba(248,248,192,.12)', 'rgba(248,248,192,.55)');
+    const buildingSprites = [...plates.map(plate => ({ ...plate, entry: plate.sprite, layer: 1 })), ...items].flatMap(item => {
+      const parts = geo.buildingParts(item);
+      if (!parts) return [item];
+      // Load all components before switching away from the complete fallback.
+      const loaded = parts.map(part => image(part.bild));
+      if (!loaded.every(img => img?.complete && img.naturalWidth)) return [item];
+      const lift = bauHoehe(item.gx, item.gy, item.tiles);
+      return parts.map((part, index) => ({ ...part, layer: item.layer ?? 2, draw: () => {
+        drawNativePart(ctx, part, loaded[index], lift);
+      }}));
+    });
+    // Scenery is no longer flattened underneath every building. Each upper
+    // tile participates in the same depth order as the castle sprites.
+    for (const item of [...(state.mapScenery || []), ...buildingSprites].sort(geo.renderOrder)) {
+      if (item.draw) { item.draw(); continue; }
       if (item.entry && drawSprite(ctx, item.entry, item.gx, item.gy, item.tiles, mauerAn, hoeheAn)) continue;
       drawDiamond(ctx, item.gx, item.gy, item.tiles, 'rgba(210,170,90,.55)');
       missing++;
@@ -707,7 +769,6 @@
     // where the mouse is
     if (state.hover) drawDiamond(ctx, state.hover.gx, state.hover.gy, 1, null, 'rgba(255,255,255,.5)');
 
-    drawAnalysis(ctx);
     drawSelection(ctx, items);
     drawPreview(ctx);
     drawMarquee(ctx);
@@ -716,29 +777,6 @@
     const tool = editor && editor.getTool ? editor.getTool() : '—';
     setStatus(items.length + ' items' + (missing ? ', ' + missing + ' without a sprite' : '') +
               ' · tool: ' + tool + mapStatus() + ' · middle mouse pans, wheel zooms');
-  }
-
-  function drawAnalysis(ctx) {
-    const overlay = window.castleEditor?.getAnalysisOverlay?.();
-    if (!overlay) return;
-    const turn = tile => geo.rotateGrid(tile.x, 99 - tile.y, 1, currentRotation());
-    ctx.save();
-    const cells = new Set(overlay.heat.map(c => `${c.x},${c.y}`));
-    for (const c of overlay.heat) {
-      const p = turn(c);
-      const boundary = [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy]) => !cells.has(`${c.x+dx},${c.y+dy}`));
-      drawDiamond(ctx, p.gx, p.gy, 1, `rgba(255,112,16,${0.035 + .34 * Math.sqrt(c.intensity)})`, boundary ? 'rgba(235,45,38,.8)' : null);
-    }
-    for (const route of overlay.routes) {
-      ctx.beginPath(); ctx.strokeStyle = '#64e8ef'; ctx.lineWidth = 1.5;
-      route.path.forEach((tile, index) => {
-        const p = turn(tile);
-        const [x,y] = geo.isoPoint(p.gx + .5, p.gy + .5, state.view, bauHoehe(p.gx,p.gy,1) + (tile.height || 0));
-        if (index) ctx.lineTo(x,y); else ctx.moveTo(x,y);
-      }); ctx.stroke();
-      if (route.entry) { const p = turn(route.entry); drawDiamond(ctx,p.gx,p.gy,1,'rgba(100,232,239,.65)'); }
-    }
-    ctx.restore();
   }
 
   // Was in der Statuszeile ueber die Karte steht. Die Drehung gehoert dorthin,
@@ -789,10 +827,16 @@
     // beim Loslassen zur durchgehenden Flaeche um.
     // Auch die Vorschau wird gedreht - sonst haengt am Zeiger ein Bauwerk,
     // das nach dem Loslassen woanders steht.
-    const kuenftig = turnedTiles(vorschau.tiles.map(feld => {
-      const entry = nachschlagen(feld.itemType != null ? feld.itemType : vorschau.itemType);
-      return { gx: feld.x, gy: geo.GRID - 1 - feld.y, entry, tiles: entry ? entry.kacheln : 1 };
+    const existing = state.renderItems || [];
+    const counts = new Map();
+    for (const item of existing) counts.set(item.itemType, (counts.get(item.itemType) || 0) + 1);
+    const pending = turnedTiles(vorschau.tiles.map(feld => {
+      const itemType = feld.itemType != null ? feld.itemType : vorschau.itemType;
+      const entry = nachschlagen(itemType), layoutIndex = counts.get(itemType) || 0;
+      counts.set(itemType, layoutIndex + 1);
+      return { gx: feld.x, gy: geo.GRID - 1 - feld.y, itemType, entry, layoutIndex, tiles: entry ? entry.kacheln : 1 };
     }));
+    const kuenftig = geo.attachDrawbridges([...existing, ...pending]).slice(existing.length);
     const neueMauern = geo.wallLookup(kuenftig);
     const mauerAn = (gx, gy) =>
       neueMauern(gx, gy) || (state.mauerAn ? state.mauerAn(gx, gy) : null);
@@ -810,7 +854,7 @@
     for (const feld of kuenftig) {
       const eintrag = feld.entry;
       const kacheln = feld.tiles;
-      if (!eintrag || !drawSprite(ctx, eintrag, feld.gx, feld.gy, kacheln, mauerAn, hoeheAn))
+      if (!eintrag || !drawSprite(ctx, eintrag, feld.gx, feld.gy, kacheln, mauerAn, hoeheAn, feld.layoutIndex))
         drawDiamond(ctx, feld.gx, feld.gy, kacheln, 'rgba(120,220,140,.45)', 'rgba(150,240,170,.9)');
     }
     ctx.restore();

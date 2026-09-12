@@ -53,7 +53,7 @@
 
 .castleCostOverview .costBalanceRow {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
   margin-bottom: 8px;
@@ -61,7 +61,9 @@
 
 .castleCostOverview .costBalanceRow label {
   color: var(--text-muted);
+  grid-column: 1 / -1;
 }
+.castleCostOverview #castleBalanceSource { overflow-wrap: anywhere; }
 
 .castleCostOverview .costBalanceRow select {
   min-width: 0;
@@ -250,4 +252,3 @@
 .costProductionSettings label { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 5px 0; }
 .costProductionSettings input[type="number"] { width: 70px; min-width: 0; }
 .costBalanceRow { flex-wrap: wrap; }
-#castleAnalysisInfo { max-height: 100px; overflow-y: auto; }
