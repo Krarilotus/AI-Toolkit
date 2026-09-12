@@ -84,6 +84,8 @@ require('../main');
       }
       if(!overlay.image || overlay.error || !overlay.routes.length)throw new Error('Overlay worker failed: '+JSON.stringify(overlay));
       if(!overlay.routes.some(r=>r.path.length))throw new Error('No worker reaches the keep stockpile');
+      if(overlay.routes.some(r=>!r.entry || !(r.workers>0)))throw new Error('Worker entrance marker missing');
+      if(overlay.walkability?.length!==10000)throw new Error('Walkability grid missing');
       const overlayResult={routes:overlay.routes.length,reachable:overlay.routes.filter(r=>r.path.length).length};
       window.isoView.paint();await pause();
       const overlayPNG=canvas.toDataURL('image/png');
@@ -108,7 +110,7 @@ require('../main');
         if(camera>=0)mapDraws.push({camera:camera*2,tile:args[0]/30,x:args[4],y:args[5]});
         return original.call(this,image,...args);
       };
-      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}],pathTerrain:{blocked:encode(new Uint8Array(160000)),heights:encode(new Uint8Array(160000))}});
+      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}],pathTerrain:{version:2,blocked:encode(new Uint8Array(160000)),heights:encode(new Uint8Array(160000))}});
       window.isoView.setMapTiles({path:'camera-fixture.map',atlas:mapAtlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16});
       if(window.isoView.turnView(1)!==null)throw new Error('Saved terrain must not masquerade as native directional graphics');
       mapDraws.length=0;

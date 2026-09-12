@@ -2,16 +2,37 @@
 (() => {
   const game = typeof module !== 'undefined' ? require('./castle-game-data') : globalThis.castleGameData;
   const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-  // First-pass candidates from setupBuildingEntrancesOffset(size, 1, attempt, 0).
-  // The game starts at a saved attempt and checks region/height flags. AIV has
-  // neither; this planner starts at zero and accepts the first reachable tile.
+  function workerCount(p) {
+    const count=p.workers ?? game.workers[Number(p.type)] ?? 0;
+    return Number.isFinite(Number(count)) ? Math.max(0,Number(count)) : 0;
+  }
+  // AIV coordinates have north-positive Y. Start south, then turn clockwise
+  // through west, north and east. Try side centres before the corner sweep.
   function entranceCandidates(rect, start = 0) {
-    const size = rect.right - rect.left + 1;
-    if (size !== rect.top - rect.bottom + 1) return [];
-    const table = game.entrances[size];
-    if (!table) return [];
-    return table.map((_, i) => table[(i + start) % table.length])
-      .map(([x, y]) => ({ x: rect.left + x, y: rect.top - y }));
+    const {left:l,right:r,bottom:b,top:t}=rect;
+    const cx=Math.floor((l+r)/2),cy=Math.floor((b+t)/2);
+    const sides=[{x:cx,y:b-1,side:0},{x:l-1,y:cy,side:1},{x:cx,y:t+1,side:2},{x:r+1,y:cy,side:3}];
+    const result=[];const seen=new Set();
+    const add=c=>{const key=c.x+','+c.y;if(!seen.has(key)){seen.add(key);result.push(c);}};
+    for(let i=0;i<4;i++)add(sides[(start+i)%4]);
+    // Retain the executable's perimeter order for square footprints. Reflect X
+    // because the AIV south-facing sweep runs towards west in north-positive Y.
+    const width=r-l+1, native=width===t-b+1 ? game.entrances[width] : null;
+    if(native) {
+      for(const [dx,dy] of native) {
+        let x=width-1-dx,y=dy;
+        for(let turn=0;turn<start;turn++) [x,y]=[y,width-1-x];
+        add({x:l+x,y:b+y,side:y<0?0:x<0?1:y>=width?2:3});
+      }
+      return result;
+    }
+    const edges=[[],[],[],[]];
+    for(let x=r;x>=l;x--)edges[0].push({x,y:b-1,side:0});
+    for(let y=b;y<=t;y++)edges[1].push({x:l-1,y,side:1});
+    for(let x=l;x<=r;x++)edges[2].push({x,y:t+1,side:2});
+    for(let y=t;y>=b;y--)edges[3].push({x:r+1,y,side:3});
+    for(let i=0;i<4;i++)for(const c of edges[(start+i)%4])add(c);
+    return result;
   }
   // Static, intact, same-owner castle topology. AIV carries placement types,
   // not the runtime walk/height/damage layers. Keep ground gate passages and
@@ -20,7 +41,8 @@
     const count = size * size;
     const surfaces = Array.from({length: count}, (_,k) => terrain?.blocked?.[k] ? [] : [{ k, height:0, kind:'ground' }]);
     const inside = (x,y) => x >= 0 && y >= 0 && x < size && y < size;
-    for (const p of placements) for (const r of p.rects) {
+    for (const p of placements) for (const [ri, r] of p.rects.entries()) {
+      if ([200,20,21].includes(Number(p.type))) continue;
       const t = Number(p.type);
       const wall = [25,46].includes(t);
       const tower = t >= 110 && t <= 114;
@@ -29,8 +51,10 @@
       for (let y = Math.max(0,r.bottom); y <= Math.min(size-1,r.top); y++)
         for (let x = Math.max(0,r.left); x <= Math.min(size-1,r.right); x++) {
           const k = y*size+x, tile = { k, ref:p.ref };
-          if (terrain?.blocked?.[k] && t !== 105) { surfaces[k]=[]; continue; }
-          if (p.name === 'Stockpile' || t === 52 || r.part === 'stockpile' || [99,105,166,169,175,200].includes(t)) surfaces[k] = [{...tile,height:0,kind:'ground'}];
+          if ((terrain?.hardBlocked?.[k] ?? terrain?.blocked?.[k]) && t !== 105) { surfaces[k]=[]; continue; }
+          if (t===52 || r.part==='stockpile' || p.name==='Stockpile') surfaces[k]=[{...tile,height:0,kind:'stockpile'}];
+          else if (t===61 && (ri>0 || r.part==='courtyard')) surfaces[k]=[{...tile,height:0,kind:'courtyard'}];
+          else if ([98,99,105,166,169,175].includes(t)) surfaces[k]=[{...tile,height:0,kind:t===105?'bridge':'ground'}];
           else if (stair) surfaces[k] = [{...tile,height:(186-t)*16,kind:'stair'}];
           else if ([26,35].includes(t)) surfaces[k] = [];
           else if (wall) surfaces[k] = [{...tile,height:t===46?60:90,kind:'wall'}];
@@ -48,7 +72,9 @@
     let id = 0;
     const nodes = surfaces.flat();
     for (const n of nodes) { n.id = id++; n.x = n.k%size; n.y = Math.floor(n.k/size); }
-    const hardCorners = new Set();
+    const hardCorners = new Set(), fullWall = new Uint8Array(count);
+    for (const p of placements) if ([25,26,35,46].includes(Number(p.type)))
+      for (const r of p.rects) for(let y=Math.max(0,r.bottom);y<=Math.min(size-1,r.top);y++) for(let x=Math.max(0,r.left);x<=Math.min(size-1,r.right);x++) fullWall[y*size+x]=1;
     for (const p of placements) if ([25,26,35,46,176,177,301,305,306,307,308,310,311,312].includes(Number(p.type)))
       for (const r of p.rects) for(let y=r.bottom;y<=r.top;y++) for(let x=r.left;x<=r.right;x++)
         if(inside(x,y)) hardCorners.add(y*size+x);
@@ -64,7 +90,7 @@
         const other = isDeck(a) ? b : a;
         if (!(isDeck(other) || other.kind === 'wall' || other.kind === 'stair')) return false;
       } else if (Math.abs(a.height-b.height) > 16) return false;
-      if (a.height === 0 && b.height === 0 && terrain?.heights && Math.abs(terrain.heights[a.k]-terrain.heights[b.k]) > 8) return false;
+      if (a.height === 0 && b.height === 0 && !['stockpile','courtyard','bridge'].includes(a.kind) && !['stockpile','courtyard','bridge'].includes(b.kind) && terrain?.heights && Math.abs(terrain.heights[a.k]-terrain.heights[b.k]) > 8) return false;
       if (dx && dy) {
         // Elevated diagonal wall walks must remain connected. Do not let a
         // diagonal edge climb a tower from ordinary ground or skip a stair.
@@ -75,7 +101,7 @@
         // Ordinary building corners are walkable; never squeeze diagonally
         // between walls, or a wall and a negative fear building.
         if (hardCorners.has(sideA) && hardCorners.has(sideB)) return false;
-        if (terrain?.blocked?.[sideA] && terrain?.blocked?.[sideB]) return false;
+        if (!surfaces[sideA].some(n=>n.height===0) && !surfaces[sideB].some(n=>n.height===0) && terrain?.blocked?.[sideA] && terrain?.blocked?.[sideB]) return false;
       }
       return true;
     }
@@ -85,16 +111,20 @@
       for (const b of surfaces[y*size+x]) if (connects(a,b,dx,dy))
         links[a.id].push({ to:b.id,cost:dx && dy ? Math.SQRT2 : 1 });
     }
-    return { nodes,surfaces,links };
+    return { nodes,surfaces,links,fullWall };
   }
   function routes(placements, size = 100, terrain = null) {
-    const {nodes,surfaces,links} = routeTopology(placements,size,terrain);
+    const {nodes,surfaces,links,fullWall} = routeTopology(placements,size,terrain);
     const inside = ({x,y}) => x >= 0 && y >= 0 && x < size && y < size;
-    const goals = placements.filter(p => (p.name === 'Stockpile' || Number(p.type) === 52)).flatMap(p => p.rects.flatMap(r => {
-      const cells=[];
-      for (let y=r.bottom;y<=r.top;y++) for(let x=r.left;x<=r.right;x++)
-        if(inside({x,y})) cells.push(...surfaces[y*size+x].filter(n=>n.height===0 && n.kind==='ground'));
-      return cells;
+    const goalAt=(x,y)=>inside({x,y})?surfaces[y*size+x].find(n=>n.height===0):null;
+    const goals = placements.filter(p=>Number(p.type)===52 || p.name==='Stockpile').flatMap(p=>p.rects.flatMap(r=>{
+      const preferred={x:r.left,y:Math.floor((r.bottom+r.top)/2)};
+      const nodes=[];
+      for(let y=r.bottom;y<=r.top;y++)for(let x=r.left;x<=r.right;x++) {
+        const node=goalAt(x,y);if(node?.kind==='stockpile')nodes.push(node);
+      }
+      nodes.sort((a,b)=>Math.hypot(a.x-preferred.x,a.y-preferred.y)-Math.hypot(b.x-preferred.x,b.y-preferred.y));
+      return nodes.slice(0,1);
     }));
     const distance = new Float64Array(nodes.length).fill(Infinity);
     const next = new Int32Array(nodes.length).fill(-1);
@@ -126,38 +156,37 @@
         distance[edge.to]=nd;next[edge.to]=id;push(edge.to,nd);
       }
     }
-    return placements.filter(p=>p.worker && p.name!=='Stockpile').map(p=>{
-      let candidates=entranceCandidates(p.rects[0]);
+    const result=placements.filter(p=>workerCount(p)>0 && Number(p.type)!==52).map(p=>{
       const r=p.rects[0];
+      let start=Number.isInteger(p.entranceSide)?((p.entranceSide%4)+4)%4:0;
       if(r.right-r.left===3 && r.top-r.bottom===3) {
-        // A full adjacent wall turns a four-tile workshop entrance away.
-        const wallAt=(x,y)=>inside({x,y}) && surfaces[y*size+x].some(n=>n.kind==='wall');
+        const wallAt=(x,y)=>inside({x,y}) && (surfaces[y*size+x].some(n=>['wall','deck','tower'].includes(n.kind)) || fullWall[y*size+x]);
         const full=[
+          [0,1,2,3].every(i=>wallAt(r.left+i,r.bottom-1)),
+          [0,1,2,3].every(i=>wallAt(r.left-1,r.bottom+i)),
           [0,1,2,3].every(i=>wallAt(r.left+i,r.top+1)),
-          [0,1,2,3].every(i=>wallAt(r.right+1,r.top-i)),
-          [0,1,2,3].every(i=>wallAt(r.right-i,r.bottom-1)),
-          [0,1,2,3].every(i=>wallAt(r.left-1,r.bottom+i))
+          [0,1,2,3].every(i=>wallAt(r.right+1,r.bottom+i))
         ].findIndex(Boolean);
-        if(full>=0) {
-          const opposite=(full+2)%4;
-          const onSide=c=>[c.y>r.top,c.x>r.right,c.y<r.bottom,c.x<r.left][opposite];
-          const index=candidates.findIndex(onSide);
-          candidates=candidates.slice(index).concat(candidates.slice(0,index));
-        }
+        if(full>=0)start=(full+2)%4;
       }
-      let entry;
+      const candidates=entranceCandidates(r,start);
+      let entry,candidate;
       for(const c of candidates) {
-        if(!inside(c))continue;
-        entry=surfaces[c.y*size+c.x].find(n=>n.height===0 && Number.isFinite(distance[n.id]));
-        if(entry)break;
+        const node=goalAt(c.x,c.y);
+        if(node) {entry=node;candidate=c;break;}
       }
-      if(!entry)return {ref:p.ref,name:p.name,path:[],reason:!goals.length?'No stockpile':'No reachable first-pass entrance'};
+      const marker=candidate || candidates.find(inside) || {x:r.left,y:r.bottom};
+      const common={ref:p.ref,type:p.type,name:p.name,workers:workerCount(p),entry:{x:marker.x,y:marker.y,side:marker.side},path:[]};
+      if(!entry)return {...common,reason:'Entrance blocked on all sides'};
+      if(!Number.isFinite(distance[entry.id]))return {...common,reason:!goals.length?'No accessible stockpile delivery point':'Entrance has no walkable route to a stockpile'};
       const path=[];
       for(let n=entry.id;n>=0;n=next[n])path.push({x:nodes[n].x,y:nodes[n].y,height:nodes[n].height});
       const direct=Math.min(...goals.map(g=>Math.hypot(g.x-entry.x,g.y-entry.y)));
       const d=distance[entry.id];
-      return {ref:p.ref,name:p.name,entry:{x:entry.x,y:entry.y},path,distance:d,efficiency:d?direct/d:1};
+      return {...common,path,distance:d,efficiency:d?direct/d:1};
     });
+    result.walkability=Uint8Array.from(surfaces,cells=>(cells.some(n=>n.height===0)?1:0)+(cells.some(n=>n.height>0)?2:0));
+    return result;
   }
   // User-selected planning ranges, not engine probabilities. Distance is from
   // the actual footprint boundary, so even-sized and multipart buildings do
@@ -185,7 +214,7 @@
     }
     return heat;
   }
-  const api = { entranceCandidates, routeTopology, routes, fireStrength, fireExposure };
+  const api = { workerCount, entranceCandidates, routeTopology, routes, fireStrength, fireExposure };
   if (typeof module !== 'undefined') module.exports = api;
   if (typeof globalThis !== 'undefined') globalThis.castleAnalysis = api;
 })();

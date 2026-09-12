@@ -310,7 +310,7 @@
   let routeTerrainCache = null, terrainRequest = null;
   function analysisTerrain() {
     const map=gameMap(), keep=currentKeep();
-    if (!map?.pathTerrain || !keep) {
+    if (map?.pathTerrain?.version !== 2 || !keep) {
       if(map?.path && terrainRequest !== map.path && window.electronAPI?.loadGameMap) {
         terrainRequest=map.path;
         window.electronAPI.loadGameMap(map.path).then(loaded=>{
@@ -321,20 +321,22 @@
       }
       return null;
     }
-    const key=JSON.stringify([map.path,keep]);
-    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,blocked:routeTerrainCache.blocked,heights:routeTerrainCache.heights};
+    const key=JSON.stringify([map.path,keep,map.pathTerrain.fingerprint]);
+    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights};
     const source=ausBase64(map.pathTerrain.blocked,Uint8Array);
+    const hard=ausBase64(map.pathTerrain.hardBlocked,Uint8Array) || source;
     const heights=ausBase64(map.pathTerrain.heights,Uint8Array);
-    const blocked=new Uint8Array(10000), ground=new Uint8Array(10000);
+    const blocked=new Uint8Array(10000), hardBlocked=new Uint8Array(10000), ground=new Uint8Array(10000);
     for(let y=0;y<100;y++) for(let x=0;x<100;x++) {
       const rotated=geo.rotateGrid(x,99-y,1,keep.orientation);
       const {mx,my}=geo.mapTileForGrid(rotated.gx,rotated.gy,keep);
       const valid=mx>=0 && my>=0 && mx<400 && my<400;
       blocked[y*100+x]=valid ? source[my*400+mx] : 1;
+      hardBlocked[y*100+x]=valid ? hard[my*400+mx] : 1;
       ground[y*100+x]=valid ? heights[my*400+mx] : 0;
     }
-    routeTerrainCache={map,key,blocked,heights:ground};
-    return {key:routeTerrainCache.key,blocked:routeTerrainCache.blocked,heights:routeTerrainCache.heights};
+    routeTerrainCache={map,key,blocked,hardBlocked,heights:ground};
+    return {key:routeTerrainCache.key,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights};
   }
 
   function hasGameMap() { return Boolean(gameMap()); }
@@ -854,12 +856,19 @@
     }
     ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;
     for(const route of overlay.routes) {
-      if(!route.path.length) continue;
-      ctx.beginPath();
-      route.path.forEach((tile,i)=>{
-        const p=turn(tile), xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(tile.height||0));
-        if(i)ctx.lineTo(...xy);else ctx.moveTo(...xy);
-      });ctx.stroke();
+      if(route.path.length) {
+        ctx.beginPath();
+        route.path.forEach((tile,i)=>{
+          const p=turn(tile),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(tile.height||0));
+          if(i)ctx.lineTo(...xy);else ctx.moveTo(...xy);
+        });ctx.stroke();
+      }
+      if(route.entry) {
+        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1));
+        ctx.beginPath();ctx.arc(...xy,3.5,0,Math.PI*2);
+        ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
+        ctx.save();ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();ctx.restore();
+      }
     }
     ctx.restore();
   }
