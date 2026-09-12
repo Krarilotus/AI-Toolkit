@@ -1,6 +1,11 @@
-﻿# Offline analysis work (unfinished)
+﻿# Native analysis research (not shipped)
 
-The editor must calculate the current unsaved AIV, selected build step and actual
+The editor now ships a self-contained path planner and the user-requested 2/7-tile
+fire estimate; see [Castle analysis](castle-analysis.md). This document records
+the separate, unfinished native prototype. It is not required by the shipped
+checkbox overlays.
+
+The native prototype aims to calculate the current unsaved AIV, selected build step and actual
 map, then draw Path map and Firespread directly in its existing views. A replay
 capture viewer does not satisfy this requirement and has been removed.
 
@@ -28,7 +33,7 @@ Two mistakes were found by tracing the original routines:
   entry; in this map the origin is (195,296), entry (195,298). Querying the origin
   returned no path while querying the entrance returned native paths.
 
-Still required before enabling overlays: verify the complete packed path and
+Still required before presenting the native prototype as verified engine output: verify the complete packed path and
 special wall/gate/stair transitions; complete placement handling for moat,
 pitch, multipart buildings and rotated keeps; retain placement failures;
 verify the active UCP changes; implement and validate staged fire/ember behavior;

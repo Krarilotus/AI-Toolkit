@@ -56,6 +56,22 @@ require('../main');
       slider.value=slider.max;slider.dispatchEvent(new Event('input',{bubbles:true}));
       await pause();window.isoView.paint();await pause();
       const lastStepStatus=document.getElementById('isoDockStatus').textContent;
+      for(const id of ['castleShowFire','castleShowRoutes']) {
+        const toggle=document.getElementById(id);
+        if(!toggle)throw new Error('Missing checkbox '+id);
+        toggle.checked=true;toggle.dispatchEvent(new Event('change'));
+      }
+      let overlay;
+      for(let i=0;i<200;i++) {
+        overlay=window.castleEditor.getAnalysisOverlay();
+        if(!overlay.pending && overlay.image)break;
+        await pause();
+      }
+      if(!overlay.image || overlay.error || !overlay.routes.length)throw new Error('Overlay worker failed: '+JSON.stringify(overlay));
+      if(!overlay.routes.some(r=>r.path.length))throw new Error('No worker reaches the keep stockpile');
+      const overlayResult={routes:overlay.routes.length,reachable:overlay.routes.filter(r=>r.path.length).length};
+      window.isoView.paint();await pause();
+      const overlayPNG=canvas.toDataURL('image/png');
       const cameraFrames=[];
       const atlas=document.createElement('canvas');atlas.width=120;atlas.height=16;
       const atlasContext=atlas.getContext('2d');
@@ -77,7 +93,7 @@ require('../main');
         if(camera>=0)mapDraws.push({camera:camera*2,tile:args[0]/30,x:args[4],y:args[5]});
         return original.call(this,image,...args);
       };
-      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}]});
+      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}],pathTerrain:{blocked:encode(new Uint8Array(160000)),heights:encode(new Uint8Array(160000))}});
       window.isoView.setMapTiles({path:'camera-fixture.map',atlas:mapAtlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16});
       if(window.isoView.turnView(1)!==null)throw new Error('Saved terrain must not masquerade as native directional graphics');
       window.isoView.setMapTiles({path:'camera-fixture.map',nativeRenderer:true,cameras:mapAtlases.map(atlas=>({atlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16}))});
@@ -97,7 +113,7 @@ require('../main');
       await pause();
       const camera=document.querySelector('.castleCameraKey');
       const style=getComputedStyle(camera);
-      return {png,atlasDraws,errors,firstStepStatus,lastStepStatus,cameraFrames,cameraBackground:style.backgroundColor,cameraText:style.color,
+      return {overlayResult, png,atlasDraws,errors,firstStepStatus,lastStepStatus,cameraFrames,cameraBackground:style.backgroundColor,cameraText:style.color,
         status:document.getElementById('isoDockStatus').textContent};
     })()`,true);
     fs.writeFileSync(path.join(output,'native-building-components.png'),Buffer.from(result.png.split(',')[1],'base64'));

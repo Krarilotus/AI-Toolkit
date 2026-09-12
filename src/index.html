@@ -181,6 +181,8 @@
           <label class="compactToggle"><input id="castleShowNames" type="checkbox"> Item names</label>
           <label class="compactToggle"><input id="castleShowUnitNumbers" type="checkbox"> Unit Order</label>
           <label class="compactToggle"><input id="castleShowCompatibility" type="checkbox"> Guide lines</label>
+          <label class="compactToggle" title="Estimated worker paths through the current castle"><input id="castleShowRoutes" type="checkbox"> Path map</label>
+          <label class="compactToggle" title="Orange planning gradient: 2 tiles initially, fading to 7 tiles in stage 2"><input id="castleShowFire" type="checkbox"> Firespread</label>
 
         </div>
       </header>
@@ -200,6 +202,7 @@
           </div>
           <div class="buildHint">Drag steps to reorder. Use Ctrl+click or Shift+click to select several steps.</div>
           <button id="castleMergeSteps" type="button" disabled title="Select two or more unlocked steps of exactly the same wall, moat or pitch type. Merges at the earliest selected step; any pause is kept at the end.">Merge selected steps</button>
+          <div id="castleAnalysisInfo" class="buildHint" hidden></div>
           <div id="castleBuildList" class="castleBuildList"></div>
           <section id="castlePopulationOverview" class="castlePopulationOverview castleOverviewPanel" data-overview="population" aria-label="Population up to the selected build step">
             <div class="populationOverviewTitle castleOverviewTitle">
