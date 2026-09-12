@@ -13,8 +13,12 @@ There is no recorded-game input and no alternate JavaScript pathfinder.
 
 On Gatekeeper.aiv, 286 placements yielded 23 building records and four rejected
 building placements; walls/stairs are separate native tile structures. The four
-workshop entrance queries returned paths of 82, 75, 78 and 72 directions to the
-native stockpile entrance. These are prototype results, not an editor feature.
+workshop entrance queries returned paths of 121, 133, 130 and 135 directions to
+the native stockpile entrance; decoding each packed path reached its destination.
+These are prototype results, not an editor feature. Earlier shorter paths came
+from an incomplete placement pass that skipped walls and stairs. The normal
+building-size lookup returns no footprint for these types; the original AIV
+routine supplies size one explicitly for their separate placement calls.
 
 Two mistakes were found by tracing the original routines:
 
