@@ -760,6 +760,26 @@ function knownMap(filePath, gameRoot) {
   return known;
 }
 
+// Static terrain constraints for the editor planner. Saved building/path flags
+// are deliberately not imported: the current AIV supplies those structures.
+function pathTerrain(buffer, directory) {
+  const logic = readSection(buffer, directory, 1003);
+  const organisms = readSection(buffer, directory, ORGANISM_SECTION);
+  const heights = readSection(buffer, directory, 1045) || readSection(buffer, directory, HEIGHT_SECTION);
+  if (!logic || logic.length !== MAP_TILES*4) return null;
+  const blocked = Buffer.alloc(400*400, 1), ground = Buffer.alloc(400*400);
+  for(let y=0;y<400;y++) for(let x=0;x<400;x++) {
+    const [left,right]=rowRange(y); if(x<left || x>right) continue;
+    const tile=tileIndex(x,y);
+    const flags=logic.readUInt32LE(tile*4);
+    const water=(flags & (1|1048576)) && !(flags & 2097152); // sea/river, except ford
+    const obstacle=flags & (16|32|4096|8192|131072|524288); // edge, tree, boulder, iron
+    blocked[y*400+x]=water || obstacle || (organisms?.readUInt16LE(tile*2) || 0) ? 1 : 0;
+    ground[y*400+x]=heights?.[tile] || 0;
+  }
+  return { blocked:blocked.toString('base64'), heights:ground.toString('base64') };
+}
+
 function readGameMap(filePath, gameRoot) {
   const known = knownMap(filePath, gameRoot);
   const buffer = fs.readFileSync(known.path);
@@ -780,7 +800,8 @@ function readGameMap(filePath, gameRoot) {
     source: known.source,
     edge: PREVIEW_EDGE,
     dataUrl: `data:image/png;base64,${previewPng(preview).toString('base64')}`,
-    keeps
+    keeps,
+    pathTerrain: directory ? pathTerrain(buffer, directory) : null
   };
 }
 

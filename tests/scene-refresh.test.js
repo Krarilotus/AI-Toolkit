@@ -8,7 +8,8 @@ test('a castle edit queued after a hover invalidates the cached scene', () => {
   const start = source.indexOf('  function scheduleDraw(');
   const end = source.indexOf('  function updateBlueprintControls(', start);
   const frames = [], changes = [];
-  const context = vm.createContext({state: {}, draw() {},
+  let analyses = 0;
+  const context = vm.createContext({state: {}, draw() {}, getAnalysisOverlay() { analyses++; },
     requestAnimationFrame: callback => frames.push(callback),
     changeListeners: new Set([changed => changes.push(changed)])});
   vm.runInContext(source.slice(start, end), context);
@@ -20,4 +21,5 @@ test('a castle edit queued after a hover invalidates the cached scene', () => {
   context.scheduleDraw(false);
   frames.shift()();
   assert.deepEqual(changes, [true, false]);
+  assert.equal(analyses, 1, "Hover must not recalculate overlays");
 });

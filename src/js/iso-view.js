@@ -282,7 +282,7 @@
     if (previous) state.images.delete(previous.dataUrl);
     state.gameMap = map
       ? { name: map.name, path: map.path || null, dataUrl: map.dataUrl,
-          keeps: Array.isArray(map.keeps) ? map.keeps : [], keepIndex: 0 }
+          keeps: Array.isArray(map.keeps) ? map.keeps : [], keepIndex: 0, pathTerrain: map.pathTerrain || null }
       : null;
     // Das Gelaende der alten Karte zeigt die alte Karte. Es jetzt stehen zu
     // lassen hiesse, die neue Karte mit fremdem Boden zu zeigen.
@@ -292,6 +292,7 @@
     }
     if (previous?.path !== state.gameMap?.path) handDrehung = 0;
     setTerrain(null);
+    window.castleEditor?.extras?.scheduleDraw?.();
     rememberGameMap();
     if (state.gameMap && state.ground) setGround(null);   // paints as well
     else paint();
@@ -302,7 +303,38 @@
     if (!map || !map.keeps.length) return;
     map.keepIndex = Math.max(0, Math.min(map.keeps.length - 1, Number(index) || 0));
     rememberGameMap();
+    window.castleEditor?.extras?.scheduleDraw?.();
     paint();
+  }
+
+  let routeTerrainCache = null, terrainRequest = null;
+  function analysisTerrain() {
+    const map=gameMap(), keep=currentKeep();
+    if (!map?.pathTerrain || !keep) {
+      if(map?.path && terrainRequest !== map.path && window.electronAPI?.loadGameMap) {
+        terrainRequest=map.path;
+        window.electronAPI.loadGameMap(map.path).then(loaded=>{
+          if(gameMap()!==map || !loaded.pathTerrain) return;
+          map.pathTerrain=loaded.pathTerrain;rememberGameMap();
+          window.castleEditor?.extras?.scheduleDraw?.();
+        }).catch(()=>{ /* Overlay reports castle-only terrain when unavailable. */ });
+      }
+      return null;
+    }
+    const key=JSON.stringify([map.path,keep]);
+    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,blocked:routeTerrainCache.blocked,heights:routeTerrainCache.heights};
+    const source=ausBase64(map.pathTerrain.blocked,Uint8Array);
+    const heights=ausBase64(map.pathTerrain.heights,Uint8Array);
+    const blocked=new Uint8Array(10000), ground=new Uint8Array(10000);
+    for(let y=0;y<100;y++) for(let x=0;x<100;x++) {
+      const rotated=geo.rotateGrid(x,99-y,1,keep.orientation);
+      const {mx,my}=geo.mapTileForGrid(rotated.gx,rotated.gy,keep);
+      const valid=mx>=0 && my>=0 && mx<400 && my<400;
+      blocked[y*100+x]=valid ? source[my*400+mx] : 1;
+      ground[y*100+x]=valid ? heights[my*400+mx] : 0;
+    }
+    routeTerrainCache={map,key,blocked,heights:ground};
+    return {key:routeTerrainCache.key,blocked:routeTerrainCache.blocked,heights:routeTerrainCache.heights};
   }
 
   function hasGameMap() { return Boolean(gameMap()); }
@@ -793,12 +825,41 @@
     const z = state.view.zoom;
     ctx.drawImage(scene.canvas, state.view.panX - scene.view.panX * z,
       state.view.panY - scene.view.panY * z, scene.canvas.width * z, scene.canvas.height * z);
+    drawAnalysis(ctx);
     paintInteraction(ctx, scene.items);
     const { items, missing } = scene;
     const editor = window.castleEditor;
     const tool = editor && editor.getTool ? editor.getTool() : '—';
     setStatus(items.length + ' items' + (missing ? ', ' + missing + ' without a sprite' : '') +
               ' · tool: ' + tool + mapStatus() + ' · middle mouse pans, wheel zooms');
+  }
+
+  function drawAnalysis(ctx) {
+    const overlay=window.castleEditor?.getAnalysisOverlay?.(false);
+    if(!overlay) return;
+    const turn=tile=>geo.rotateGrid(tile.x,99-tile.y,1,currentRotation());
+    ctx.save();
+    if(overlay.image) {
+      // Image pixels are tile centres. Rotate the whole footprint about the
+      // same tile centre as the castle, then project its two basis vectors.
+      const point=(x,y)=>{
+        const p=geo.rotateGrid(x-.5,y-.5,1,currentRotation());
+        return geo.isoPoint(p.gx+.5,p.gy+.5,state.view);
+      };
+      const a=point(0,0), b=point(100,0), c=point(0,100);
+      ctx.save();ctx.transform((b[0]-a[0])/100,(b[1]-a[1])/100,(c[0]-a[0])/100,(c[1]-a[1])/100,a[0],a[1]);
+      ctx.imageSmoothingEnabled=true;ctx.drawImage(overlay.image,0,0);ctx.restore();
+    }
+    ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;
+    for(const route of overlay.routes) {
+      if(!route.path.length) continue;
+      ctx.beginPath();
+      route.path.forEach((tile,i)=>{
+        const p=turn(tile), xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(tile.height||0));
+        if(i)ctx.lineTo(...xy);else ctx.moveTo(...xy);
+      });ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function paintScene(ctx, width, height) {
@@ -1292,7 +1353,7 @@
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo,
                      mapMode, setMapMode, setTerrain, terrainKey, terrainReady,
                      viewRotation, turnView, currentRotation,
-                     setMapTiles, hasMapTiles };
+                     setMapTiles, hasMapTiles, analysisTerrain };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

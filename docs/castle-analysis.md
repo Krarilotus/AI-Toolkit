@@ -95,13 +95,10 @@ and delivery quantities are known.
 
 ## Worker routes and fire
 
-The previous static models have been removed. They did not have the runtime
-terrain, entrance, wall-linkage or staged spark state needed to match the game.
-The capture/import dialog and its Recorder integration have also been removed: they
-required a recorded game instead of calculating the current edited castle. Offline
-Path map and Firespread overlays remain unfinished. Do not treat removal of the
-recorder UI or the renderer performance fix as completion of those calculations.
-See [Offline analysis work](offline-analysis.md) for the native verification boundary.
+The toolbar overlays use the simplified planning model described below. They
+calculate the current edited castle without launching the game or importing
+recorded gameplay. Native engine integration is separate research, not a
+prerequisite for these explicitly labelled estimates.
 
 ## Resource-building plan artwork
 
@@ -157,3 +154,37 @@ Regenerate via scripts/export-resource-skins.js and an original colour tiles.gm1
 it reuses the existing GM1/TGX decoder. Full native footprints and AIV round trips
 remain covered by resource-building tests. This corrects plan textures; variable
 2.5D crops, livestock and fences remain outside the static sprite preview.
+
+
+## Path map and Firespread planning overlays
+
+The existing castle toolbar provides **Path map** and **Firespread** checkboxes.
+Both views use only buildings through the selected step, including unsaved edits.
+No game launch, capture file, observer, or separate simulation window is needed.
+Calculations are debounced in a Web Worker and stale replies are discarded.
+Pan/zoom/hover reuse the result and the cached 2.5D scene.
+
+Fire is an explicit planning estimate requested by the user: a stronger smooth
+falloff over 2 tiles and a softer second-stage falloff through 6?7 tiles, reaching
+zero at 7. Distance is Euclidean distance from each actual footprint edge; this
+produces rounded corners without recentering even-sized buildings. There is no
+outline or hard cutoff stroke. The two falloffs are combined using smoothstep,
+with weights 0.7 and 0.3. Flammability uses the existing executable-derived table;
+brightness is not a measured probability or simulation of burning duration.
+
+Paths use a multi-source Dijkstra search from stockpile tiles. Stockpile mapper
+52 and the keep's attached stockpile are ground paths. Stairs have six height
+levels; Stair 6 can connect directly to a tower. Tower decks, wall walks and
+open gate passages are connected separately from ground, so a gate passage
+cannot implicitly climb onto its roof. Diagonal ordinary-building corners are
+allowed; gaps between walls or a wall and negative fear buildings are blocked.
+Four-by-four worker buildings next to a full wall start their entrance search
+on the opposite side, using the retained entrance candidate tables.
+
+When a map is selected, section 1003 logic flags, section 1004 organisms and
+base ground heights constrain the search. Sea, non-ford river, trees, rock/iron
+obstacles, map edges and abrupt height changes block ground routes. The shared
+keep transform aligns these layers with the current AIV. Saved building/path
+layers are not used because they describe a different castle. Gates are assumed
+open, the castle intact, and traffic/ownership changes are not simulated. Without
+a map, paths are a castle-only estimate on flat terrain.
