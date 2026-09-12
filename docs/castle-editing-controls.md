@@ -44,8 +44,9 @@ shortcuts. Save persists settings locally; Cancel discards edits.
 
 The **Delete** tool now offers **Area** (the existing rectangle deletion) and
 **Flood fill (same type)**. Flood delete removes the clicked placement and
-placements of that exact type connected through their footprints along four
-directions. It can span build steps, but not diagonal corners or empty gaps.
+placements of that exact type connected through their footprints along eight
+directions, including corner-touching tiles, matching the classic editor. The
+fill bucket uses the same connectivity. Empty gaps do not connect regions.
 Locked placements and the Keep are protected barriers. One Undo restores a
 flood deletion.
 

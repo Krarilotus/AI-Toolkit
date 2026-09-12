@@ -246,8 +246,8 @@
   // Der zusammenhaengende freie Bereich um ein Feld herum - was der Farbeimer
   // fuellt. Begrenzt wird er von allem, was `isBlocked` als besetzt meldet,
   // und vom Kartenrand: wer am Rand steht, ist eingeschlossen wie vor einer
-  // Mauer. Vier Richtungen, nicht acht - sonst laeuft die Fuellung durch
-  // diagonale Luecken hindurch, die im Spiel keine sind.
+  // Mauer. Wie im alten Village Editor zaehlen auch direkte diagonale
+  // Nachbarn als verbunden. Dies ist die Fuellregel, nicht die Wegfindung.
   //
   // `limit` ist eine Notbremse, keine Regel: eine Karte hat 10000 Felder, und
   // ein Fehlgriff auf freies Gelaende soll nicht die halbe Karte zubauen.
@@ -256,11 +256,12 @@
     const gesehen = new Set([start.y * gridSize + start.x]);
     const out = [];
     const rand = [start];
+    const neighbours = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
     while (rand.length) {
       const feld = rand.pop();
       out.push(feld);
       if (out.length >= limit) break;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dy] of neighbours) {
         const x = feld.x + dx, y = feld.y + dy;
         if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) continue;
         const key = y * gridSize + x;
