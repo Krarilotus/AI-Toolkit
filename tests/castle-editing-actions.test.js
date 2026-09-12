@@ -37,16 +37,21 @@ function flood(start, placements, locked = []) {
     p => geometry.footprintRectsAtXY(p.type, p.x, p.y, p.size), ref => locked.includes(ref));
 }
 
-test('flood delete crosses build steps but not gaps, diagonal corners, types or locks', () => {
+test('flood delete connects diagonal corners across steps while excluding locked cells and other types', () => {
   const items = [placement('a', 0, 0), placement('b', 1, 0), placement('locked', 2, 0),
     placement('beyond', 3, 0), placement('diagonal', 2, 1), placement('other', 0, 1, 26)];
-  assert.deepEqual(flood(items[0], items, ['locked']), new Set(['a', 'b']));
+  assert.deepEqual(flood(items[0], items, ['locked']), new Set(['a', 'b', 'diagonal', 'beyond']));
   assert.deepEqual(flood(items[2], items, ['locked']), new Set());
   assert.deepEqual(flood(null, items), new Set());
 });
 
+test('a locked placement does not connect separated flood-delete regions', () => {
+  const items = [placement('a', 0, 0), placement('locked', 1, 1), placement('b', 2, 2)];
+  assert.deepEqual(flood(items[0], items, ['locked']), new Set(['a']));
+});
+
 test('flood delete uses whole building footprints and protects the Keep', () => {
-  const items = [placement('a', 0, 1, 54, [2, 2]), placement('b', 2, 0, 54), placement('gap', 4, 0, 54)];
+  const items = [placement('a', 0, 1, 54, [2, 2]), placement('b', 2, 2, 54), placement('gap', 4, 2, 54)];
   assert.deepEqual(flood(items[0], items), new Set(['a', 'b']));
   const keep = placement('keep', 43, 56, 61);
   assert.deepEqual(flood(keep, [keep]), new Set());

@@ -198,18 +198,24 @@ test('the bucket fills up to a wall and stops there', () => {
 
 test('the edge of the map counts as a wall', () => {
   // Eine Ecke, abgeriegelt durch zwei Felder: der Rand schliesst den Rest.
-  const blockiert = (x, y) => (x === 2 && y <= 1) || (y === 2 && x <= 1);
+  const blockiert = (x, y) => (x === 2 && y <= 2) || (y === 2 && x <= 2);
   const ecke = geometry.floodTiles({ x: 0, y: 0 }, blockiert, 100);
   assert.equal(ecke.length, 4, 'nur die vier Felder in der Ecke');
   assert.ok(ecke.every(t => t.x <= 1 && t.y <= 1));
 });
 
-test('the bucket does not leak through a diagonal gap', () => {
-  // Zwei Kammern, die sich nur an einer Ecke beruehren.
-  const blockiert = (x, y) => (x === 1 && y === 0) || (x === 0 && y === 1)
-                           || (x === 2 && y === 1) || (x === 1 && y === 2);
-  const links = geometry.floodTiles({ x: 0, y: 0 }, blockiert, 100);
-  assert.deepEqual(links, [{ x: 0, y: 0 }], 'diagonal ist kein Durchgang');
+test('the bucket connects corner-touching tiles in all four diagonal directions', () => {
+  const cells = new Set(['0,0', '2,0', '1,1', '0,2', '2,2']);
+  for (const start of [{x: 1,y: 1}, {x: 0,y: 0}, {x: 2,y: 2}]) {
+    const filled = geometry.floodTiles(start, (x,y) => !cells.has(x + ',' + y), 3);
+    assert.deepEqual(new Set(filled.map(t => t.x + ',' + t.y)), cells);
+  }
+});
+
+test('flood fill cannot jump a missing tile or wrap across map edges', () => {
+  const cells = new Set(['2,0', '0,1', '2,2']);
+  const filled = geometry.floodTiles({x: 2,y: 0}, (x,y) => !cells.has(x + ',' + y), 3);
+  assert.deepEqual(filled, [{x: 2,y: 0}]);
 });
 
 test('a click on something solid fills nothing', () => {
