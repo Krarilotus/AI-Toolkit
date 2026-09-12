@@ -16,6 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npx electron scripts/render-smoke.cjs
       - run: npx electron-builder --win zip --x64
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
