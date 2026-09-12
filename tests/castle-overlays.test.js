@@ -72,3 +72,61 @@ test('stockpiles cannot erase map obstacles and cliffs prevent ground shortcuts'
   const cliff=a.routeTopology([],10,{heights});
   assert.equal(cliff.links[cliff.surfaces[55][0].id].length,0);
 });
+
+
+test('worker eligibility covers civilian jobs and respects explicit population overrides',()=>{
+  const config=require('../config/aiv_gamedata.json').population_effects.requires;
+  for(const [type,count] of Object.entries(config)) assert.equal(a.workerCount(p(Number(type),rect(1,1))),count);
+  for(const type of [52,54,61,77,80,81,86,87,110,144,200,313]) assert.equal(a.workerCount(p(type,rect(1,1))),0);
+  assert.equal(a.workerCount(p(50,rect(1,1),{workers:0})),0);
+  assert.equal(a.workerCount(p(50,rect(1,1),{workers:2})),2);
+});
+test('workers cross the interior of stockpiles to a delivery point',()=>{
+  const route=a.routes([p(null,rect(0,0,14,14)),p(52,rect(2,7,9,7)),p(50,rect(10,7))],15)[0];
+  assert.deepEqual(route.path.map(t=>t.x),[9,8,7,6,5,4,3,2]);
+});
+test('killing pits and pitch do not sever a narrow worker passage',()=>{
+  const ps=[p(null,rect(0,0,14,14)),p(52,rect(1,7)),p(98,rect(2,7,5,7)),p(99,rect(6,7,9,7)),p(50,rect(10,7))];
+  assert.equal(a.routes(ps,15)[0].path.length,9);
+  assert.equal(a.routes(ps.map(p=>p.type===98?{...p,type:106}:p),15)[0].path.length,0);
+});
+test('dummy placement markers never erase a wall or moat',()=>{
+  const g=a.routeTopology([p(25,rect(2,2)),p(106,rect(3,2)),p(200,rect(2,2,3,2))],6);
+  assert.equal(g.surfaces[14][0].kind,'wall');assert.equal(g.surfaces[15].length,0);
+});
+test('entrance selection is clockwise and independent of destination connectivity',()=>{
+  const building=p(50,rect(5,5,8,8));
+  const south=a.routes([building,p(52,rect(1,1))],15)[0];
+  assert.equal(south.entry.side,0);
+  const west=a.routes([building,p(54,rect(6,4)),p(52,rect(1,1))],15)[0];
+  assert.equal(west.entry.side,1);
+  const disconnected=a.routes([building,p(52,rect(1,1)),p(106,rect(0,3,14,3))],15)[0];
+  assert.deepEqual(disconnected.entry,south.entry);
+  assert.equal(disconnected.path.length,0);assert.match(disconnected.reason,/no walkable route/);
+});
+test('each full wall side rotates a 4x4 entrance by 180 degrees',()=>{
+  const walls=[rect(5,4,8,4),rect(4,5,4,8),rect(5,9,8,9),rect(9,5,9,8)];
+  for(let side=0;side<4;side++){
+    const route=a.routes([p(50,rect(5,5,8,8)),p(25,walls[side]),p(52,rect(1,1))],15)[0];
+    assert.equal(route.entry.side,(side+2)%4);
+  }
+});
+test('blocked worker entrances retain a marker and reason, nonworkers do not get routes',()=>{
+  const routes=a.routes([p(null,rect(0,0,14,14)),p(50,rect(5,5,8,8)),p(87,rect(10,10))],15);
+  assert.equal(routes.length,1);assert.ok(routes[0].entry);assert.match(routes[0].reason,/blocked on all sides/);
+  assert.equal(routes.walkability[6*15+6],0);
+});
+test('constructed stockpiles clear old vegetation and connect despite raw ground height, never water',()=>{
+  const blocked=new Uint8Array(100),hardBlocked=new Uint8Array(100),heights=new Uint8Array(100);
+  blocked[55]=blocked[56]=1;hardBlocked[56]=1;heights[55]=80;
+  const g=a.routeTopology([p(52,rect(5,5,6,5))],10,{blocked,hardBlocked,heights});
+  const stock=g.surfaces[55][0];assert.equal(stock.kind,'stockpile');
+  assert.ok(g.links[stock.id].some(e=>g.nodes[e.to].k===54));
+  assert.equal(g.surfaces[56].length,0);
+});
+test('the keep courtyard is walkable but the keep building stays solid',()=>{
+  const rects=require('../src/js/castle-geometry').footprintRectsAtXY(61,10,20).filter(r=>r.part!=='stockpile');
+  const g=a.routeTopology([{type:61,rects}],30);
+  assert.equal(g.surfaces[18*30+12].length,0);
+  assert.equal(g.surfaces[8*30+12][0].kind,'courtyard');
+});

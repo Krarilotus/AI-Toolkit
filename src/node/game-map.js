@@ -767,7 +767,7 @@ function pathTerrain(buffer, directory) {
   const organisms = readSection(buffer, directory, ORGANISM_SECTION);
   const heights = readSection(buffer, directory, 1045) || readSection(buffer, directory, HEIGHT_SECTION);
   if (!logic || logic.length !== MAP_TILES*4) return null;
-  const blocked = Buffer.alloc(400*400, 1), ground = Buffer.alloc(400*400);
+  const blocked = Buffer.alloc(400*400, 1), hardBlocked = Buffer.alloc(400*400,1), ground = Buffer.alloc(400*400);
   for(let y=0;y<400;y++) for(let x=0;x<400;x++) {
     const [left,right]=rowRange(y); if(x<left || x>right) continue;
     const tile=tileIndex(x,y);
@@ -775,9 +775,10 @@ function pathTerrain(buffer, directory) {
     const water=(flags & (1|1048576)) && !(flags & 2097152); // sea/river, except ford
     const obstacle=flags & (16|32|4096|8192|131072|524288); // edge, tree, boulder, iron
     blocked[y*400+x]=water || obstacle || (organisms?.readUInt16LE(tile*2) || 0) ? 1 : 0;
+    hardBlocked[y*400+x]=water || (flags & (16|32)) ? 1 : 0;
     ground[y*400+x]=heights?.[tile] || 0;
   }
-  return { blocked:blocked.toString('base64'), heights:ground.toString('base64') };
+  return {version:2,fingerprint:nativeRendererInternals.sha(buffer),blocked:blocked.toString('base64'),hardBlocked:hardBlocked.toString('base64'),heights:ground.toString('base64')};
 }
 
 function readGameMap(filePath, gameRoot) {

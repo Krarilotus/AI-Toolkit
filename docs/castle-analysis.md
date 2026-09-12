@@ -172,7 +172,7 @@ outline or hard cutoff stroke. The two falloffs are combined using smoothstep,
 with weights 0.7 and 0.3. Flammability uses the existing executable-derived table;
 brightness is not a measured probability or simulation of burning duration.
 
-Paths use a multi-source Dijkstra search from stockpile tiles. Stockpile mapper
+Paths use a multi-source Dijkstra search from one delivery point per stockpile. Routes cross stockpile interiors instead of stopping at the first stockpile tile. Stockpile mapper
 52 and the keep's attached stockpile are ground paths. Stairs have six height
 levels; Stair 6 can connect directly to a tower. Tower decks, wall walks and
 open gate passages are connected separately from ground, so a gate passage
@@ -208,3 +208,24 @@ previous 196 ms mean. The measurement includes two animation frames; it is not
 a claim of a 40 ms drawing call. Cached paints averaged 4.5 ms. Pixel comparison
 checks that stepping backward then forward restores an identical scene. Large
 step jumps and rotations can still require substantially more drawing.
+
+
+## Worker-route corrections
+
+Civilian worker counts come from the population data, with an explicit per-building
+count (including zero) taking precedence. Every worker building retains an entrance
+marker: cyan when connected, coral when blocked. Hovering a marker gives its reason;
+hovering other tiles shows ground, raised walkway, both, or blocked, using the same
+graph as the search. These are access routes to storage, not complete production trips.
+
+Entrance selection uses physical clearance, independently of destination reachability.
+The south-facing default rotates clockwise; a full wall alongside a 4x4 workshop
+starts the search on the opposite side. The original perimeter table supplies the
+fallback sweep after side centres. Killing pits, pitch, stockpiles and the keep
+courtyard are walkable. Dummy editor markers do not overwrite actual structures.
+
+The map mask separates permanent water/border constraints from vegetation and
+resource obstacles that a current construction replaces. Constructed stockpile
+platforms do not inherit raw-ground cliff edges. Unbuilt terrain still constrains
+routes. A single binary-heap, multi-source Dijkstra search serves all workers;
+calculation runs in the existing Web Worker and stale results are discarded.

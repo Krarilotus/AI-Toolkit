@@ -2530,7 +2530,7 @@
       && (!Number.isInteger(state.insertionFrameIndex) || p.fi <= state.insertionFrameIndex)).flatMap(p => {
       const name = data?.buildings[p.type]?.balance;
       const rects = footprintRects(p.type, p.off);
-      const item = { ref: p.ref, type: Number(p.type), name, rects, worker: !!state.populationData?.population_effects?.requires?.[p.type] };
+      const item = { ref: p.ref, type: Number(p.type), name, rects, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
       // The keep forces an attached stockpile, encoded as a composite footprint.
       return p.type === geometry.KEEP_ITEM_TYPE && rects.length > 1
         ? [{ ...item, rects: rects.filter(r => r.part !== 'stockpile') }, { ref: `${p.ref}:stockpile`, name: 'Stockpile', rects: rects.filter(r => r.part === 'stockpile') }]
@@ -2580,7 +2580,7 @@
       info.hidden = !fire && !paths;
       info.textContent = overlay.error || (overlay.pending ? 'Calculating overlays...' : [
         fire ? 'Fire estimate: stage 1 fades over 2 tiles; stage 2 fades out at 7 tiles.' : '',
-        paths ? `Paths: ${overlay.routes.filter(r=>r.path.length).length}/${overlay.routes.length} reachable. Open gates; ${window.isoView?.analysisTerrain?.() ? 'map terrain included' : 'flat terrain (no map data)'}. Static estimate.` : ''
+        paths ? `Paths: ${overlay.routes.filter(r=>r.path.length).length}/${overlay.routes.length} reachable. Open gates; ${window.isoView?.analysisTerrain?.() ? 'map terrain included' : 'flat terrain (no map data)'}. Cyan dots: reachable entrances; red dots: blocked. Static estimate.` : ''
       ].filter(Boolean).join(' '));
     }
     ctx.save();
@@ -2589,12 +2589,19 @@
       ctx.drawImage(overlay.image,state.panX,state.panY,GRID*state.cell,GRID*state.cell);
     }
     for (const route of overlay.routes) {
-      if (!route.path.length) continue;
-      ctx.strokeStyle='#64e8ef'; ctx.lineWidth=1.5; ctx.beginPath();
-      route.path.forEach((tile,i)=>{
-        const x=state.panX+(tile.x+.5)*state.cell,y=state.panY+(99-tile.y+.5)*state.cell;
-        if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
-      });ctx.stroke();
+      if(route.path.length) {
+        ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;ctx.beginPath();
+        route.path.forEach((tile,i)=>{
+          const x=state.panX+(tile.x+.5)*state.cell,y=state.panY+(99-tile.y+.5)*state.cell;
+          if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);
+        });ctx.stroke();
+      }
+      if(route.entry) {
+        const x=state.panX+(route.entry.x+.5)*state.cell,y=state.panY+(99-route.entry.y+.5)*state.cell;
+        ctx.beginPath();ctx.arc(x,y,Math.max(2.5,Math.min(5,state.cell*.32)),0,Math.PI*2);
+        ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
+        ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();
+      }
     }
     ctx.restore();
   }
@@ -2672,14 +2679,24 @@
   }
 
   function itemLabelAtTile(tile) {
+    if(tile && document.getElementById('castleShowRoutes')?.checked) {
+      const routes=analysisCache.routes.filter(r=>r.entry?.x===tile.x && r.entry?.y===tile.y);
+      if(routes.length)return routes.map(r=>`${r.name || itemName(r.type)}: ${r.workers} worker(s) - ${r.reason || 'entrance, '+Math.round(r.distance)+' tiles to delivery point'}`).join('; ');
+    }
     const ref = tile && topmostRefAtTile(tile);
-    return ref ? `${itemName(refType(ref))} [${refType(ref)}]` : '';
+    const label=ref ? `${itemName(refType(ref))} [${refType(ref)}]` : '';
+    if(tile && document.getElementById('castleShowRoutes')?.checked && analysisCache.walkability) {
+      const flags=analysisCache.walkability[tile.y*GRID+tile.x];
+      const access=flags===3?'Ground passage and raised walkway':flags===2?'Raised walkway':flags===1?'Walkable ground':'Blocked tile';
+      return label ? `${label} - ${access}` : access;
+    }
+    return label;
   }
 
   // Tiny footprints and long names cannot fit an in-sprite label. A hover
   // label provides their full name without printing thousands of wall labels.
   function drawHoveredItemName() {
-    if (!els.showNames.checked || state.gesture || state.panning) return;
+    if ((!els.showNames.checked && !document.getElementById('castleShowRoutes')?.checked) || state.gesture || state.panning) return;
     const label = itemLabelAtTile(state.hoverTile);
     if (!label) return;
     const pos = tileToScreenPos(state.hoverTile);

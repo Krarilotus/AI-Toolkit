@@ -134,6 +134,7 @@ test('hover names include units and one-tile items, with a safe fallback for unk
   const end = source.indexOf('\n  function ', start + 10);
   const constants = require('../config/aiv_constants.json');
   const context = vm.createContext({
+    document: {getElementById:()=>({checked:false})},
     topmostRefAtTile: tile => tile.x === 0 ? null : 'placement',
     refType: () => 25,
     itemName: type => palette.itemName(constants, type)
@@ -145,4 +146,18 @@ test('hover names include units and one-tile items, with a safe fallback for unk
     context.refType = () => type;
     assert.equal(vm.runInContext('itemLabelAtTile({x: 1, y: 1})', context), `${palette.itemName(constants, type)} [${type}]`);
   }
+});
+
+
+test('path-map hover reports blocked entrances and walkability even without item labels',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../src/js/castle-editor.js'),'utf8');
+  const start=source.indexOf('  function itemLabelAtTile('),end=source.indexOf('\n  function ',start+10);
+  const walkability=new Uint8Array(10000);walkability[101]=3;
+  const context=vm.createContext({document:{getElementById:()=>({checked:true})},GRID:100,
+    analysisCache:{walkability,routes:[{entry:{x:2,y:2},name:'Fletcher',workers:1,reason:'Entrance blocked on all sides'}]},
+    topmostRefAtTile:()=>null,itemName:()=>'',refType:()=>0});
+  vm.runInContext(source.slice(start,end),context);
+  assert.match(vm.runInContext('itemLabelAtTile({x:2,y:2})',context),/Fletcher: 1 worker.*blocked/);
+  assert.equal(vm.runInContext('itemLabelAtTile({x:1,y:1})',context),'Ground passage and raised walkway');
+  assert.equal(vm.runInContext('itemLabelAtTile({x:0,y:0})',context),'Blocked tile');
 });
