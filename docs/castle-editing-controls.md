@@ -1,5 +1,13 @@
 # Castle editing controls
 
+**F1** saves the current castle; **F2** opens a castle using the existing file
+dialog and unsaved-change handling. Both actions can be reassigned under
+**Customize Castle Shortcuts**, with primary and alternative keys. Tool and
+file-action bindings accept letters, numbers and F1–F12 and are checked for
+conflicts with each other and camera controls. Existing customized bindings
+are preserved when the new defaults are added. Ctrl+S and Ctrl+O remain
+available through the File menu.
+
 ## Two castles side by side
 
 With the Castle workspace active, use **File > Load In New Window**
@@ -10,6 +18,9 @@ move the pointer to the desired position and press **Ctrl+V**, or click
 **Clipboard**, then click the map. The newest copied group is shared between
 windows; the existing placement checks and undo still apply. The Keep and
 unit rally points are excluded from this building-copy operation.
+Use **Ctrl+X** to cut unlocked building placements to the same shared clipboard.
+The Keep, rally points and locked placements are left in place. Cutting is one
+undoable edit; Ctrl+V uses the usual placement checks in either castle window.
 
 The main startup window automatically reopens the last successfully opened
 AI project, its selected castle and workspace. This stores file references,
