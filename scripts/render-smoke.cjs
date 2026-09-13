@@ -27,6 +27,26 @@ require('../main');
       window.addEventListener('unhandledrejection',event=>errors.push(String(event.reason)));
       window.alert=message=>{throw new Error(message)};
       window.appWorkspace.setActive('character');
+      await window.characterEditor.ready;
+      const originalCharacter=window.characterEditor.getContent();
+      const character=JSON.parse(originalCharacter);
+      Object.assign(character.aic,{MaxWood:48,MaxStone:48,MaxResourceVariance:1,MaxFood:100,Farm1:'DairyFarm',Farm2:'AppleFarm',MaxEquipment:6,FletcherSetting:'Both'});
+      window.characterEditor.loadFromContent(JSON.stringify(character),null);
+      const helperFrame=(itemType,x,y)=>({itemType,tilePositionOfsets:[y*100+x]});
+      window.castleEditor.loadDocument({frames:[helperFrame(61,43,43),helperFrame(80,15,15),helperFrame(81,25,25),helperFrame(50,30,30),helperFrame(50,35,35),helperFrame(175,40,40)]},null);
+      window.characterPopulation.setAvailablePopulation(16);
+      if(document.getElementById('characterFearLevel').textContent!=='+1')throw new Error('Fear did not update from castle and population');
+      if(!document.getElementById('characterStorage').textContent.includes('Crossbows'))throw new Error('Mixed workshop output missing');
+      const cards=[...document.querySelectorAll('[data-character-card]')];
+      for(const card of cards){
+        card.querySelector(':scope > summary').click();
+        if(card.open)throw new Error('Sidebar card did not collapse');
+        card.querySelector(':scope > summary').click();
+        if(!card.open)throw new Error('Sidebar card did not expand');
+      }
+      window.characterPopulation.setAvailablePopulation(17);
+      if(document.getElementById('characterFearLevel').textContent!=='0')throw new Error('Fear population boundary did not update');
+      window.characterEditor.loadFromContent(originalCharacter,null);
       const search=document.getElementById('search');search.value='wood';
       document.dispatchEvent(new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true,cancelable:true}));
       if(document.activeElement!==search || search.selectionStart!==0 || search.selectionEnd!==4)throw new Error('Character Ctrl+F did not focus and select the search');

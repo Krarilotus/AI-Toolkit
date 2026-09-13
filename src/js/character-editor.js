@@ -984,6 +984,7 @@ function getCastlePopulationSummary() {
 }
 
 function updateCharacterCastlePopulationInfo(summary = getCastlePopulationSummary()) {
+    window.characterHelperPanels?.update(data?.aic || {}, summary, getAvailablePopulationValue());
     const provided = Number(summary?.provided) || 0;
     const left = Number(summary?.left) || 0;
     const castleRequired = Number(summary?.required) || 0;

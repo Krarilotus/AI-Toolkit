@@ -1944,3 +1944,26 @@ html.dockResizing * { user-select: none !important; }
   background: var(--accent-soft);
   color: var(--text-main);
 }
+/* Character helper cards reuse the existing details and metric styles. */
+#characterWorkspace .characterSidebar > details.editorCard {
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
+  background: var(--surface-2);
+}
+#characterWorkspace .characterSidebar summary { font-size: 1.1rem; }
+#characterWorkspace .characterSidebar details > summary { border-bottom: 0; }
+#characterWorkspace .characterSidebar details[open] > summary { border-bottom: 1px solid var(--line); }
+#characterWorkspace .characterSidebar details:not([open]) > summary::after { content: '+'; }
+#characterWorkspace .characterSidebar details[open] > summary::after { content: '\2212'; }
+#characterWorkspace .characterSidebar summary strong { margin-left: auto; white-space: nowrap; font: 600 1.05rem var(--font-data); }
+#characterWorkspace .characterSidebar summary::after { flex: 0 0 20px; }
+#characterWorkspace .characterSidebar .characterSubsection { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+.populationSourceRow { padding: 8px 12px; text-align: right; }
+.characterStorageTable { width: calc(100% - 24px); margin: 8px 12px; border-collapse: collapse; font-size: 1.05rem; }
+.characterStorageTable :is(th,td) { padding: 5px 2px; text-align: right; border-bottom: 1px solid var(--line); }
+.characterStorageTable :is(th,td):first-child { text-align: left; }
+.characterStorageTable td:first-child img { object-fit: contain; vertical-align: middle; margin-right: 5px; }
+.characterStorageTable td:not(:first-child) { font-family: var(--font-data); }
+.characterStorageTable th { color: var(--text-muted); font-weight: 500; }
+.populationSourceRow .compactAction { display: inline-flex; align-items: center; gap: 5px; }
