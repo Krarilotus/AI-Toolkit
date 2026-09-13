@@ -278,3 +278,25 @@ seven remain disconnected. In particular, the marked Stair 6 has total height
 80 and its adjacent high wall 98, with no flag-8 lift on either tile. The static
 16-unit rule rejects that 18-unit edge. Do not widen the threshold or claim this
 specific shortcut is fixed without resolving the runtime-height discrepancy.
+
+
+### Fire display and open-gate access (September 13 follow-up)
+
+The requested fire visualization now uses crimson through two tiles, yellow at
+four, and dark blue towards eight, with alpha fading from 210 to 170 to zero.
+Color represents distance from the nearest flammable footprint, not an ignition
+probability. Flammable plan buildings are drawn above the overlay. The 2.5D view
+caches a visible-sprite alpha mask in scene depth order so the halo cannot tint
+flammable sprites or undo their terrain occlusion. Masks update only in damaged
+scene regions and are omitted while fire display is disabled.
+
+Open gate endpoints connect the ground passage and roof display nodes. The
+previous completely separate surfaces prevented a stair-to-gate-to-ground route.
+The native endpoint routine at 0x00499FA0 changes the same walk-link grid as
+0x004999C0; the two surfaces in this planner are display bookkeeping, not separate
+native connectivity grids. Closed gates keep passage access disabled. Current
+GreekSea/Kratoloros checks reach 86/87 worker buildings after this correction.
+The remaining mill's selected entrance is in an isolated two-tile terrain pocket.
+The southeast stockpile cross is elevation47 against nearby ground8: its 39-unit
+boundary drop remains blocked by the requested 16-unit rule. Stockpile quadrants
+remain solid; the central nine tiles are traversable.

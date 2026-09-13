@@ -139,6 +139,17 @@
       for (const b of surfaces[y*size+x]) if (connects(a,b,dx,dy))
         links[a.id].push({ to:b.id,cost:dx && dy ? Math.SQRT2 : 1 });
     }
+    // Native gate endpoint linkage writes the same walk grid used by the roof.
+    // Join our two display surfaces there; treating them as disconnected loses
+    // the stair -> gate -> ground route. Closed gates have no passage nodes.
+    for (const cells of surfaces) {
+      const passage=cells.find(n=>n.kind==='passage');
+      if(!passage)continue;
+      const coordinate=passage.axis==='x'?passage.x:passage.y;
+      if(coordinate!==passage.start && coordinate!==passage.end)continue;
+      const roof=cells.find(n=>n.kind==='deck');
+      if(roof){links[roof.id].push({to:passage.id,cost:0});links[passage.id].push({to:roof.id,cost:0});}
+    }
     return { nodes,surfaces,links,fullWall };
   }
   function routes(placements, size = 100, terrain = null) {
@@ -230,23 +241,23 @@
   // User-selected planning ranges, not engine probabilities. Distance is from
   // the actual footprint boundary, so even-sized and multipart buildings do
   // not acquire a half-tile centre offset. Smoothstep has no hard outer edge.
-  function fireStrength(distance) {
-    const fade = radius => {
-      const t = Math.max(0, Math.min(1, 1-distance/radius));
-      return t*t*(3-2*t);
-    };
-    // Keep the second-stage halo readable at 5-6 tiles, then fade smoothly
-    // to zero at seven. This is display intensity, not a probability.
-    const outer=Math.max(0,Math.min(1,1-(Math.max(0,distance)/7)**3));
-    return .35*fade(2) + .65*outer*outer*(3-2*outer);
+  // Store normalized proximity so overlapping halos retain the nearest source.
+  function fireStrength(distance) { return Math.max(0,1-Math.max(0,distance)/8); }
+  function fireColor(strength) {
+    if (!(strength>0)) return [0,0,0,0];
+    const d=(1-Math.min(1,strength))*8;
+    const stops=[[0,220,20,60,210],[2,220,20,60,210],[4,255,235,20,170],[6,75,85,150,80],[8,15,25,100,0]];
+    let i=1;while(i<stops.length-1 && d>stops[i][0])i++;
+    const a=stops[i-1],b=stops[i],t=(d-a[0])/(b[0]-a[0]),f=t*t*(3-2*t);
+    return a.slice(1).map((v,j)=>Math.round(v+(b[j+1]-v)*f));
   }
   function fireExposure(placements, size = 100) {
     const heat = new Float32Array(size*size);
     for (const p of placements) {
       if (!(game.flammability[p.name] > 0)) continue;
       for (const r of p.rects) {
-        for(let y=Math.max(0,r.bottom-7);y<=Math.min(size-1,r.top+7);y++)
-          for(let x=Math.max(0,r.left-7);x<=Math.min(size-1,r.right+7);x++) {
+        for(let y=Math.max(0,r.bottom-8);y<=Math.min(size-1,r.top+8);y++)
+          for(let x=Math.max(0,r.left-8);x<=Math.min(size-1,r.right+8);x++) {
             const dx=Math.max(r.left-x-.5,0,x-r.right-.5);
             const dy=Math.max(r.bottom-y-.5,0,y-r.top-.5);
             const strength=fireStrength(Math.hypot(dx,dy));
@@ -256,7 +267,7 @@
     }
     return heat;
   }
-  const api = { workerCount, entranceCandidates, routeTopology, routes, fireStrength, fireExposure };
+  const api = { workerCount, entranceCandidates, routeTopology, routes, fireStrength, fireColor, fireExposure };
   if (typeof module !== 'undefined') module.exports = api;
   if (typeof globalThis !== 'undefined') globalThis.castleAnalysis = api;
 })();

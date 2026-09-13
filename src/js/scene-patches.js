@@ -25,7 +25,7 @@
     return {commands,bounds:Number.isFinite(left)?{left:Math.floor(left)-2,top:Math.floor(top)-2,right:Math.ceil(right)+2,bottom:Math.ceil(bottom)+2}:null};
   }
   function same(a,b) {
-    return !!a && !!b && ['gx','gy','tiles','layer'].every(key=>a[key]===b[key]) && a.commands.length===b.commands.length && a.commands.every((c,i)=>
+    return !!a && !!b && ['gx','gy','tiles','layer','flammable'].every(key=>a[key]===b[key]) && a.commands.length===b.commands.length && a.commands.every((c,i)=>
       c.length===b.commands[i].length && c.every((v,j)=>v===b.commands[i][j]));
   }
   function intersects(a,b) {return a && b && a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;}

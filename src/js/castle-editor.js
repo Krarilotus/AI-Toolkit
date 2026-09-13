@@ -2579,8 +2579,7 @@
               const context = canvas.getContext('2d'), pixels = context.createImageData(GRID, GRID);
               for(let y=0;y<GRID;y++) for(let x=0;x<GRID;x++) {
                 const i=((GRID-1-y)*GRID+x)*4;
-                pixels.data[i]=255; pixels.data[i+1]=128; pixels.data[i+2]=24;
-                pixels.data[i+3]=Math.round(145*data.heat[y*GRID+x]);
+                pixels.data.set(window.castleAnalysis.fireColor(data.heat[y*GRID+x]),i);
               }
               context.putImageData(pixels,0,0); analysisCache.image=canvas;
             }
@@ -2605,7 +2604,7 @@
     if (info) {
       info.hidden = !fire && !paths;
       info.textContent = overlay.error || (overlay.pending ? 'Calculating overlays...' : [
-        fire ? 'Fire estimate: stage 1 fades over 2 tiles; stage 2 fades out at 7 tiles.' : '',
+        fire ? 'Fire estimate: crimson 0?2 tiles, yellow at 4, blue fading out at 8.' : '',
         paths ? `Paths: ${overlay.routes.filter(r=>r.path.length).length}/${overlay.routes.length} reachable. Open gates; ${window.isoView?.analysisTerrain?.() ? 'map terrain included' : 'flat terrain (no map data)'}. Cyan dots: reachable entrances; red dots: blocked. Static estimate.` : ''
       ].filter(Boolean).join(' '));
     }
@@ -2613,6 +2612,14 @@
     if (overlay.image) {
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(overlay.image,state.panX,state.panY,GRID*state.cell,GRID*state.cell);
+    }
+    if (overlay.image) {
+      for (const placement of placementRefs()) {
+        if (placement.kind === 'unit' || (Number.isInteger(state.insertionFrameIndex) && placement.fi > state.insertionFrameIndex)) continue;
+        const name=window.castleCostData?.buildings[placement.type]?.balance;
+        if (window.castleGameData.flammability[name]>0)
+          drawPlacement(placement.type,placement.off,state.selected.has(placement.ref));
+      }
     }
     for (const route of overlay.routes) {
       if(route.path.length) {
