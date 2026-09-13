@@ -44,12 +44,12 @@
 
       <div class="characterMain">
         <aside class="characterSidebar">
-          <section class="editorCard characterOptionsCard">
-            <div class="editorCardHeading">
+          <details class="editorCard characterOptionsCard" data-character-card="plugins" open>
+            <summary class="editorCardHeading">
               <div>
                 <span class="panelEyebrowHeader">Plugins</span>
               </div>
-            </div>
+            </summary>
             <label class="switchRow">
               <span><strong>AI ox tethers</strong><small>Controls the amount of ox tethers built</small></span>
               <input type="checkbox" id="toggleOx" checked>
@@ -58,13 +58,11 @@
               <span><strong>Running units</strong><small>Controls whether some units will run or walk.</small></span>
               <input type="checkbox" id="toggleRun" checked>
             </label>
-          </section>
+          </details>
 
-          <section class="editorCard populationCard">
-            <div class="editorCardHeading populationCardHeading">
-              <div>
-                <span class="panelEyebrowHeader">Population</span>
-              </div>
+          <details class="editorCard populationCard" data-character-card="population" open>
+            <summary class="editorCardHeading populationCardHeading"><span class="panelEyebrowHeader">Population</span></summary>
+            <div class="populationSourceRow">
               <button id="useCastlePopulationBtn" class="compactAction" type="button" title="Use the population provided by the currently loaded castle">Use castle pop<span id="castleProvidedForCharacter">0</span></button>
             </div>
 
@@ -97,8 +95,17 @@
               <span>Left after castle + character</span>
               <strong id="characterCastlePopulationAfterCharacter">0</strong>
             </div>
+            <details class="characterSubsection" data-character-card="fear" open>
+              <summary>Fear factor <strong id="characterFearLevel">0</strong></summary>
+              <div id="characterFearDetails"></div>
+            </details>
             <p class="cardNote">Calculator assumes AI ox tethers is on. <br>Hop farms are not included, as they dont have a max!</p>
-          </section>
+          </details>
+          <details class="editorCard storageCard" data-character-card="storage" open>
+            <summary class="editorCardHeading"><span class="panelEyebrowHeader">Stockpile space</span></summary>
+            <p class="cardNote">Planned maximums · complete loaded castle. Includes resource variance; not current inventory.</p>
+            <div id="characterStorage"></div>
+          </details>
         </aside>
 
         <main class="characterEditorPanel">
@@ -597,6 +604,8 @@
 <script src="js/castle-analysis.js"></script>
 <script src="js/castle-editor.js"></script>
 
+<script src="js/character-planning.js"></script>
+<script src="js/character-helper-panels.js"></script>
 <script src="js/character-editor.js"></script>
 <script src="js/ai-content-editor.js"></script>
 <script src="js/ucp-library.js"></script>
