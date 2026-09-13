@@ -21,7 +21,7 @@ test('fire fades smoothly from exact footprints with 2 and 7 tile stages',()=>{
 });
 test('stockpile mapper tiles are walkable without depending on a translated name',()=>{
   const g=a.routeTopology([p(52,rect(3,3,7,7))],12);
-  assert.equal(g.surfaces[5*12+5][0].height,0);
+  assert.equal(g.surfaces[5*12+5][0].height,10);
   const ps=[p(null,rect(0,0,14,14)),p(52,rect(1,5,8,5)),p(50,rect(9,5),{worker:true})];
   assert.ok(a.routes(ps,15)[0].path.length);
 });
@@ -116,12 +116,12 @@ test('blocked worker entrances retain a marker and reason, nonworkers do not get
   assert.equal(routes.length,1);assert.ok(routes[0].entry);assert.match(routes[0].reason,/blocked on all sides/);
   assert.equal(routes.walkability[6*15+6],0);
 });
-test('constructed stockpiles clear old vegetation and connect despite raw ground height, never water',()=>{
+test('stockpiles clear vegetation but cannot bypass cliffs or water',()=>{
   const blocked=new Uint8Array(100),hardBlocked=new Uint8Array(100),heights=new Uint8Array(100);
   blocked[55]=blocked[56]=1;hardBlocked[56]=1;heights[55]=80;
   const g=a.routeTopology([p(52,rect(5,5,6,5))],10,{blocked,hardBlocked,heights});
   const stock=g.surfaces[55][0];assert.equal(stock.kind,'stockpile');
-  assert.ok(g.links[stock.id].some(e=>g.nodes[e.to].k===54));
+  assert.equal(g.links[stock.id].some(e=>g.nodes[e.to].k===54),false);
   assert.equal(g.surfaces[56].length,0);
 });
 test('the keep courtyard is walkable but the keep building stays solid',()=>{
@@ -228,4 +228,58 @@ test('equal wall types on different terrain do not create a height jump shortcut
   const heights=new Uint8Array(100);heights[55]=80;
   const g=a.routeTopology([p(25,rect(5,5)),p(25,rect(6,5))],10,{heights});
   assert.ok(!g.links[g.surfaces[55][0].id].some(e=>e.to===g.surfaces[56][0].id));
+});
+
+
+test('stockpile storage quadrants are blocked and the nine cross tiles share a flat platform',()=>{
+  const heights=new Uint8Array(144).fill(36);heights[3*12+3]=38;
+  const g=a.routeTopology([p(52,rect(3,3,7,7))],12,{heights});
+  let count=0;
+  for(let y=3;y<=7;y++)for(let x=3;x<=7;x++) {
+    const ns=g.surfaces[y*12+x];
+    assert.equal(ns.length,Number(x===5||y===5));
+    if(ns.length){count++;assert.equal(ns[0].elevation,47);}
+  }
+  assert.equal(count,9);
+});
+test('all deliveries target the keep stockpile even when a later extension is closer',()=>{
+  const first=p(52,{...rect(2,2,6,6),part:'stockpile'});
+  const ps=[p(52,rect(10,2,14,6)),first,p(50,rect(16,2,18,4))];
+  const route=a.routes(ps,22)[0];
+  assert.ok(route.path.length);
+  assert.deepEqual(route.path.at(-1),{x:2,y:4,height:10});
+  const blocked=a.routes([...ps,p(null,rect(2,4))],22)[0];
+  assert.equal(blocked.path.length,0);
+  assert.match(blocked.reason,/First stockpile/);
+});
+test('stockpile platforms connect only within sixteen total height units',()=>{
+  for(const difference of [16,17]) {
+    const g=a.routeTopology([p(52,rect(1,2),{baseHeight:80}),p(52,rect(2,2),{baseHeight:80-difference})],6);
+    const one=g.surfaces[13][0],two=g.surfaces[14][0];
+    assert.equal(g.links[one.id].some(e=>e.to===two.id),difference===16);
+  }
+});
+test('walls connect diagonally to gate roofs but only cardinally to towers',()=>{
+  for(const type of [145,110])for(const [dx,dy] of [[1,0],[1,1]]) {
+    const g=a.routeTopology([p(25,rect(2,2)),p(type,rect(2+dx,2+dy))],6);
+    const one=g.surfaces[14][0],two=g.surfaces[(2+dy)*6+2+dx][0];
+    assert.equal(g.links[one.id].some(e=>e.to===two.id),type===145||dy===0);
+  }
+});
+test('gate passage ends allow diagonal exits without exposing the sides or roof',()=>{
+  const g=a.routeTopology([p(145,rect(2,2,6,6))],10);
+  const entry=g.surfaces[42].find(n=>n.kind==='passage');
+  assert.ok(g.links[entry.id].some(e=>g.nodes[e.to].k===31));
+  assert.equal(g.links[entry.id].some(e=>g.nodes[e.to].kind==='deck'),false);
+});
+test('native terrain flag lift participates in wall and stair height comparisons',()=>{
+  const heights=new Uint8Array(36),constructionLift=new Uint8Array(36);
+  heights[14]=80;heights[15]=8;constructionLift[14]=4;
+  const ps=[p(186,rect(2,2)),p(25,rect(3,2))];
+  const g=a.routeTopology(ps,6,{heights,constructionLift});
+  assert.equal(g.surfaces[14][0].elevation,84);
+  assert.equal(g.surfaces[15][0].elevation,98);
+  assert.ok(g.links[g.surfaces[14][0].id].some(e=>e.to===g.surfaces[15][0].id));
+  const unlifted=a.routeTopology(ps,6,{heights});
+  assert.equal(unlifted.links[unlifted.surfaces[14][0].id].some(e=>e.to===unlifted.surfaces[15][0].id),false);
 });

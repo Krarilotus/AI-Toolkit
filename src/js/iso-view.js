@@ -310,7 +310,7 @@
   let routeTerrainCache = null, terrainRequest = null;
   function analysisTerrain() {
     const map=gameMap(), keep=currentKeep();
-    if (map?.pathTerrain?.version !== 3 || !keep) {
+    if (map?.pathTerrain?.version !== 4 || !keep) {
       if(map?.path && terrainRequest !== map.path && window.electronAPI?.loadGameMap) {
         terrainRequest=map.path;
         window.electronAPI.loadGameMap(map.path).then(loaded=>{
@@ -322,12 +322,13 @@
       return null;
     }
     const key=JSON.stringify([map.path,keep,map.pathTerrain.fingerprint]);
-    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights};
+    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift};
     const source=ausBase64(map.pathTerrain.blocked,Uint8Array);
     const hard=ausBase64(map.pathTerrain.hardBlocked,Uint8Array) || source;
     const heights=ausBase64(map.pathTerrain.heights,Uint8Array);
+    const lifts=ausBase64(map.pathTerrain.constructionLift,Uint8Array);
     const padding=5,edge=100+2*padding;
-    const blocked=new Uint8Array(edge*edge), hardBlocked=new Uint8Array(edge*edge), ground=new Uint8Array(edge*edge);
+    const blocked=new Uint8Array(edge*edge), hardBlocked=new Uint8Array(edge*edge), ground=new Uint8Array(edge*edge), constructionLift=new Uint8Array(edge*edge);
     for(let y=-padding;y<100+padding;y++) for(let x=-padding;x<100+padding;x++) {
       const index=(y+padding)*edge+x+padding;
       const rotated=geo.rotateGrid(x,99-y,1,keep.orientation);
@@ -336,9 +337,10 @@
       blocked[index]=valid ? source[my*400+mx] : 1;
       hardBlocked[index]=valid ? hard[my*400+mx] : 1;
       ground[index]=valid ? heights[my*400+mx] : 0;
+      constructionLift[index]=valid ? lifts[my*400+mx] : 0;
     }
-    routeTerrainCache={map,key,padding,blocked,hardBlocked,heights:ground};
-    return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights};
+    routeTerrainCache={map,key,padding,blocked,hardBlocked,heights:ground,constructionLift};
+    return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift};
   }
 
   function hasGameMap() { return Boolean(gameMap()); }
@@ -866,7 +868,7 @@
         });ctx.stroke();
       }
       if(route.entry) {
-        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1));
+        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(route.entry.height||0));
         ctx.beginPath();ctx.arc(...xy,3.5,0,Math.PI*2);
         ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
         ctx.save();ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();ctx.restore();

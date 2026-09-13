@@ -173,7 +173,7 @@ with weights 0.35 and 0.65. The outer stage uses a cubic distance curve before s
 brightness is not a measured probability or simulation of burning duration.
 
 Paths use a multi-source Dijkstra search from one delivery point per stockpile. Routes cross stockpile interiors instead of stopping at the first stockpile tile. Stockpile mapper
-52 and the keep's attached stockpile are ground paths. Stairs have six height
+52 and the keep's attached stockpile expose only their central cross as a walk surface. Stairs have six height
 levels; Stair 6 can connect directly to a tower. Tower decks, wall walks and
 open gate passages are connected separately from ground, so a gate passage
 cannot implicitly climb onto its roof. Diagonal ordinary-building corners are
@@ -250,3 +250,31 @@ rules. `placeWalls` at `0x005034E2..0x00503510` copies the default terrain heigh
 before adding 90/60 for high/low walls; subsequent branches add stair offsets.
 The route keeps its relative height for drawing, and its total elevation for
 navigation. Explicit gate/tower links and constructed-platform access remain.
+
+
+### First-stockpile and directional connection correction (September 13)
+
+Delivery routes share one destination: the west end of the keep-created first
+stockpile's cross. Later stockpiles remain transit surfaces. An inaccessible
+first destination is reported; another extension is never silently substituted.
+
+The native stockpile placement routine (`0x00508540`) marks four 2x2 storage
+quadrants unwalkable and nine cross tiles walkable. Its platform is placement
+base +10, not raw terrain height. The preparation routine computes the base as
+`minHeight + floor((maxHeight-minHeight)/2)`, rather than a mean of all tiles.
+Cross tiles share this elevation and obey the ordinary 16-unit connection limit.
+`placeWalls` (`0x00503626..0x0050363B`) adds four units when terrain flag 8 is set;
+the map reader now exports that construction lift and invalidates older cached
+navigation data. Entrance markers also retain elevated surface offsets in 2.5D.
+
+Wall-to-gate roof links permit diagonals; wall-to-tower links are cardinal only.
+Gate passage endpoints permit diagonal approaches/exits while passage interiors
+remain axial and separate from the roof. These remain static planning rules,
+not a replacement for running the native path grid.
+
+Private current-map validation uses GreekSea.map and Kratoloros.aiv (2,345
+placements, 87 worker buildings). 80 currently reach the first stockpile;
+seven remain disconnected. In particular, the marked Stair 6 has total height
+80 and its adjacent high wall 98, with no flag-8 lift on either tile. The static
+16-unit rule rejects that 18-unit edge. Do not widen the threshold or claim this
+specific shortcut is fixed without resolving the runtime-height discrepancy.

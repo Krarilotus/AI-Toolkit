@@ -46,6 +46,13 @@
     for (const p of layered) for (const [ri, r] of p.rects.entries()) {
       if ([200,20,21].includes(Number(p.type))) continue;
       const t = Number(p.type);
+      const stockpile=t===52 || r.part==='stockpile' || p.name==='Stockpile';
+      let pileElevation=10;
+      if(stockpile) {
+        let lo=Infinity,hi=-Infinity;
+        for(let py=Math.max(0,r.bottom);py<=Math.min(size-1,r.top);py++)for(let px=Math.max(0,r.left);px<=Math.min(size-1,r.right);px++) {const h=Number(terrain?.heights?.[py*size+px])||0;lo=Math.min(lo,h);hi=Math.max(hi,h);}
+        pileElevation=(Number.isFinite(p.baseHeight)?p.baseHeight:(Number.isFinite(lo)?Math.floor((lo+hi)/2):0))+10;
+      }
       const wall = [25,46].includes(t);
       const tower = t >= 110 && t <= 114;
       const gate = t >= 144 && t <= 147;
@@ -54,12 +61,15 @@
         for (let x = Math.max(0,r.left); x <= Math.min(size-1,r.right); x++) {
           const k = y*size+x, tile = { k, ref:p.ref, type:t };
           if ((terrain?.hardBlocked?.[k] ?? terrain?.blocked?.[k]) && t !== 105) { surfaces[k]=[]; continue; }
-          if (t===52 || r.part==='stockpile' || p.name==='Stockpile') surfaces[k]=[{...tile,height:0,kind:'stockpile'}];
+          if (stockpile) {
+            const cross=x===Math.floor((r.left+r.right)/2) || y===Math.floor((r.bottom+r.top)/2);
+            surfaces[k]=cross?[{...tile,height:pileElevation-(Number(terrain?.heights?.[k])||0),kind:'stockpile'}]:[];
+          }
           else if (t===61 && (ri>0 || r.part==='courtyard')) surfaces[k]=[{...tile,height:0,kind:'courtyard'}];
           else if ([98,99,105,166,169,175].includes(t)) surfaces[k]=[{...tile,height:0,kind:t===105?'bridge':'ground'}];
-          else if (stair) surfaces[k] = [{...tile,height:(186-t)*16,kind:'stair'}];
+          else if (stair) surfaces[k] = [{...tile,height:(186-t)*16+(terrain?.constructionLift?.[k]||0),kind:'stair'}];
           else if ([26,35].includes(t)) surfaces[k] = [];
-          else if (wall) surfaces[k] = [{...tile,height:t===46?60:90,kind:'wall'}];
+          else if (wall) surfaces[k] = [{...tile,height:(t===46?60:90)+(terrain?.constructionLift?.[k]||0),kind:'wall'}];
           else if (tower) surfaces[k] = [{...tile,height:[296,148,180,192,192][t-110],kind:'tower'}];
           else if (gate) {
             surfaces[k] = [{...tile,height:90,kind:'deck'}];
@@ -67,7 +77,7 @@
             // passage endpoints lie on the central row/column (size / 2).
             const ns = t === 144 || t === 146;
             const corridor = ns ? x === Math.floor((r.left+r.right)/2) : y === Math.floor((r.bottom+r.top)/2);
-            if (corridor && !p.closed) surfaces[k].push({...tile,height:0,kind:'passage',axis:ns?'y':'x'});
+            if (corridor && !p.closed) surfaces[k].push({...tile,height:0,kind:'passage',axis:ns?'y':'x',start:ns?r.bottom:r.left,end:ns?r.top:r.right});
           } else surfaces[k] = [];
         }
     }
@@ -84,11 +94,15 @@
     const links = nodes.map(() => []);
     function connects(a,b,dx,dy) {
       for (const n of [a,b]) if (n.kind === 'passage') {
-        if ((n.axis === 'x' && dy) || (n.axis === 'y' && dx)) return false;
+        const other=n===a?b:a;
+        const coordinate=n.axis==='x'?other.x:other.y;
+        const outside=coordinate<n.start || coordinate>n.end;
+        if (!outside && ((n.axis === 'x' && dy) || (n.axis === 'y' && dx))) return false;
       }
       // placeWalls copies default terrain height, then adds the structure
       // offset (90/60 for walls, 80..0 for stairs). Compare that total for
       // every ordinary edge, including ground-to-wall and ground-to-stair.
+      if(dx && dy && ((a.kind==='wall' && b.kind==='tower') || (b.kind==='wall' && a.kind==='tower')))return false;
       const ordinary=Math.abs(a.elevation-b.elevation)<=16;
       const other=isDeck(a)?b:a;
       const linkedDeck=(isDeck(a)||isDeck(b)) &&
@@ -96,12 +110,13 @@
       // Constructed platforms bridge their raw pre-construction ground;
       // their runtime flattening is not present in the source terrain layer.
       const platform=a.height===0 && b.height===0 &&
-        ['stockpile','courtyard','bridge'].some(kind=>a.kind===kind||b.kind===kind);
+        ['courtyard','bridge'].some(kind=>a.kind===kind||b.kind===kind);
       if(!ordinary && !linkedDeck && !platform)return false;
       if (dx && dy) {
         // Elevated diagonal wall walks must remain connected. Do not let a
         // diagonal edge climb a tower from ordinary ground or skip a stair.
         if (a.kind === 'wall' && b.kind === 'wall') return true;
+        if ((a.kind==='wall' && b.kind==='deck') || (b.kind==='wall' && a.kind==='deck'))return true;
         if (isDeck(a) && isDeck(b) && a.ref != null && a.ref === b.ref) return true;
         const stair=a.kind==='stair'?a:b.kind==='stair'?b:null;
         const other=stair===a?b:a;
@@ -139,16 +154,17 @@
     }
     const {nodes,surfaces,links,fullWall} = routeTopology(placements,size,terrain);
     const inside = ({x,y}) => x >= 0 && y >= 0 && x < size && y < size;
-    const goalAt=(x,y)=>inside({x,y})?surfaces[y*size+x].find(n=>n.height===0):null;
-    const goals = placements.filter(p=>Number(p.type)===52 || p.name==='Stockpile').flatMap(p=>p.rects.flatMap(r=>{
-      const preferred={x:r.left,y:Math.floor((r.bottom+r.top)/2)};
-      const nodes=[];
-      for(let y=r.bottom;y<=r.top;y++)for(let x=r.left;x<=r.right;x++) {
-        const node=goalAt(x,y);if(node?.kind==='stockpile')nodes.push(node);
-      }
-      nodes.sort((a,b)=>Math.hypot(a.x-preferred.x,a.y-preferred.y)-Math.hypot(b.x-preferred.x,b.y-preferred.y));
-      return nodes.slice(0,1);
-    }));
+    const goalAt=(x,y)=>inside({x,y})?surfaces[y*size+x].find(n=>n.height===0 || n.kind==='stockpile'):null;
+    const piles=placements.flatMap(p=>p.rects.filter(r=>Number(p.type)===52 || p.name==='Stockpile' || r.part==='stockpile').map(r=>({p,r})));
+    // The keep-created first stockpile is the single delivery destination.
+    // Later extensions provide walkways, never a closer replacement goal.
+    const primary=piles.find(({r})=>r.part==='stockpile') || piles[0];
+    const goals=[];
+    if(primary) {
+      const r=primary.r, preferred={x:r.left,y:Math.floor((r.bottom+r.top)/2)};
+      const node=goalAt(preferred.x,preferred.y);
+      if(node?.kind==='stockpile')goals.push(node);
+    }
     const distance = new Float64Array(nodes.length).fill(Infinity);
     const next = new Int32Array(nodes.length).fill(-1);
     // Dijkstra, because diagonal wall walks are sqrt(2) tiles long.
@@ -199,16 +215,16 @@
         if(node) {entry=node;candidate=c;break;}
       }
       const marker=candidate || candidates.find(inside) || {x:r.left,y:r.bottom};
-      const common={ref:p.ref,type:p.type,name:p.name,workers:workerCount(p),entry:{x:marker.x,y:marker.y,side:marker.side},path:[]};
+      const common={ref:p.ref,type:p.type,name:p.name,workers:workerCount(p),entry:{x:marker.x,y:marker.y,side:marker.side,...(entry?.height?{height:entry.height}:{})},path:[]};
       if(!entry)return {...common,reason:'Entrance blocked on all sides'};
-      if(!Number.isFinite(distance[entry.id]))return {...common,reason:!goals.length?'No accessible stockpile delivery point':'Entrance has no walkable route to a stockpile'};
+      if(!Number.isFinite(distance[entry.id]))return {...common,reason:!goals.length?'First stockpile delivery point is blocked or missing':'Entrance has no walkable route to the first stockpile'};
       const path=[];
       for(let n=entry.id;n>=0;n=next[n])path.push({x:nodes[n].x,y:nodes[n].y,height:nodes[n].height});
       const direct=Math.min(...goals.map(g=>Math.hypot(g.x-entry.x,g.y-entry.y)));
       const d=distance[entry.id];
       return {...common,path,distance:d,efficiency:d?direct/d:1};
     });
-    result.walkability=Uint8Array.from(surfaces,cells=>(cells.some(n=>n.height===0)?1:0)+(cells.some(n=>n.height>0)?2:0));
+    result.walkability=Uint8Array.from(surfaces,cells=>(cells.some(n=>n.height===0 || n.kind==='stockpile')?1:0)+(cells.some(n=>n.height>0 && n.kind!=='stockpile')?2:0));
     return result;
   }
   // User-selected planning ranges, not engine probabilities. Distance is from
