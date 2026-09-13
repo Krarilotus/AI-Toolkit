@@ -118,7 +118,7 @@ require('../main');
         if(camera>=0)mapDraws.push({camera:camera*2,tile:args[0]/30,x:args[4],y:args[5]});
         return original.call(this,image,...args);
       };
-      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}],pathTerrain:{version:2,blocked:encode(new Uint8Array(160000)),heights:encode(new Uint8Array(160000))}});
+      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}],pathTerrain:{version:3,blocked:encode(new Uint8Array(160000)),heights:encode(new Uint8Array(160000))}});
       window.isoView.setMapTiles({path:'camera-fixture.map',atlas:mapAtlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16});
       if(window.isoView.turnView(1)!==null)throw new Error('Saved terrain must not masquerade as native directional graphics');
       mapDraws.length=0;

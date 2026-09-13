@@ -169,7 +169,7 @@ falloff over 2 tiles and a softer second-stage falloff through 6?7 tiles, reachi
 zero at 7. Distance is Euclidean distance from each actual footprint edge; this
 produces rounded corners without recentering even-sized buildings. There is no
 outline or hard cutoff stroke. The two falloffs are combined using smoothstep,
-with weights 0.7 and 0.3. Flammability uses the existing executable-derived table;
+with weights 0.35 and 0.65. The outer stage uses a cubic distance curve before smoothstep, retaining visible orange near six tiles and fading continuously to zero at seven. Flammability uses the existing executable-derived table;
 brightness is not a measured probability or simulation of burning duration.
 
 Paths use a multi-source Dijkstra search from one delivery point per stockpile. Routes cross stockpile interiors instead of stopping at the first stockpile tile. Stockpile mapper
@@ -183,7 +183,7 @@ on the opposite side, using the retained entrance candidate tables.
 
 When a map is selected, section 1003 logic flags, section 1004 organisms and
 base ground heights constrain the search. Sea, non-ford river, trees, rock/iron
-obstacles, map edges and abrupt height changes block ground routes. The shared
+obstacles, map edges and height changes greater than 16 block ground routes. The shared
 keep transform aligns these layers with the current AIV. Saved building/path
 layers are not used because they describe a different castle. Gates are assumed
 open, the castle intact, and traffic/ownership changes are not simulated. Without
@@ -229,3 +229,15 @@ resource obstacles that a current construction replaces. Constructed stockpile
 platforms do not inherit raw-ground cliff edges. Unbuilt terrain still constrains
 routes. A single binary-heap, multi-source Dijkstra search serves all workers;
 calculation runs in the existing Web Worker and stale results are discarded.
+
+
+Stair connections include diagonal neighbours at the same or next level. Stairs
+2/3 connect to low walls, Stair 6 to tower decks, and every stair level to gate
+decks; ground gate passages remain separate. Drawbridge walk surfaces overlay
+later moat placements. Ford flags override river water, while rocky tiles and
+resource obstacles remain blocked. Ordinary terrain can change by up to 16
+height units per move. These are the explicitly requested static planning rules.
+
+Map-aware navigation includes a five-tile margin beyond the AIV boundary;
+route coordinates and entrance markers remain in AIV coordinates. This does
+not expand the rendered map or change the castle footprint.
