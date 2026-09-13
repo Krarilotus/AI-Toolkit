@@ -66,7 +66,7 @@
     if (!project || !state.gameRoot) return;
     try {
       window.localStorage.setItem(LAST_PROJECT, JSON.stringify({
-        gameRoot: state.gameRoot, aiRoot: project.aiRoot,
+        gameRoot: state.gameRoot, aiRoot: project.aiRoot, aiKey: project.aiKey,
         castleFile: project.castleFile, workspace: window.appWorkspace?.getActive() || 'castle'
       }));
     } catch (error) { console.warn('Could not remember the AI project:', error); }
@@ -84,7 +84,14 @@
   function projectInLibrary(saved) {
     const normalized = value => String(value || '').replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
     if (!saved || normalized(saved.gameRoot) !== normalized(state.gameRoot)) return null;
-    return state.library?.ais.find(ai => normalized(ai.rootPath) === normalized(saved.aiRoot)) || null;
+    const candidates = state.library?.ais.filter(ai => normalized(ai.rootPath) === normalized(saved.aiRoot)) || [];
+    // Vanilla lords share one aiv folder, so the path alone is not an identity.
+    if (saved.aiKey) return candidates.find(ai => ai.key === saved.aiKey) || null;
+    if (candidates.length === 1) return candidates[0];
+    // Recover older sessions by their castle name; never pick an arbitrary lord.
+    const matching = candidates.filter(ai => ai.castles?.some(castle =>
+      normalized(castle.fileName) === normalized(saved.castleFile)));
+    return matching.length === 1 ? matching[0] : null;
   }
 
   window.addEventListener('focus', rememberProject);
@@ -566,18 +573,15 @@
         castleFile: castle?.fileName || null
       });
       if (options.shouldAbort?.()) return false;
-      // Eine Vanilla-KI hat keine Figur und darf nicht beschrieben werden -
-      // ihre Burgen gehoeren dem Spielordner (siehe vanillaCastles).
+      // Vanilla lords have editable castles but no character or dialogue files.
       if (project.character) {
         window.characterEditor.loadFromContent(project.character.content, project.character.path, {
-          readOnly: false,
           projectManaged: true
         });
       }
       if (project.castle) {
         window.castleEditor.loadDocument(project.castle.document, project.castle.path, {
-          readOnly: Boolean(project.readOnly),
-          projectManaged: !project.readOnly,
+          projectManaged: true,
           source: project.castle.source,
           sourceBytes: project.castle.sourceBytes
         });
@@ -585,7 +589,7 @@
         window.castleEditor.loadDocument(
           { pauseDelayAmount: 100, frames: [], miscItems: [] },
           null,
-          { readOnly: false, projectManaged: true }
+          { projectManaged: true }
         );
       }
       if (!project.vanilla) window.aiContentEditor?.loadProject(project, ai, state.gameRoot);
@@ -640,8 +644,7 @@
       });
       if (!project.castle) throw new Error(`Castle '${castle.fileName}' could not be loaded.`);
       window.castleEditor.loadDocument(project.castle.document, project.castle.path, {
-        readOnly: Boolean(project.readOnly),
-        projectManaged: !project.readOnly,
+        projectManaged: true,
         source: project.castle.source,
         sourceBytes: project.castle.sourceBytes
       });

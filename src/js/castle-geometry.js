@@ -292,7 +292,7 @@
     const merged = {
       ...first,
       tilePositionOfsets: [...new Set(selected.flatMap(index => frames[index].tilePositionOfsets))],
-      shouldPause: selected.some(index => frames[index].shouldPause)
+      shouldPause: false
     };
     const removed = new Set(selected.slice(1));
     return {
@@ -300,6 +300,45 @@
         .filter((_frame, index) => !removed.has(index)),
       index: selected[0]
     };
+  }
+
+  // Selections name placement indexes, so an area can merge part of a step
+  // without pulling its placements outside the box forward in the build order.
+  function stepMergeGroups(frames, selections, allowedTypes) {
+    const allowed = new Set(allowedTypes.map(Number)), byType = new Map();
+    for (const [fi, indexes] of selections) {
+      const frame = frames[fi], type = Number(frame?.itemType);
+      if (!frame || frame.locked || type === KEEP_ITEM_TYPE || !allowed.has(type)) continue;
+      const picked = new Set([...indexes].filter(oi => Number.isInteger(oi) && oi >= 0 && oi < frame.tilePositionOfsets.length));
+      if (!picked.size) continue;
+      if (!byType.has(type)) byType.set(type, {type, steps: new Map(), count: 0});
+      const group = byType.get(type);
+      group.steps.set(fi, picked);
+      group.count += picked.size;
+    }
+    return [...byType.values()].sort((a, b) => a.type - b.type);
+  }
+
+  function mergeStepPlacements(frames, selections, checkedTypes, allowedTypes) {
+    const checked = new Set(checkedTypes.map(Number));
+    const groups = stepMergeGroups(frames, selections, allowedTypes)
+      .filter(group => checked.has(group.type) && group.steps.size > 1);
+    if (!groups.length) throw new Error('Choose an item type with placements in at least two unlocked steps.');
+    const starts = new Map(), removed = new Map();
+    for (const group of groups) {
+      const indexes = [...group.steps.keys()].sort((a, b) => a - b);
+      const offsets = indexes.flatMap(fi => frames[fi].tilePositionOfsets.filter((_off, oi) => group.steps.get(fi).has(oi)));
+      starts.set(indexes[0], {...frames[indexes[0]], tilePositionOfsets: [...new Set(offsets)], shouldPause: false});
+      for (const fi of indexes) removed.set(fi, group.steps.get(fi));
+    }
+    const output = [], mergedIndexes = [];
+    frames.forEach((frame, fi) => {
+      if (starts.has(fi)) { mergedIndexes.push(output.length); output.push(starts.get(fi)); }
+      if (!removed.has(fi)) { output.push(frame); return; }
+      const rest = frame.tilePositionOfsets.filter((_off, oi) => !removed.get(fi).has(oi));
+      if (rest.length) output.push({...frame, tilePositionOfsets: rest});
+    });
+    return {frames: output, mergedIndexes};
   }
 
   // Flood through touching footprints of the clicked type. Locked objects
@@ -334,6 +373,8 @@
   return {
     KEEP_ITEM_TYPE,
     mergeBuildSteps,
+    stepMergeGroups,
+    mergeStepPlacements,
     floodPlacementRefs,
     // Die Kantenlaenge der Karte. Stand bisher als 100 in jeder
     // Vorgabe; wer sie braucht, soll sie hier holen.

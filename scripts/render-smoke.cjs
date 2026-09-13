@@ -117,6 +117,15 @@ require('../main');
       slider.value=slider.max;slider.dispatchEvent(new Event('input',{bubbles:true}));
       await pause();window.isoView.paint();await pause();
       const lastStepStatus=document.getElementById('isoDockStatus').textContent;
+      // Real sprite/terrain pixels must be identical after partial and full
+      // redraws, including scrubbing backwards. This runs only on CI.
+      for(const step of ['2','6','3',slider.max]){
+        slider.value=step;slider.dispatchEvent(new Event('input',{bubbles:true}));
+        await pause();window.isoView.paint();await pause();
+        const partial=canvas.toDataURL();
+        window.isoView.refresh();window.isoView.paint();
+        if(canvas.toDataURL()!==partial)throw new Error('Partial step redraw differs from full render at step '+step);
+      }
       const unchangedRow=document.getElementById('castleBuildList').firstElementChild;
       const completeScene=canvas.toDataURL();
       slider.value='1';slider.dispatchEvent(new Event('input',{bubbles:true}));

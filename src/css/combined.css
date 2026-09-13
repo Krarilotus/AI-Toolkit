@@ -890,7 +890,12 @@ button:disabled { cursor: default; }
 .castleCameraKeyGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .castleCameraKeyGrid label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .castleCameraKey { width: 110px; text-align: center; }
-#castleMergeSteps { margin: 0 10px 8px; }
+.castleBuildContextMenu { position: fixed; z-index: 10000; min-width: 200px; padding: 5px;
+  background: var(--bg-panel, #242a2d); border: 1px solid var(--border-color, #566066);
+  border-radius: 5px; box-shadow: 0 5px 20px #0008; }
+.castleBuildContextMenu button { display: block; width: 100%; text-align: left; margin: 2px 0; }
+.castleMergeChoice { display: flex; align-items: center; gap: 10px; padding: 10px; }
+.castleMergeChoice:has(input:disabled) { opacity: .55; }
 .castleShortcutGrid {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) 110px 110px;
@@ -1333,8 +1338,7 @@ button:disabled { cursor: default; }
 .buildStep.dragging { opacity: .45; }
 /* Ein gesperrter Bauschritt: sichtbar, aber nicht anzufassen. */
 .buildStep.locked { cursor: default; box-shadow: inset 3px 0 0 var(--text-muted); }
-.buildLock { padding: 1px 4px; filter: grayscale(1) opacity(.55); }
-.buildLock.on { filter: none; }
+.buildStep.locked .buildIndex::before { content: '🔒'; font-size: 9px; }
 .buildIndex { color: var(--text-muted); text-align: right; font-size: 11px; }
 .buildName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .buildMeta { color: var(--text-muted); font-size: 11px; }

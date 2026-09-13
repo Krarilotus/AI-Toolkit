@@ -21,6 +21,11 @@ unit rally points are excluded from this building-copy operation.
 Use **Ctrl+X** to cut unlocked building placements to the same shared clipboard.
 The Keep, rally points and locked placements are left in place. Cutting is one
 undoable edit; Ctrl+V uses the usual placement checks in either castle window.
+There is no separate Copy toolbar button: Select/Move stays highlighted while
+holding a copy. The 2.5D view shows a translucent preview of all copied items.
+
+Library castles and characters have no editor read-only mode. Saving a vanilla
+castle writes to its original game file; use Save As to keep that file intact.
 
 The main startup window automatically reopens the last successfully opened
 AI project, its selected castle and workspace. This stores file references,
@@ -32,14 +37,15 @@ after upgrading, open your project once so it can be remembered.
 In **Customize Castle Shortcuts**, choose **Arrow keys + wheel zoom** to pan
 with the arrow keys and zoom at the pointer with the mouse wheel. Individual
 camera keys and pan speed can be edited in the same dialog. Shift accelerates
-keyboard panning; Shift+wheel pans vertically and Ctrl+wheel horizontally.
+keyboard panning; Alt+wheel or Shift+wheel pans vertically and Ctrl+wheel horizontally.
 Middle-drag remains available. The settings apply to the plan and 2.5D views;
 click a view before using its camera keys. Camera keys do not act inside text
 fields or dialogs, and cannot conflict with tool keys or C/X rotation.
 
-**Photoshop controls** restores the original camera behavior: in the plan,
-wheel pans vertically, Ctrl+wheel horizontally and Alt+wheel zooms. The original
-2.5D view keeps its wheel zoom. **Restore defaults** resets both camera and tool
+**Photoshop controls** restores the original Map camera controls in both views:
+wheel pans vertically, Ctrl+wheel horizontally and Alt+wheel zooms.
+Right-click clears the selection and held item; only middle-drag pans.
+**Restore defaults** resets both camera and tool
 shortcuts. Save persists settings locally; Cancel discards edits.
 
 The **Delete** tool now offers **Area** (the existing rectangle deletion) and
@@ -63,13 +69,28 @@ wall/stair/bridge connections. Use the step slider or build list to move the
 cutoff; returning to the last step shows the entire castle. The flat plan
 retains its subdued future-step preview.
 
-Ctrl-click or Shift-click complete build steps, then choose **Merge selected
-steps**. At least two unlocked wall, moat or pitch steps of exactly the same
-item type must be selected. Different wall types cannot be mixed. The result
-occupies the earliest selected step, contains each tile once, and pauses after
-that step if any selected step paused. Unselected steps retain their order.
-Merging therefore brings later selected placements forward in the build order
-and collapses their pauses to one. Undo restores the original steps.
+Use the **Merge** toolbar tool to draw an area in either view, then check the
+item types to combine in the dialog. Only types configured for multiple
+placements per step can be merged. Each checked type is combined separately
+at its earliest selected step. Placements outside the box stay in their
+original steps, including the remainder of a partly selected step.
+
+Alternatively, Ctrl-click or Shift-click build-order rows, then right-click
+and choose **Merge selected steps…** to use the same dialog for whole steps.
+Types represented in fewer than two unlocked steps cannot be merged. Cancel
+changes nothing; one Undo restores the entire merge. The right-click menu also
+contains **Lock positions / Unlock positions**, acting on all selected rows.
+Locks remain session-only and locked steps are excluded from merging.
+
+Build-step pauses
+are disabled on import and stay false on save; importing a paused castle marks
+it modified so saving cannot silently reuse the original paused binary.
+
+When scrubbing build steps, the list reuses its rows and the 2.5D renderer
+reuses terrain drawing commands. It compares the actual building sprites
+(including changed neighbours), repaints only the damaged region in depth
+order, and uses a full redraw after document, map, camera or asset changes.
+It does not allocate a full-map bitmap for every historical step.
 
 The **Building Categories** sidebar uses the original Village Editor castle
 background and category colors. Selection adds an inset outline without

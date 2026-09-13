@@ -280,7 +280,7 @@ test('without an item chosen, dragging is a selection box in every tool', () => 
 
   assert.match(down, /state\.currentItemType == null \|\| event\.ctrlKey \|\| event\.metaKey/,
     'ohne Gebaeude - oder mit Strg - wird ausgewaehlt');
-  assert.match(down, /state\.tool === 'delete' \|\| state\.tool === 'replace' \|\| \(state\.tool === 'copy' && state\.copyBuffer\)/,
+  assert.match(down, /state\.tool === 'delete' \|\| state\.tool === 'replace' \|\| state\.tool === 'merge' \|\| \(state\.tool === 'copy' && state\.copyBuffer\)/,
     'ausgenommen sind die Werkzeuge, die selbst eine Ziehgeste haben');
   assert.match(down, /if \(boxInstead && !ownsTheDrag\) \{[\s\S]{0,40}beginSelectGesture/,
     'und dann laeuft dieselbe Geste wie im Auswahl-Werkzeug');
@@ -383,14 +383,15 @@ test('a locked build step cannot be deleted, moved, reordered or built over', ()
 test('the lock can be opened again, and the row shows which it is', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const um = functionBody(script, 'toggleFrameLock');
-  assert.match(um, /const wert = !frame\.locked/, 'derselbe Knopf sperrt und oeffnet');
+  assert.match(um, /enabled = !frames\(\)\[fi\]\?\.locked/, 'the context action can lock and unlock');
   assert.match(um, /if \(f\) f\.locked = wert/, 'und schreibt den Zustand an den Bauschritt');
   const liste = functionBody(script, 'renderBuildList');
   assert.match(liste, /row\.draggable = !frame\.locked/, 'gesperrt heisst auch: nicht ziehbar');
   assert.match(liste, /classList\.add\('locked'\)/);
   const css = fs.readFileSync(path.join(root, 'src', 'css', 'combined.css'), 'utf8');
   assert.match(css, /\.buildStep\.locked/);
-  assert.match(css, /\.buildLock/);
+  assert.match(css, /\.buildStep\.locked \.buildIndex::before/);
+  assert.doesNotMatch(liste, /right\.append\(meta, lock/);
 });
 
 test('the slanted view previews what a click would place, at half opacity', () => {
@@ -453,7 +454,7 @@ test('the lock button takes the whole selection along', () => {
   const um = functionBody(script, 'toggleFrameLock');
   assert.match(um, /ausgewaehlt\.includes\(fi\) && ausgewaehlt\.length > 1 \? ausgewaehlt : \[fi\]/,
     'mehrere ausgewaehlt: alle; sonst nur der angeklickte');
-  assert.match(um, /const wert = !frame\.locked/,
+  assert.match(um, /const wert = enabled/,
     'alle bekommen denselben Zustand, sonst oeffnet der zweite Klick nur die Haelfte');
 });
 
@@ -527,7 +528,8 @@ test('the dedicated Replace tool opens a per-item-type replacement dialog', () =
   assert.match(html, /id="castleReplaceDialog"/);
   assert.match(html, /id="castleReplaceRows"/);
   assert.doesNotMatch(html, /id="castleSelectionList"|id="castleReplaceBtn"/);
-  assert.ok(html.indexOf('data-tool="copy"') < html.indexOf('data-tool="replace"'));
+  assert.doesNotMatch(html, /<button[^>]*data-tool="copy"/);
+  assert.ok(html.indexOf('data-tool="select"') < html.indexOf('data-tool="replace"'));
   assert.ok(html.indexOf('data-tool="replace"') < html.indexOf('data-tool="delete"'));
 
   const down = functionBody(script, 'onPointerDown');
