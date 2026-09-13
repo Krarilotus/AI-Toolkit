@@ -8,5 +8,6 @@
   "Military": ["aic.RecruitInterval"],
   "AI OxTethers": ["aic.AIOxTethers_DisableInitialOxTether"],
   "Running Units": ["aic.RunningUnits_Macemen"],
-  "Unknown": ["aic.Unknown001"]
+  "Unknown": ["aic.Unknown001"],
+  "AIV Troop Behaviour": ["aic.AIVTroops_InitialRole"]
 }

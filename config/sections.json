@@ -7,5 +7,6 @@
   "Economy": ["aic.WallDecoration"],
   "Military": ["aic.DefWallPatrolRallyTime"],
   "AI OxTethers": ["aic.AIOxTethers_DisableInitialOxTether"],
-  "Running Units": ["aic.RunningUnits_Macemen"]
+  "Running Units": ["aic.RunningUnits_Macemen"],
+  "AIV Troop Behaviour": ["aic.AIVTroops_InitialRole"]
 }

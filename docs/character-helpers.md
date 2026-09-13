@@ -51,3 +51,22 @@ rounding, granary sharing, shortage reporting and positive/negative fear boundar
 The Electron smoke check exercises field/castle/population updates and sidebar
 collapse/expand. Local UI is not automated; interactive checks run offscreen on
 the remote test machine and in CI.
+
+## AIV Troop Behaviour character fields
+
+The separate Character section exposes all 32 optional AIC fields registered by
+`aiv-troops-behaviour` 0.2.3 (`behavior/policy.lua`): two common defaults and initial
+role/movement overrides for 15 troop types. Dig is available only for Engineer,
+Archer, Spearman, Pikeman, Maceman and Slave; the common role accepts only defend.
+Movement accepts hold/patrol. Values use the plugin's case-sensitive strings.
+
+Inherit is an editor choice represented by an empty template default and omitted
+from saved character JSON, including newly created project characters. It is not
+written as a plugin value. Existing unsupported values are displayed explicitly
+and retained until edited, rather than silently replacing them. Both field-order
+templates and search include the section. Help explains precedence and the need
+to enable Troop settings and AIC overrides in UCP, then start a new match.
+
+Schema tests cover every field, supported diggers and omission. The Electron
+check changes Slave to dig, saves/reloads it, then resets to Inherit and verifies
+that the serialized field is absent. Existing characters gain no default overrides.
