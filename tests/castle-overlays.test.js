@@ -94,7 +94,7 @@ test('dummy placement markers never erase a wall or moat',()=>{
   const g=a.routeTopology([p(25,rect(2,2)),p(106,rect(3,2)),p(200,rect(2,2,3,2))],6);
   assert.equal(g.surfaces[14][0].kind,'wall');assert.equal(g.surfaces[15].length,0);
 });
-test('entrance selection is clockwise and independent of destination connectivity',()=>{
+test('entrance selection preserves clockwise preference and a blocked marker when no side connects',()=>{
   const building=p(50,rect(5,5,8,8));
   const south=a.routes([building,p(52,rect(1,1))],15)[0];
   assert.equal(south.entry.side,0);
@@ -285,4 +285,19 @@ test('attached stair reaches ground through an open gate endpoint, but a closed 
     const ps=[p(null,rect(0,0,14,14)),p(52,rect(1,7)),p(186,rect(2,7)),p(145,rect(3,5,7,9),{closed}),p(98,rect(8,7)),p(50,rect(9,7),{workers:1})];
     const rs=a.routes(ps,15);assert.equal(rs[0].path.length>0,!closed);
   }
+});
+
+
+test('mill skips an isolated entrance and enters the reachable stockpile cross',()=>{
+  const heights=new Uint8Array(400),blocked=new Uint8Array(400),hardBlocked=new Uint8Array(400);
+  // Enclose every tile except the stockpile and a disconnected north pocket.
+  blocked.fill(1);
+  for(let y=5;y<=9;y++)for(let x=5;x<=9;x++)blocked[y*20+x]=0;
+  blocked[13*20+6]=0;
+  const ps=[p(52,rect(5,5,9,9)),p(74,rect(5,10,7,12))];
+  const result=a.routes(ps,20,{heights,blocked,hardBlocked})[0];
+  assert.ok(result.path.length);
+  assert.deepEqual(result.entry,{x:7,y:9,side:0,height:10});
+  assert.deepEqual(result.path.at(-1),{x:5,y:7,height:10});
+  assert.ok(result.path.every(t=>t.x===7||t.y===7));
 });

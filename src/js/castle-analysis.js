@@ -223,7 +223,12 @@
       let entry,candidate;
       for(const c of candidates) {
         const node=goalAt(c.x,c.y);
-        if(node) {entry=node;candidate=c;break;}
+        if(!node)continue;
+        // determineBuildingEntranceFromKeepArea (41AF43..41AF7E) rejects
+        // disconnected areas before accepting an entrance. Reuse the route
+        // field instead of running another search for each candidate.
+        if(!entry){entry=node;candidate=c;}
+        if(Number.isFinite(distance[node.id])){entry=node;candidate=c;break;}
       }
       const marker=candidate || candidates.find(inside) || {x:r.left,y:r.bottom};
       const common={ref:p.ref,type:p.type,name:p.name,workers:workerCount(p),entry:{x:marker.x,y:marker.y,side:marker.side,...(entry?.height?{height:entry.height}:{})},path:[]};

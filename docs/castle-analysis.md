@@ -300,3 +300,20 @@ The remaining mill's selected entrance is in an isolated two-tile terrain pocket
 The southeast stockpile cross is elevation47 against nearby ground8: its 39-unit
 boundary drop remains blocked by the requested 16-unit rule. Stockpile quadrants
 remain solid; the central nine tiles are traversable.
+
+
+### Mill entrance connectivity correction
+
+`determineBuildingEntranceFromKeepArea` (`0x0041AF43..0x0041AF7E`) compares the
+candidate's area with the keep area and checks linked areas before accepting it.
+The planner previously accepted the first physically free candidate, even in an
+isolated pocket. It now keeps the existing entrance preference order but skips
+candidates that cannot reach the first stockpile, using the already-computed
+Dijkstra field (no additional graph searches). If none connect, the first free
+candidate remains visible as a blocked marker. Stockpile storage quadrants are
+still blocked; only the existing elevated cross is an entrance surface.
+
+In the current GreekSea/Kratoloros fixture the mill now selects `(63,37)` on the
+stockpile cross instead of the disconnected `(65,40)` pocket. All 87 worker
+buildings reach the first stockpile. This corrects the earlier assumption in
+these notes that entrance choice should ignore area connectivity.
