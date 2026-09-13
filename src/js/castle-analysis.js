@@ -256,11 +256,21 @@
   // the actual footprint boundary, so even-sized and multipart buildings do
   // not acquire a half-tile centre offset. Smoothstep has no hard outer edge.
   // Store normalized proximity so overlapping halos retain the nearest source.
-  function fireStrength(distance) { return Math.max(0,1-Math.max(0,distance)/8); }
+  // Static HP proxy: 800 HP reaches the requested eight-tile ceiling.
+  // Square-root scaling keeps fragile sources useful without giving them a full halo.
+  function fireRadius(placement) {
+    const hp = Number(placement.health ?? game.health[placement.name] ?? 800);
+    return 2 + 6 * Math.sqrt(Math.min(1, Math.max(0, Number.isFinite(hp) ? hp : 800) / 800));
+  }
+  function fireStrength(distance, radius = 8) {
+    const d = Math.max(0, distance);
+    const scaled = d <= 1.5 ? d : 1.5 + (d - 1.5) * 6.5 / (radius - 1.5);
+    return Math.max(0, 1 - scaled / 8);
+  }
   function fireColor(strength) {
     if (!(strength>0)) return [0,0,0,0];
     const d=(1-Math.min(1,strength))*8;
-    const stops=[[0,220,20,60,210],[2,220,20,60,210],[4,255,235,20,170],[6,75,85,150,80],[8,15,25,100,0]];
+    const stops=[[0,220,20,60,189],[1.5,220,20,60,189],[3.5,255,235,20,153],[6,25,45,160,108],[7,15,25,100,90],[8,15,25,100,0]];
     let i=1;while(i<stops.length-1 && d>stops[i][0])i++;
     const a=stops[i-1],b=stops[i],t=(d-a[0])/(b[0]-a[0]),f=t*t*(3-2*t);
     return a.slice(1).map((v,j)=>Math.round(v+(b[j+1]-v)*f));
@@ -269,19 +279,20 @@
     const heat = new Float32Array(size*size);
     for (const p of placements) {
       if (!(game.flammability[p.name] > 0)) continue;
+      const radius = fireRadius(p);
       for (const r of p.rects) {
         for(let y=Math.max(0,r.bottom-8);y<=Math.min(size-1,r.top+8);y++)
           for(let x=Math.max(0,r.left-8);x<=Math.min(size-1,r.right+8);x++) {
             const dx=Math.max(r.left-x-.5,0,x-r.right-.5);
             const dy=Math.max(r.bottom-y-.5,0,y-r.top-.5);
-            const strength=fireStrength(Math.hypot(dx,dy));
+            const strength=fireStrength(Math.hypot(dx,dy), radius);
             heat[y*size+x]=Math.max(heat[y*size+x],strength);
           }
       }
     }
     return heat;
   }
-  const api = { workerCount, entranceCandidates, routeTopology, routes, fireStrength, fireColor, fireExposure };
+  const api = { workerCount, entranceCandidates, routeTopology, routes, fireRadius, fireStrength, fireColor, fireExposure };
   if (typeof module !== 'undefined') module.exports = api;
   if (typeof globalThis !== 'undefined') globalThis.castleAnalysis = api;
 })();

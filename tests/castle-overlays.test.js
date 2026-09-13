@@ -5,19 +5,40 @@ const a=require('../src/js/castle-analysis');
 const rect=(left,bottom,right=left,top=bottom)=>({left,bottom,right,top});
 const p=(type,r,extra={})=>({type,rects:[r],...extra});
 test('fire colors distinguish two, four and eight tiles with a smooth transparent edge',()=>{
-  assert.deepEqual(a.fireColor(a.fireStrength(1)),[220,20,60,210]);
-  assert.deepEqual(a.fireColor(a.fireStrength(2)),[220,20,60,210]);
-  assert.deepEqual(a.fireColor(a.fireStrength(4)),[255,235,20,170]);
+  assert.deepEqual(a.fireColor(a.fireStrength(1)),[220,20,60,189]);
+  assert.deepEqual(a.fireColor(a.fireStrength(1.5)),[220,20,60,189]);
+  assert.deepEqual(a.fireColor(a.fireStrength(3.5)),[255,235,20,153]);
   const blue=a.fireColor(a.fireStrength(7));assert.ok(blue[2]>blue[0] && blue[2]>blue[1]);
   assert.equal(a.fireColor(a.fireStrength(8))[3],0);
   assert.equal(a.fireStrength(9),0);
   let alpha=255;for(let d=0;d<=8;d+=.01){const next=a.fireColor(a.fireStrength(d))[3];assert.ok(next<=alpha);alpha=next;}
   for(const n of [3,4,5,9,10,11]) {
-    const heat=a.fireExposure([p(54,rect(20,20,19+n,19+n),{name:'Hovel'})]);
+    const heat=a.fireExposure([p(54,rect(20,20,19+n,19+n),{name:'Hovel',health:800})]);
     assert.equal(heat[20*100+11],0);assert.ok(heat[20*100+12]>0);
     assert.equal(heat[20*100+12],heat[20*100+27+n]);
   }
   assert.ok(a.fireExposure([p(52,rect(10,10,14,14),{name:'Stockpile'})]).every(v=>v===0));
+});
+test('HP scales only the outer halo and uses selected balance health',()=>{
+  assert.equal(a.fireRadius({name:'Church',health:1000}),8);
+  assert.ok(a.fireRadius({name:'Woodcutter hut',health:60}) < a.fireRadius({name:'Hovel',health:200}));
+  assert.ok(a.fireRadius({name:'Hovel'}) < a.fireRadius({name:'Hovel',health:200}));
+  for (const hp of [60,200,800]) {
+    const heat=a.fireExposure([p(54,rect(20,20),{name:'Hovel',health:hp})]);
+    assert.deepEqual(a.fireColor(heat[20*100+22]),[220,20,60,189]);
+    const third=a.fireColor(heat[20*100+23]);
+    assert.ok(third[1]>100,'third ring has already left crimson');
+  }
+  const blue=a.fireColor(a.fireStrength(7));
+  assert.equal(blue[3],90);assert.ok(blue[2]>blue[0]*4);
+  const small=a.fireExposure([p(54,rect(20,20),{name:'Hovel',health:60})]);
+  const large=a.fireExposure([p(54,rect(20,20),{name:'Hovel',health:800})]);
+  assert.equal(small[20*100+25],0);assert.ok(large[20*100+25]>0);
+});
+test('balance health rejects malformed overrides',()=>{
+  const {validate}=require('../src/js/castle-balance');
+  for(const health of [-1,NaN,'invalid']) assert.throws(()=>validate({buildings:{Hovel:{health}}}));
+  assert.equal(validate({buildings:{Hovel:{health:60}}}).buildings.Hovel.health,60);
 });
 test('stockpile mapper tiles are walkable without depending on a translated name',()=>{
   const g=a.routeTopology([p(52,rect(3,3,7,7))],12);

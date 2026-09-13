@@ -2546,6 +2546,9 @@
 
   let analysisCache = { key: null, heat: null, routes: [], pending: false };
   let analysisWorker = null, analysisTimer = null, analysisSerial = 0;
+  window.addEventListener('castle-balance-changed', () => {
+    scheduleDraw(); window.isoView?.refresh?.(true);
+  });
   function getAnalysisOverlay(update = true) {
     const showFire = !!document.getElementById('castleShowFire')?.checked;
     const showRoutes = !!document.getElementById('castleShowRoutes')?.checked;
@@ -2556,7 +2559,7 @@
       && (!Number.isInteger(state.insertionFrameIndex) || p.fi <= state.insertionFrameIndex)).flatMap(p => {
       const name = data?.buildings[p.type]?.balance;
       const rects = footprintRects(p.type, p.off);
-      const item = { ref: p.ref, type: Number(p.type), name, rects, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
+      const item = { ref: p.ref, type: Number(p.type), name, rects, health: window.castleCostPanel?.getActiveBalance?.()?.buildings?.[name]?.health, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
       // The keep forces an attached stockpile, encoded as a composite footprint.
       return p.type === geometry.KEEP_ITEM_TYPE && rects.length > 1
         ? [{ ...item, rects: rects.filter(r => r.part !== 'stockpile') }, { ref: `${p.ref}:stockpile`, name: 'Stockpile', rects: rects.filter(r => r.part === 'stockpile') }]
@@ -2604,7 +2607,7 @@
     if (info) {
       info.hidden = !fire && !paths;
       info.textContent = overlay.error || (overlay.pending ? 'Calculating overlays...' : [
-        fire ? 'Fire estimate: crimson 0?2 tiles, yellow at 4, blue fading out at 8.' : '',
+        fire ? 'Fire estimate: two inner red rings; HP-scaled yellow-to-blue halo, up to 8 tiles.' : '',
         paths ? `Paths: ${overlay.routes.filter(r=>r.path.length).length}/${overlay.routes.length} reachable. Open gates; ${window.isoView?.analysisTerrain?.() ? 'map terrain included' : 'flat terrain (no map data)'}. Cyan dots: reachable entrances; red dots: blocked. Static estimate.` : ''
       ].filter(Boolean).join(' '));
     }
