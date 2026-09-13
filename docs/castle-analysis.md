@@ -241,3 +241,12 @@ height units per move. These are the explicitly requested static planning rules.
 Map-aware navigation includes a five-tile margin beyond the AIV boundary;
 route coordinates and entrance markers remain in AIV coordinates. This does
 not expand the rendered map or change the castle footprint.
+
+
+Ordinary connections compare **terrain height + structure offset** at both ends,
+with a maximum difference of 16. This applies across surface types (including
+cliffs, walls and stairs), rather than treating stair numbers as connectivity
+rules. `placeWalls` at `0x005034E2..0x00503510` copies the default terrain height
+before adding 90/60 for high/low walls; subsequent branches add stair offsets.
+The route keeps its relative height for drawing, and its total elevation for
+navigation. Explicit gate/tower links and constructed-platform access remain.

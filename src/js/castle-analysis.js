@@ -73,7 +73,7 @@
     }
     let id = 0;
     const nodes = surfaces.flat();
-    for (const n of nodes) { n.id = id++; n.x = n.k%size; n.y = Math.floor(n.k/size); }
+    for (const n of nodes) { n.id = id++; n.x = n.k%size; n.y = Math.floor(n.k/size); n.elevation=(Number(terrain?.heights?.[n.k])||0)+n.height; }
     const hardCorners = new Set(), fullWall = new Uint8Array(count);
     for (const p of placements) if ([25,26,35,46].includes(Number(p.type)))
       for (const r of p.rects) for(let y=Math.max(0,r.bottom);y<=Math.min(size-1,r.top);y++) for(let x=Math.max(0,r.left);x<=Math.min(size-1,r.right);x++) fullWall[y*size+x]=1;
@@ -84,15 +84,20 @@
     const links = nodes.map(() => []);
     function connects(a,b,dx,dy) {
       for (const n of [a,b]) if (n.kind === 'passage') {
-        if ((n.axis === 'x' && dy) || (n.axis === 'y' && dx) || b.height !== a.height) return false;
+        if ((n.axis === 'x' && dy) || (n.axis === 'y' && dx)) return false;
       }
-      // The engine has explicit intact tower/wall/stair linkage. In
-      // particular Stair 6 (zero height) may enter a tower directly.
-      if (isDeck(a) || isDeck(b)) {
-        const other = isDeck(a) ? b : a;
-        if (!(isDeck(other) || other.kind === 'wall' || other.kind === 'stair')) return false;
-      } else if (Math.abs(a.height-b.height) > 16) return false;
-      if (a.height === 0 && b.height === 0 && !['stockpile','courtyard','bridge'].includes(a.kind) && !['stockpile','courtyard','bridge'].includes(b.kind) && terrain?.heights && Math.abs(terrain.heights[a.k]-terrain.heights[b.k]) > 16) return false;
+      // placeWalls copies default terrain height, then adds the structure
+      // offset (90/60 for walls, 80..0 for stairs). Compare that total for
+      // every ordinary edge, including ground-to-wall and ground-to-stair.
+      const ordinary=Math.abs(a.elevation-b.elevation)<=16;
+      const other=isDeck(a)?b:a;
+      const linkedDeck=(isDeck(a)||isDeck(b)) &&
+        (isDeck(other)||other.kind==='wall'||other.kind==='stair');
+      // Constructed platforms bridge their raw pre-construction ground;
+      // their runtime flattening is not present in the source terrain layer.
+      const platform=a.height===0 && b.height===0 &&
+        ['stockpile','courtyard','bridge'].some(kind=>a.kind===kind||b.kind===kind);
+      if(!ordinary && !linkedDeck && !platform)return false;
       if (dx && dy) {
         // Elevated diagonal wall walks must remain connected. Do not let a
         // diagonal edge climb a tower from ordinary ground or skip a stair.
@@ -104,7 +109,7 @@
         // must not be discarded by the general elevated-diagonal guard.
         if(stair && (other.kind==='stair' || other.kind==='deck' ||
             (other.kind==='tower' && stair.type===186) || other.kind==='wall')) return true;
-        if (a.height !== 0 || b.height !== 0) return false;
+        if (!ordinary && !platform) return false;
         const sideA = a.y*size+b.x, sideB=b.y*size+a.x;
         // Ordinary building corners are walkable; never squeeze diagonally
         // between walls, or a wall and a negative fear building.
