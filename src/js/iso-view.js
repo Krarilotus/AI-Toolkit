@@ -842,12 +842,16 @@
               ' · tool: ' + tool + mapStatus() + ' · middle mouse pans, wheel zooms');
   }
 
+  let fireLayer=null;
   function drawAnalysis(ctx) {
     const overlay=window.castleEditor?.getAnalysisOverlay?.(false);
     if(!overlay) return;
     const turn=tile=>geo.rotateGrid(tile.x,99-tile.y,1,currentRotation());
     ctx.save();
     if(overlay.image) {
+      fireLayer ||= document.createElement('canvas');
+      if(fireLayer.width!==ctx.canvas.width || fireLayer.height!==ctx.canvas.height){fireLayer.width=ctx.canvas.width;fireLayer.height=ctx.canvas.height;}
+      const fireCtx=fireLayer.getContext('2d');fireCtx.clearRect(0,0,fireLayer.width,fireLayer.height);
       // Image pixels are tile centres. Rotate the whole footprint about the
       // same tile centre as the castle, then project its two basis vectors.
       const point=(x,y)=>{
@@ -855,8 +859,11 @@
         return geo.isoPoint(p.gx+.5,p.gy+.5,state.view);
       };
       const a=point(0,0), b=point(100,0), c=point(0,100);
-      ctx.save();ctx.transform((b[0]-a[0])/100,(b[1]-a[1])/100,(c[0]-a[0])/100,(c[1]-a[1])/100,a[0],a[1]);
-      ctx.imageSmoothingEnabled=true;ctx.drawImage(overlay.image,0,0);ctx.restore();
+      fireCtx.save();fireCtx.transform((b[0]-a[0])/100,(b[1]-a[1])/100,(c[0]-a[0])/100,(c[1]-a[1])/100,a[0],a[1]);
+      fireCtx.imageSmoothingEnabled=true;fireCtx.drawImage(overlay.image,0,0);fireCtx.restore();
+      const scene=state.sceneCache,z=state.view.zoom;
+      if(scene?.fireMask){fireCtx.save();fireCtx.globalCompositeOperation='destination-out';fireCtx.drawImage(scene.fireMask,state.view.panX-scene.view.panX*z,state.view.panY-scene.view.panY*z,scene.fireMask.width*z,scene.fireMask.height*z);fireCtx.restore();}
+      ctx.drawImage(fireLayer,0,0);
     }
     ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;
     for(const route of overlay.routes) {
@@ -929,7 +936,7 @@
       const loaded = parts.map(part => image(part.bild));
       if (!loaded.every(img => img?.complete && img.naturalWidth)) return [item];
       const lift = bauHoehe(item.gx, item.gy, item.tiles);
-      return parts.map((part, index) => ({ ...part, layer: item.layer ?? 2, draw: (target) => {
+      return parts.map((part, index) => ({ ...part, itemType:item.itemType, layer: item.layer ?? 2, draw: (target) => {
         drawNativePart(target, part, loaded[index], lift);
       }}));
     });
@@ -939,9 +946,19 @@
         if(item.entry && drawSprite(target,item.entry,item.gx,item.gy,item.tiles,mauerAn,hoeheAn))return;
         drawDiamond(target,item.gx,item.gy,item.tiles,'rgba(210,170,90,.55)');missing++;
       });
-      return {...item,key:'building:'+index,...captured};
+      return {...item,key:'building:'+index,...captured,flammable:window.castleGameData.flammability[window.castleCostData?.buildings[item.itemType]?.balance]>0};
     });
     const dirty=previous ? patches.damage(previous.buildingCommands,buildings) : {left:0,top:0,right:width,bottom:height};
+    const fireMask=document.getElementById('castleShowFire')?.checked ? previous?.fireMask || document.createElement('canvas') : null;
+    if(fireMask) {
+      const maskDirty=previous?.fireMask ? dirty : {left:0,top:0,right:width,bottom:height};
+      if(fireMask.width!==width || fireMask.height!==height){fireMask.width=width;fireMask.height=height;}
+      if(maskDirty){
+        const d=maskDirty,mask=fireMask.getContext('2d');mask.save();mask.beginPath();mask.rect(d.left,d.top,d.right-d.left,d.bottom-d.top);mask.clip();mask.clearRect(d.left,d.top,d.right-d.left,d.bottom-d.top);
+        for(const item of patches.merge(terrain,[...buildings].sort(geo.renderOrder),geo.renderOrder))if(patches.intersects(item.bounds,d)){mask.globalCompositeOperation=item.flammable?'source-over':'destination-out';patches.replay(mask,item);}
+        mask.restore();
+      }
+    }
     if(dirty) {
       ctx.save();ctx.beginPath();ctx.rect(dirty.left,dirty.top,dirty.right-dirty.left,dirty.bottom-dirty.top);ctx.clip();
       ctx.clearRect(dirty.left,dirty.top,dirty.right-dirty.left,dirty.bottom-dirty.top);
@@ -957,7 +974,7 @@
         if(patches.intersects(item.bounds,dirty))patches.replay(ctx,item);
       ctx.restore();
     }
-    return { items, missing, terrainCommands:terrain,buildingCommands:buildings,nativeGround };
+    return { items, missing, terrainCommands:terrain,buildingCommands:buildings,nativeGround,fireMask };
   }
 
   function paintInteraction(ctx, items) {

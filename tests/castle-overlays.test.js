@@ -4,18 +4,18 @@ const assert=require('node:assert/strict');
 const a=require('../src/js/castle-analysis');
 const rect=(left,bottom,right=left,top=bottom)=>({left,bottom,right,top});
 const p=(type,r,extra={})=>({type,rects:[r],...extra});
-test('fire fades smoothly from exact footprints with 2 and 7 tile stages',()=>{
-  assert.equal(a.fireStrength(7),0);
-  assert.equal(a.fireStrength(8),0);
-  assert.ok(a.fireStrength(6)>0);
-  assert.ok(a.fireStrength(1)>a.fireStrength(2));
-  assert.ok(Math.abs(a.fireStrength(1.999)-a.fireStrength(2.001))<.001);
-  assert.ok(a.fireStrength(6.999)<.000001);
+test('fire colors distinguish two, four and eight tiles with a smooth transparent edge',()=>{
+  assert.deepEqual(a.fireColor(a.fireStrength(1)),[220,20,60,210]);
+  assert.deepEqual(a.fireColor(a.fireStrength(2)),[220,20,60,210]);
+  assert.deepEqual(a.fireColor(a.fireStrength(4)),[255,235,20,170]);
+  const blue=a.fireColor(a.fireStrength(7));assert.ok(blue[2]>blue[0] && blue[2]>blue[1]);
+  assert.equal(a.fireColor(a.fireStrength(8))[3],0);
+  assert.equal(a.fireStrength(9),0);
+  let alpha=255;for(let d=0;d<=8;d+=.01){const next=a.fireColor(a.fireStrength(d))[3];assert.ok(next<=alpha);alpha=next;}
   for(const n of [3,4,5,9,10,11]) {
     const heat=a.fireExposure([p(54,rect(20,20,19+n,19+n),{name:'Hovel'})]);
-    assert.equal(heat[20*100+12],0);
-    assert.ok(heat[20*100+13]>0);
-    assert.equal(heat[20*100+13],heat[20*100+26+n]);
+    assert.equal(heat[20*100+11],0);assert.ok(heat[20*100+12]>0);
+    assert.equal(heat[20*100+12],heat[20*100+27+n]);
   }
   assert.ok(a.fireExposure([p(52,rect(10,10,14,14),{name:'Stockpile'})]).every(v=>v===0));
 });
@@ -132,12 +132,7 @@ test('the keep courtyard is walkable but the keep building stays solid',()=>{
 });
 
 
-test('stage two remains visibly orange near six tiles and fades continuously to seven',()=>{
-  assert.ok(Math.round(145*a.fireStrength(6))>=25);
-  let previous=1;
-  for(let d=0;d<=7;d+=.01){const value=a.fireStrength(d);assert.ok(value<=previous+1e-10);previous=value;}
-  assert.equal(a.fireStrength(7),0);
-});
+
 test('consecutive stairs connect in all eight directions, but cannot skip a level',()=>{
   for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
     for(let type=181;type<186;type++){
@@ -180,14 +175,14 @@ test('map fords remain walkable inside rivers; water, rocky terrain and trees do
   const route=a.routes([p(52,rect(1,6)),p(50,rect(10,6))],12,{blocked,hardBlocked})[0];
   assert.ok(route.path.length);
 });
-test('a bridge next to the gate crosses a later moat without joining its roof',()=>{
+test('a bridge next to the open gate crosses a later moat and reaches its access points',()=>{
   const ps=[p(null,rect(0,0,19,19)),p(52,rect(2,5)),p(145,rect(3,3,7,7),{ref:'gate'}),
     p(105,rect(8,3,12,7)),p(106,rect(8,3,12,7)),p(52,rect(13,5)),p(50,rect(14,5))];
   const g=a.routeTopology(ps,20);
   const start=g.surfaces[5*20+2][0],goal=g.surfaces[5*20+13][0],seen=new Set([start.id]),q=[start.id];
   for(let i=0;i<q.length;i++)for(const edge of g.links[q[i]])if(!seen.has(edge.to)){seen.add(edge.to);q.push(edge.to);}
   assert.ok(seen.has(goal.id));
-  assert.ok(!g.nodes.some(n=>n.kind==='deck' && seen.has(n.id)));
+  assert.ok(g.nodes.some(n=>n.kind==='deck' && seen.has(n.id)));
   assert.equal(g.surfaces[5*20+10][0].kind,'bridge');
 });
 
@@ -266,11 +261,11 @@ test('walls connect diagonally to gate roofs but only cardinally to towers',()=>
     assert.equal(g.links[one.id].some(e=>e.to===two.id),type===145||dy===0);
   }
 });
-test('gate passage ends allow diagonal exits without exposing the sides or roof',()=>{
+test('gate passage ends allow diagonal exits and join the roof at the same endpoint',()=>{
   const g=a.routeTopology([p(145,rect(2,2,6,6))],10);
   const entry=g.surfaces[42].find(n=>n.kind==='passage');
   assert.ok(g.links[entry.id].some(e=>g.nodes[e.to].k===31));
-  assert.equal(g.links[entry.id].some(e=>g.nodes[e.to].kind==='deck'),false);
+  assert.ok(g.links[entry.id].some(e=>g.nodes[e.to].kind==='deck' && g.nodes[e.to].k===entry.k));
 });
 test('native terrain flag lift participates in wall and stair height comparisons',()=>{
   const heights=new Uint8Array(36),constructionLift=new Uint8Array(36);
@@ -282,4 +277,12 @@ test('native terrain flag lift participates in wall and stair height comparisons
   assert.ok(g.links[g.surfaces[14][0].id].some(e=>e.to===g.surfaces[15][0].id));
   const unlifted=a.routeTopology(ps,6,{heights});
   assert.equal(unlifted.links[unlifted.surfaces[14][0].id].some(e=>e.to===unlifted.surfaces[15][0].id),false);
+});
+
+
+test('attached stair reaches ground through an open gate endpoint, but a closed gate does not',()=>{
+  for(const closed of [false,true]) {
+    const ps=[p(null,rect(0,0,14,14)),p(52,rect(1,7)),p(186,rect(2,7)),p(145,rect(3,5,7,9),{closed}),p(98,rect(8,7)),p(50,rect(9,7),{workers:1})];
+    const rs=a.routes(ps,15);assert.equal(rs[0].path.length>0,!closed);
+  }
 });
