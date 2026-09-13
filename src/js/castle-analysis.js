@@ -36,7 +36,7 @@
   }
   // Static, intact, same-owner castle topology. AIV carries placement types,
   // not the runtime walk/height/damage layers. Keep ground gate passages and
-  // elevated decks separate so an open gate never becomes a staircase.
+  // elevated decks separately, linking them at open gate endpoints.
   function routeTopology(placements, size = 100, terrain = null) {
     const count = size * size;
     const surfaces = Array.from({length: count}, (_,k) => terrain?.blocked?.[k] ? [] : [{ k, height:0, kind:'ground' }]);
@@ -47,11 +47,12 @@
       if ([200,20,21].includes(Number(p.type))) continue;
       const t = Number(p.type);
       const stockpile=t===52 || r.part==='stockpile' || p.name==='Stockpile';
-      let pileElevation=10;
-      if(stockpile) {
+      const recruitment=(t===86 || t===87) && r.right-r.left===9 && r.top-r.bottom===9;
+      let platformElevation=10;
+      if(stockpile || recruitment) {
         let lo=Infinity,hi=-Infinity;
         for(let py=Math.max(0,r.bottom);py<=Math.min(size-1,r.top);py++)for(let px=Math.max(0,r.left);px<=Math.min(size-1,r.right);px++) {const h=Number(terrain?.heights?.[py*size+px])||0;lo=Math.min(lo,h);hi=Math.max(hi,h);}
-        pileElevation=(Number.isFinite(p.baseHeight)?p.baseHeight:(Number.isFinite(lo)?Math.floor((lo+hi)/2):0))+10;
+        platformElevation=(Number.isFinite(p.baseHeight)?p.baseHeight:(Number.isFinite(lo)?Math.floor((lo+hi)/2):0))+(stockpile?10:0);
       }
       const wall = [25,46].includes(t);
       const tower = t >= 110 && t <= 114;
@@ -63,7 +64,15 @@
           if ((terrain?.hardBlocked?.[k] ?? terrain?.blocked?.[k]) && t !== 105) { surfaces[k]=[]; continue; }
           if (stockpile) {
             const cross=x===Math.floor((r.left+r.right)/2) || y===Math.floor((r.bottom+r.top)/2);
-            surfaces[k]=cross?[{...tile,height:pileElevation-(Number(terrain?.heights?.[k])||0),kind:'stockpile'}]:[];
+            surfaces[k]=cross?[{...tile,height:platformElevation-(Number(terrain?.heights?.[k])||0),kind:'stockpile'}]:[];
+          }
+          else if (recruitment) {
+            // placeBarracks: one solid 5x5 building and three 5x5 gathering
+            // grounds. Only each ground's central flag tile is occupied.
+            const dx=x-r.left,dy=r.top-y;
+            const building=dx<5 && dy<5;
+            const flag=dx%5===2 && dy%5===2;
+            surfaces[k]=building||flag?[]:[{...tile,height:platformElevation-(Number(terrain?.heights?.[k])||0),kind:'recruitment'}];
           }
           else if (t===61 && (ri>0 || r.part==='courtyard')) surfaces[k]=[{...tile,height:0,kind:'courtyard'}];
           else if ([98,99,105,166,169,175].includes(t)) surfaces[k]=[{...tile,height:0,kind:t===105?'bridge':'ground'}];
@@ -165,7 +174,7 @@
     }
     const {nodes,surfaces,links,fullWall} = routeTopology(placements,size,terrain);
     const inside = ({x,y}) => x >= 0 && y >= 0 && x < size && y < size;
-    const goalAt=(x,y)=>inside({x,y})?surfaces[y*size+x].find(n=>n.height===0 || n.kind==='stockpile'):null;
+    const goalAt=(x,y)=>inside({x,y})?surfaces[y*size+x].find(n=>n.height===0 || ['stockpile','recruitment'].includes(n.kind)):null;
     const piles=placements.flatMap(p=>p.rects.filter(r=>Number(p.type)===52 || p.name==='Stockpile' || r.part==='stockpile').map(r=>({p,r})));
     // The keep-created first stockpile is the single delivery destination.
     // Later extensions provide walkways, never a closer replacement goal.
@@ -240,7 +249,7 @@
       const d=distance[entry.id];
       return {...common,path,distance:d,efficiency:d?direct/d:1};
     });
-    result.walkability=Uint8Array.from(surfaces,cells=>(cells.some(n=>n.height===0 || n.kind==='stockpile')?1:0)+(cells.some(n=>n.height>0 && n.kind!=='stockpile')?2:0));
+    result.walkability=Uint8Array.from(surfaces,cells=>(cells.some(n=>n.height===0 || ['stockpile','recruitment'].includes(n.kind))?1:0)+(cells.some(n=>n.height>0 && !['stockpile','recruitment'].includes(n.kind))?2:0));
     return result;
   }
   // User-selected planning ranges, not engine probabilities. Distance is from
