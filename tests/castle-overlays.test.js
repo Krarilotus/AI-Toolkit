@@ -202,3 +202,30 @@ test('map navigation margin permits paths around the AIV boundary without shifti
   assert.equal(result.walkability.length,100);
   assert.equal(result.walkability[55],0);
 });
+
+
+test('cliffs connect to walls by total terrain plus structure height in both directions',()=>{
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1]])for(const delta of [0,16,17]){
+    const heights=new Uint8Array(144);heights[65]=8;heights[(5+dy)*12+5+dx]=98-delta;
+    const g=a.routeTopology([p(25,rect(5,5))],12,{heights});
+    const wall=g.surfaces[65][0],ground=g.surfaces[(5+dy)*12+5+dx][0];
+    assert.equal(wall.elevation,98);
+    assert.equal(g.links[wall.id].some(e=>e.to===ground.id),delta<=16);
+    assert.equal(g.links[ground.id].some(e=>e.to===wall.id),delta<=16);
+  }
+});
+test('stairs obey total surface height rather than fixed type pairings',()=>{
+  const heights=new Uint8Array(144);heights[65]=32;
+  const g=a.routeTopology([p(186,rect(5,5)),p(184,rect(6,6))],12,{heights});
+  const one=g.surfaces[65][0],two=g.surfaces[78][0];
+  assert.equal(one.elevation,two.elevation);
+  assert.ok(g.links[one.id].some(e=>e.to===two.id));
+  const raised=new Uint8Array(144);raised[65]=80;
+  const cliff=a.routeTopology([p(181,rect(6,6))],12,{heights:raised});
+  assert.ok(cliff.links[cliff.surfaces[65][0].id].some(e=>e.to===cliff.surfaces[78][0].id));
+});
+test('equal wall types on different terrain do not create a height jump shortcut',()=>{
+  const heights=new Uint8Array(100);heights[55]=80;
+  const g=a.routeTopology([p(25,rect(5,5)),p(25,rect(6,5))],10,{heights});
+  assert.ok(!g.links[g.surfaces[55][0].id].some(e=>e.to===g.surfaces[56][0].id));
+});
