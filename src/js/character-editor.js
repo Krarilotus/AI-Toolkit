@@ -205,7 +205,18 @@ function createField(key, value, parent) {
 
   let input;
 
-if (numericBooleanFields.includes(key)) {
+if (key.startsWith("AIVTroops_") && fieldPools[key]) {
+  input = document.createElement("select");
+  input.dataset.aicField = key;
+  const choices = optionPools[fieldPools[key]];
+  if (!choices.includes(value)) {
+    const option = new Option("Unsupported value: " + String(value), String(value), true, true);
+    input.appendChild(option);
+  }
+  choices.forEach(choice => input.appendChild(new Option(choice === "" ? "Inherit (omit override)" : choice, choice, false, choice === value)));
+  input.onchange = () => { parent[key] = input.value; updateHeaderInfo(); };
+}
+else if (numericBooleanFields.includes(key)) {
   input = document.createElement("select");
 
   ["True", "False"].forEach(v => {
@@ -502,7 +513,7 @@ async function newCharacterFile() {
   if (disposition === 'cancel') return false;
   let projectPath = null;
   if (disposition === 'project') {
-    const added = await window.ucpLibrary.addCharacterDocument(JSON.stringify(template, null, 2));
+    const added = await window.ucpLibrary.addCharacterDocument(JSON.stringify(omitInheritedTroopFields(JSON.parse(JSON.stringify(template))), null, 2));
     if (!added) return false;
     projectPath = added.path;
   }
@@ -606,6 +617,13 @@ function findUnknownKeys(activeTemplate, data, path = "") {
   return unknown;
 }
 
+function omitInheritedTroopFields(output) {
+  for (const key of Object.keys(output.aic || {})) {
+    if (key.startsWith("AIVTroops_") && output.aic[key] === "") delete output.aic[key];
+  }
+  return output;
+}
+
 function prepareOutputData() {
   let output = JSON.parse(JSON.stringify(data));
 
@@ -621,7 +639,7 @@ function prepareOutputData() {
     });
   }
 
-  return output;
+  return omitInheritedTroopFields(output);
 }
 
 function characterSnapshot() {
