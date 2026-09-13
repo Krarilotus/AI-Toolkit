@@ -1970,5 +1970,10 @@ html.dockResizing * { user-select: none !important; }
 
 .characterSidebar .populationSourceRow .compactAction { padding: 2px 6px; min-height: 0; font-size: 1rem; font-weight: 500; }
 
-.workspaceTabs .releaseUpdateButton { flex-shrink: 0; padding: 4px 8px; font-size: 11px; -webkit-app-region: no-drag; }
-.workspaceTabs .releaseUpdateButton.releaseAvailable { color: var(--accent-strong); border-color: var(--accent-strong); }
+.workspaceTabs .releaseUpdateButton { flex-shrink: 0; align-self: center; margin-bottom: 5px; padding: 4px 8px; font-size: 11px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-soft); -webkit-app-region: no-drag; }
+.workspaceTabs .releaseUpdateButton.releaseCurrent { background: #19392b; color: #8dddab; border-color: #468862; }
+.workspaceTabs .releaseUpdateButton.releaseAvailable { background: #563c20; color: #ffd49a; border-color: var(--accent-strong); }
+.workspaceTabs .releaseUpdateButton:hover:not(:disabled) { filter: brightness(1.15); }
+.workspaceTabs .releaseUpdateButton:focus-visible { outline: 2px solid var(--text-main); outline-offset: 2px; }
+
+.characterFieldGroup { font-size: 12px; color: var(--accent-strong); border-top: 1px solid var(--line); margin: 14px 0 6px; padding-top: 10px; }
