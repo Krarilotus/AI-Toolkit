@@ -41,7 +41,9 @@
     const count = size * size;
     const surfaces = Array.from({length: count}, (_,k) => terrain?.blocked?.[k] ? [] : [{ k, height:0, kind:'ground' }]);
     const inside = (x,y) => x >= 0 && y >= 0 && x < size && y < size;
-    for (const p of placements) for (const [ri, r] of p.rects.entries()) {
+    // A drawbridge is a walk surface above the moat, independent of build order.
+    const layered=[...placements.filter(p=>Number(p.type)!==105),...placements.filter(p=>Number(p.type)===105)];
+    for (const p of layered) for (const [ri, r] of p.rects.entries()) {
       if ([200,20,21].includes(Number(p.type))) continue;
       const t = Number(p.type);
       const wall = [25,46].includes(t);
@@ -50,7 +52,7 @@
       const stair = t >= 181 && t <= 186;
       for (let y = Math.max(0,r.bottom); y <= Math.min(size-1,r.top); y++)
         for (let x = Math.max(0,r.left); x <= Math.min(size-1,r.right); x++) {
-          const k = y*size+x, tile = { k, ref:p.ref };
+          const k = y*size+x, tile = { k, ref:p.ref, type:t };
           if ((terrain?.hardBlocked?.[k] ?? terrain?.blocked?.[k]) && t !== 105) { surfaces[k]=[]; continue; }
           if (t===52 || r.part==='stockpile' || p.name==='Stockpile') surfaces[k]=[{...tile,height:0,kind:'stockpile'}];
           else if (t===61 && (ri>0 || r.part==='courtyard')) surfaces[k]=[{...tile,height:0,kind:'courtyard'}];
@@ -90,12 +92,18 @@
         const other = isDeck(a) ? b : a;
         if (!(isDeck(other) || other.kind === 'wall' || other.kind === 'stair')) return false;
       } else if (Math.abs(a.height-b.height) > 16) return false;
-      if (a.height === 0 && b.height === 0 && !['stockpile','courtyard','bridge'].includes(a.kind) && !['stockpile','courtyard','bridge'].includes(b.kind) && terrain?.heights && Math.abs(terrain.heights[a.k]-terrain.heights[b.k]) > 8) return false;
+      if (a.height === 0 && b.height === 0 && !['stockpile','courtyard','bridge'].includes(a.kind) && !['stockpile','courtyard','bridge'].includes(b.kind) && terrain?.heights && Math.abs(terrain.heights[a.k]-terrain.heights[b.k]) > 16) return false;
       if (dx && dy) {
         // Elevated diagonal wall walks must remain connected. Do not let a
         // diagonal edge climb a tower from ordinary ground or skip a stair.
         if (a.kind === 'wall' && b.kind === 'wall') return true;
         if (isDeck(a) && isDeck(b) && a.ref != null && a.ref === b.ref) return true;
+        const stair=a.kind==='stair'?a:b.kind==='stair'?b:null;
+        const other=stair===a?b:a;
+        // Adjacent steps include diagonal neighbours. Explicit stair links
+        // must not be discarded by the general elevated-diagonal guard.
+        if(stair && (other.kind==='stair' || other.kind==='deck' ||
+            (other.kind==='tower' && stair.type===186) || other.kind==='wall')) return true;
         if (a.height !== 0 || b.height !== 0) return false;
         const sideA = a.y*size+b.x, sideB=b.y*size+a.x;
         // Ordinary building corners are walkable; never squeeze diagonally
@@ -114,6 +122,16 @@
     return { nodes,surfaces,links,fullWall };
   }
   function routes(placements, size = 100, terrain = null) {
+    if(terrain?.padding>0) {
+      const padding=terrain.padding, edge=size+2*padding;
+      const shifted=placements.map(p=>({...p,rects:p.rects.map(r=>({...r,left:r.left+padding,right:r.right+padding,bottom:r.bottom+padding,top:r.top+padding}))}));
+      const extended=routes(shifted,edge,{...terrain,padding:0});
+      const point=p=>({...p,x:p.x-padding,y:p.y-padding});
+      const result=extended.map(r=>({...r,entry:point(r.entry),path:r.path.map(point)}));
+      result.walkability=new Uint8Array(size*size);
+      for(let y=0;y<size;y++)for(let x=0;x<size;x++)result.walkability[y*size+x]=extended.walkability[(y+padding)*edge+x+padding];
+      return result;
+    }
     const {nodes,surfaces,links,fullWall} = routeTopology(placements,size,terrain);
     const inside = ({x,y}) => x >= 0 && y >= 0 && x < size && y < size;
     const goalAt=(x,y)=>inside({x,y})?surfaces[y*size+x].find(n=>n.height===0):null;
@@ -196,7 +214,10 @@
       const t = Math.max(0, Math.min(1, 1-distance/radius));
       return t*t*(3-2*t);
     };
-    return .7*fade(2) + .3*fade(7);
+    // Keep the second-stage halo readable at 5-6 tiles, then fade smoothly
+    // to zero at seven. This is display intensity, not a probability.
+    const outer=Math.max(0,Math.min(1,1-(Math.max(0,distance)/7)**3));
+    return .35*fade(2) + .65*outer*outer*(3-2*outer);
   }
   function fireExposure(placements, size = 100) {
     const heat = new Float32Array(size*size);

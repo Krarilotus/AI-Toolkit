@@ -762,6 +762,12 @@ function knownMap(filePath, gameRoot) {
 
 // Static terrain constraints for the editor planner. Saved building/path flags
 // are deliberately not imported: the current AIV supplies those structures.
+function pathTileFlags(flags, organism = 0) {
+  const water=Boolean(flags & (1|1048576)) && !(flags & 2097152);
+  const hardBlocked=water || Boolean(flags & (16|32));
+  const blocked=hardBlocked || Boolean(flags & (128|4096|8192|131072|524288)) || Boolean(organism);
+  return {blocked:Number(blocked),hardBlocked:Number(hardBlocked)};
+}
 function pathTerrain(buffer, directory) {
   const logic = readSection(buffer, directory, 1003);
   const organisms = readSection(buffer, directory, ORGANISM_SECTION);
@@ -772,13 +778,12 @@ function pathTerrain(buffer, directory) {
     const [left,right]=rowRange(y); if(x<left || x>right) continue;
     const tile=tileIndex(x,y);
     const flags=logic.readUInt32LE(tile*4);
-    const water=(flags & (1|1048576)) && !(flags & 2097152); // sea/river, except ford
-    const obstacle=flags & (16|32|4096|8192|131072|524288); // edge, tree, boulder, iron
-    blocked[y*400+x]=water || obstacle || (organisms?.readUInt16LE(tile*2) || 0) ? 1 : 0;
-    hardBlocked[y*400+x]=water || (flags & (16|32)) ? 1 : 0;
+    const access=pathTileFlags(flags, organisms?.readUInt16LE(tile*2) || 0);
+    blocked[y*400+x]=access.blocked;
+    hardBlocked[y*400+x]=access.hardBlocked;
     ground[y*400+x]=heights?.[tile] || 0;
   }
-  return {version:2,fingerprint:nativeRendererInternals.sha(buffer),blocked:blocked.toString('base64'),hardBlocked:hardBlocked.toString('base64'),heights:ground.toString('base64')};
+  return {version:3,fingerprint:nativeRendererInternals.sha(buffer),blocked:blocked.toString('base64'),hardBlocked:hardBlocked.toString('base64'),heights:ground.toString('base64')};
 }
 
 function readGameMap(filePath, gameRoot) {
@@ -1079,7 +1084,7 @@ module.exports = {
   readMapTiles,
   readNativeMapTiles,
   // fuer die Tests und fuer Werkzeuge, die eine Karte ohne Electron lesen
-  internals: { readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
+  internals: { pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
                readPictureStock, pictureForValue, readGm1, tgxToRgba, renderTerrain, virtualToFile,
                buildTileAtlas, diamondToRgba, upperTilePicture, packMapPictures, heldGm1, ATLAS_SPALTEN,

@@ -130,3 +130,75 @@ test('the keep courtyard is walkable but the keep building stays solid',()=>{
   assert.equal(g.surfaces[18*30+12].length,0);
   assert.equal(g.surfaces[8*30+12][0].kind,'courtyard');
 });
+
+
+test('stage two remains visibly orange near six tiles and fades continuously to seven',()=>{
+  assert.ok(Math.round(145*a.fireStrength(6))>=25);
+  let previous=1;
+  for(let d=0;d<=7;d+=.01){const value=a.fireStrength(d);assert.ok(value<=previous+1e-10);previous=value;}
+  assert.equal(a.fireStrength(7),0);
+});
+test('consecutive stairs connect in all eight directions, but cannot skip a level',()=>{
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
+    for(let type=181;type<186;type++){
+      const g=a.routeTopology([p(type,rect(5,5)),p(type+1,rect(5+dx,5+dy))],12);
+      const one=g.surfaces[65][0],two=g.surfaces[(5+dy)*12+5+dx][0];
+      assert.ok(g.links[one.id].some(e=>e.to===two.id));assert.ok(g.links[two.id].some(e=>e.to===one.id));
+    }
+  }
+  const g=a.routeTopology([p(186,rect(5,5)),p(184,rect(6,6))],12);
+  assert.ok(!g.links[g.surfaces[65][0].id].some(e=>e.to===g.surfaces[78][0].id));
+});
+test('Stairs 2 and 3 connect diagonally to low walls; other levels cannot jump to them',()=>{
+  for(let type=181;type<=186;type++){
+    const g=a.routeTopology([p(type,rect(5,5)),p(46,rect(6,6))],12);
+    assert.equal(g.links[g.surfaces[65][0].id].some(e=>e.to===g.surfaces[78][0].id),[182,183].includes(type));
+  }
+});
+test('every stair level joins gate decks while Stair 6 joins towers directly',()=>{
+  for(let type=181;type<=186;type++)for(const target of [110,111,112,113,114,144,145,146,147]){
+    const g=a.routeTopology([p(type,rect(5,5)),p(target,rect(6,6,8,8),{ref:'target'})],12);
+    const one=g.surfaces[65][0],two=g.surfaces[78].find(n=>n.height>0);
+    assert.equal(g.links[one.id].some(e=>e.to===two.id),target>=144 || type===186);
+  }
+});
+test('ground traverses height differences through sixteen, but not seventeen',()=>{
+  for(const difference of [8,9,15,16,17]){
+    const heights=new Uint8Array(100);heights[55]=difference;
+    const g=a.routeTopology([],10,{heights}),one=g.surfaces[55][0],two=g.surfaces[54][0];
+    assert.equal(g.links[one.id].some(e=>e.to===two.id),difference<=16);
+  }
+});
+test('map fords remain walkable inside rivers; water, rocky terrain and trees do not',()=>{
+  const {pathTileFlags}=require('../src/node/game-map').internals;
+  assert.equal(pathTileFlags(1048576|2097152).blocked,0);
+  assert.equal(pathTileFlags(1048576).blocked,1);
+  assert.equal(pathTileFlags(128).blocked,1);
+  assert.equal(pathTileFlags(1048576|2097152|4096).blocked,1);
+  const blocked=new Uint8Array(144).fill(1),hardBlocked=blocked.slice();
+  for(let x=1;x<=10;x++)blocked[6*12+x]=hardBlocked[6*12+x]=pathTileFlags(1048576|2097152).blocked;
+  const route=a.routes([p(52,rect(1,6)),p(50,rect(10,6))],12,{blocked,hardBlocked})[0];
+  assert.ok(route.path.length);
+});
+test('a bridge next to the gate crosses a later moat without joining its roof',()=>{
+  const ps=[p(null,rect(0,0,19,19)),p(52,rect(2,5)),p(145,rect(3,3,7,7),{ref:'gate'}),
+    p(105,rect(8,3,12,7)),p(106,rect(8,3,12,7)),p(52,rect(13,5)),p(50,rect(14,5))];
+  const g=a.routeTopology(ps,20);
+  const start=g.surfaces[5*20+2][0],goal=g.surfaces[5*20+13][0],seen=new Set([start.id]),q=[start.id];
+  for(let i=0;i<q.length;i++)for(const edge of g.links[q[i]])if(!seen.has(edge.to)){seen.add(edge.to);q.push(edge.to);}
+  assert.ok(seen.has(goal.id));
+  assert.ok(!g.nodes.some(n=>n.kind==='deck' && seen.has(n.id)));
+  assert.equal(g.surfaces[5*20+10][0].kind,'bridge');
+});
+
+
+test('map navigation margin permits paths around the AIV boundary without shifting entrance dots',()=>{
+  const placements=[p(106,rect(0,5,9,5)),p(52,rect(4,1)),p(50,rect(4,8))];
+  assert.equal(a.routes(placements,10)[0].path.length,0);
+  const margin={padding:2,blocked:new Uint8Array(196),hardBlocked:new Uint8Array(196),heights:new Uint8Array(196)};
+  const result=a.routes(placements,10,margin);
+  assert.deepEqual(result[0].entry,{x:4,y:7,side:0});
+  assert.ok(result[0].path.some(p=>p.x<0 || p.x>=10));
+  assert.equal(result.walkability.length,100);
+  assert.equal(result.walkability[55],0);
+});
