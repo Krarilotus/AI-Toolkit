@@ -161,3 +161,29 @@ test('path-map hover reports blocked entrances and walkability even without item
   assert.equal(vm.runInContext('itemLabelAtTile({x:1,y:1})',context),'Ground passage and raised walkway');
   assert.equal(vm.runInContext('itemLabelAtTile({x:0,y:0})',context),'Blocked tile');
 });
+
+
+test('flood selection includes diagonal same-type placements and preserves modifier semantics without edits',()=>{
+  const editor=fs.readFileSync(path.join(__dirname,'../src/js/castle-editor.js'),'utf8');
+  const begin=editor.indexOf('  function floodSelect('),end=editor.indexOf('\n  function ',begin+10);
+  const items=[{ref:'a',type:25,off:101},{ref:'b',type:25,off:202},{ref:'gap',type:25,off:505},{ref:'other',type:26,off:102}];
+  const state={selected:new Set(),gesture:'move',currentItemType:25};
+  const context=vm.createContext({state,geometry,GRID:100,placementRefs:()=>items,
+    topmostRefAtTile:tile=>items.find(p=>p.off===tile.y*100+tile.x)?.ref,
+    footprintRects:(type,off)=>[{left:off%100,right:off%100,bottom:Math.floor(off/100),top:Math.floor(off/100)}],
+    activateBuildStepForRefs:()=>{},updateToolAvailability:()=>{},renderPalette:()=>{},updateSelectedItemInfo:()=>{},renderBuildList:()=>{},scheduleDraw:()=>{},setStatus:()=>{}});
+  vm.runInContext(editor.slice(begin,end),context);
+  const click=(x,y,event={})=>context.floodSelect({x,y},event);
+  click(1,1);assert.deepEqual([...state.selected],['a','b']);assert.equal(state.gesture,null);
+  click(5,5,{shiftKey:true});assert.deepEqual([...state.selected],['a','b','gap']);
+  click(1,1,{ctrlKey:true});assert.deepEqual([...state.selected],['gap']);
+  click(1,1,{metaKey:true});assert.deepEqual([...state.selected],['gap','a','b']);
+  click(0,0,{shiftKey:true});assert.equal(state.selected.size,3);
+  click(0,0);assert.equal(state.selected.size,0);
+  assert.deepEqual(items.map(p=>p.off),[101,202,505,102]);
+});
+test('non-destructive connected selection can include a Keep while deletion still protects it',()=>{
+  const keep=placement('keep',43,56,61);
+  assert.deepEqual(geometry.floodPlacementRefs(keep,[keep],p=>geometry.footprintRectsAtXY(p.type,p.x,p.y),()=>false,100,false),new Set(['keep']));
+  assert.deepEqual(flood(keep,[keep]),new Set());
+});

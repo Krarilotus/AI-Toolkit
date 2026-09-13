@@ -1112,6 +1112,31 @@
             (gesperrt ? ` (${gesperrt} locked and left alone)` : ''));
   }
 
+  function floodSelect(tile, event) {
+    const placements = placementRefs();
+    const hit = topmostRefAtTile(tile);
+    const start = placements.find(placement => placement.ref === hit);
+    // Selection is non-destructive: locked steps and the Keep remain selectable.
+    const refs = geometry.floodPlacementRefs(start, placements,
+      placement => footprintRects(placement.type, placement.off), () => false, GRID, false);
+    const toggle = event.ctrlKey || event.metaKey;
+    const remove = toggle && state.selected.has(hit);
+    if (!event.shiftKey && !toggle) state.selected.clear();
+    for (const ref of refs) {
+      if (remove) state.selected.delete(ref);
+      else state.selected.add(ref);
+    }
+    state.gesture = null;
+    state.currentItemType = null;
+    activateBuildStepForRefs(state.selected);
+    updateToolAvailability();
+    renderPalette();
+    updateSelectedItemInfo();
+    renderBuildList();
+    scheduleDraw();
+    setStatus(`Selected ${state.selected.size} placements ? Shift adds; Ctrl-click toggles a connected group. Switch to Select / Move to drag.`);
+  }
+
   function floodDelete(tile) {
     const placements = placementRefs();
     const ref = topmostRefAtTile(tile);
@@ -1722,6 +1747,7 @@
     if (lineOnly && isPlacementTool(tool)) tool = 'line';
     state.tool = tool;
     document.getElementById('castleDeleteModeLabel').hidden = tool !== 'delete';
+    document.getElementById('castleSelectModeLabel').hidden = tool !== 'select';
     if (remember && isPlacementTool(tool) && !lineOnly) state.lastPlacementTool = tool;
     if (tool !== 'copy') state.copyBuffer = null;
     if (tool === 'copy' || tool === 'replace') state.currentItemType = null;
@@ -3052,6 +3078,10 @@
     // die selbst einen Kasten ziehen (Delete) oder gerade eine Kopie in der
     // Hand halten (Copy) - dort wuerde die Weiche ihre eigene Geste
     // wegnehmen.
+    if (state.tool === 'select' && document.getElementById('castleSelectMode').value === 'flood') {
+      floodSelect(tile, event);
+      return;
+    }
     const boxInstead = state.currentItemType == null || event.ctrlKey || event.metaKey;
     const ownsTheDrag = state.tool === 'delete' || state.tool === 'replace' || (state.tool === 'copy' && state.copyBuffer);
     if (boxInstead && !ownsTheDrag) {
