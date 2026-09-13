@@ -317,3 +317,17 @@ In the current GreekSea/Kratoloros fixture the mill now selects `(63,37)` on the
 stockpile cross instead of the disconnected `(65,40)` pocket. All 87 worker
 buildings reach the first stockpile. This corrects the earlier assumption in
 these notes that entrance choice should ignore area connectivity.
+
+### Recruitment gathering grounds
+
+Barracks and mercenary-post AIV footprints (87 and 86) now distinguish their
+solid 5x5 structure from the three adjoining 5x5 gathering grounds. The native
+`placeBarracks` routine at `0x005076A0` creates those three components using the
+offsets at `0x00B49090`. Each ground marks only its central flag tile occupied
+(`0x00507876..0x0050788D` and the equivalent two loops), rather than its whole
+area. The default AIV footprint places the structure in the north-west quadrant.
+
+The planner keeps that structure and the three flag tiles blocked and opens the
+other 72 tiles at the placement base height, with no stockpile-style height lift.
+These surfaces participate in the existing height-aware shortest-path graph and
+can serve as worker entrance candidates. Terrain obstacles remain enforced.

@@ -301,3 +301,19 @@ test('mill skips an isolated entrance and enters the reachable stockpile cross',
   assert.deepEqual(result.path.at(-1),{x:5,y:7,height:10});
   assert.ok(result.path.every(t=>t.x===7||t.y===7));
 });
+
+
+test('recruitment footprints keep only the building and flag tiles solid',()=>{
+  for(const type of [86,87]) {
+    const g=a.routeTopology([p(type,rect(3,3,12,12))],16);
+    let walkable=0;
+    for(let y=3;y<=12;y++)for(let x=3;x<=12;x++) {
+      const dx=x-3,dy=12-y,solid=(dx<5&&dy<5)||(dx%5===2&&dy%5===2);
+      assert.equal(g.surfaces[y*16+x].length,solid?0:1);
+      if(!solid)walkable++;
+    }
+    assert.equal(walkable,72);
+    const rs=a.routes([p(type,rect(3,3,12,12)),p(52,rect(2,5)),p(50,rect(13,4,15,6))],20);
+    assert.ok(rs[0].path.some(t=>t.x>3&&t.x<12&&t.y>=3&&t.y<8));
+  }
+});
