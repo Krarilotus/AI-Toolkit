@@ -122,7 +122,6 @@ document.getElementById("search").oninput = (e)=>{
 };
 
 let currentFilePath = null;
-let currentFileReadOnly = false;
 let AIName = "";
 let savedCharacterSnapshot = null;
 
@@ -444,7 +443,6 @@ function loadFromContent(content, path, options = {}) {
   mergeDefaults(data, activeTemplate);
 
   currentFilePath = path || null;
-  currentFileReadOnly = Boolean(options.readOnly);
 
   if (!options.projectManaged) window.ucpLibrary?.detachCastleProject?.();
 
@@ -501,7 +499,6 @@ async function newCharacterFile() {
   activeSections = sections;
   data = JSON.parse(JSON.stringify(template));
   currentFilePath = projectPath;
-  currentFileReadOnly = false;
   AIName = projectPath ? projectPath.split(/[\\/]/).slice(-2, -1)[0] || '' : '';
   searchQuery = '';
   document.getElementById('search').value = '';
@@ -674,7 +671,6 @@ async function saveFile() {
     const newPath = await window.electronAPI.saveFile(content);
     if (!newPath) return false;
     currentFilePath = newPath;
-    currentFileReadOnly = false;
     markCharacterSaved();
     return true;
   } catch (err) {
@@ -689,10 +685,9 @@ function updateFilePathDisplay() {
   document.getElementById("saveBtn").disabled = false;
   document.getElementById("saveAsBtn").disabled = false;
   const dirtyMarker = isCharacterDirty() ? " *" : "";
-  const readOnlyMarker = currentFileReadOnly ? " [read-only]" : "";
 
   if (!currentFilePath) {
-    el.textContent = `No file loaded${dirtyMarker}${readOnlyMarker}`;
+    el.textContent = `No file loaded${dirtyMarker}`;
     el.style.fontSize = "12px";
     return;
   }
@@ -705,7 +700,7 @@ function updateFilePathDisplay() {
     ? "..." + lastParts.join(separator)
     : currentFilePath;
 
-  el.textContent = `${shortPath}${dirtyMarker}${readOnlyMarker}`;
+  el.textContent = `${shortPath}${dirtyMarker}`;
   el.title = currentFilePath;
   el.style.fontSize = "12px";
 }
@@ -1019,7 +1014,6 @@ window.characterEditor = {
     getContent: () => JSON.stringify(prepareOutputData(), null, 2) + "\n",
     isDirty: isCharacterDirty,
     getPath: () => currentFilePath,
-    isReadOnly: () => currentFileReadOnly,
     markSaved: markCharacterSaved
 };
 

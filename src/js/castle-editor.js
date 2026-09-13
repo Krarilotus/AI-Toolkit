@@ -109,7 +109,6 @@
     filePath: null,
     sourcePath: null,
     sourceBytes: null,
-    readOnly: false,
     dirty: false,
     tool: 'single',
     lastPlacementTool: 'single',
@@ -286,7 +285,8 @@
         if (!Number.isInteger(n) || n < 0 || n > 9999) throw new Error(`Frame ${i + 1}: invalid tile offset ${off}.`);
         return n;
       });
-      frame.shouldPause = Boolean(frame.shouldPause);
+      if (frame.shouldPause && diagnostics) diagnostics.removedPauses = (diagnostics.removedPauses || 0) + 1;
+      frame.shouldPause = false;
       normalizedFrames.push(frame);
     });
     doc.frames = normalizedFrames;
@@ -587,7 +587,7 @@
 
   function updateFileLabel() {
     const name = state.filePath ? state.filePath.split(/[\\/]/).pop() : 'Untitled.aiv';
-    els.fileLabel.textContent = `${name}${state.dirty ? ' *' : ''}${state.readOnly ? ' [read-only]' : ''}`;
+    els.fileLabel.textContent = `${name}${state.dirty ? ' *' : ''}`;
     els.fileLabel.title = state.filePath || '';
     document.getElementById('castleSaveBtn').disabled = false;
     document.getElementById('castleSaveAsBtn').disabled = false;
@@ -662,7 +662,6 @@
     state.filePath = null;
     state.sourcePath = null;
     state.sourceBytes = null;
-    state.readOnly = false;
     state.undo.length = 0;
     state.redo.length = 0;
     state.selected.clear();
@@ -713,7 +712,6 @@
       state.filePath = path || null;
       state.sourcePath = options.source === 'aiv' && path ? path : null;
       state.sourceBytes = options.source === 'aiv' ? retainSourceBytes(options.sourceBytes) : null;
-      state.readOnly = false;
       state.undo.length = 0;
       state.redo.length = 0;
       state.selected.clear();
@@ -724,7 +722,8 @@
       updateToolAvailability();
       if (!options.projectManaged) window.ucpLibrary?.detachCastleProject?.();
       renderPalette();
-      setDirty(false);
+      // Re-encode imported pauses on save instead of reusing the original bytes.
+      setDirty(Boolean(diagnostics.removedPauses));
       renderBuildList();
       centerMap();
       const legacyNote = diagnostics.removedLegacySteps
@@ -733,7 +732,8 @@
       const formatNote = options.source === 'aiv'
         ? 'native AIV'
         : options.source === 'aivjson' ? 'AIVJSON compatibility import' : 'castle document';
-      setStatus(`Opened ${path ? path.split(/[\\/]/).pop() : 'castle'} — ${frames().length} build steps · ${formatNote}${legacyNote}`);
+      const pauseNote = diagnostics.removedPauses ? ` — disabled ${diagnostics.removedPauses} build-step pause(s)` : '';
+      setStatus(`Opened ${path ? path.split(/[\\/]/).pop() : 'castle'} — ${frames().length} build steps · ${formatNote}${legacyNote}${pauseNote}`);
     } catch (err) {
       alert(`Could not open AIV castle:\n\n${err.message}`);
       console.error(err);
@@ -805,7 +805,6 @@
       state.filePath = result.path || result;
       state.sourcePath = state.filePath;
       state.sourceBytes = retainSourceBytes(result.sourceBytes) || state.sourceBytes;
-      state.readOnly = false;
       setDirty(false);
       const name = state.filePath.split(/[\\/]/).pop();
       const message = `Saved ${name}`;
@@ -1050,10 +1049,10 @@
   // Teil einer groesseren Auswahl ist, gleich die ganze Auswahl mit. Alle
   // bekommen denselben Zustand wie der angeklickte, damit ein zweiter Klick
   // sie wieder gemeinsam oeffnet.
-  function toggleFrameLock(fi) {
+  function toggleFrameLock(fi, enabled = !frames()[fi]?.locked) {
     const frame = frames()[fi];
     if (!frame) return;
-    const wert = !frame.locked;
+    const wert = enabled;
     const ausgewaehlt = selectedBuildFrameIndexes();
     const betroffen = ausgewaehlt.includes(fi) && ausgewaehlt.length > 1 ? ausgewaehlt : [fi];
     for (const index of betroffen) {
@@ -1126,20 +1125,97 @@
   }
 
   function mergeSelectedSteps() {
+    const selected = new Map(selectedBuildFrameIndexes().map(fi =>
+      [fi, new Set(frames()[fi].tilePositionOfsets.map((_off, oi) => oi))]));
+    openMergeDialog(selected, false);
+  }
+
+  let pendingMerge = null;
+  function openMergeDialog(selections, area = true) {
+    const groups = geometry.stepMergeGroups(frames(), selections, mergeableTypes());
+    const rows = document.getElementById('castleMergeRows');
+    rows.replaceChildren();
+    pendingMerge = {selections, document: state.document, revision: state.documentRevision};
+    for (const group of groups) {
+      const row = document.createElement('label');
+      row.className = 'castleMergeChoice';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox'; checkbox.value = String(group.type);
+      checkbox.disabled = group.steps.size < 2;
+      checkbox.checked = !checkbox.disabled;
+      const text = document.createElement('span');
+      text.textContent = `${itemName(group.type)} — ${group.count} placements in ${group.steps.size} steps`;
+      checkbox.addEventListener('change', updateMergeApplyState);
+      row.append(checkbox, text); rows.append(row);
+    }
+    document.getElementById('castleMergeSummary').textContent = area
+      ? 'Merge checked placements inside the box at their earliest step, separately by type. Placements outside the box and locked steps stay untouched.'
+      : 'Merge checked types from the selected steps at their earliest step, separately by type. Locked steps stay untouched.';
+    document.getElementById('castleMergeError').textContent = groups.some(group => group.steps.size > 1)
+      ? '' : 'No mergeable type spans two unlocked steps in this selection.';
+    updateMergeApplyState();
+    document.getElementById('castleMergeDialog').showModal();
+  }
+
+  function updateMergeApplyState() {
+    document.getElementById('castleMergeApply').disabled =
+      !document.querySelector('#castleMergeRows input:checked:not(:disabled)');
+  }
+
+  function applyMerge(event) {
+    event.preventDefault();
+    if (!pendingMerge) return;
     try {
-      const indexes = selectedBuildFrameIndexes();
-      const proposal = geometry.mergeBuildSteps(frames(), indexes, mergeableTypes());
+      if (pendingMerge.document !== state.document || pendingMerge.revision !== state.documentRevision)
+        throw new Error('The castle changed. Cancel and select the placements again.');
+      const checked = [...document.querySelectorAll('#castleMergeRows input:checked:not(:disabled)')].map(input => Number(input.value));
+      const proposal = geometry.mergeStepPlacements(frames(), pendingMerge.selections, checked, mergeableTypes());
       pushUndo();
       state.document.frames = proposal.frames;
-      selectBuildFrame(proposal.index);
-      changed(`Merged ${indexes.length} steps at step ${proposal.index + 1}; any pause follows the merged step`);
-    } catch (error) {
-      setStatus(error.message);
+      selectBuildFrames(proposal.mergedIndexes);
+      changed(`Merged ${proposal.mergedIndexes.length} item types at their earliest selected steps`);
+      document.getElementById('castleMergeDialog').close();
+    } catch (error) { document.getElementById('castleMergeError').textContent = error.message; }
+  }
+
+  function mergeArea(refs) {
+    const selections = new Map();
+    for (const ref of refs) {
+      const parsed = parseRef(ref);
+      if (parsed.kind !== 'frame') continue;
+      if (!selections.has(parsed.fi)) selections.set(parsed.fi, new Set());
+      selections.get(parsed.fi).add(parsed.oi);
     }
+    openMergeDialog(selections);
   }
 
   function mergeableTypes() {
-    return [...(state.categories.Walls || []), ...(state.categories.Moat || []), 99]; // Pitch
+    return Object.keys(state.constants).map(Number).filter(type => !isUnitType(type) && allowsMultiplePerStep(type));
+  }
+
+  function closeBuildContextMenu() {
+    document.getElementById('castleBuildContextMenu').hidden = true;
+  }
+
+  function openBuildContextMenu(event, fi) {
+    event.preventDefault(); event.stopPropagation();
+    if (!selectedBuildFrameIndexes().includes(fi)) {
+      selectBuildFrame(fi); renderBuildList(); scheduleDraw();
+    }
+    const selected = selectedBuildFrameIndexes();
+    const selections = new Map(selected.map(index => [index, new Set(frames()[index].tilePositionOfsets.map((_off, oi) => oi))]));
+    const menu = document.getElementById('castleBuildContextMenu');
+    const merge = document.getElementById('castleContextMerge');
+    merge.disabled = !geometry.stepMergeGroups(frames(), selections, mergeableTypes()).some(group => group.steps.size > 1);
+    merge.onclick = () => { closeBuildContextMenu(); mergeSelectedSteps(); };
+    const lock = document.getElementById('castleContextLock');
+    const enabled = !selected.every(frameIsLocked);
+    lock.textContent = enabled ? 'Lock positions' : 'Unlock positions';
+    lock.onclick = () => { closeBuildContextMenu(); toggleFrameLock(fi, enabled); };
+    menu.hidden = false;
+    menu.style.left = `${Math.max(0, Math.min(event.clientX, window.innerWidth - menu.offsetWidth))}px`;
+    menu.style.top = `${Math.max(0, Math.min(event.clientY, window.innerHeight - menu.offsetHeight))}px`;
+    (merge.disabled ? lock : merge).focus();
   }
 
   function placeSingle(tile) {
@@ -1659,7 +1735,7 @@
   }
 
   function toolLabel(tool) {
-    return ({ single: 'Single', brush: 'Brush', line: 'Line', select: 'Select / Move', copy: 'Copy Selection', replace: 'Replace Area', delete: 'Delete Area', saveCastle: 'Save castle', openCastle: 'Open castle' })[tool] || tool;
+    return ({ single: 'Single', brush: 'Brush', line: 'Line', select: 'Select / Move', copy: 'Copy Selection', replace: 'Replace Area', merge: 'Merge Area', delete: 'Delete Area', saveCastle: 'Save castle', openCastle: 'Open castle' })[tool] || tool;
   }
 
   function isPlacementTool(tool) {
@@ -1724,9 +1800,11 @@
     document.getElementById('castleDeleteModeLabel').hidden = tool !== 'delete';
     if (remember && isPlacementTool(tool) && !lineOnly) state.lastPlacementTool = tool;
     if (tool !== 'copy') state.copyBuffer = null;
-    if (tool === 'copy' || tool === 'replace') state.currentItemType = null;
-    document.querySelectorAll('.castleTool').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
-    els.canvas.classList.toggle('tool-select', tool === 'select' || tool === 'copy' || tool === 'replace');
+    if (tool === 'copy' || tool === 'replace' || tool === 'merge') state.currentItemType = null;
+    // Copy remains an internal clipboard mode, not a separate toolbar tool.
+    const visibleTool = tool === 'copy' ? 'select' : tool;
+    document.querySelectorAll('.castleTool').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === visibleTool));
+    els.canvas.classList.toggle('tool-select', tool === 'select' || tool === 'copy' || tool === 'replace' || tool === 'merge');
     updateToolAvailability();
     updateBrushSizeUI();
     updateSelectedItemInfo();
@@ -2084,14 +2162,8 @@
   }
 
   function renderBuildList() {
-    const mergeButton = document.getElementById('castleMergeSteps');
-    try {
-      geometry.mergeBuildSteps(frames(), selectedBuildFrameIndexes(), mergeableTypes());
-      mergeButton.disabled = false;
-    } catch { mergeButton.disabled = true; }
     updatePopulationPanel();
     updateCostPanel();
-    els.buildList.innerHTML = '';
     const activeStep = Number.isInteger(state.insertionFrameIndex) && state.insertionFrameIndex >= 0 && state.insertionFrameIndex < frames().length
       ? state.insertionFrameIndex
       : null;
@@ -2102,6 +2174,24 @@
     els.buildSliderValue.textContent = activeStep == null ? 'No step selected' : `Step ${activeStep + 1}`;
     const rallypointCount = state.document.miscItems.filter(item => isUnitType(item.itemType)).length;
     els.buildCount.textContent = `${frames().length} step${frames().length === 1 ? '' : 's'}`;
+    // Scrubbing changes row state, not row content. Preserve the DOM, listeners,
+    // scroll position and drag target until the actual document changes.
+    if (state.buildListRevision === (state.documentRevision || 0)) {
+      for (const row of els.buildList.children) {
+        const fi = Number(row.dataset.index), frame = frames()[fi];
+        const selected = frame.tilePositionOfsets.length > 0 && frame.tilePositionOfsets.every((_off, oi) => state.selected.has(frameRefKey(fi, oi)));
+        row.classList.toggle('selected', selected || fi === activeStep);
+        row.classList.toggle('future', activeStep != null && fi > activeStep);
+        row.classList.toggle('current', fi === activeStep);
+        row.classList.toggle('locked', Boolean(frame.locked));
+        row.draggable = !frame.locked;
+        if (fi === activeStep) row.setAttribute('aria-current', 'step');
+        else row.removeAttribute('aria-current');
+      }
+      return;
+    }
+    state.buildListRevision = state.documentRevision || 0;
+    els.buildList.innerHTML = '';
     frames().forEach((frame, fi) => {
       const type = Number(frame.itemType);
       const count = (frame.tilePositionOfsets || []).length;
@@ -2135,16 +2225,11 @@
       down.type = 'button'; down.textContent = '↓'; down.title = 'Move selected step(s) down';
       up.addEventListener('click', e => { e.stopPropagation(); moveBuildSelection(fi, -1); });
       down.addEventListener('click', e => { e.stopPropagation(); moveBuildSelection(fi, 1); });
-      const lock = document.createElement('button');
-      lock.type = 'button';
-      lock.className = 'buildLock' + (frame.locked ? ' on' : '');
-      lock.textContent = frame.locked ? '🔒' : '🔓';
-      lock.title = frame.locked ? 'Locked - click to open' : 'Lock this step against changes';
-      lock.addEventListener('click', e => { e.stopPropagation(); toggleFrameLock(fi); });
       if (frame.locked) row.classList.add('locked');
       row.draggable = !frame.locked;
-      right.append(meta, lock, up, down);
+      right.append(meta, up, down);
       row.append(index, name, right);
+      row.addEventListener('contextmenu', event => openBuildContextMenu(event, fi));
 
       row.addEventListener('click', event => {
         const selectedFrames = updateBuildSelection(fi, event);
@@ -2186,12 +2271,20 @@
 
   function selectBuildStepFromSlider() {
     if (els.buildSlider.disabled || frames().length === 0) return;
-    const frameIndex = Math.max(0, Math.min(frames().length - 1, Number(els.buildSlider.value) - 1));
-    selectBuildFrame(frameIndex);
-    renderBuildList();
-    els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`)?.scrollIntoView({ block: 'nearest' });
-    scheduleDraw();
-    setStatus(`Selected build step ${frameIndex + 1} — new buildings will be inserted after it`);
+    state.pendingScrubIndex = Number(els.buildSlider.value) - 1;
+    if (state.scrubPending) return;
+    state.scrubPending = true;
+    const revision = state.documentRevision;
+    requestAnimationFrame(() => {
+      state.scrubPending = false;
+      if (els.buildSlider.disabled || frames().length === 0 || revision !== state.documentRevision) return;
+      const frameIndex = Math.max(0, Math.min(frames().length - 1, state.pendingScrubIndex));
+      selectBuildFrame(frameIndex);
+      renderBuildList();
+      els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`)?.scrollIntoView({ block: 'nearest' });
+      scheduleDraw();
+      setStatus(`Selected build step ${frameIndex + 1} — new buildings will be inserted after it`);
+    });
   }
 
   function unlockedFrameIndexes(indexes) {
@@ -2334,6 +2427,7 @@
   }
 
   function invalidatePlacementCache() {
+    state.documentRevision = (state.documentRevision || 0) + 1;
     state.placementCache = null;
     state.staticCacheDirty = true;
   }
@@ -2507,6 +2601,7 @@
 
   function draw() {
     if (!state.canvasWidth || !state.canvasHeight) return;
+    if (els.canvas.getClientRects && !els.canvas.getClientRects().length) return;
     if (state.staticCacheDirty) rebuildStaticCache();
 
     ctx = displayCtx;
@@ -2556,7 +2651,7 @@
     // Draw markers last so stacked sprites cannot cover their numbers or counts.
     drawUnitMarkers(proposed);
 
-    if ((state.gesture === 'select-marquee' || state.gesture === 'copy-marquee' || state.gesture === 'replace-marquee' || state.gesture === 'delete-marquee') && state.dragStartScreen && state.marqueeEnd) {
+    if ((state.gesture === 'select-marquee' || state.gesture === 'copy-marquee' || state.gesture === 'replace-marquee' || state.gesture === 'merge-marquee' || state.gesture === 'delete-marquee') && state.dragStartScreen && state.marqueeEnd) {
       const x = Math.min(state.dragStartScreen.x, state.marqueeEnd.x);
       const y = Math.min(state.dragStartScreen.y, state.marqueeEnd.y);
       const w = Math.abs(state.dragStartScreen.x - state.marqueeEnd.x);
@@ -2942,7 +3037,7 @@
     // Hand halten (Copy) - dort wuerde die Weiche ihre eigene Geste
     // wegnehmen.
     const boxInstead = state.currentItemType == null || event.ctrlKey || event.metaKey;
-    const ownsTheDrag = state.tool === 'delete' || state.tool === 'replace' || (state.tool === 'copy' && state.copyBuffer);
+    const ownsTheDrag = state.tool === 'delete' || state.tool === 'replace' || state.tool === 'merge' || (state.tool === 'copy' && state.copyBuffer);
     if (boxInstead && !ownsTheDrag) {
       beginSelectGesture(tile, event);
       return;
@@ -3001,6 +3096,11 @@
       state.selected.clear();
       state.gesture = 'replace-marquee';
       scheduleDraw();
+      return;
+    }
+    if (state.tool === 'merge') {
+      state.gesture = 'merge-marquee';
+      scheduleDraw(false);
       return;
     }
     if (state.tool === 'delete') {
@@ -3131,7 +3231,7 @@
         if (!route.length) setStatus('No unobstructed route to that tile.');
         for (const p of route) brushAdd(p);
       }
-    } else if (state.gesture === 'select-marquee' || state.gesture === 'copy-marquee' || state.gesture === 'replace-marquee' || state.gesture === 'delete-marquee') {
+    } else if (state.gesture === 'select-marquee' || state.gesture === 'copy-marquee' || state.gesture === 'replace-marquee' || state.gesture === 'merge-marquee' || state.gesture === 'delete-marquee') {
       state.marqueeEnd = pos;
       scheduleDraw(false);
     } else if (state.gesture === 'move' && tile && state.dragStartTile) {
@@ -3196,6 +3296,8 @@
         state.selected.clear();
         renderBuildList();
       }
+    } else if (state.gesture === 'merge-marquee') {
+      mergeArea(refsInMarquee());
     } else if (state.gesture === 'delete-marquee') {
       const refs = refsInMarquee();
       if (refs.size) {
@@ -3602,7 +3704,27 @@
   els.shortcutDefaults.addEventListener('click', () => populateShortcutDialog(DEFAULT_TOOL_SHORTCUTS, camera.defaults));
   document.getElementById('castleCameraLegacy').addEventListener('click', () => populateCameraDialog(camera.defaults));
   document.getElementById('castleCameraArrows').addEventListener('click', () => populateCameraDialog(camera.arrows));
-  document.getElementById('castleMergeSteps').addEventListener('click', mergeSelectedSteps);
+  document.getElementById('castleMergeForm').addEventListener('submit', applyMerge);
+  document.getElementById('castleMergeCancel').addEventListener('click', () => document.getElementById('castleMergeDialog').close());
+  document.getElementById('castleMergeDialog').addEventListener('close', () => { pendingMerge = null; });
+  document.addEventListener('pointerdown', event => {
+    if (!document.getElementById('castleBuildContextMenu').contains(event.target)) closeBuildContextMenu();
+  });
+  document.addEventListener('keydown', event => {
+    const menu = document.getElementById('castleBuildContextMenu');
+    if (menu.hidden) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeBuildContextMenu(); els.canvas.focus(); }
+    if (event.key === 'Tab') closeBuildContextMenu();
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const buttons = [...menu.querySelectorAll('button:not(:disabled)')];
+      const current = buttons.indexOf(document.activeElement);
+      buttons[(current + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+    }
+  });
+  window.addEventListener('blur', closeBuildContextMenu);
+  window.addEventListener('resize', closeBuildContextMenu);
+  els.buildList.addEventListener('scroll', closeBuildContextMenu);
   for (const input of els.shortcutForm.querySelectorAll('.castleCameraKey')) {
     input.addEventListener('keydown', event => {
       if (event.key === 'Tab' || event.key === 'Escape') return;
@@ -3754,13 +3876,14 @@
     setStatus,
     isDirty: () => state.dirty,
     getPath: () => state.filePath,
-    isReadOnly: () => state.readOnly,
+    clearSelectionAndItem,
     markSaved: sourceBytes => {
       state.sourceBytes = retainSourceBytes(sourceBytes) || state.sourceBytes;
       setDirty(false);
     },
     getSourceBytes: () => state.sourceBytes,
     getDocument: outputDocument,
+    getDocumentRevision: () => state.documentRevision || 0,
     getActiveBuildStep: () => state.insertionFrameIndex,
     // Fuer die 2.5D-Ansicht: ein Zeigerereignis mit { tileFromOutside: {x, y} }
     // durchreichen. Alles andere - Werkzeugwahl, Vorschau, Rueckgaengig -
@@ -3783,6 +3906,11 @@
     // Die 2.5D-Ansicht malt daraus ihre eigene Vorschau - sie hat keinen
     // Zeiger auf der Karte und koennte sie sonst nicht zeigen.
     getPlacementPreview() {
+      if (state.tool === 'copy' && state.copyBuffer && state.hoverTile) {
+        return { tiles: copyProposalAt(state.hoverTile).entries.map(entry => ({
+          x: entry.x, y: entry.y, itemType: entry.type
+        })) };
+      }
       if (state.currentItemType == null || !isPlacementTool(state.tool)) return null;
       const erster = lineSequence(state.currentItemType)[0] ?? state.currentItemType;
 
@@ -3806,7 +3934,7 @@
     },
     getMarquee() {
       const zieht = state.gesture === 'select-marquee' || state.gesture === 'copy-marquee'
-                 || state.gesture === 'replace-marquee' || state.gesture === 'delete-marquee';
+                 || state.gesture === 'replace-marquee' || state.gesture === 'merge-marquee' || state.gesture === 'delete-marquee';
       if (!zieht || !state.dragStartTile || !state.marqueeEnd) return null;
       const ende = screenToTile(state.marqueeEnd);
       if (!ende) return null;

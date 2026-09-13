@@ -157,8 +157,8 @@
           </span>
           <button type="button" class="castleTool" data-tool="bucket" title="Fills everything up to a wall &#8212; the edge of the map counts as one. Shortcut: 7 or F">Fill <kbd>7</kbd></button>
           <button type="button" class="castleTool" data-tool="select" title="Shortcut: 3 or V">Select / Move <kbd>4</kbd></button>
-          <button type="button" class="castleTool" data-tool="copy" title="Shortcut: 5 or C &#8212; Ctrl+C copies what is selected, Ctrl+V places it at the cursor">Copy<kbd>5</kbd></button>
           <button type="button" class="castleTool" data-tool="replace" title="Draw a box, then choose replacements by item type. Shortcut: 8 or R">Replace<kbd>8</kbd></button>
+          <button type="button" class="castleTool" data-tool="merge" title="Draw a box to merge placements by item type">Merge</button>
           <button type="button" class="castleTool" data-tool="delete" title="Shortcut: 4 or D">Delete<kbd>4</kbd></button>
           <label id="castleDeleteModeLabel" class="castleProjectChoice" hidden>Delete mode
             <select id="castleDeleteMode">
@@ -198,8 +198,7 @@
             </div>
             <input id="castleBuildSlider" type="range" min="1" max="1" value="1" step="1" disabled aria-label="Select and scroll to a build step">
           </div>
-          <div class="buildHint">Drag steps to reorder. Use Ctrl+click or Shift+click to select several steps.</div>
-          <button id="castleMergeSteps" type="button" disabled title="Select two or more unlocked steps of exactly the same wall, moat or pitch type. Merges at the earliest selected step; any pause is kept at the end.">Merge selected steps</button>
+          <div class="buildHint">Drag steps to reorder. Ctrl+click or Shift+click selects several steps. Right-click to merge or lock positions.</div>
           <div id="castleBuildList" class="castleBuildList"></div>
           <section id="castlePopulationOverview" class="castlePopulationOverview castleOverviewPanel" data-overview="population" aria-label="Population up to the selected build step">
             <div class="populationOverviewTitle castleOverviewTitle">
@@ -523,10 +522,10 @@
       <div><button id="castleCameraLegacy" type="button">Photoshop controls</button>
         <button id="castleCameraArrows" type="button">Arrow keys + wheel zoom</button></div>
       <label>Mouse wheel <select id="castleCameraWheel">
-        <option value="legacy">Original (plan: scroll pans, Alt+scroll zooms)</option>
-        <option value="zoom">Scroll zooms, Shift+scroll pans</option>
+        <option value="legacy">Scroll pans, Alt+scroll zooms (both views)</option>
+        <option value="zoom">Scroll zooms, Alt/Shift+scroll pans</option>
       </select></label>
-      <p>Ctrl+scroll pans horizontally. Middle-drag pans. Camera keys accept letters, numbers or arrows; Backspace clears. Hold Shift to pan faster. C and X are reserved for rotation.</p>
+      <p>Ctrl+scroll pans horizontally. In wheel-zoom mode, Alt+scroll or Shift+scroll pans vertically. Middle-drag pans. Camera keys accept letters, numbers or arrows; Backspace clears. Hold Shift to pan faster. C and X are reserved for rotation.</p>
       <div class="castleCameraKeyGrid">
         <label>Left <input class="castleCameraKey" data-direction="left" readonly></label>
         <label>Right <input class="castleCameraKey" data-direction="right" readonly></label>
@@ -545,6 +544,25 @@
   </form>
 </dialog>
 
+<div id="castleBuildContextMenu" class="castleBuildContextMenu" role="menu" aria-label="Build-step actions" hidden>
+  <button id="castleContextMerge" type="button" role="menuitem">Merge selected steps…</button>
+  <button id="castleContextLock" type="button" role="menuitem">Lock positions</button>
+</div>
+<dialog id="castleMergeDialog" class="ucpCreateDialog castleReplaceDialog">
+  <form id="castleMergeForm">
+    <div class="ucpCreateHeading">
+      <h2>Merge placements by item type</h2>
+      <p id="castleMergeSummary"></p>
+    </div>
+    <div id="castleMergeRows" class="castleReplaceRows"></div>
+    <div id="castleMergeError" class="castleShortcutError" role="alert"></div>
+    <div class="ucpCreateActions castleShortcutActions">
+      <span class="castleShortcutActionSpacer"></span>
+      <button id="castleMergeCancel" type="button">Cancel</button>
+      <button id="castleMergeApply" type="submit">Merge</button>
+    </div>
+  </form>
+</dialog>
 <dialog id="castleReplaceDialog" class="ucpCreateDialog castleReplaceDialog">
   <form id="castleReplaceForm">
     <div class="ucpCreateHeading">

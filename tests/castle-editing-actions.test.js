@@ -11,12 +11,12 @@ const categories = require('../config/aiv_categories.json').categories;
 const allowed = [...categories.Walls, ...categories.Moat, 99];
 const step = (itemType, offsets, shouldPause = false) => ({ itemType, tilePositionOfsets: offsets, shouldPause });
 
-test('merge keeps earliest position, unrelated steps, offset order and any pause without mutating input', () => {
+test('merge keeps earliest position, unrelated steps and offset order, with pauses disabled', () => {
   const source = [step(61, [5643]), step(25, [0, 1]), step(54, [400]), step(25, [1, 2], true)];
   const original = structuredClone(source);
   const result = geometry.mergeBuildSteps(source, [3, 1, 3], allowed);
   assert.equal(result.index, 1);
-  assert.deepEqual(result.frames, [source[0], step(25, [0, 1, 2], true), source[2]]);
+  assert.deepEqual(result.frames, [source[0], step(25, [0, 1, 2]), source[2]]);
   assert.deepEqual(source, original);
 });
 
@@ -71,11 +71,11 @@ test('camera preferences round-trip, reject conflicts and leave modified shortcu
   assert.equal(camera.validate({ ...camera.defaults, left: 'A' }).left, 'a');
 });
 
-test('camera wheel presets preserve both original views and support wheel zoom with modifier panning', () => {
+test('camera wheel presets are shared by both views and support modifier panning', () => {
   assert.equal(camera.wheelAction({}, camera.defaults), 'panY');
   assert.equal(camera.wheelAction({ altKey: true }, camera.defaults), 'zoom');
   assert.equal(camera.wheelAction({ ctrlKey: true }, camera.defaults), 'panX');
-  assert.equal(camera.wheelAction({}, camera.defaults, true), 'zoom');
+  assert.equal(camera.wheelAction({}, camera.defaults, true), 'panY');
   for (const iso of [false, true]) {
     assert.equal(camera.wheelAction({}, camera.arrows, iso), 'zoom');
     assert.equal(camera.wheelAction({ shiftKey: true }, camera.arrows, iso), 'panY');
