@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const path=require('node:path');const config=name=>JSON.parse(fs.readFileSync(path.join(__dirname,'../config',name),'utf8'));
 test('troop behaviour schema exposes 32 optional fields and restricts digging',()=>{
@@ -15,4 +15,15 @@ test('inherited troop fields are omitted while explicit and unknown plugin data 
  const output={aic:{AIVTroops_InitialRole:'',AIVTroops_Movement:'hold',AIVTroops_InitialRole_Slave:'dig',AIVTroops_Unknown:123,MaxFood:42}};
  context.output=output;vm.runInContext('omitInheritedTroopFields(output)',context);
  assert.deepEqual(output.aic,{AIVTroops_Movement:'hold',AIVTroops_InitialRole_Slave:'dig',AIVTroops_Unknown:123,MaxFood:42});
+});
+
+test('ox estimates follow plugin checkbox and disabled custom logic',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../src/js/character-editor.js'),'utf8');
+ const context=vm.createContext({toggleOx:{checked:false}});
+ vm.runInContext(source.slice(source.indexOf('function calculateOxTethers('),source.indexOf('function calculateMaxPopNeeded(')),context);
+ context.a={AIOxTethers_Logic:1,AIOxTethers_MaximumOxTethersPerQuarry:4,AIOxTethers_DynamicMaxOxTethers:3,AIOxTethers_MaxOxTethers:5};
+ assert.equal(vm.runInContext('calculateOxTethers(2,a)',context),2);
+ context.toggleOx.checked=true;assert.equal(vm.runInContext('calculateOxTethers(2,a)',context),5);
+ context.a.AIOxTethers_Logic=0;context.a.AIOxTethers_DisableInitialOxTether=1;assert.equal(vm.runInContext('calculateOxTethers(2,a)',context),0);
+ context.a.AIOxTethers_DisableInitialOxTether=0;assert.equal(vm.runInContext('calculateOxTethers(2,a)',context),2);
 });

@@ -58,6 +58,10 @@
               <span><strong>Running units</strong><small>Controls whether some units will run or walk.</small></span>
               <input type="checkbox" id="toggleRun" checked>
             </label>
+            <label class="switchRow">
+              <span><strong>AI Troop Behaviour</strong><small>Include AIV troop behaviour overrides</small></span>
+              <input type="checkbox" id="toggleTroops">
+            </label>
           </details>
 
           <details class="editorCard populationCard" data-character-card="population" open>
@@ -100,7 +104,6 @@
               <summary>Fear factor <strong id="characterFearLevel">0</strong></summary>
               <div id="characterFearDetails"></div>
             </details>
-            <p class="cardNote">Calculator assumes AI ox tethers is on. <br>Hop farms are not included, as they dont have a max!</p>
           </details>
           <details class="editorCard storageCard" data-character-card="storage" open>
             <summary class="editorCardHeading"><span class="panelEyebrowHeader">Stockpile space</span></summary>
