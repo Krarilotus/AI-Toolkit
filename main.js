@@ -23,6 +23,38 @@ const { listGameMaps, readGameMap, readMapTerrain, readNativeMapTiles, internals
 const { withStartPlaces } = require('./src/node/map-startplaces');
 const { transferableBytes, writeNativeAiv } = require('./src/node/aiv-file');
 
+const checkReleaseUpdate = require('./src/node/release-updates').createReleaseChecker(app.getVersion());
+ipcMain.handle('check-release-update', () => checkReleaseUpdate());
+let preparedRelease = null, preparingRelease = false;
+ipcMain.handle('prepare-release-update', async () => {
+  if (!app.isPackaged || process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Automatic installation is available in the Windows x64 packaged app.');
+  if (BrowserWindow.getAllWindows().length !== 1) throw new Error('Close other Toolkit windows before updating.');
+  if (preparingRelease) throw new Error('An update is already downloading.');
+  const release = await checkReleaseUpdate();
+  if (release.status !== 'available') throw new Error('No newer official release is available.');
+  if (preparedRelease?.version === release.latest) return { version: release.latest };
+  preparingRelease = true;
+  try {
+    const baseline = {};
+    for (const name of fs.readdirSync(defaultConfigDir()).filter(name => name.endsWith('.json'))) {
+      baseline['config/' + name] = require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(defaultConfigDir(), name))).digest('hex');
+    }
+    const cache = path.join(app.getPath('userData'), 'release-updates'); fs.mkdirSync(cache, { recursive: true });
+    preparedRelease = { ...await require('./src/node/release-download').prepareRelease(release, { root: projectRoot(), cache, baseline }), version: release.latest };
+    return { version: release.latest };
+  } finally { preparingRelease = false; }
+});
+ipcMain.handle('install-release-update', async event => {
+  if (!preparedRelease || BrowserWindow.getAllWindows().length !== 1) throw new Error('Please download the update and close other Toolkit windows first.');
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) throw new Error('Editor window not found.');
+  await require('./src/node/release-download').launchInstaller(preparedRelease);
+  // Renderer has just completed the existing Save / Discard / Cancel flow.
+  win.__closeApproved = true;
+  setImmediate(() => app.quit());
+  return true;
+});
+
 const aivCodecPromise = import('./src/node/aiv-codec.mjs');
 let aivTemplatesCache = null;
 

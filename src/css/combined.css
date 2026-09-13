@@ -1969,3 +1969,6 @@ html.dockResizing * { user-select: none !important; }
 .populationSourceRow .compactAction { display: inline-flex; align-items: center; gap: 5px; }
 
 .characterSidebar .populationSourceRow .compactAction { padding: 2px 6px; min-height: 0; font-size: 1rem; font-weight: 500; }
+
+.workspaceTabs .releaseUpdateButton { flex-shrink: 0; padding: 4px 8px; font-size: 11px; -webkit-app-region: no-drag; }
+.workspaceTabs .releaseUpdateButton.releaseAvailable { color: var(--accent-strong); border-color: var(--accent-strong); }

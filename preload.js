@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  checkReleaseUpdate: () => ipcRenderer.invoke('check-release-update'),
+  prepareReleaseUpdate: () => ipcRenderer.invoke('prepare-release-update'),
+  installReleaseUpdate: () => ipcRenderer.invoke('install-release-update'),
   getWindowChrome: () => ipcRenderer.invoke('get-window-chrome'),
   showTitlebarMenu: (request) => ipcRenderer.invoke('show-titlebar-menu', request),
   onFocusTitlebarMenu: (callback) => ipcRenderer.on('focus-titlebar-menu', (_event, request) => callback(request)),
