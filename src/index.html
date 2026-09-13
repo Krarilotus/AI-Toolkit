@@ -62,9 +62,6 @@
 
           <details class="editorCard populationCard" data-character-card="population" open>
             <summary class="editorCardHeading populationCardHeading"><span class="panelEyebrowHeader">Population</span></summary>
-            <div class="populationSourceRow">
-              <button id="useCastlePopulationBtn" class="compactAction" type="button" title="Use the population provided by the currently loaded castle">Use castle pop<span id="castleProvidedForCharacter">0</span></button>
-            </div>
 
             <div class="populationInputRow">
               <label for="availablePopulation">Available population</label>
@@ -73,6 +70,10 @@
                 <input id="availablePopulation" class="numberInput" type="number" value="10" min="10" inputmode="numeric">
                 <button id="populationPlusEight" class="populationStepButtonRight" type="button" aria-label="Increase available population by 8">+8</button>
               </div>
+            </div>
+
+            <div class="populationSourceRow" hidden>
+              <button id="useCastlePopulationBtn" class="compactAction" type="button" title="Use the population provided by the currently loaded castle">Use castle pop<span id="castleProvidedForCharacter">0</span></button>
             </div>
 
             <div class="metricRow"><span>Maximum workers used</span><strong id="maxPopNeeded">0</strong></div>
@@ -103,7 +104,6 @@
           </details>
           <details class="editorCard storageCard" data-character-card="storage" open>
             <summary class="editorCardHeading"><span class="panelEyebrowHeader">Stockpile space</span></summary>
-            <p class="cardNote">Planned maximums · complete loaded castle. Includes resource variance; not current inventory.</p>
             <div id="characterStorage"></div>
           </details>
         </aside>
