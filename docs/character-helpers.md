@@ -81,3 +81,10 @@ pause that tracking until reset or another character is opened. The compact rese
 button appears below the input only when population differs. The redundant notes
 were removed. Ox tether estimates use one per quarry without the plugin; enabled
 custom logic uses the existing caps, with the initial-tether option when logic is off.
+
+AI Troop Behaviour now defaults on for new/unconfigured characters. An explicit
+checkbox choice is remembered per character file in local editor preferences,
+including across reloads; Save As carries the current choice to the new path.
+No extra plugin/runtime fields are written into the AIC for this UI preference.
+Vanilla fields remain omitted. Preferences from before this change cannot be
+reconstructed from omitted AIC fields, which carry no explicit disabled marker.
