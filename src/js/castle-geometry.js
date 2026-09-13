@@ -304,12 +304,12 @@
 
   // Flood through touching footprints of the clicked type. Locked objects
   // and the Keep are barriers. Other item types never join the deletion.
-  function floodPlacementRefs(start, placements, rectsFor, isLocked, gridSize = 100) {
-    if (!start || isLocked(start.ref) || Number(start.type) === KEEP_ITEM_TYPE) return new Set();
+  function floodPlacementRefs(start, placements, rectsFor, isLocked, gridSize = 100, protectKeep = true) {
+    if (!start || isLocked(start.ref) || (protectKeep && Number(start.type) === KEEP_ITEM_TYPE)) return new Set();
     const cells = new Map();
     const barriers = new Set();
     for (const placement of placements) {
-      const blocked = isLocked(placement.ref) || Number(placement.type) === KEEP_ITEM_TYPE;
+      const blocked = isLocked(placement.ref) || (protectKeep && Number(placement.type) === KEEP_ITEM_TYPE);
       if (!blocked && Number(placement.type) !== Number(start.type)) continue;
       for (const rect of rectsFor(placement)) {
         for (let y = Math.max(0, rect.bottom); y <= Math.min(gridSize - 1, rect.top); y++) {
