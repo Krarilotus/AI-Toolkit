@@ -27,6 +27,7 @@ let activeSections;
 let pendingLoad = null;
 
 let availablePopulation = 10;
+let followCastlePopulation = true;
 
 async function init() {
   try {
@@ -452,6 +453,7 @@ function collapseAll() {
 }
 
 function loadFromContent(content, path, options = {}) {
+  followCastlePopulation = true;
   data = JSON.parse(content);
 
   const unknownKeys = findUnknownKeys(activeTemplate, data);
@@ -523,6 +525,7 @@ async function newCharacterFile() {
   data = JSON.parse(JSON.stringify(template));
   currentFilePath = projectPath;
   currentFileReadOnly = false;
+  followCastlePopulation = true;
   AIName = projectPath ? projectPath.split(/[\\/]/).slice(-2, -1)[0] || '' : '';
   searchQuery = '';
   document.getElementById('search').value = '';
@@ -794,6 +797,7 @@ function toggleSections() {
 
 //for actual pop needed calc
 document.getElementById("availablePopulation").addEventListener("input", () => {
+    followCastlePopulation = false;
     updateHeaderInfo();
 });
 
@@ -802,6 +806,10 @@ document.getElementById("availablePopulation").addEventListener("change", event 
 });
 
 function updateHeaderInfo() {
+    if (followCastlePopulation) {
+      const provided = Number(getCastlePopulationSummary().provided) || 10;
+      document.getElementById("availablePopulation").value = String(Math.max(10, provided));
+    }
 
     document.getElementById("maxPopNeeded").textContent =
         calculateMaxPopNeeded();
@@ -1013,6 +1021,7 @@ function updateCharacterCastlePopulationInfo(summary = getCastlePopulationSummar
     const leftEl = document.getElementById("characterCastlePopulationLeft");
     const combinedLeftEl = document.getElementById("characterCastlePopulationAfterCharacter");
     if (providedEl) providedEl.textContent = String(provided);
+    document.querySelector(".populationSourceRow").hidden = provided <= 0 || availablePopulation === provided;
     if (leftEl) {
       leftEl.textContent = String(left);
       leftEl.classList.toggle("populationNegative", left < 0);
@@ -1024,6 +1033,7 @@ function updateCharacterCastlePopulationInfo(summary = getCastlePopulationSummar
 }
 
 function setAvailablePopulation(value) {
+    followCastlePopulation = false;
     const input = document.getElementById("availablePopulation");
     const numeric = Math.max(10, Math.round(Number(value) || 10));
     input.value = String(numeric);
@@ -1053,8 +1063,8 @@ window.characterEditor = {
 };
 
 document.getElementById("useCastlePopulationBtn").addEventListener("click", () => {
-    const summary = getCastlePopulationSummary();
-    setAvailablePopulation(summary.provided);
+    followCastlePopulation = true;
+    updateHeaderInfo();
 });
 
 document.getElementById("populationMinusEight").addEventListener("click", () => {
@@ -1066,7 +1076,8 @@ document.getElementById("populationPlusEight").addEventListener("click", () => {
 });
 
 window.addEventListener("castle-population-changed", event => {
-    updateCharacterCastlePopulationInfo(event.detail);
+    if (followCastlePopulation) updateHeaderInfo();
+    else updateCharacterCastlePopulationInfo(event.detail);
 });
 
 updateCharacterCastlePopulationInfo();

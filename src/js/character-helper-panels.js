@@ -48,8 +48,7 @@
     document.getElementById('characterFearDetails').replaceChildren(
       metric('Positive / negative',fear.positive+' / '+fear.negative),
       metric('Net buildings',signed(fear.net)),
-      metric('Population / groups of 16',fear.population+' / '+fear.groups),
-      node('p','Net / started groups, rounded toward zero; capped at -5 to +5. Uses the population set above.','cardNote'));
+      metric('Population / groups of 16',fear.population+' / '+fear.groups));
   }
   window.characterHelperPanels={update(a,summary,population){
     const next=[a,summary?.counts||{},population],key=JSON.stringify(next);

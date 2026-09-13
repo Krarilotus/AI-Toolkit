@@ -1959,7 +1959,7 @@ html.dockResizing * { user-select: none !important; }
 #characterWorkspace .characterSidebar summary strong { margin-left: auto; white-space: nowrap; font: 600 1.05rem var(--font-data); }
 #characterWorkspace .characterSidebar summary::after { flex: 0 0 20px; }
 #characterWorkspace .characterSidebar .characterSubsection { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; }
-.populationSourceRow { padding: 8px 12px; text-align: right; }
+.populationSourceRow { padding: 0 12px 7px; text-align: right; }
 .characterStorageTable { width: calc(100% - 24px); margin: 8px 12px; border-collapse: collapse; font-size: 1.05rem; }
 .characterStorageTable :is(th,td) { padding: 5px 2px; text-align: right; border-bottom: 1px solid var(--line); }
 .characterStorageTable :is(th,td):first-child { text-align: left; }
@@ -1967,3 +1967,5 @@ html.dockResizing * { user-select: none !important; }
 .characterStorageTable td:not(:first-child) { font-family: var(--font-data); }
 .characterStorageTable th { color: var(--text-muted); font-weight: 500; }
 .populationSourceRow .compactAction { display: inline-flex; align-items: center; gap: 5px; }
+
+.characterSidebar .populationSourceRow .compactAction { padding: 2px 6px; min-height: 0; font-size: 1rem; font-weight: 500; }
