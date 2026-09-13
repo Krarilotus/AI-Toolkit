@@ -12,6 +12,7 @@
     }
     for (const [name, stats] of Object.entries(profile.buildings || {})) {
       if (!object(stats)) throw new Error(`Invalid building: ${name}`);
+      if (stats.health !== undefined && !integer(stats.health, 2147483647)) throw new Error(`${name}: health must be a non-negative integer.`);
       if (stats.housing !== undefined && !integer(stats.housing, 2147483647)) throw new Error(`${name}: housing must be a non-negative integer.`);
       if (stats.cost !== undefined && (!Array.isArray(stats.cost) || stats.cost.length !== 5
           || !stats.cost.every(value => integer(value, 2147483647)))) {

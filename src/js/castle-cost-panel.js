@@ -388,7 +388,14 @@
     } catch { return null; }
   }
 
+  let analysisHealthKey = null;
   function zeichne() {
+    const healthKey = JSON.stringify(Object.entries(aktiveBalance()?.buildings || {})
+      .map(([name, stats]) => [name, stats.health]).filter(([, health]) => health !== undefined));
+    if (healthKey !== analysisHealthKey) {
+      analysisHealthKey = healthKey;
+      window.dispatchEvent(new Event('castle-balance-changed'));
+    }
     if (!els.wurzel || !state.letzte) return;
     const daten = window.castleCostData;
     const modell = window.castleCostModel;
@@ -520,6 +527,7 @@
     redraw: zeichne,
     loadProjectBalance,
     getBalanceNames: () => Object.keys(state.balances),
+    getActiveBalance: aktiveBalance,
     getChoice: () => state.choice
   };
 

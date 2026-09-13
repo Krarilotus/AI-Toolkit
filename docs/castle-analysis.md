@@ -164,13 +164,10 @@ No game launch, capture file, observer, or separate simulation window is needed.
 Calculations are debounced in a Web Worker and stale replies are discarded.
 Pan/zoom/hover reuse the result and the cached 2.5D scene.
 
-Fire is an explicit planning estimate requested by the user: a stronger smooth
-falloff over 2 tiles and a softer second-stage falloff through 6?7 tiles, reaching
-zero at 7. Distance is Euclidean distance from each actual footprint edge; this
-produces rounded corners without recentering even-sized buildings. There is no
-outline or hard cutoff stroke. The two falloffs are combined using smoothstep,
-with weights 0.35 and 0.65. The outer stage uses a cubic distance curve before smoothstep, retaining visible orange near six tiles and fading continuously to zero at seven. Flammability uses the existing executable-derived table;
-brightness is not a measured probability or simulation of burning duration.
+Fire is an explicit planning estimate with an HP-sensitive crimson/yellow/blue
+halo (see HP-sensitive fire preview below). Distance is Euclidean from the actual
+footprint edge, preserving rounded corners and multipart footprints. Flammability
+uses the existing executable-derived table; colour is not ignition probability.
 
 Paths use a multi-source Dijkstra search from one delivery point per stockpile. Routes cross stockpile interiors instead of stopping at the first stockpile tile. Stockpile mapper
 52 and the keep's attached stockpile expose only their central cross as a walk surface. Stairs have six height
@@ -282,8 +279,8 @@ specific shortcut is fixed without resolving the runtime-height discrepancy.
 
 ### Fire display and open-gate access (September 13 follow-up)
 
-The requested fire visualization now uses crimson through two tiles, yellow at
-four, and dark blue towards eight, with alpha fading from 210 to 170 to zero.
+The fire visualization uses two crimson tile rings and an HP-scaled yellow-to-blue
+outer halo, with a smooth transparent edge (current formula below).
 Color represents distance from the nearest flammable footprint, not an ignition
 probability. Flammable plan buildings are drawn above the overlay. The 2.5D view
 caches a visible-sprite alpha mask in scene depth order so the halo cannot tint
@@ -331,3 +328,17 @@ The planner keeps that structure and the three flag tiles blocked and opens the
 other 72 tiles at the placement base height, with no stockpile-style height lift.
 These surfaces participate in the existing height-aware shortest-path graph and
 can serve as worker entrance candidates. Terrain obstacles remain enforced.
+
+
+### HP-sensitive fire preview
+The fire preview remains a user-selected planning heuristic, not a native fire simulation.
+Selected balance `buildings[name].health` overrides the vanilla HP table (Crusader 1.41,
+file offset 0x001BA21C, indexed using rebalancer building_names). The outer radius is
+`2 + 6 * sqrt(clamp(HP / 800, 0, 1))` tiles: approximately 3.64 at 60 HP,
+5 at 200 HP, and 8 at 800 HP or more. Unknown buildings retain the eight-tile fallback.
+The first two adjacent tile centres (0.5 and 1.5 from the footprint boundary) are
+crimson. Colour starts changing immediately after 1.5, reaching yellow at nominal
+3.5 and blue at 6; the outer band compresses for lower HP. Inner opacity is reduced
+10% (189/255); blue remains visible at 7 (90/255) before a smooth fade to zero at 8.
+Balance HP changes invalidate the cached worker result; fire remains below burnable
+buildings and above nonburnable structures in both views.
