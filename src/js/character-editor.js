@@ -453,10 +453,25 @@ function collapseAll() {
   });
 }
 
+function troopPluginPreferenceKey(path) {
+  return path ? "character-troop-plugin:" + String(path).replace(/\\/g, "/").toLowerCase() : null;
+}
+
+function loadTroopPluginPreference(path) {
+  const key = troopPluginPreferenceKey(path);
+  try { return !key || window.localStorage.getItem(key) !== "off"; }
+  catch { return true; }
+}
+
+function saveTroopPluginPreference(path, enabled) {
+  const key = troopPluginPreferenceKey(path);
+  if (key) try { window.localStorage.setItem(key, enabled ? "on" : "off"); } catch {}
+}
+
 function loadFromContent(content, path, options = {}) {
   followCastlePopulation = true;
   data = JSON.parse(content);
-  document.getElementById("toggleTroops").checked = Object.keys(data.aic || {}).some(key => key.startsWith("AIVTroops_") && data.aic[key] !== "");
+  document.getElementById("toggleTroops").checked = loadTroopPluginPreference(path);
 
   const unknownKeys = findUnknownKeys(activeTemplate, data);
   if (unknownKeys.length > 0) {
@@ -533,7 +548,7 @@ async function newCharacterFile() {
   document.getElementById('search').value = '';
   document.getElementById('toggleOx').checked = true;
   document.getElementById('toggleRun').checked = true;
-  document.getElementById('toggleTroops').checked = false;
+  document.getElementById('toggleTroops').checked = true;
   document.getElementById('aiName').textContent = AIName || 'No Character Loaded';
   setActiveTemplateButton('standard');
   if (disposition !== 'project') window.ucpLibrary?.detachCastleProject?.();
@@ -660,6 +675,7 @@ function isCharacterDirty() {
 }
 
 function markCharacterSaved() {
+  saveTroopPluginPreference(currentFilePath, document.getElementById("toggleTroops").checked);
   savedCharacterSnapshot = characterSnapshot();
   updateFilePathDisplay();
 }
@@ -1165,4 +1181,7 @@ document.getElementById('btnOrdered').addEventListener('click', orderedTemplate)
 
 toggleOx.onchange=render;
 toggleRun.onchange=render;
-document.getElementById("toggleTroops").onchange = render;
+document.getElementById("toggleTroops").onchange = event => {
+  saveTroopPluginPreference(currentFilePath, event.currentTarget.checked);
+  render();
+};

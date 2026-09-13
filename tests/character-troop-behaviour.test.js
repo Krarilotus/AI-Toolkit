@@ -27,3 +27,16 @@ test('ox estimates follow plugin checkbox and disabled custom logic',()=>{
  context.a.AIOxTethers_Logic=0;context.a.AIOxTethers_DisableInitialOxTether=1;assert.equal(vm.runInContext('calculateOxTethers(2,a)',context),0);
  context.a.AIOxTethers_DisableInitialOxTether=0;assert.equal(vm.runInContext('calculateOxTethers(2,a)',context),2);
 });
+
+test('troop plugin defaults on and remembers explicit per-file opt-out',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../src/js/character-editor.js'),'utf8'),stored=new Map();
+ const context=vm.createContext({window:{localStorage:{getItem:k=>stored.get(k),setItem:(k,v)=>stored.set(k,v)}}});
+ vm.runInContext(source.slice(source.indexOf('function troopPluginPreferenceKey('),source.indexOf('function loadFromContent(')),context);
+ assert.equal(vm.runInContext('loadTroopPluginPreference(null)',context),true);
+ assert.equal(vm.runInContext('loadTroopPluginPreference("C:/AI/A/character.json")',context),true);
+ vm.runInContext('saveTroopPluginPreference("C:/AI/A/character.json",false)',context);
+ assert.equal(vm.runInContext('loadTroopPluginPreference("c:/ai/a/character.json")',context),false);
+ assert.equal(vm.runInContext('loadTroopPluginPreference("C:/AI/B/character.json")',context),true);
+ vm.runInContext('saveTroopPluginPreference("C:/AI/A/character.json",true)',context);
+ assert.equal(vm.runInContext('loadTroopPluginPreference("C:/AI/A/character.json")',context),true);
+});
