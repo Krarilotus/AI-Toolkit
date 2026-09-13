@@ -1,4 +1,4 @@
-﻿# Character storage and fear helpers
+# Character storage and fear helpers
 
 The Character sidebar cards use the existing disclosure and metric styles.
 Collapse state is remembered locally; it does not change character files.
@@ -70,3 +70,14 @@ to enable Troop settings and AIC overrides in UCP, then start a new match.
 Schema tests cover every field, supported diggers and omission. The Electron
 check changes Slave to dig, saves/reloads it, then resets to Inherit and verifies
 that the serialized field is absent. Existing characters gain no default overrides.
+
+The Plugins checkbox now controls AIV Troop Behaviour visibility and serialization,
+matching the existing plugin controls. Loaded explicit AIVTroops fields enable it;
+new characters start without overrides. Turning it off omits the fields while
+retaining edits in memory for re-enabling. The empty choice is labelled Vanilla
+at the user's request; common/menu settings may still apply, as explained in help.
+Population defaults to the loaded castle on opening a character; manual edits
+pause that tracking until reset or another character is opened. The compact reset
+button appears below the input only when population differs. The redundant notes
+were removed. Ox tether estimates use one per quarry without the plugin; enabled
+custom logic uses the existing caps, with the initial-tether option when logic is off.

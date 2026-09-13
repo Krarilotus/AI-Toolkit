@@ -214,7 +214,7 @@ if (key.startsWith("AIVTroops_") && fieldPools[key]) {
     const option = new Option("Unsupported value: " + String(value), String(value), true, true);
     input.appendChild(option);
   }
-  choices.forEach(choice => input.appendChild(new Option(choice === "" ? "Inherit (omit override)" : choice, choice, false, choice === value)));
+  choices.forEach(choice => input.appendChild(new Option(choice === "" ? "Vanilla" : choice, choice, false, choice === value)));
   input.onchange = () => { parent[key] = input.value; updateHeaderInfo(); };
 }
 else if (numericBooleanFields.includes(key)) {
@@ -408,6 +408,7 @@ function buildForm(obj, container) {
 
     if (!toggleOx.checked && path.includes("AIOx")) return;
     if (!toggleRun.checked && path.includes("RunningUnits")) return;
+    if (!document.getElementById("toggleTroops").checked && path.includes("AIVTroops_")) return;
 
     const sectionName = Object.keys(activeSections || {}).find(s =>
     activeSections[s].includes(path)
@@ -455,6 +456,7 @@ function collapseAll() {
 function loadFromContent(content, path, options = {}) {
   followCastlePopulation = true;
   data = JSON.parse(content);
+  document.getElementById("toggleTroops").checked = Object.keys(data.aic || {}).some(key => key.startsWith("AIVTroops_") && data.aic[key] !== "");
 
   const unknownKeys = findUnknownKeys(activeTemplate, data);
   if (unknownKeys.length > 0) {
@@ -531,6 +533,7 @@ async function newCharacterFile() {
   document.getElementById('search').value = '';
   document.getElementById('toggleOx').checked = true;
   document.getElementById('toggleRun').checked = true;
+  document.getElementById('toggleTroops').checked = false;
   document.getElementById('aiName').textContent = AIName || 'No Character Loaded';
   setActiveTemplateButton('standard');
   if (disposition !== 'project') window.ucpLibrary?.detachCastleProject?.();
@@ -642,6 +645,9 @@ function prepareOutputData() {
     });
   }
 
+  if (!document.getElementById("toggleTroops").checked) {
+    for (const key of Object.keys(output.aic || {})) if (key.startsWith("AIVTroops_")) delete output.aic[key];
+  }
   return omitInheritedTroopFields(output);
 }
 
@@ -846,6 +852,16 @@ function updateHeaderInfo() {
     }));
 }
 
+function calculateOxTethers(quarries, a) {
+    if (!toggleOx.checked) return quarries;
+    if (Number(a.AIOxTethers_Logic) === 0) return Number(a.AIOxTethers_DisableInitialOxTether) === 1 ? 0 : quarries;
+    return Math.min(
+        quarries * (Number(a.AIOxTethers_MaximumOxTethersPerQuarry) || 0),
+        quarries * (Number(a.AIOxTethers_DynamicMaxOxTethers) || 0),
+        Number(a.AIOxTethers_MaxOxTethers) || 0
+    );
+}
+
 function calculateMaxPopNeeded() {
 
     if (!data || !data.aic) return 0;
@@ -858,18 +874,7 @@ function calculateMaxPopNeeded() {
     const farms       = Math.max(Number(a.MaxFarms) || 0, 1);
     const pitchrigs   = Math.max(Number(a.MaxPitchrigs) || 0, 1);
  
-    const option1 =
-        (Number(a.AIOxTethers_MaximumOxTethersPerQuarry) || 0)
-        * quarries;
-
-    const option2 =
-        (Number(a.AIOxTethers_DynamicMaxOxTethers) || 0)
-        * quarries;
-
-    const option3 =
-        Number(a.AIOxTethers_MaxOxTethers) || 0;
-
-    const oxTethers = Math.min(option1, option2, option3);
+    const oxTethers = calculateOxTethers(quarries, a);
 
     return (
         quarries * 3 +
@@ -972,11 +977,7 @@ function calculateActualPopNeededAt(populationValue) {
         a.MaxPitchrigs
     );
 
-    const oxTethers = Math.min(
-        quarries * (Number(a.AIOxTethers_MaximumOxTethersPerQuarry) || 0),
-        quarries * (Number(a.AIOxTethers_DynamicMaxOxTethers) || 0),
-        Number(a.AIOxTethers_MaxOxTethers) || 0
-    );
+    const oxTethers = calculateOxTethers(quarries, a);
 
     const population =
         quarries * 3 +
@@ -1164,3 +1165,4 @@ document.getElementById('btnOrdered').addEventListener('click', orderedTemplate)
 
 toggleOx.onchange=render;
 toggleRun.onchange=render;
+document.getElementById("toggleTroops").onchange = render;
