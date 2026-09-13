@@ -177,8 +177,16 @@ function mergeDefaults(target, source) {
   }
 }
 
+function characterFieldLabel(key) {
+  const troop = /^AIVTroops_(InitialRole|Movement)(?:_(.+))?$/.exec(key);
+  if (!troop) return key;
+  const unit = troop[2] ? troop[2].replace(/([a-z])([A-Z])/g, '$1 $2') : 'All troops';
+  return `${unit}: ${troop[1] === 'InitialRole' ? 'initial role' : 'movement'}`;
+}
+
 function createField(key, value, parent) {
-  if (searchQuery && !key.toLowerCase().includes(searchQuery)) return null;
+  const displayName = characterFieldLabel(key);
+  if (searchQuery && !`${key} ${displayName}`.toLowerCase().includes(searchQuery)) return null;
 
   const div = document.createElement("div");
   div.className = "field";
@@ -188,19 +196,20 @@ function createField(key, value, parent) {
  
   const label = document.createElement("span");
 
+  label.title = key;
   if (searchQuery) {
-    const idx = key.toLowerCase().indexOf(searchQuery);
+    const idx = displayName.toLowerCase().indexOf(searchQuery);
     if (idx !== -1) {
       const match = document.createElement('span');
       match.className = 'searchMatch';
-      match.textContent = key.substring(idx, idx + searchQuery.length);
+      match.textContent = displayName.substring(idx, idx + searchQuery.length);
       label.append(
-        document.createTextNode(key.substring(0, idx)),
+        document.createTextNode(displayName.substring(0, idx)),
         match,
-        document.createTextNode(key.substring(idx + searchQuery.length))
+        document.createTextNode(displayName.substring(idx + searchQuery.length))
       );
-    } else label.textContent = key;
-  } else label.textContent = key;
+    } else label.textContent = displayName;
+  } else label.textContent = displayName;
 
   div.appendChild(label);
 
@@ -388,6 +397,12 @@ function flattenObject(obj, result = [], parent = null, path = "") {
 
 function buildForm(obj, container) {
   const flat = flattenObject(obj);
+  const troopFields = flat.filter(field => field.key.startsWith('AIVTroops_'));
+  const troopOrder = key => key === 'AIVTroops_InitialRole' ? 0 : key === 'AIVTroops_Movement' ? 1 : key.startsWith('AIVTroops_InitialRole_') ? 2 : 3;
+  troopFields.sort((a, b) => troopOrder(a.key) - troopOrder(b.key));
+  let troopIndex = 0, lastTroopGroup = '';
+  // Only change presentation order; keep serialized keys and values untouched.
+  for (let i = 0; i < flat.length; i++) if (flat[i].key.startsWith('AIVTroops_')) flat[i] = troopFields[troopIndex++];
 
   let currentSection = null;
 
@@ -427,6 +442,13 @@ function buildForm(obj, container) {
     }
 
     if (currentSection) {
+      const troopGroup = key.startsWith('AIVTroops_InitialRole_') ? 'Initial roles'
+        : key.startsWith('AIVTroops_Movement_') ? 'Movement' : '';
+      if (troopGroup && troopGroup !== lastTroopGroup) {
+        const heading = document.createElement('h3');
+        heading.className = 'characterFieldGroup'; heading.textContent = troopGroup;
+        currentSection.appendChild(heading); lastTroopGroup = troopGroup;
+      }
       currentSection.appendChild(field);
     } else {
       container.appendChild(field);
