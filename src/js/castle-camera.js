@@ -51,9 +51,9 @@
     return null;
   }
 
-  function wheelAction(event, preferences, legacyZoom = false) {
-    if (preferences.wheel === 'legacy' && legacyZoom) return 'zoom';
+  function wheelAction(event, preferences) {
     if (event.ctrlKey) return 'panX';
+    if (preferences.wheel === 'zoom' && event.altKey) return 'panY';
     if (event.altKey || (preferences.wheel === 'zoom' && !event.shiftKey)) return 'zoom';
     return 'panY';
   }

@@ -64,3 +64,87 @@ test('2D viewport and selection repaint notifications do not rebuild the isometr
   step = 1; context.editorChanged(true); context.editorChanged(true);
   assert.deepEqual(refreshes, [false, true, true, false, false, true]);
 });
+
+function interactiveRenderer() {
+  const r = renderer();
+  const source = fs.readFileSync(require.resolve('../src/js/iso-view.js'), 'utf8');
+  const listeners = {}, inputs = [], clears = [];
+  const canvas = {
+    focus() {}, setPointerCapture() {}, releasePointerCapture() {},
+    getBoundingClientRect: () => ({left: 0, top: 0}),
+    addEventListener: (name, fn) => { listeners[name] = fn; }
+  };
+  r.state.bound = new WeakSet();
+  r.context.window.castleCamera = require('../src/js/castle-camera');
+  r.context.window.castleEditor = {
+    pointerFromOutside: (phase, event) => inputs.push({phase, event}),
+    clearSelectionAndItem: () => clears.push(true)
+  };
+  Object.assign(r.context, {
+    refresh: reuse => { if (reuse !== true) r.state.sceneDirty = true; },
+    editorTileAt: (x, y) => ({x, y}), lastHoverTile: () => ({x: 0, y: 0}), bodenHoehe: () => 0
+  });
+  r.context.geo.tileFromPoint = (x, y) => ({gx: x, gy: y});
+  vm.runInContext(source.slice(source.indexOf('  function pointOf('), source.indexOf('  function bindHostChrome(')), r.context);
+  r.context.bindSurface(canvas);
+  const fire = (name, overrides = {}) => listeners[name]({button: 0, pointerId: 1,
+    clientX: 200, clientY: 150, deltaY: 0, deltaX: 0, preventDefault() {}, ...overrides});
+  return {...r, fire, inputs, clears};
+}
+
+test('drag overlays reuse the scene throughout selection and delete gestures', () => {
+  for (const tool of ['select', 'delete', 'copy', 'replace']) {
+    const r = interactiveRenderer();
+    r.context.window.castleEditor.getTool = () => tool;
+    r.context.paint();
+    r.fire('pointerdown');
+    assert.equal(r.state.drawing, true);
+    for (let x = 0; x < 100; x++) {
+      r.fire('pointermove', {clientX: x}); r.context.paint();
+    }
+    r.fire('pointerup'); r.context.paint();
+    assert.equal(r.scenes.length, 1, `${tool}: pointer-only changes must not rebuild terrain`);
+    assert.equal(r.inputs.length, 102);
+    assert.equal(r.state.drawing, false);
+    // An actual edit still invalidates and rebuilds once.
+    r.state.sceneDirty = true; r.context.paint();
+    assert.equal(r.scenes.length, 2);
+  }
+});
+
+test('2.5D right-click deselects without panning or placing; middle-drag pans', () => {
+  const r = interactiveRenderer();
+  r.fire('pointerdown', {button: 2});
+  r.fire('contextmenu', {button: 2});
+  r.fire('pointerup', {button: 2});
+  assert.equal(r.clears.length, 1);
+  assert.equal(r.inputs.length, 0);
+  assert.ok(!r.state.panning);
+  r.fire('pointerdown', {button: 1});
+  r.fire('pointermove', {clientX: 220, clientY: 180});
+  assert.deepEqual(r.state.view, {zoom: 1, panX: 120, panY: 80});
+  r.fire('pointerup', {button: 1});
+  assert.equal(r.state.panning, false);
+  assert.equal(r.inputs.length, 0);
+});
+
+test('2.5D wheel uses Map modifiers in both presets and zoom stays anchored at the pointer', () => {
+  const r = interactiveRenderer(), camera = r.context.window.castleCamera;
+  for (const preferences of [camera.defaults, camera.arrows]) {
+    r.context.window.castleEditor.getCameraPreferences = () => preferences;
+    for (const modifiers of [{}, {ctrlKey: true}, {altKey: true}, {shiftKey: true}]) {
+      r.state.view = {zoom: 1, panX: 100, panY: 50};
+      const action = camera.wheelAction(modifiers, preferences);
+      r.fire('wheel', {deltaY: -20, ...modifiers});
+      if (action === 'zoom') {
+        const v = r.state.view;
+        assert.ok(v.zoom > 1);
+        assert.ok(Math.abs((200 - v.panX) / v.zoom - 100) < 1e-9);
+        assert.ok(Math.abs((150 - v.panY) / v.zoom - 100) < 1e-9);
+      } else {
+        assert.equal(r.state.view.zoom, 1);
+        assert.equal(r.state.view[action], action === 'panX' ? 120 : 70);
+      }
+    }
+  }
+});

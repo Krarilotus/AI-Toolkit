@@ -78,3 +78,26 @@ test('new windows, user interaction, another installation and invalid castle pat
    assert.equal(setup.opened.length,0,JSON.stringify(options));
  }
 });
+
+test('vanilla restoration distinguishes lords sharing a folder, including older saved sessions',()=>{
+ const {context,state,store}=projectWindow();
+ state.gameRoot='D:/Games/Liga';
+ const rootPath='D:/Games/Liga/aiv';
+ const abbot={key:'vanilla:abbot',rootPath,castles:[{fileName:'Abbot1.aiv'}]};
+ const wolf={key:'vanilla:wolf',rootPath,castles:[{fileName:'Wolf1.aiv'}]};
+ state.library={ais:[abbot,wolf]};
+ state.loadedProject={aiKey:wolf.key,aiRoot:rootPath,castleFile:'Wolf1.aiv'};
+ context.rememberProject();
+ const saved=JSON.parse(store.get('aiv.lastProject.v1'));
+ assert.equal(saved.aiKey,wolf.key);
+ assert.equal(context.projectInLibrary(saved),wolf);
+ // Old saves lack aiKey; resolve their castle name case-insensitively.
+ delete saved.aiKey;saved.castleFile='wolf1.AIV';
+ assert.equal(context.projectInLibrary(saved),wolf);
+ saved.castleFile='missing.aiv';
+ assert.equal(context.projectInLibrary(saved),null);
+ saved.aiKey='vanilla:missing';saved.castleFile='Wolf1.aiv';
+ assert.equal(context.projectInLibrary(saved),null,'a missing lord must not silently become another lord');
+ saved.aiKey=wolf.key;saved.gameRoot='E:/Other';
+ assert.equal(context.projectInLibrary(saved),null);
+});

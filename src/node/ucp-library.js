@@ -582,8 +582,8 @@ function scanUcpInstallation(selectedPath) {
 // aber caliph1), deshalb wird der Name klein verglichen und fuer die Anzeige
 // gross geschrieben.
 //
-// NUR ZUM LESEN. Die Dateien gehoeren dem Spiel; jede Schreibfunktion dieser
-// Bibliothek prueft gegen den Plugin-Ordner und weist den Spielordner ab.
+// These castles can be saved directly by the castle editor. Plugin-management
+// operations still require a plugin folder: vanilla has no AI project metadata.
 const VANILLA_PLUGIN = { name: 'vanilla', displayName: 'Vanilla (game folder)', version: '', folderName: 'aiv', active: true, owned: false };
 
 function vanillaCastles(aivRoot) {
@@ -612,7 +612,7 @@ function vanillaCastles(aivRoot) {
       name: `${name} (Vanilla)`,
       author: 'Stronghold Crusader',
       version: '',
-      description: 'The original castles from the game folder. Read only.',
+      description: 'The original castles from the game folder. Saving edits changes the game files directly.',
       defaultLang: '',
       supportedLang: [],
       characterPath: null,
@@ -640,10 +640,9 @@ function vanillaCastles(aivRoot) {
   return out;
 }
 
-// Eine Vanilla-Burg lesen. Keine Figur, keine Zeilen - nur die Burg, und die
-// ausdruecklich schreibgeschuetzt.
+// A vanilla lord has castles, but no character or dialogue project files.
 async function readVanillaCastle({ vanillaRoot, castleFile, readAivDocument }) {
-  const result = { aiRoot: vanillaRoot, owned: false, vanilla: true, readOnly: true,
+  const result = { aiRoot: vanillaRoot, owned: false, vanilla: true,
                    character: null, lines: null, media: null, castle: null };
   if (!castleFile) return result;
   const fileName = path.basename(String(castleFile));

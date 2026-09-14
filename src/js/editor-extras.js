@@ -459,7 +459,7 @@
     els.clipboard = toolbarButton('castleClipboardBtn', 'Clipboard',
       'Nothing copied yet.',
       () => {
-        if (!armClipboard()) return ex.setStatus('Nothing copied yet — use Ctrl+C or the Copy tool first');
+        if (!armClipboard()) return ex.setStatus('Nothing copied yet — select items and use Ctrl+C first');
         ex.setTool('copy');
         ex.setStatus(`Clipboard ready: ${clipboard.count} placement${clipboard.count === 1 ? '' : 's'} — click on the map to place them`);
       });
