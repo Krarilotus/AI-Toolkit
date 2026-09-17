@@ -1408,3 +1408,84 @@ test('der Vorrat bringt die Hoehe jedes Kartenfeldes mit, und die Steilkanten st
   for (let i = 0; i < kanten.length; i += 2) if (kanten.readUInt16LE(i)) gemalt += 1;
   assert.ok(gemalt > 500, 'Steilkanten gemalt: ' + gemalt);
 });
+
+test('Kakteen holen ihr Bild aus dem Zufallswert - dieselbe Rechnung wie im Spiel', (t) => {
+  // Eine Kartendatei speichert bei 15 Prozent der Gewaechse keine Bildnummer.
+  // Das Spiel wuerfelt sie beim ersten Zug aus dem gemerkten Zufallswert
+  // (rng1, Versatz 0x88): UpdateTree16 bis UpdateTree19 unter 0x004f28f0,
+  // 0x004f2920, 0x004f2970 und 0x004f29c0.
+  //
+  // TOTSCHLAGTEST: Wo die Nummer gespeichert IST, muss die Rechnung genau sie
+  // treffen. Gemessen am 17.09.2026 ueber alle 189 Karten: 67.903 von 67.903.
+  // Trifft sie nicht mehr, ist die Rechnung falsch und darf auch nicht auf die
+  // 10.169 Kakteen ohne Nummer angewandt werden.
+  const { listGameMaps, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
+  const { maps } = listGameMaps(null);
+  if (!maps.length) { t.skip('kein Stronghold Crusader gefunden'); return; }
+  const stride = internals.TREE_STRIDE;
+  let mitBild = 0, treffer = 0, ohneBild = 0, ungueltig = 0;
+  for (const eintrag of maps) {
+    const bytes = fs.readFileSync(eintrag.path);
+    let roh = null;
+    try {
+      const vorschau = internals.readPreview(bytes);
+      roh = internals.readSection(bytes, internals.findDirectory(bytes, vorschau.end), internals.TREES_SECTION);
+    } catch { roh = null; }
+    if (!roh) continue;
+    for (let index = 1; index < roh.length / stride; index += 1) {
+      const at = index * stride;
+      if (roh.readInt16LE(at + 4) !== 200) continue;          // nur tree_cactii
+      const art = roh.readInt16LE(at + 0x46);
+      const bild = roh.readInt32LE(at);
+      const gerechnet = internals.cactusPicture(art, roh.readInt32LE(at + 0x88));
+      if (bild) {
+        mitBild += 1;
+        if (gerechnet === bild) treffer += 1;
+      } else {
+        ohneBild += 1;
+        if (!(gerechnet >= 1 && gerechnet <= 17)) ungueltig += 1;
+      }
+    }
+  }
+  assert.ok(mitBild > 60000, 'es wurden genug Kakteen geprueft: ' + mitBild);
+  assert.equal(treffer, mitBild, 'die Rechnung muss jede gespeicherte Bildnummer treffen');
+  assert.ok(ohneBild > 5000, 'und es gibt genug ohne Nummer: ' + ohneBild);
+  assert.equal(ungueltig, 0, 'fuer sie kommt nur ein Bild aus tree_cactii heraus (1 bis 17)');
+
+  // Die Deckelung ist der Grund, warum das hoechste Bild einer Art doppelt so
+  // oft vorkommt - ohne sie zeigte jede vierte Pflanze ein fremdes Bild.
+  assert.equal(internals.cactusPicture(17, 3), 3, 'Art 17 deckelt die 4 auf 3');
+  assert.equal(internals.cactusPicture(18, 3), 6, 'Art 18 deckelt die 7 auf 6');
+  assert.equal(internals.cactusPicture(19, 3), 9, 'Art 19 deckelt die 10 auf 9');
+  assert.equal(internals.cactusPicture(16, 7), 17, 'Art 16 geht bis 17');
+  assert.equal(internals.cactusPicture(16, 0), 10);
+  assert.equal(internals.cactusPicture(2, 3), 0, 'ein Baum ist kein Kaktus - da wird nichts geraten');
+});
+
+test('jedes Gewaechsfeld der Karte bekommt sein Bild', (t) => {
+  // Vorher fielen die Kakteen aus: auf "A Friend Indeed" wurden 549 von 961
+  // Gewaechsfeldern gemalt, und im Boden blieb nur ihr Schatten stehen.
+  const { listGameMaps, readMapTiles, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
+  const { maps, gameRoot } = listGameMaps(null);
+  if (!maps.length || !gameRoot) { t.skip('kein Stronghold Crusader gefunden'); return; }
+  const eintrag = maps.find(m => m.name === 'A Friend Indeed') || maps[0];
+  const bytes = fs.readFileSync(eintrag.path);
+  const vorschau = internals.readPreview(bytes);
+  const verzeichnis = internals.findDirectory(bytes, vorschau.end);
+  const organismen = internals.readSection(bytes, verzeichnis, internals.ORGANISM_SECTION);
+
+  // Felsen (Kennung ab 2000) sind Bodenkacheln aus tile_rocks8 und brauchen
+  // kein eigenes Bild; gezaehlt werden die Gewaechse darunter.
+  let gewaechse = 0;
+  for (let my = 0; my < 400; my += 1) {
+    const [von, bis] = internals.rowRange(my);
+    for (let mx = von; mx <= bis; mx += 1) {
+      const id = organismen.readUInt16LE(internals.tileIndex(mx, my) * 2);
+      if (id > 0 && id < internals.FIRST_ROCK) gewaechse += 1;
+    }
+  }
+  const vorrat = readMapTiles(eintrag.path, null);
+  assert.ok(gewaechse > 900, 'auf dieser Karte stehen genug Gewaechse: ' + gewaechse);
+  assert.equal(vorrat.treeSprites.length, gewaechse,
+    'jedes Gewaechsfeld gehoert ins Bild - ' + vorrat.treeSprites.length + ' von ' + gewaechse);
+});

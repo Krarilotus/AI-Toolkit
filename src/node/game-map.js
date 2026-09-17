@@ -437,19 +437,45 @@ function heldGm1(gameRoot, name) {
   return parsed;
 }
 
+// Kakteen speichern ihr Bild nicht mit: das Spiel wuerfelt es beim ersten Zug
+// aus dem gemerkten Zufallswert. Genau diese vier Rechnungen stehen in
+// UpdateTree16 bis UpdateTree19 (0x004f28f0, 0x004f2920, 0x004f2970,
+// 0x004f29c0) - Art 17, 18 und 19 deckeln ihren obersten Wert, weshalb das
+// hoechste Bild doppelt so haeufig vorkommt wie die anderen.
+//
+// GEMESSEN am 17.09.2026 ueber alle 189 Karten: fuer die 67.903 Kakteen, die
+// ihre Bildnummer gespeichert haben, liefert diese Rechnung in 100,00 Prozent
+// der Faelle genau die gespeicherte Nummer. Erst damit darf sie auf die
+// 10.169 ohne Nummer angewandt werden - ohne sie fehlten 15 Prozent aller
+// Gewaechse im Bild, und im Boden blieb nur ihr Schatten stehen.
+function cactusPicture(type, rng) {
+  switch (type) {
+    case 16: return (rng & 7) + 10;                  // Bilder 10 bis 17
+    case 17: return Math.min((rng & 3) + 1, 3);      // 1 bis 3
+    case 18: return Math.min((rng & 3) + 4, 6);      // 4 bis 6
+    case 19: return Math.min((rng & 3) + 7, 9);      // 7 bis 9
+    default: return 0;
+  }
+}
+
 // Die Baumliste, Abschnitt 1014. Nur die Felder, die zum Zeichnen noetig sind.
+// Die Namen der Felder stammen aus der OpenSHC-Struktur "Tree" (156 Byte).
 function readTrees(section) {
   if (!section || section.length % TREE_STRIDE) return null;
   const list = [];
   for (let index = 0; index < section.length / TREE_STRIDE; index += 1) {
     const at = index * TREE_STRIDE;
+    const type = section.readInt16LE(at + 0x46);     // +0x46 treeType
+    const picture = section.readInt32LE(at);         // +0x00 animationFrameUnk
     list.push({
-      picture: section.readInt32LE(at),          // +0x00 1-basierte Bildnummer
+      // 1-basierte Bildnummer. Fehlt sie, kommt sie aus dem Zufallswert.
+      picture: picture || cactusPicture(type, section.readInt32LE(at + 0x88)),
       gmId: section.readInt16LE(at + 4),         // +0x04 welche gm-Datei
       palette: section.readInt32LE(at + 8),      // +0x08 welche Farbtafel
       originX: section.readInt16LE(at + 0x0c),   // +0x0c Aufhaengepunkt
       originY: section.readInt16LE(at + 0x0e),
-      alive: section.readInt16LE(at + 0x44)      // +0x44 0 = leerer Platz
+      alive: section.readInt16LE(at + 0x44),     // +0x44 0 = leerer Platz
+      type                                       // 16 bis 19 sind die Kakteen
     });
   }
   return list;
@@ -800,6 +826,7 @@ module.exports = {
   internals: { pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
                readPictureStock, pictureForValue, readGm1, tgxToRgba, virtualToFile,
+               readTrees, cactusPicture, TREE_STRIDE, FIRST_ROCK,
                buildTileAtlas, diamondToRgba, upperTilePicture, packMapPictures, heldGm1, ATLAS_SPALTEN,
                PREVIEW_EDGE, MAP_TILES, BUILDING_SECTION, BUILDINGS_SECTION, STONE_KEEP, KEEP_EDGE,
                TILE_W, TILE_H, GFX_SECTION, ORGANISM_SECTION, TREES_SECTION,
