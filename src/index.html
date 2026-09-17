@@ -24,6 +24,7 @@
     <button id="tabCastle" class="workspaceTab" type="button" data-workspace="castle">Castle</button>
     <button id="tabAiContent" class="workspaceTab" type="button" data-workspace="content">AI Content</button>
     <div class="workspaceSpacer"></div>
+    <button id="releaseUpdateButton" class="releaseUpdateButton" type="button" aria-live="polite" title="Check official releases">Check updates</button>
     <span id="workspaceStatus" class="workspaceStatus">UCP AI Library</span>
     <span class="appIdentity" aria-hidden="true"><span>AI</span> Toolkit</span>
   </nav>
@@ -44,12 +45,12 @@
 
       <div class="characterMain">
         <aside class="characterSidebar">
-          <section class="editorCard characterOptionsCard">
-            <div class="editorCardHeading">
+          <details class="editorCard characterOptionsCard" data-character-card="plugins" open>
+            <summary class="editorCardHeading">
               <div>
                 <span class="panelEyebrowHeader">Plugins</span>
               </div>
-            </div>
+            </summary>
             <label class="switchRow">
               <span><strong>AI ox tethers</strong><small>Controls the amount of ox tethers built</small></span>
               <input type="checkbox" id="toggleOx" checked>
@@ -58,15 +59,14 @@
               <span><strong>Running units</strong><small>Controls whether some units will run or walk.</small></span>
               <input type="checkbox" id="toggleRun" checked>
             </label>
-          </section>
+            <label class="switchRow">
+              <span><strong>AI Troop Behaviour</strong><small>Include AIV troop behaviour overrides</small></span>
+              <input type="checkbox" id="toggleTroops" checked>
+            </label>
+          </details>
 
-          <section class="editorCard populationCard">
-            <div class="editorCardHeading populationCardHeading">
-              <div>
-                <span class="panelEyebrowHeader">Population</span>
-              </div>
-              <button id="useCastlePopulationBtn" class="compactAction" type="button" title="Use the population provided by the currently loaded castle">Use castle pop<span id="castleProvidedForCharacter">0</span></button>
-            </div>
+          <details class="editorCard populationCard" data-character-card="population" open>
+            <summary class="editorCardHeading populationCardHeading"><span class="panelEyebrowHeader">Population</span></summary>
 
             <div class="populationInputRow">
               <label for="availablePopulation">Available population</label>
@@ -75,6 +75,10 @@
                 <input id="availablePopulation" class="numberInput" type="number" value="10" min="10" inputmode="numeric">
                 <button id="populationPlusEight" class="populationStepButtonRight" type="button" aria-label="Increase available population by 8">+8</button>
               </div>
+            </div>
+
+            <div class="populationSourceRow" hidden>
+              <button id="useCastlePopulationBtn" class="compactAction" type="button" title="Use the population provided by the currently loaded castle">Use castle pop<span id="castleProvidedForCharacter">0</span></button>
             </div>
 
             <div class="metricRow"><span>Maximum workers used</span><strong id="maxPopNeeded">0</strong></div>
@@ -97,15 +101,22 @@
               <span>Left after castle + character</span>
               <strong id="characterCastlePopulationAfterCharacter">0</strong>
             </div>
-            <p class="cardNote">Calculator assumes AI ox tethers is on. <br>Hop farms are not included, as they dont have a max!</p>
-          </section>
+            <details class="characterSubsection" data-character-card="fear" open>
+              <summary>Fear factor <strong id="characterFearLevel">0</strong></summary>
+              <div id="characterFearDetails"></div>
+            </details>
+          </details>
+          <details class="editorCard storageCard" data-character-card="storage" open>
+            <summary class="editorCardHeading"><span class="panelEyebrowHeader">Stockpile space</span></summary>
+            <div id="characterStorage"></div>
+          </details>
         </aside>
 
         <main class="characterEditorPanel">
           <div class="characterControlBar">
             <label class="characterSearch" for="search">
               <span>Find setting</span>
-              <input type="search" id="search" placeholder="Search character fields…" autocomplete="off" spellcheck="false">
+              <input type="search" id="search" aria-keyshortcuts="Control+F Meta+F" placeholder="Search character fields…" autocomplete="off" spellcheck="false">
             </label>
             <div class="characterControlActions">
               <div class="segmentedControl" aria-label="Section visibility">
@@ -157,6 +168,12 @@
           </span>
           <button type="button" class="castleTool" data-tool="bucket" title="Fills everything up to a wall &#8212; the edge of the map counts as one. Shortcut: 7 or F">Fill <kbd>7</kbd></button>
           <button type="button" class="castleTool" data-tool="select" title="Shortcut: 3 or V">Select / Move <kbd>4</kbd></button>
+          <label id="castleSelectModeLabel" class="castleProjectChoice" hidden>Select mode
+            <select id="castleSelectMode" title="Flood selects connected placements of the same type, including diagonals. Shift adds; Ctrl-click toggles the connected group.">
+              <option value="area">Select / Move</option>
+              <option value="flood">Flood fill (same type)</option>
+            </select>
+          </label>
           <button type="button" class="castleTool" data-tool="replace" title="Draw a box, then choose replacements by item type. Shortcut: 8 or R">Replace<kbd>8</kbd></button>
           <button type="button" class="castleTool" data-tool="merge" title="Draw a box to merge placements by item type">Merge</button>
           <button type="button" class="castleTool" data-tool="delete" title="Shortcut: 4 or D">Delete<kbd>4</kbd></button>
@@ -181,6 +198,8 @@
           <label class="compactToggle"><input id="castleShowNames" type="checkbox"> Item names</label>
           <label class="compactToggle"><input id="castleShowUnitNumbers" type="checkbox"> Unit Order</label>
           <label class="compactToggle"><input id="castleShowCompatibility" type="checkbox"> Guide lines</label>
+          <label class="compactToggle" title="Estimated worker paths through the current castle"><input id="castleShowRoutes" type="checkbox"> Path map</label>
+          <label class="compactToggle" title="Orange planning gradient: 2 tiles initially, fading to 7 tiles in stage 2"><input id="castleShowFire" type="checkbox"> Firespread</label>
 
         </div>
       </header>
@@ -199,6 +218,7 @@
             <input id="castleBuildSlider" type="range" min="1" max="1" value="1" step="1" disabled aria-label="Select and scroll to a build step">
           </div>
           <div class="buildHint">Drag steps to reorder. Ctrl+click or Shift+click selects several steps. Right-click to merge or lock positions.</div>
+          <div id="castleAnalysisInfo" class="buildHint" hidden></div>
           <div id="castleBuildList" class="castleBuildList"></div>
           <section id="castlePopulationOverview" class="castlePopulationOverview castleOverviewPanel" data-overview="population" aria-label="Population up to the selected build step">
             <div class="populationOverviewTitle castleOverviewTitle">
@@ -598,12 +618,17 @@
 
 <script src="js/app-shell.js"></script>
 <script src="js/titlebar.js"></script>
+<script src="js/release-updates.js"></script>
 <script src="js/castle-geometry.js"></script>
 <script src="js/castle-camera.js"></script>
 <script src="js/castle-palette.js"></script>
 <script src="js/castle-sidebar-layout.js"></script>
+<script src="js/castle-game-data.js"></script>
+<script src="js/castle-analysis.js"></script>
 <script src="js/castle-editor.js"></script>
 
+<script src="js/character-planning.js"></script>
+<script src="js/character-helper-panels.js"></script>
 <script src="js/character-editor.js"></script>
 <script src="js/ai-content-editor.js"></script>
 <script src="js/ucp-library.js"></script>

@@ -1948,3 +1948,36 @@ html.dockResizing * { user-select: none !important; }
   background: var(--accent-soft);
   color: var(--text-main);
 }
+/* Character helper cards reuse the existing details and metric styles. */
+#characterWorkspace .characterSidebar > details.editorCard {
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
+  background: var(--surface-2);
+}
+#characterWorkspace .characterSidebar summary { font-size: 1.1rem; }
+#characterWorkspace .characterSidebar details > summary { border-bottom: 0; }
+#characterWorkspace .characterSidebar details[open] > summary { border-bottom: 1px solid var(--line); }
+#characterWorkspace .characterSidebar details:not([open]) > summary::after { content: '+'; }
+#characterWorkspace .characterSidebar details[open] > summary::after { content: '\2212'; }
+#characterWorkspace .characterSidebar summary strong { margin-left: auto; white-space: nowrap; font: 600 1.05rem var(--font-data); }
+#characterWorkspace .characterSidebar summary::after { flex: 0 0 20px; }
+#characterWorkspace .characterSidebar .characterSubsection { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+.populationSourceRow { padding: 0 12px 7px; text-align: right; }
+.characterStorageTable { width: calc(100% - 24px); margin: 8px 12px; border-collapse: collapse; font-size: 1.05rem; }
+.characterStorageTable :is(th,td) { padding: 5px 2px; text-align: right; border-bottom: 1px solid var(--line); }
+.characterStorageTable :is(th,td):first-child { text-align: left; }
+.characterStorageTable td:first-child img { object-fit: contain; vertical-align: middle; margin-right: 5px; }
+.characterStorageTable td:not(:first-child) { font-family: var(--font-data); }
+.characterStorageTable th { color: var(--text-muted); font-weight: 500; }
+.populationSourceRow .compactAction { display: inline-flex; align-items: center; gap: 5px; }
+
+.characterSidebar .populationSourceRow .compactAction { padding: 2px 6px; min-height: 0; font-size: 1rem; font-weight: 500; }
+
+.workspaceTabs .releaseUpdateButton { flex-shrink: 0; align-self: center; margin-bottom: 5px; padding: 4px 8px; font-size: 11px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-soft); -webkit-app-region: no-drag; }
+.workspaceTabs .releaseUpdateButton.releaseCurrent { background: #19392b; color: #8dddab; border-color: #468862; }
+.workspaceTabs .releaseUpdateButton.releaseAvailable { background: #563c20; color: #ffd49a; border-color: var(--accent-strong); }
+.workspaceTabs .releaseUpdateButton:hover:not(:disabled) { filter: brightness(1.15); }
+.workspaceTabs .releaseUpdateButton:focus-visible { outline: 2px solid var(--text-main); outline-offset: 2px; }
+
+.characterFieldGroup { font-size: 12px; color: var(--accent-strong); border-top: 1px solid var(--line); margin: 14px 0 6px; padding-top: 10px; }

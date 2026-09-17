@@ -26,6 +26,67 @@ require('../main');
       window.addEventListener('error',event=>errors.push(event.message));
       window.addEventListener('unhandledrejection',event=>errors.push(String(event.reason)));
       window.alert=message=>{throw new Error(message)};
+      window.appWorkspace.setActive('character');
+      await window.characterEditor.ready;
+      const troopToggle=document.getElementById('toggleTroops');
+      if(!troopToggle.checked)throw new Error('Troop plugin not enabled by default');
+      const untouched=window.characterEditor.getContent();
+      window.characterEditor.loadFromContent(untouched,'C:/AI/Troop-A/character.json');
+      troopToggle.checked=false;troopToggle.dispatchEvent(new Event('change'));
+      window.characterEditor.loadFromContent(untouched,'C:/AI/Troop-B/character.json');
+      if(!troopToggle.checked)throw new Error('Opt-out leaked into another AI');
+      window.characterEditor.loadFromContent(untouched,'C:/AI/Troop-A/character.json');
+      if(troopToggle.checked)throw new Error('Explicit troop opt-out not restored');
+      troopToggle.checked=true;troopToggle.dispatchEvent(new Event('change'));
+      if(document.querySelectorAll('select[data-aic-field]').length!==32)throw new Error('Missing troop behaviour fields');
+      if(Object.keys(JSON.parse(window.characterEditor.getContent()).aic).some(k=>k.startsWith('AIVTroops_')))throw new Error('Inherited overrides leaked into saved AIC');
+      const slave=document.querySelector('[data-aic-field="AIVTroops_InitialRole_Slave"]');
+      slave.value='dig';slave.dispatchEvent(new Event('change'));
+      if(JSON.parse(window.characterEditor.getContent()).aic.AIVTroops_InitialRole_Slave!=='dig')throw new Error('Troop role did not save');
+      troopToggle.checked=false;troopToggle.dispatchEvent(new Event('change'));
+      if(document.querySelector('[data-aic-field]') || Object.keys(JSON.parse(window.characterEditor.getContent()).aic).some(k=>k.startsWith('AIVTroops_')))throw new Error('Disabled troop plugin still displayed or saved');
+      troopToggle.checked=true;troopToggle.dispatchEvent(new Event('change'));
+      if(JSON.parse(window.characterEditor.getContent()).aic.AIVTroops_InitialRole_Slave!=='dig')throw new Error('Troop toggle lost override');
+      const roundtrip=window.characterEditor.getContent();window.characterEditor.loadFromContent(roundtrip,null);
+      const reloaded=document.querySelector('[data-aic-field="AIVTroops_InitialRole_Slave"]');
+      if(reloaded.value!=='dig')throw new Error('Troop role did not reload');
+      reloaded.value='';reloaded.dispatchEvent(new Event('change'));
+      if('AIVTroops_InitialRole_Slave' in JSON.parse(window.characterEditor.getContent()).aic)throw new Error('Inherit did not remove override');
+      const originalCharacter=window.characterEditor.getContent();
+      const character=JSON.parse(originalCharacter);
+      Object.assign(character.aic,{MaxWood:48,MaxStone:48,MaxResourceVariance:1,MaxFood:100,Farm1:'DairyFarm',Farm2:'AppleFarm',MaxEquipment:6,FletcherSetting:'Both'});
+      window.characterEditor.loadFromContent(JSON.stringify(character),null);
+      const helperFrame=(itemType,x,y)=>({itemType,tilePositionOfsets:[y*100+x]});
+      window.castleEditor.loadDocument({frames:[helperFrame(61,43,43),helperFrame(80,15,15),helperFrame(81,25,25),helperFrame(50,30,30),helperFrame(50,35,35),helperFrame(175,40,40)]},null);
+      if(window.characterPopulation.getAvailablePopulation()!==window.castleEditor.getPopulationSummary().provided)throw new Error('Castle population is not the default');
+      if(!document.querySelector('.populationSourceRow').hidden)throw new Error('Matching population shows reset button');
+      window.characterPopulation.setAvailablePopulation(100);
+      if(document.querySelector('.populationSourceRow').hidden)throw new Error('Different population hides reset button');
+      document.getElementById('useCastlePopulationBtn').click();
+      if(!document.querySelector('.populationSourceRow').hidden)throw new Error('Reset button did not hide after matching population');
+      window.characterPopulation.setAvailablePopulation(100);
+      window.characterEditor.loadFromContent(JSON.stringify(character),null);
+      if(window.characterPopulation.getAvailablePopulation()!==window.castleEditor.getPopulationSummary().provided)throw new Error('Reopening Character did not restore castle population');
+      window.characterPopulation.setAvailablePopulation(16);
+      if(document.getElementById('characterFearLevel').textContent!=='+1')throw new Error('Fear did not update from castle and population');
+      if(!document.getElementById('characterStorage').textContent.includes('Crossbows'))throw new Error('Mixed workshop output missing');
+      const cards=[...document.querySelectorAll('[data-character-card]')];
+      for(const card of cards){
+        card.querySelector(':scope > summary').click();
+        if(card.open)throw new Error('Sidebar card did not collapse');
+        card.querySelector(':scope > summary').click();
+        if(!card.open)throw new Error('Sidebar card did not expand');
+      }
+      window.characterPopulation.setAvailablePopulation(17);
+      if(document.getElementById('characterFearLevel').textContent!=='0')throw new Error('Fear population boundary did not update');
+      window.characterEditor.loadFromContent(originalCharacter,null);
+      const search=document.getElementById('search');search.value='wood';
+      document.dispatchEvent(new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true,cancelable:true}));
+      if(document.activeElement!==search || search.selectionStart!==0 || search.selectionEnd!==4)throw new Error('Character Ctrl+F did not focus and select the search');
+      search.value='';window.appWorkspace.setActive('castle');search.blur();
+      const otherFind=new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true,cancelable:true});
+      document.dispatchEvent(otherFind);
+      if(otherFind.defaultPrevented || document.activeElement===search)throw new Error('Character search stole another workspace shortcut');
       let atlasDraws=0;
       const original=CanvasRenderingContext2D.prototype.drawImage;
       CanvasRenderingContext2D.prototype.drawImage=function(image,...args){
@@ -65,6 +126,39 @@ require('../main');
         window.isoView.refresh();window.isoView.paint();
         if(canvas.toDataURL()!==partial)throw new Error('Partial step redraw differs from full render at step '+step);
       }
+      const unchangedRow=document.getElementById('castleBuildList').firstElementChild;
+      const completeScene=canvas.toDataURL();
+      slider.value='1';slider.dispatchEvent(new Event('input',{bubbles:true}));
+      await pause();window.isoView.paint();await pause();
+      const incrementalScene=canvas.toDataURL();
+      const fitBefore=window.isoView.groundIsStretched()?'stretch':'tile';
+      window.isoView.setGroundFit(fitBefore==='tile'?'stretch':'tile');
+      window.isoView.setGroundFit(fitBefore);
+      if(canvas.toDataURL()!==incrementalScene)throw new Error('Incremental step differs from a full scene rebuild');
+
+      slider.value=slider.max;slider.dispatchEvent(new Event('input',{bubbles:true}));
+      await pause();window.isoView.paint();await pause();
+      if(document.getElementById('castleBuildList').firstElementChild!==unchangedRow)throw new Error('Stepping recreated the build list');
+      if(canvas.toDataURL()!==completeScene)throw new Error('Step round-trip changed scene pixels');
+
+      for(const id of ['castleShowFire','castleShowRoutes']) {
+        const toggle=document.getElementById(id);
+        if(!toggle)throw new Error('Missing checkbox '+id);
+        toggle.checked=true;toggle.dispatchEvent(new Event('change'));
+      }
+      let overlay;
+      for(let i=0;i<200;i++) {
+        overlay=window.castleEditor.getAnalysisOverlay();
+        if(!overlay.pending && overlay.image)break;
+        await pause();
+      }
+      if(!overlay.image || overlay.error || !overlay.routes.length)throw new Error('Overlay worker failed: '+JSON.stringify(overlay));
+      if(!overlay.routes.some(r=>r.path.length))throw new Error('No worker reaches the keep stockpile');
+      if(overlay.routes.some(r=>!r.entry || !(r.workers>0)))throw new Error('Worker entrance marker missing');
+      if(overlay.walkability?.length!==10000)throw new Error('Walkability grid missing');
+      const overlayResult={routes:overlay.routes.length,reachable:overlay.routes.filter(r=>r.path.length).length};
+      window.isoView.paint();await pause();
+      const overlayPNG=canvas.toDataURL('image/png');
       const cameraFrames=[];
       const atlas=document.createElement('canvas');atlas.width=120;atlas.height=16;
       const atlasContext=atlas.getContext('2d');
@@ -86,16 +180,16 @@ require('../main');
         if(camera>=0)mapDraws.push({camera:camera*2,tile:args[0]/30,x:args[4],y:args[5]});
         return original.call(this,image,...args);
       };
-      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}]});
+      window.isoView.setGameMap({name:'Camera fixture',path:'camera-fixture.map',dataUrl:mapAtlas,keeps:[{x:200,y:200,orientation:0}],pathTerrain:{version:3,blocked:encode(new Uint8Array(160000)),heights:encode(new Uint8Array(160000))}});
       window.isoView.setMapTiles({path:'camera-fixture.map',atlas:mapAtlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16});
       if(window.isoView.turnView(1)!==null)throw new Error('Saved terrain must not masquerade as native directional graphics');
+      mapDraws.length=0;
       window.isoView.setMapTiles({path:'camera-fixture.map',nativeRenderer:true,cameras:mapAtlases.map(atlas=>({atlas,plaetze:encode(locations),spalten:4,kachelBreite:30,kachelHoehe:16}))});
       await pause();
       for(let turn=0;turn<=4;turn++){
-        mapDraws.length=0;
-        if(turn)window.isoView.turnView(1); else window.isoView.refresh();
+        if(turn){mapDraws.length=0;window.isoView.turnView(1);}
         await pause();window.isoView.paint();
-        cameraFrames.push({orientation:window.isoView.viewRotation(),tiles:mapDraws.slice(),png:canvas.toDataURL('image/png')});
+        cameraFrames.push({orientation:window.isoView.viewRotation(),tiles:[...new Map(mapDraws.map(tile=>[tile.tile,tile])).values()],png:canvas.toDataURL('image/png')});
       }
       mapDraws.length=0;
       window.isoView.paint();
@@ -106,7 +200,7 @@ require('../main');
       await pause();
       const camera=document.querySelector('.castleCameraKey');
       const style=getComputedStyle(camera);
-      return {png,atlasDraws,errors,firstStepStatus,lastStepStatus,cameraFrames,cameraBackground:style.backgroundColor,cameraText:style.color,
+      return {overlayResult, png,atlasDraws,errors,firstStepStatus,lastStepStatus,cameraFrames,cameraBackground:style.backgroundColor,cameraText:style.color,
         status:document.getElementById('isoDockStatus').textContent};
     })()`,true);
     fs.writeFileSync(path.join(output,'native-building-components.png'),Buffer.from(result.png.split(',')[1],'base64'));

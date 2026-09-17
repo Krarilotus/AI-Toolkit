@@ -1,6 +1,11 @@
-﻿# Offline analysis work (unfinished)
+﻿# Native analysis research (not shipped)
 
-The editor must calculate the current unsaved AIV, selected build step and actual
+The editor now ships a self-contained path planner and the user-requested 2/7-tile
+fire estimate; see [Castle analysis](castle-analysis.md). This document records
+the separate, unfinished native prototype. It is not required by the shipped
+checkbox overlays.
+
+The native prototype aims to calculate the current unsaved AIV, selected build step and actual
 map, then draw Path map and Firespread directly in its existing views. A replay
 capture viewer does not satisfy this requirement and has been removed.
 
@@ -13,8 +18,12 @@ There is no recorded-game input and no alternate JavaScript pathfinder.
 
 On Gatekeeper.aiv, 286 placements yielded 23 building records and four rejected
 building placements; walls/stairs are separate native tile structures. The four
-workshop entrance queries returned paths of 82, 75, 78 and 72 directions to the
-native stockpile entrance. These are prototype results, not an editor feature.
+workshop entrance queries returned paths of 121, 133, 130 and 135 directions to
+the native stockpile entrance; decoding each packed path reached its destination.
+These are prototype results, not an editor feature. Earlier shorter paths came
+from an incomplete placement pass that skipped walls and stairs. The normal
+building-size lookup returns no footprint for these types; the original AIV
+routine supplies size one explicitly for their separate placement calls.
 
 Two mistakes were found by tracing the original routines:
 
@@ -24,7 +33,7 @@ Two mistakes were found by tracing the original routines:
   entry; in this map the origin is (195,296), entry (195,298). Querying the origin
   returned no path while querying the entrance returned native paths.
 
-Still required before enabling overlays: verify the complete packed path and
+Still required before presenting the native prototype as verified engine output: verify the complete packed path and
 special wall/gate/stair transitions; complete placement handling for moat,
 pitch, multipart buildings and rotated keeps; retain placement failures;
 verify the active UCP changes; implement and validate staged fire/ember behavior;

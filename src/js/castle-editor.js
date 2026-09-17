@@ -1111,6 +1111,31 @@
             (gesperrt ? ` (${gesperrt} locked and left alone)` : ''));
   }
 
+  function floodSelect(tile, event) {
+    const placements = placementRefs();
+    const hit = topmostRefAtTile(tile);
+    const start = placements.find(placement => placement.ref === hit);
+    // Selection is non-destructive: locked steps and the Keep remain selectable.
+    const refs = geometry.floodPlacementRefs(start, placements,
+      placement => footprintRects(placement.type, placement.off), () => false, GRID, false);
+    const toggle = event.ctrlKey || event.metaKey;
+    const remove = toggle && state.selected.has(hit);
+    if (!event.shiftKey && !toggle) state.selected.clear();
+    for (const ref of refs) {
+      if (remove) state.selected.delete(ref);
+      else state.selected.add(ref);
+    }
+    state.gesture = null;
+    state.currentItemType = null;
+    activateBuildStepForRefs(state.selected);
+    updateToolAvailability();
+    renderPalette();
+    updateSelectedItemInfo();
+    renderBuildList();
+    scheduleDraw();
+    setStatus(`Selected ${state.selected.size} placements ? Shift adds; Ctrl-click toggles a connected group. Switch to Select / Move to drag.`);
+  }
+
   function floodDelete(tile) {
     const placements = placementRefs();
     const ref = topmostRefAtTile(tile);
@@ -1798,6 +1823,7 @@
     if (lineOnly && isPlacementTool(tool)) tool = 'line';
     state.tool = tool;
     document.getElementById('castleDeleteModeLabel').hidden = tool !== 'delete';
+    document.getElementById('castleSelectModeLabel').hidden = tool !== 'select';
     if (remember && isPlacementTool(tool) && !lineOnly) state.lastPlacementTool = tool;
     if (tool !== 'copy') state.copyBuffer = null;
     if (tool === 'copy' || tool === 'replace' || tool === 'merge') state.currentItemType = null;
@@ -2450,6 +2476,7 @@
       state.renderPending = false;
       const sceneChanged = state.pendingSceneChange;
       state.pendingSceneChange = false;
+      if (sceneChanged) getAnalysisOverlay();
       draw();
       for (const listener of changeListeners) {
         try { listener(sceneChanged); } catch { /* a watcher must not stop the map */ }
@@ -2591,12 +2618,111 @@
     }
 
     ctx = staticCacheCtx;
+    drawAnalysisOverlay();
     for (const placement of unitPlacements) {
       drawPlacement(placement.type, placement.off, state.selected.has(placement.ref));
     }
 
     ctx = displayCtx;
     state.staticCacheDirty = false;
+  }
+
+  let analysisCache = { key: null, heat: null, routes: [], pending: false };
+  let analysisWorker = null, analysisTimer = null, analysisSerial = 0;
+  window.addEventListener('castle-balance-changed', () => {
+    scheduleDraw(); window.isoView?.refresh?.(true);
+  });
+  function getAnalysisOverlay(update = true) {
+    const showFire = !!document.getElementById('castleShowFire')?.checked;
+    const showRoutes = !!document.getElementById('castleShowRoutes')?.checked;
+    if (!showFire && !showRoutes) return { heat: null, routes: [] };
+    if (!update) return analysisCache;
+    const data = window.castleCostData;
+    const placements = placementRefs().filter(p => p.kind !== 'unit'
+      && (!Number.isInteger(state.insertionFrameIndex) || p.fi <= state.insertionFrameIndex)).flatMap(p => {
+      const name = data?.buildings[p.type]?.balance;
+      const rects = footprintRects(p.type, p.off);
+      const item = { ref: p.ref, type: Number(p.type), name, rects, health: window.castleCostPanel?.getActiveBalance?.()?.buildings?.[name]?.health, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
+      // The keep forces an attached stockpile, encoded as a composite footprint.
+      return p.type === geometry.KEEP_ITEM_TYPE && rects.length > 1
+        ? [{ ...item, rects: rects.filter(r => r.part !== 'stockpile') }, { ref: `${p.ref}:stockpile`, name: 'Stockpile', rects: rects.filter(r => r.part === 'stockpile') }]
+        : [item];
+    });
+    const terrain = window.isoView?.analysisTerrain?.() || null;
+    const key = JSON.stringify([showFire, showRoutes, placements, terrain?.key]);
+    if (analysisCache.key !== key) {
+      const id = ++analysisSerial;
+      clearTimeout(analysisTimer);
+      analysisCache = { key, heat: null, routes: [], pending: true };
+      analysisTimer = setTimeout(() => {
+        if (!analysisWorker) {
+          analysisWorker = new Worker('js/castle-analysis-worker.js');
+          analysisWorker.onmessage = ({data}) => {
+            if (data.id !== analysisSerial) return;
+            analysisCache = { key: analysisCache.key, routes: [], heat: null, ...data, pending: false };
+            if (data.heat) {
+              const canvas = document.createElement('canvas'); canvas.width = canvas.height = GRID;
+              const context = canvas.getContext('2d'), pixels = context.createImageData(GRID, GRID);
+              for(let y=0;y<GRID;y++) for(let x=0;x<GRID;x++) {
+                const i=((GRID-1-y)*GRID+x)*4;
+                pixels.data.set(window.castleAnalysis.fireColor(data.heat[y*GRID+x]),i);
+              }
+              context.putImageData(pixels,0,0); analysisCache.image=canvas;
+            }
+            scheduleDraw(); window.isoView?.refresh?.(true);
+          };
+          analysisWorker.onerror = () => {
+            analysisWorker.terminate(); analysisWorker = null;
+            analysisCache = { key: analysisCache.key, routes: [], pending: false, error: 'Could not calculate overlays.' };
+            scheduleDraw();
+          };
+        }
+        analysisWorker.postMessage({id, placements, terrain, fire:showFire, paths:showRoutes});
+      }, 100);
+    }
+    return analysisCache;
+  }
+  function drawAnalysisOverlay() {
+    const overlay = getAnalysisOverlay(false);
+    const info = document.getElementById('castleAnalysisInfo');
+    const fire = !!document.getElementById('castleShowFire')?.checked;
+    const paths = !!document.getElementById('castleShowRoutes')?.checked;
+    if (info) {
+      info.hidden = !fire && !paths;
+      info.textContent = overlay.error || (overlay.pending ? 'Calculating overlays...' : [
+        fire ? 'Fire estimate: two inner red rings; HP-scaled yellow-to-blue halo, up to 8 tiles.' : '',
+        paths ? `Paths: ${overlay.routes.filter(r=>r.path.length).length}/${overlay.routes.length} reachable. Open gates; ${window.isoView?.analysisTerrain?.() ? 'map terrain included' : 'flat terrain (no map data)'}. Cyan dots: reachable entrances; red dots: blocked. Static estimate.` : ''
+      ].filter(Boolean).join(' '));
+    }
+    ctx.save();
+    if (overlay.image) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(overlay.image,state.panX,state.panY,GRID*state.cell,GRID*state.cell);
+    }
+    if (overlay.image) {
+      for (const placement of placementRefs()) {
+        if (placement.kind === 'unit' || (Number.isInteger(state.insertionFrameIndex) && placement.fi > state.insertionFrameIndex)) continue;
+        const name=window.castleCostData?.buildings[placement.type]?.balance;
+        if (window.castleGameData.flammability[name]>0)
+          drawPlacement(placement.type,placement.off,state.selected.has(placement.ref));
+      }
+    }
+    for (const route of overlay.routes) {
+      if(route.path.length) {
+        ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;ctx.beginPath();
+        route.path.forEach((tile,i)=>{
+          const x=state.panX+(tile.x+.5)*state.cell,y=state.panY+(99-tile.y+.5)*state.cell;
+          if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);
+        });ctx.stroke();
+      }
+      if(route.entry) {
+        const x=state.panX+(route.entry.x+.5)*state.cell,y=state.panY+(99-route.entry.y+.5)*state.cell;
+        ctx.beginPath();ctx.arc(x,y,Math.max(2.5,Math.min(5,state.cell*.32)),0,Math.PI*2);
+        ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
+        ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 
   function draw() {
@@ -2673,14 +2799,24 @@
   }
 
   function itemLabelAtTile(tile) {
+    if(tile && document.getElementById('castleShowRoutes')?.checked) {
+      const routes=analysisCache.routes.filter(r=>r.entry?.x===tile.x && r.entry?.y===tile.y);
+      if(routes.length)return routes.map(r=>`${r.name || itemName(r.type)}: ${r.workers} worker(s) - ${r.reason || 'entrance, '+Math.round(r.distance)+' tiles to delivery point'}`).join('; ');
+    }
     const ref = tile && topmostRefAtTile(tile);
-    return ref ? `${itemName(refType(ref))} [${refType(ref)}]` : '';
+    const label=ref ? `${itemName(refType(ref))} [${refType(ref)}]` : '';
+    if(tile && document.getElementById('castleShowRoutes')?.checked && analysisCache.walkability) {
+      const flags=analysisCache.walkability[tile.y*GRID+tile.x];
+      const access=flags===3?'Ground passage and raised walkway':flags===2?'Raised walkway':flags===1?'Walkable ground':'Blocked tile';
+      return label ? `${label} - ${access}` : access;
+    }
+    return label;
   }
 
   // Tiny footprints and long names cannot fit an in-sprite label. A hover
   // label provides their full name without printing thousands of wall labels.
   function drawHoveredItemName() {
-    if (!els.showNames.checked || state.gesture || state.panning) return;
+    if ((!els.showNames.checked && !document.getElementById('castleShowRoutes')?.checked) || state.gesture || state.panning) return;
     const label = itemLabelAtTile(state.hoverTile);
     if (!label) return;
     const pos = tileToScreenPos(state.hoverTile);
@@ -3036,6 +3172,10 @@
     // die selbst einen Kasten ziehen (Delete) oder gerade eine Kopie in der
     // Hand halten (Copy) - dort wuerde die Weiche ihre eigene Geste
     // wegnehmen.
+    if (state.tool === 'select' && document.getElementById('castleSelectMode').value === 'flood') {
+      floodSelect(tile, event);
+      return;
+    }
     const boxInstead = state.currentItemType == null || event.ctrlKey || event.metaKey;
     const ownsTheDrag = state.tool === 'delete' || state.tool === 'replace' || state.tool === 'merge' || (state.tool === 'copy' && state.copyBuffer);
     if (boxInstead && !ownsTheDrag) {
@@ -3670,6 +3810,7 @@
   document.getElementById('castleOpenBtn').addEventListener('click', openFile);
   document.getElementById('castleSaveBtn').addEventListener('click', saveFile);
   document.getElementById('castleSaveAsBtn').addEventListener('click', saveAs);
+  for (const id of ['castleShowFire','castleShowRoutes']) document.getElementById(id)?.addEventListener('change', scheduleDraw);
   els.showNames.addEventListener('change', scheduleDraw);
   els.showUnitNumbers.addEventListener('change', scheduleDraw);
   els.showCompatibility.addEventListener('change', scheduleDraw);
@@ -3870,6 +4011,7 @@
     deleteSelected,
     getCameraPreferences: () => ({ ...state.camera }),
     itemLabelAtTile,
+    getAnalysisOverlay,
     chooseBlueprint,
     clearBlueprint,
     showShortcutDialog,

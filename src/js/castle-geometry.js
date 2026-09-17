@@ -246,8 +246,8 @@
   // Der zusammenhaengende freie Bereich um ein Feld herum - was der Farbeimer
   // fuellt. Begrenzt wird er von allem, was `isBlocked` als besetzt meldet,
   // und vom Kartenrand: wer am Rand steht, ist eingeschlossen wie vor einer
-  // Mauer. Vier Richtungen, nicht acht - sonst laeuft die Fuellung durch
-  // diagonale Luecken hindurch, die im Spiel keine sind.
+  // Mauer. Wie im alten Village Editor zaehlen auch direkte diagonale
+  // Nachbarn als verbunden. Dies ist die Fuellregel, nicht die Wegfindung.
   //
   // `limit` ist eine Notbremse, keine Regel: eine Karte hat 10000 Felder, und
   // ein Fehlgriff auf freies Gelaende soll nicht die halbe Karte zubauen.
@@ -256,11 +256,12 @@
     const gesehen = new Set([start.y * gridSize + start.x]);
     const out = [];
     const rand = [start];
+    const neighbours = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
     while (rand.length) {
       const feld = rand.pop();
       out.push(feld);
       if (out.length >= limit) break;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dy] of neighbours) {
         const x = feld.x + dx, y = feld.y + dy;
         if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) continue;
         const key = y * gridSize + x;
@@ -342,12 +343,12 @@
 
   // Flood through touching footprints of the clicked type. Locked objects
   // and the Keep are barriers. Other item types never join the deletion.
-  function floodPlacementRefs(start, placements, rectsFor, isLocked, gridSize = 100) {
-    if (!start || isLocked(start.ref) || Number(start.type) === KEEP_ITEM_TYPE) return new Set();
+  function floodPlacementRefs(start, placements, rectsFor, isLocked, gridSize = 100, protectKeep = true) {
+    if (!start || isLocked(start.ref) || (protectKeep && Number(start.type) === KEEP_ITEM_TYPE)) return new Set();
     const cells = new Map();
     const barriers = new Set();
     for (const placement of placements) {
-      const blocked = isLocked(placement.ref) || Number(placement.type) === KEEP_ITEM_TYPE;
+      const blocked = isLocked(placement.ref) || (protectKeep && Number(placement.type) === KEEP_ITEM_TYPE);
       if (!blocked && Number(placement.type) !== Number(start.type)) continue;
       for (const rect of rectsFor(placement)) {
         for (let y = Math.max(0, rect.bottom); y <= Math.min(gridSize - 1, rect.top); y++) {

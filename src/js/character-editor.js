@@ -27,6 +27,7 @@ let activeSections;
 let pendingLoad = null;
 
 let availablePopulation = 10;
+let followCastlePopulation = true;
 
 async function init() {
   try {
@@ -115,6 +116,16 @@ function setActiveTemplateButton(type) {
   }
 }
 
+document.addEventListener('keydown', event => {
+  if (window.appWorkspace?.getActive() !== 'character' || event.defaultPrevented ||
+      !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey ||
+      event.key.toLowerCase() !== 'f' || document.querySelector('dialog[open]')) return;
+  const search = document.getElementById('search');
+  event.preventDefault();
+  search.focus();
+  search.select();
+});
+
 let searchQuery = "";
 document.getElementById("search").oninput = (e)=>{
   searchQuery = e.target.value.toLowerCase();
@@ -165,8 +176,16 @@ function mergeDefaults(target, source) {
   }
 }
 
+function characterFieldLabel(key) {
+  const troop = /^AIVTroops_(InitialRole|Movement)(?:_(.+))?$/.exec(key);
+  if (!troop) return key;
+  const unit = troop[2] ? troop[2].replace(/([a-z])([A-Z])/g, '$1 $2') : 'All troops';
+  return `${unit}: ${troop[1] === 'InitialRole' ? 'initial role' : 'movement'}`;
+}
+
 function createField(key, value, parent) {
-  if (searchQuery && !key.toLowerCase().includes(searchQuery)) return null;
+  const displayName = characterFieldLabel(key);
+  if (searchQuery && !`${key} ${displayName}`.toLowerCase().includes(searchQuery)) return null;
 
   const div = document.createElement("div");
   div.className = "field";
@@ -176,25 +195,37 @@ function createField(key, value, parent) {
  
   const label = document.createElement("span");
 
+  label.title = key;
   if (searchQuery) {
-    const idx = key.toLowerCase().indexOf(searchQuery);
+    const idx = displayName.toLowerCase().indexOf(searchQuery);
     if (idx !== -1) {
       const match = document.createElement('span');
       match.className = 'searchMatch';
-      match.textContent = key.substring(idx, idx + searchQuery.length);
+      match.textContent = displayName.substring(idx, idx + searchQuery.length);
       label.append(
-        document.createTextNode(key.substring(0, idx)),
+        document.createTextNode(displayName.substring(0, idx)),
         match,
-        document.createTextNode(key.substring(idx + searchQuery.length))
+        document.createTextNode(displayName.substring(idx + searchQuery.length))
       );
-    } else label.textContent = key;
-  } else label.textContent = key;
+    } else label.textContent = displayName;
+  } else label.textContent = displayName;
 
   div.appendChild(label);
 
   let input;
 
-if (numericBooleanFields.includes(key)) {
+if (key.startsWith("AIVTroops_") && fieldPools[key]) {
+  input = document.createElement("select");
+  input.dataset.aicField = key;
+  const choices = optionPools[fieldPools[key]];
+  if (!choices.includes(value)) {
+    const option = new Option("Unsupported value: " + String(value), String(value), true, true);
+    input.appendChild(option);
+  }
+  choices.forEach(choice => input.appendChild(new Option(choice === "" ? "Vanilla" : choice, choice, false, choice === value)));
+  input.onchange = () => { parent[key] = input.value; updateHeaderInfo(); };
+}
+else if (numericBooleanFields.includes(key)) {
   input = document.createElement("select");
 
   ["True", "False"].forEach(v => {
@@ -365,6 +396,12 @@ function flattenObject(obj, result = [], parent = null, path = "") {
 
 function buildForm(obj, container) {
   const flat = flattenObject(obj);
+  const troopFields = flat.filter(field => field.key.startsWith('AIVTroops_'));
+  const troopOrder = key => key === 'AIVTroops_InitialRole' ? 0 : key === 'AIVTroops_Movement' ? 1 : key.startsWith('AIVTroops_InitialRole_') ? 2 : 3;
+  troopFields.sort((a, b) => troopOrder(a.key) - troopOrder(b.key));
+  let troopIndex = 0, lastTroopGroup = '';
+  // Only change presentation order; keep serialized keys and values untouched.
+  for (let i = 0; i < flat.length; i++) if (flat[i].key.startsWith('AIVTroops_')) flat[i] = troopFields[troopIndex++];
 
   let currentSection = null;
 
@@ -385,6 +422,7 @@ function buildForm(obj, container) {
 
     if (!toggleOx.checked && path.includes("AIOx")) return;
     if (!toggleRun.checked && path.includes("RunningUnits")) return;
+    if (!document.getElementById("toggleTroops").checked && path.includes("AIVTroops_")) return;
 
     const sectionName = Object.keys(activeSections || {}).find(s =>
     activeSections[s].includes(path)
@@ -403,6 +441,13 @@ function buildForm(obj, container) {
     }
 
     if (currentSection) {
+      const troopGroup = key.startsWith('AIVTroops_InitialRole_') ? 'Initial roles'
+        : key.startsWith('AIVTroops_Movement_') ? 'Movement' : '';
+      if (troopGroup && troopGroup !== lastTroopGroup) {
+        const heading = document.createElement('h3');
+        heading.className = 'characterFieldGroup'; heading.textContent = troopGroup;
+        currentSection.appendChild(heading); lastTroopGroup = troopGroup;
+      }
       currentSection.appendChild(field);
     } else {
       container.appendChild(field);
@@ -429,8 +474,25 @@ function collapseAll() {
   });
 }
 
+function troopPluginPreferenceKey(path) {
+  return path ? "character-troop-plugin:" + String(path).replace(/\\/g, "/").toLowerCase() : null;
+}
+
+function loadTroopPluginPreference(path) {
+  const key = troopPluginPreferenceKey(path);
+  try { return !key || window.localStorage.getItem(key) !== "off"; }
+  catch { return true; }
+}
+
+function saveTroopPluginPreference(path, enabled) {
+  const key = troopPluginPreferenceKey(path);
+  if (key) try { window.localStorage.setItem(key, enabled ? "on" : "off"); } catch {}
+}
+
 function loadFromContent(content, path, options = {}) {
+  followCastlePopulation = true;
   data = JSON.parse(content);
+  document.getElementById("toggleTroops").checked = loadTroopPluginPreference(path);
 
   const unknownKeys = findUnknownKeys(activeTemplate, data);
   if (unknownKeys.length > 0) {
@@ -490,7 +552,7 @@ async function newCharacterFile() {
   if (disposition === 'cancel') return false;
   let projectPath = null;
   if (disposition === 'project') {
-    const added = await window.ucpLibrary.addCharacterDocument(JSON.stringify(template, null, 2));
+    const added = await window.ucpLibrary.addCharacterDocument(JSON.stringify(omitInheritedTroopFields(JSON.parse(JSON.stringify(template))), null, 2));
     if (!added) return false;
     projectPath = added.path;
   }
@@ -499,11 +561,13 @@ async function newCharacterFile() {
   activeSections = sections;
   data = JSON.parse(JSON.stringify(template));
   currentFilePath = projectPath;
+  followCastlePopulation = true;
   AIName = projectPath ? projectPath.split(/[\\/]/).slice(-2, -1)[0] || '' : '';
   searchQuery = '';
   document.getElementById('search').value = '';
   document.getElementById('toggleOx').checked = true;
   document.getElementById('toggleRun').checked = true;
+  document.getElementById('toggleTroops').checked = true;
   document.getElementById('aiName').textContent = AIName || 'No Character Loaded';
   setActiveTemplateButton('standard');
   if (disposition !== 'project') window.ucpLibrary?.detachCastleProject?.();
@@ -593,6 +657,13 @@ function findUnknownKeys(activeTemplate, data, path = "") {
   return unknown;
 }
 
+function omitInheritedTroopFields(output) {
+  for (const key of Object.keys(output.aic || {})) {
+    if (key.startsWith("AIVTroops_") && output.aic[key] === "") delete output.aic[key];
+  }
+  return output;
+}
+
 function prepareOutputData() {
   let output = JSON.parse(JSON.stringify(data));
 
@@ -608,7 +679,10 @@ function prepareOutputData() {
     });
   }
 
-  return output;
+  if (!document.getElementById("toggleTroops").checked) {
+    for (const key of Object.keys(output.aic || {})) if (key.startsWith("AIVTroops_")) delete output.aic[key];
+  }
+  return omitInheritedTroopFields(output);
 }
 
 function characterSnapshot() {
@@ -620,6 +694,7 @@ function isCharacterDirty() {
 }
 
 function markCharacterSaved() {
+  saveTroopPluginPreference(currentFilePath, document.getElementById("toggleTroops").checked);
   savedCharacterSnapshot = characterSnapshot();
   updateFilePathDisplay();
 }
@@ -761,6 +836,7 @@ function toggleSections() {
 
 //for actual pop needed calc
 document.getElementById("availablePopulation").addEventListener("input", () => {
+    followCastlePopulation = false;
     updateHeaderInfo();
 });
 
@@ -769,6 +845,10 @@ document.getElementById("availablePopulation").addEventListener("change", event 
 });
 
 function updateHeaderInfo() {
+    if (followCastlePopulation) {
+      const provided = Number(getCastlePopulationSummary().provided) || 10;
+      document.getElementById("availablePopulation").value = String(Math.max(10, provided));
+    }
 
     document.getElementById("maxPopNeeded").textContent =
         calculateMaxPopNeeded();
@@ -805,6 +885,16 @@ function updateHeaderInfo() {
     }));
 }
 
+function calculateOxTethers(quarries, a) {
+    if (!toggleOx.checked) return quarries;
+    if (Number(a.AIOxTethers_Logic) === 0) return Number(a.AIOxTethers_DisableInitialOxTether) === 1 ? 0 : quarries;
+    return Math.min(
+        quarries * (Number(a.AIOxTethers_MaximumOxTethersPerQuarry) || 0),
+        quarries * (Number(a.AIOxTethers_DynamicMaxOxTethers) || 0),
+        Number(a.AIOxTethers_MaxOxTethers) || 0
+    );
+}
+
 function calculateMaxPopNeeded() {
 
     if (!data || !data.aic) return 0;
@@ -817,18 +907,7 @@ function calculateMaxPopNeeded() {
     const farms       = Math.max(Number(a.MaxFarms) || 0, 1);
     const pitchrigs   = Math.max(Number(a.MaxPitchrigs) || 0, 1);
  
-    const option1 =
-        (Number(a.AIOxTethers_MaximumOxTethersPerQuarry) || 0)
-        * quarries;
-
-    const option2 =
-        (Number(a.AIOxTethers_DynamicMaxOxTethers) || 0)
-        * quarries;
-
-    const option3 =
-        Number(a.AIOxTethers_MaxOxTethers) || 0;
-
-    const oxTethers = Math.min(option1, option2, option3);
+    const oxTethers = calculateOxTethers(quarries, a);
 
     return (
         quarries * 3 +
@@ -931,11 +1010,7 @@ function calculateActualPopNeededAt(populationValue) {
         a.MaxPitchrigs
     );
 
-    const oxTethers = Math.min(
-        quarries * (Number(a.AIOxTethers_MaximumOxTethersPerQuarry) || 0),
-        quarries * (Number(a.AIOxTethers_DynamicMaxOxTethers) || 0),
-        Number(a.AIOxTethers_MaxOxTethers) || 0
-    );
+    const oxTethers = calculateOxTethers(quarries, a);
 
     const population =
         quarries * 3 +
@@ -969,6 +1044,7 @@ function getCastlePopulationSummary() {
 }
 
 function updateCharacterCastlePopulationInfo(summary = getCastlePopulationSummary()) {
+    window.characterHelperPanels?.update(data?.aic || {}, summary, getAvailablePopulationValue());
     const provided = Number(summary?.provided) || 0;
     const left = Number(summary?.left) || 0;
     const castleRequired = Number(summary?.required) || 0;
@@ -979,6 +1055,7 @@ function updateCharacterCastlePopulationInfo(summary = getCastlePopulationSummar
     const leftEl = document.getElementById("characterCastlePopulationLeft");
     const combinedLeftEl = document.getElementById("characterCastlePopulationAfterCharacter");
     if (providedEl) providedEl.textContent = String(provided);
+    document.querySelector(".populationSourceRow").hidden = provided <= 0 || availablePopulation === provided;
     if (leftEl) {
       leftEl.textContent = String(left);
       leftEl.classList.toggle("populationNegative", left < 0);
@@ -990,6 +1067,7 @@ function updateCharacterCastlePopulationInfo(summary = getCastlePopulationSummar
 }
 
 function setAvailablePopulation(value) {
+    followCastlePopulation = false;
     const input = document.getElementById("availablePopulation");
     const numeric = Math.max(10, Math.round(Number(value) || 10));
     input.value = String(numeric);
@@ -1018,8 +1096,8 @@ window.characterEditor = {
 };
 
 document.getElementById("useCastlePopulationBtn").addEventListener("click", () => {
-    const summary = getCastlePopulationSummary();
-    setAvailablePopulation(summary.provided);
+    followCastlePopulation = true;
+    updateHeaderInfo();
 });
 
 document.getElementById("populationMinusEight").addEventListener("click", () => {
@@ -1031,7 +1109,8 @@ document.getElementById("populationPlusEight").addEventListener("click", () => {
 });
 
 window.addEventListener("castle-population-changed", event => {
-    updateCharacterCastlePopulationInfo(event.detail);
+    if (followCastlePopulation) updateHeaderInfo();
+    else updateCharacterCastlePopulationInfo(event.detail);
 });
 
 updateCharacterCastlePopulationInfo();
@@ -1118,3 +1197,7 @@ document.getElementById('btnOrdered').addEventListener('click', orderedTemplate)
 
 toggleOx.onchange=render;
 toggleRun.onchange=render;
+document.getElementById("toggleTroops").onchange = event => {
+  saveTroopPluginPreference(currentFilePath, event.currentTarget.checked);
+  render();
+};

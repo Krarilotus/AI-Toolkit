@@ -50,8 +50,9 @@ shortcuts. Save persists settings locally; Cancel discards edits.
 
 The **Delete** tool now offers **Area** (the existing rectangle deletion) and
 **Flood fill (same type)**. Flood delete removes the clicked placement and
-placements of that exact type connected through their footprints along four
-directions. It can span build steps, but not diagonal corners or empty gaps.
+placements of that exact type connected through their footprints along eight
+directions, including corner-touching tiles, matching the classic editor. The
+fill bucket uses the same connectivity. Empty gaps do not connect regions.
 Locked placements and the Keep are protected barriers. One Undo restores a
 flood deletion.
 
@@ -152,3 +153,11 @@ This includes castle/character open, load in a new window, balance JSON, skins,
 backgrounds and media. Save As retains the suggested filename within that folder.
 Detaching a project restores the platform's default locations. Choosing a game
 installation still starts at the selected game folder.
+
+Flood selection: choose Select / Move, then Select mode > Flood fill (same type).
+Click selects connected same-type placements across build steps, including diagonal
+corners. Shift adds a connected group. Ctrl-click (Command-click) removes the group
+when its clicked placement is selected, or adds it otherwise. An unmodified empty
+click clears selection. Locked placements and the Keep can be selected; existing
+move/delete protection remains. Return to Select / Move mode to drag the selection.
+The selection operation does not change castle data or add an undo entry.

@@ -760,6 +760,33 @@ function knownMap(filePath, gameRoot) {
   return known;
 }
 
+// Static terrain constraints for the editor planner. Saved building/path flags
+// are deliberately not imported: the current AIV supplies those structures.
+function pathTileFlags(flags, organism = 0) {
+  const water=Boolean(flags & (1|1048576)) && !(flags & 2097152);
+  const hardBlocked=water || Boolean(flags & (16|32));
+  const blocked=hardBlocked || Boolean(flags & (128|4096|8192|131072|524288)) || Boolean(organism);
+  return {blocked:Number(blocked),hardBlocked:Number(hardBlocked)};
+}
+function pathTerrain(buffer, directory) {
+  const logic = readSection(buffer, directory, 1003);
+  const organisms = readSection(buffer, directory, ORGANISM_SECTION);
+  const heights = readSection(buffer, directory, 1045) || readSection(buffer, directory, HEIGHT_SECTION);
+  if (!logic || logic.length !== MAP_TILES*4) return null;
+  const blocked = Buffer.alloc(400*400, 1), hardBlocked = Buffer.alloc(400*400,1), ground = Buffer.alloc(400*400), constructionLift = Buffer.alloc(400*400);
+  for(let y=0;y<400;y++) for(let x=0;x<400;x++) {
+    const [left,right]=rowRange(y); if(x<left || x>right) continue;
+    const tile=tileIndex(x,y);
+    const flags=logic.readUInt32LE(tile*4);
+    const access=pathTileFlags(flags, organisms?.readUInt16LE(tile*2) || 0);
+    blocked[y*400+x]=access.blocked;
+    hardBlocked[y*400+x]=access.hardBlocked;
+    ground[y*400+x]=heights?.[tile] || 0;
+    constructionLift[y*400+x]=(flags & 8)?4:0;
+  }
+  return {version:4,constructionLift:constructionLift.toString('base64'),fingerprint:nativeRendererInternals.sha(buffer),blocked:blocked.toString('base64'),hardBlocked:hardBlocked.toString('base64'),heights:ground.toString('base64')};
+}
+
 function readGameMap(filePath, gameRoot) {
   const known = knownMap(filePath, gameRoot);
   const buffer = fs.readFileSync(known.path);
@@ -780,7 +807,8 @@ function readGameMap(filePath, gameRoot) {
     source: known.source,
     edge: PREVIEW_EDGE,
     dataUrl: `data:image/png;base64,${previewPng(preview).toString('base64')}`,
-    keeps
+    keeps,
+    pathTerrain: directory ? pathTerrain(buffer, directory) : null
   };
 }
 
@@ -1057,7 +1085,7 @@ module.exports = {
   readMapTiles,
   readNativeMapTiles,
   // fuer die Tests und fuer Werkzeuge, die eine Karte ohne Electron lesen
-  internals: { readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
+  internals: { pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
                readPictureStock, pictureForValue, readGm1, tgxToRgba, renderTerrain, virtualToFile,
                buildTileAtlas, diamondToRgba, upperTilePicture, packMapPictures, heldGm1, ATLAS_SPALTEN,

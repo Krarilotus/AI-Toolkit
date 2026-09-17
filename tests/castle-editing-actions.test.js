@@ -37,16 +37,21 @@ function flood(start, placements, locked = []) {
     p => geometry.footprintRectsAtXY(p.type, p.x, p.y, p.size), ref => locked.includes(ref));
 }
 
-test('flood delete crosses build steps but not gaps, diagonal corners, types or locks', () => {
+test('flood delete connects diagonal corners across steps while excluding locked cells and other types', () => {
   const items = [placement('a', 0, 0), placement('b', 1, 0), placement('locked', 2, 0),
     placement('beyond', 3, 0), placement('diagonal', 2, 1), placement('other', 0, 1, 26)];
-  assert.deepEqual(flood(items[0], items, ['locked']), new Set(['a', 'b']));
+  assert.deepEqual(flood(items[0], items, ['locked']), new Set(['a', 'b', 'diagonal', 'beyond']));
   assert.deepEqual(flood(items[2], items, ['locked']), new Set());
   assert.deepEqual(flood(null, items), new Set());
 });
 
+test('a locked placement does not connect separated flood-delete regions', () => {
+  const items = [placement('a', 0, 0), placement('locked', 1, 1), placement('b', 2, 2)];
+  assert.deepEqual(flood(items[0], items, ['locked']), new Set(['a']));
+});
+
 test('flood delete uses whole building footprints and protects the Keep', () => {
-  const items = [placement('a', 0, 1, 54, [2, 2]), placement('b', 2, 0, 54), placement('gap', 4, 0, 54)];
+  const items = [placement('a', 0, 1, 54, [2, 2]), placement('b', 2, 2, 54), placement('gap', 4, 2, 54)];
   assert.deepEqual(flood(items[0], items), new Set(['a', 'b']));
   const keep = placement('keep', 43, 56, 61);
   assert.deepEqual(flood(keep, [keep]), new Set());
@@ -129,6 +134,7 @@ test('hover names include units and one-tile items, with a safe fallback for unk
   const end = source.indexOf('\n  function ', start + 10);
   const constants = require('../config/aiv_constants.json');
   const context = vm.createContext({
+    document: {getElementById:()=>({checked:false})},
     topmostRefAtTile: tile => tile.x === 0 ? null : 'placement',
     refType: () => 25,
     itemName: type => palette.itemName(constants, type)
@@ -140,4 +146,44 @@ test('hover names include units and one-tile items, with a safe fallback for unk
     context.refType = () => type;
     assert.equal(vm.runInContext('itemLabelAtTile({x: 1, y: 1})', context), `${palette.itemName(constants, type)} [${type}]`);
   }
+});
+
+
+test('path-map hover reports blocked entrances and walkability even without item labels',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../src/js/castle-editor.js'),'utf8');
+  const start=source.indexOf('  function itemLabelAtTile('),end=source.indexOf('\n  function ',start+10);
+  const walkability=new Uint8Array(10000);walkability[101]=3;
+  const context=vm.createContext({document:{getElementById:()=>({checked:true})},GRID:100,
+    analysisCache:{walkability,routes:[{entry:{x:2,y:2},name:'Fletcher',workers:1,reason:'Entrance blocked on all sides'}]},
+    topmostRefAtTile:()=>null,itemName:()=>'',refType:()=>0});
+  vm.runInContext(source.slice(start,end),context);
+  assert.match(vm.runInContext('itemLabelAtTile({x:2,y:2})',context),/Fletcher: 1 worker.*blocked/);
+  assert.equal(vm.runInContext('itemLabelAtTile({x:1,y:1})',context),'Ground passage and raised walkway');
+  assert.equal(vm.runInContext('itemLabelAtTile({x:0,y:0})',context),'Blocked tile');
+});
+
+
+test('flood selection includes diagonal same-type placements and preserves modifier semantics without edits',()=>{
+  const editor=fs.readFileSync(path.join(__dirname,'../src/js/castle-editor.js'),'utf8');
+  const begin=editor.indexOf('  function floodSelect('),end=editor.indexOf('\n  function ',begin+10);
+  const items=[{ref:'a',type:25,off:101},{ref:'b',type:25,off:202},{ref:'gap',type:25,off:505},{ref:'other',type:26,off:102}];
+  const state={selected:new Set(),gesture:'move',currentItemType:25};
+  const context=vm.createContext({state,geometry,GRID:100,placementRefs:()=>items,
+    topmostRefAtTile:tile=>items.find(p=>p.off===tile.y*100+tile.x)?.ref,
+    footprintRects:(type,off)=>[{left:off%100,right:off%100,bottom:Math.floor(off/100),top:Math.floor(off/100)}],
+    activateBuildStepForRefs:()=>{},updateToolAvailability:()=>{},renderPalette:()=>{},updateSelectedItemInfo:()=>{},renderBuildList:()=>{},scheduleDraw:()=>{},setStatus:()=>{}});
+  vm.runInContext(editor.slice(begin,end),context);
+  const click=(x,y,event={})=>context.floodSelect({x,y},event);
+  click(1,1);assert.deepEqual([...state.selected],['a','b']);assert.equal(state.gesture,null);
+  click(5,5,{shiftKey:true});assert.deepEqual([...state.selected],['a','b','gap']);
+  click(1,1,{ctrlKey:true});assert.deepEqual([...state.selected],['gap']);
+  click(1,1,{metaKey:true});assert.deepEqual([...state.selected],['gap','a','b']);
+  click(0,0,{shiftKey:true});assert.equal(state.selected.size,3);
+  click(0,0);assert.equal(state.selected.size,0);
+  assert.deepEqual(items.map(p=>p.off),[101,202,505,102]);
+});
+test('non-destructive connected selection can include a Keep while deletion still protects it',()=>{
+  const keep=placement('keep',43,56,61);
+  assert.deepEqual(geometry.floodPlacementRefs(keep,[keep],p=>geometry.footprintRectsAtXY(p.type,p.x,p.y),()=>false,100,false),new Set(['keep']));
+  assert.deepEqual(flood(keep,[keep]),new Set());
 });

@@ -12,7 +12,7 @@ function raster(size) {
     beginPath() {}, moveTo() {}, lineTo() {}, closePath() {},
     rect(x, y, w, h) { path = {x, y, w, h}; }, clip() { clip = path; },
     clearRect(x, y, w, h) { this.cleared += w * h; fill(0, x, y, w, h); },
-    drawImage(image, ...args) { this.draws++; fill(image.color, ...args.slice(-4)); }
+    drawImage(image, ...args) { this.draws++; fill(this.globalCompositeOperation === 'destination-out' ? 0 : image.color, ...args.slice(-4)); }
   };
   function fill(color, x, y, w, h) {
     for (let py = Math.max(0, clip.y, y); py < Math.min(size, clip.y + clip.h, y + h); py++)
@@ -21,12 +21,13 @@ function raster(size) {
   return ctx;
 }
 
-function scene() {
+function scene(fire = false) {
   const size = 100, ctx = raster(size), terrainImage = {color: 1}, frontImage = {color: 9};
   const images = [{color: 2}, {color: 3}];
   let items = [], terrainBuilds = 0;
   const state = {view: {zoom: 1, panX: 0, panY: 0}, catalogue: {}};
-  const context = vm.createContext({state, window: {castleEditor: {getActiveBuildStep: () => 1}},
+  const mask = raster(size);
+  const context = vm.createContext({state, document: {getElementById: () => ({checked: fire}), createElement: () => ({width: 0, height: 0, getContext: () => mask})}, window: {castleGameData: {flammability: {Hovel: 1}}, castleCostData: {buildings: {54: {balance: 'Hovel'}}}, castleEditor: {getActiveBuildStep: () => 1}},
     currentDocument: () => null, turnedTiles: value => value,
     geo: {GRID: 100, collectItems: () => items, attachDrawbridges: value => value,
       collectPlates: () => [], wallLookup: value => value.length, hoehenLookup: () => null,
@@ -47,9 +48,9 @@ function scene() {
     }
   });
   vm.runInContext(source.slice(source.indexOf('  function paintScene('), source.indexOf('  function paintInteraction(')), context);
-  return {ctx, state, context, get terrainBuilds() { return terrainBuilds; },
-    render(nextItems, previousCommands = null, reuseTerrain = false) {
-      items = nextItems; return context.paintScene(ctx, size, size, {previousCommands, reuseTerrain});
+  return {ctx, mask, state, context, get terrainBuilds() { return terrainBuilds; },
+    render(nextItems, previousCommands = null, reuseTerrain = false, previousFireMask = null) {
+      items = nextItems; return context.paintScene(ctx, size, size, {previousCommands, reuseTerrain, previousFireMask});
     }};
 }
 
@@ -87,7 +88,7 @@ test('damage includes disappearing sprites and uses a full redraw for changed oc
 test('step notifications avoid document cloning and serialization until an edit changes its revision', () => {
   let revision = 1, step = 0, clones = 0;
   const refreshes = [], state = {};
-  const context = vm.createContext({state, window: {castleEditor: {hasDocument: () => true,
+  const context = vm.createContext({state, document: {getElementById: () => ({checked: fire}), createElement: () => ({width: 0, height: 0, getContext: () => mask})}, window: {castleGameData: {flammability: {Hovel: 1}}, castleCostData: {buildings: {54: {balance: 'Hovel'}}}, castleEditor: {hasDocument: () => true,
     getDocument: () => { clones++; return {frames: []}; }, getDocumentRevision: () => revision,
     getActiveBuildStep: () => step}}, refresh: (...args) => refreshes.push(args)});
   vm.runInContext(source.slice(source.indexOf('  function currentDocument('), source.indexOf('  // The ground under')), context);
@@ -98,4 +99,22 @@ test('step notifications avoid document cloning and serialization until an edit 
   revision++; context.editorChanged(true);
   assert.notEqual(context.currentDocument(), first); assert.equal(clones, 2);
   assert.ok(refreshes.every(args => args[1] === true), 'step/edit notifications keep the terrain cache');
+});
+
+
+test('fire mask stays depth-correct during forward/backward partial redraws and enabling fire', () => {
+  const incremental = scene(true), first = {itemType:54,gx:50,gy:50,entry:{},tiles:4};
+  const second = {itemType:54,gx:52,gy:52,entry:{},tiles:4};
+  let previous = incremental.render([first]);
+  for (const items of [[first,second],[first],[],[second]]) {
+    previous = incremental.render(items, previous.commands, true, previous.fireMask);
+    const full = scene(true); full.render(items);
+    assert.deepEqual(incremental.mask.pixels, full.mask.pixels, 'incremental mask must match a full rebuild');
+    assert.equal(incremental.mask.pixels[50*100+52],0,'foreground terrain masks the burnable building');
+  }
+  const enabled = scene(true);
+  const withoutMask = enabled.render([first]);
+  enabled.mask.pixels.fill(0);
+  enabled.render([first],withoutMask.commands,true,null);
+  assert.ok(enabled.mask.pixels.some(value=>value>0),'newly enabled mask is built even with no scene damage');
 });

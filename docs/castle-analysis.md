@@ -95,13 +95,10 @@ and delivery quantities are known.
 
 ## Worker routes and fire
 
-The previous static models have been removed. They did not have the runtime
-terrain, entrance, wall-linkage or staged spark state needed to match the game.
-The capture/import dialog and its Recorder integration have also been removed: they
-required a recorded game instead of calculating the current edited castle. Offline
-Path map and Firespread overlays remain unfinished. Do not treat removal of the
-recorder UI or the renderer performance fix as completion of those calculations.
-See [Offline analysis work](offline-analysis.md) for the native verification boundary.
+The toolbar overlays use the simplified planning model described below. They
+calculate the current edited castle without launching the game or importing
+recorded gameplay. Native engine integration is separate research, not a
+prerequisite for these explicitly labelled estimates.
 
 ## Resource-building plan artwork
 
@@ -157,3 +154,191 @@ Regenerate via scripts/export-resource-skins.js and an original colour tiles.gm1
 it reuses the existing GM1/TGX decoder. Full native footprints and AIV round trips
 remain covered by resource-building tests. This corrects plan textures; variable
 2.5D crops, livestock and fences remain outside the static sprite preview.
+
+
+## Path map and Firespread planning overlays
+
+The existing castle toolbar provides **Path map** and **Firespread** checkboxes.
+Both views use only buildings through the selected step, including unsaved edits.
+No game launch, capture file, observer, or separate simulation window is needed.
+Calculations are debounced in a Web Worker and stale replies are discarded.
+Pan/zoom/hover reuse the result and the cached 2.5D scene.
+
+Fire is an explicit planning estimate with an HP-sensitive crimson/yellow/blue
+halo (see HP-sensitive fire preview below). Distance is Euclidean from the actual
+footprint edge, preserving rounded corners and multipart footprints. Flammability
+uses the existing executable-derived table; colour is not ignition probability.
+
+Paths use a multi-source Dijkstra search from one delivery point per stockpile. Routes cross stockpile interiors instead of stopping at the first stockpile tile. Stockpile mapper
+52 and the keep's attached stockpile expose only their central cross as a walk surface. Stairs have six height
+levels; Stair 6 can connect directly to a tower. Tower decks, wall walks and
+open gate passages are connected separately from ground, so a gate passage
+cannot implicitly climb onto its roof. Diagonal ordinary-building corners are
+allowed; gaps between walls or a wall and negative fear buildings are blocked.
+Four-by-four worker buildings next to a full wall start their entrance search
+on the opposite side, using the retained entrance candidate tables.
+
+When a map is selected, section 1003 logic flags, section 1004 organisms and
+base ground heights constrain the search. Sea, non-ford river, trees, rock/iron
+obstacles, map edges and height changes greater than 16 block ground routes. The shared
+keep transform aligns these layers with the current AIV. Saved building/path
+layers are not used because they describe a different castle. Gates are assumed
+open, the castle intact, and traffic/ownership changes are not simulated. Without
+a map, paths are a castle-only estimate on flat terrain.
+
+
+## Incremental build-step rendering
+
+Selecting a step updates the existing list rows instead of recreating their DOM
+and event handlers. The 2.5D view records the existing sprite draw calls at native
+scale, retaining their exact anchors and source rectangles. Terrain commands
+are retained across step changes. Changed or removed building commands (including
+neighbour-dependent wall/stair variants) determine a damaged pixel rectangle.
+Only intersecting terrain and building commands are replayed, in their shared
+depth order, within that rectangle. Foreground rocks and trees still occlude
+buildings correctly. Camera, map, image and surface-size changes rebuild fully.
+No per-step full-size canvas cache is allocated.
+
+GamerGrill's offscreen software-rendering check with Gatekeeper and both overlays
+active measured step changes at about 40 ms mean / 49 ms maximum, down from the
+previous 196 ms mean. The measurement includes two animation frames; it is not
+a claim of a 40 ms drawing call. Cached paints averaged 4.5 ms. Pixel comparison
+checks that stepping backward then forward restores an identical scene. Large
+step jumps and rotations can still require substantially more drawing.
+
+
+## Worker-route corrections
+
+Civilian worker counts come from the population data, with an explicit per-building
+count (including zero) taking precedence. Every worker building retains an entrance
+marker: cyan when connected, coral when blocked. Hovering a marker gives its reason;
+hovering other tiles shows ground, raised walkway, both, or blocked, using the same
+graph as the search. These are access routes to storage, not complete production trips.
+
+Entrance selection uses physical clearance, independently of destination reachability.
+The south-facing default rotates clockwise; a full wall alongside a 4x4 workshop
+starts the search on the opposite side. The original perimeter table supplies the
+fallback sweep after side centres. Killing pits, pitch, stockpiles and the keep
+courtyard are walkable. Dummy editor markers do not overwrite actual structures.
+
+The map mask separates permanent water/border constraints from vegetation and
+resource obstacles that a current construction replaces. Constructed stockpile
+platforms do not inherit raw-ground cliff edges. Unbuilt terrain still constrains
+routes. A single binary-heap, multi-source Dijkstra search serves all workers;
+calculation runs in the existing Web Worker and stale results are discarded.
+
+
+Stair connections include diagonal neighbours at the same or next level. Stairs
+2/3 connect to low walls, Stair 6 to tower decks, and every stair level to gate
+decks; ground gate passages remain separate. Drawbridge walk surfaces overlay
+later moat placements. Ford flags override river water, while rocky tiles and
+resource obstacles remain blocked. Ordinary terrain can change by up to 16
+height units per move. These are the explicitly requested static planning rules.
+
+Map-aware navigation includes a five-tile margin beyond the AIV boundary;
+route coordinates and entrance markers remain in AIV coordinates. This does
+not expand the rendered map or change the castle footprint.
+
+
+Ordinary connections compare **terrain height + structure offset** at both ends,
+with a maximum difference of 16. This applies across surface types (including
+cliffs, walls and stairs), rather than treating stair numbers as connectivity
+rules. `placeWalls` at `0x005034E2..0x00503510` copies the default terrain height
+before adding 90/60 for high/low walls; subsequent branches add stair offsets.
+The route keeps its relative height for drawing, and its total elevation for
+navigation. Explicit gate/tower links and constructed-platform access remain.
+
+
+### First-stockpile and directional connection correction (September 13)
+
+Delivery routes share one destination: the west end of the keep-created first
+stockpile's cross. Later stockpiles remain transit surfaces. An inaccessible
+first destination is reported; another extension is never silently substituted.
+
+The native stockpile placement routine (`0x00508540`) marks four 2x2 storage
+quadrants unwalkable and nine cross tiles walkable. Its platform is placement
+base +10, not raw terrain height. The preparation routine computes the base as
+`minHeight + floor((maxHeight-minHeight)/2)`, rather than a mean of all tiles.
+Cross tiles share this elevation and obey the ordinary 16-unit connection limit.
+`placeWalls` (`0x00503626..0x0050363B`) adds four units when terrain flag 8 is set;
+the map reader now exports that construction lift and invalidates older cached
+navigation data. Entrance markers also retain elevated surface offsets in 2.5D.
+
+Wall-to-gate roof links permit diagonals; wall-to-tower links are cardinal only.
+Gate passage endpoints permit diagonal approaches/exits while passage interiors
+remain axial and separate from the roof. These remain static planning rules,
+not a replacement for running the native path grid.
+
+Private current-map validation uses GreekSea.map and Kratoloros.aiv (2,345
+placements, 87 worker buildings). 80 currently reach the first stockpile;
+seven remain disconnected. In particular, the marked Stair 6 has total height
+80 and its adjacent high wall 98, with no flag-8 lift on either tile. The static
+16-unit rule rejects that 18-unit edge. Do not widen the threshold or claim this
+specific shortcut is fixed without resolving the runtime-height discrepancy.
+
+
+### Fire display and open-gate access (September 13 follow-up)
+
+The fire visualization uses two crimson tile rings and an HP-scaled yellow-to-blue
+outer halo, with a smooth transparent edge (current formula below).
+Color represents distance from the nearest flammable footprint, not an ignition
+probability. Flammable plan buildings are drawn above the overlay. The 2.5D view
+caches a visible-sprite alpha mask in scene depth order so the halo cannot tint
+flammable sprites or undo their terrain occlusion. Masks update only in damaged
+scene regions and are omitted while fire display is disabled.
+
+Open gate endpoints connect the ground passage and roof display nodes. The
+previous completely separate surfaces prevented a stair-to-gate-to-ground route.
+The native endpoint routine at 0x00499FA0 changes the same walk-link grid as
+0x004999C0; the two surfaces in this planner are display bookkeeping, not separate
+native connectivity grids. Closed gates keep passage access disabled. Current
+GreekSea/Kratoloros checks reach 86/87 worker buildings after this correction.
+The remaining mill's selected entrance is in an isolated two-tile terrain pocket.
+The southeast stockpile cross is elevation47 against nearby ground8: its 39-unit
+boundary drop remains blocked by the requested 16-unit rule. Stockpile quadrants
+remain solid; the central nine tiles are traversable.
+
+
+### Mill entrance connectivity correction
+
+`determineBuildingEntranceFromKeepArea` (`0x0041AF43..0x0041AF7E`) compares the
+candidate's area with the keep area and checks linked areas before accepting it.
+The planner previously accepted the first physically free candidate, even in an
+isolated pocket. It now keeps the existing entrance preference order but skips
+candidates that cannot reach the first stockpile, using the already-computed
+Dijkstra field (no additional graph searches). If none connect, the first free
+candidate remains visible as a blocked marker. Stockpile storage quadrants are
+still blocked; only the existing elevated cross is an entrance surface.
+
+In the current GreekSea/Kratoloros fixture the mill now selects `(63,37)` on the
+stockpile cross instead of the disconnected `(65,40)` pocket. All 87 worker
+buildings reach the first stockpile. This corrects the earlier assumption in
+these notes that entrance choice should ignore area connectivity.
+
+### Recruitment gathering grounds
+
+Barracks and mercenary-post AIV footprints (87 and 86) now distinguish their
+solid 5x5 structure from the three adjoining 5x5 gathering grounds. The native
+`placeBarracks` routine at `0x005076A0` creates those three components using the
+offsets at `0x00B49090`. Each ground marks only its central flag tile occupied
+(`0x00507876..0x0050788D` and the equivalent two loops), rather than its whole
+area. The default AIV footprint places the structure in the north-west quadrant.
+
+The planner keeps that structure and the three flag tiles blocked and opens the
+other 72 tiles at the placement base height, with no stockpile-style height lift.
+These surfaces participate in the existing height-aware shortest-path graph and
+can serve as worker entrance candidates. Terrain obstacles remain enforced.
+
+
+### HP-sensitive fire preview
+The fire preview remains a user-selected planning heuristic, not a native fire simulation.
+Selected balance `buildings[name].health` overrides the vanilla HP table (Crusader 1.41,
+file offset 0x001BA21C, indexed using rebalancer building_names). The outer radius is
+`2 + 6 * sqrt(clamp(HP / 800, 0, 1))` tiles: approximately 3.64 at 60 HP,
+5 at 200 HP, and 8 at 800 HP or more. Unknown buildings retain the eight-tile fallback.
+The first two adjacent tile centres (0.5 and 1.5 from the footprint boundary) are
+crimson. Colour starts changing immediately after 1.5, reaching yellow at nominal
+3.5 and blue at 6; the outer band compresses for lower HP. Inner opacity is reduced
+10% (189/255); blue remains visible at 7 (90/255) before a smooth fade to zero at 8.
+Balance HP changes invalidate the cached worker result; fire remains below burnable
+buildings and above nonburnable structures in both views.

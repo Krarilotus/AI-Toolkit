@@ -289,7 +289,7 @@
     if (previous) state.images.delete(previous.dataUrl);
     state.gameMap = map
       ? { name: map.name, path: map.path || null, dataUrl: map.dataUrl,
-          keeps: Array.isArray(map.keeps) ? map.keeps : [], keepIndex: 0 }
+          keeps: Array.isArray(map.keeps) ? map.keeps : [], keepIndex: 0, pathTerrain: map.pathTerrain || null }
       : null;
     // Das Gelaende der alten Karte zeigt die alte Karte. Es jetzt stehen zu
     // lassen hiesse, die neue Karte mit fremdem Boden zu zeigen.
@@ -299,6 +299,7 @@
     }
     if (previous?.path !== state.gameMap?.path) handDrehung = 0;
     setTerrain(null);
+    window.castleEditor?.extras?.scheduleDraw?.();
     rememberGameMap();
     if (state.gameMap && state.ground) setGround(null);   // paints as well
     else paint();
@@ -309,7 +310,44 @@
     if (!map || !map.keeps.length) return;
     map.keepIndex = Math.max(0, Math.min(map.keeps.length - 1, Number(index) || 0));
     rememberGameMap();
+    window.castleEditor?.extras?.scheduleDraw?.();
     paint();
+  }
+
+  let routeTerrainCache = null, terrainRequest = null;
+  function analysisTerrain() {
+    const map=gameMap(), keep=currentKeep();
+    if (map?.pathTerrain?.version !== 4 || !keep) {
+      if(map?.path && terrainRequest !== map.path && window.electronAPI?.loadGameMap) {
+        terrainRequest=map.path;
+        window.electronAPI.loadGameMap(map.path).then(loaded=>{
+          if(gameMap()!==map || !loaded.pathTerrain) return;
+          map.pathTerrain=loaded.pathTerrain;rememberGameMap();
+          window.castleEditor?.extras?.scheduleDraw?.();
+        }).catch(()=>{ /* Overlay reports castle-only terrain when unavailable. */ });
+      }
+      return null;
+    }
+    const key=JSON.stringify([map.path,keep,map.pathTerrain.fingerprint]);
+    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift};
+    const source=ausBase64(map.pathTerrain.blocked,Uint8Array);
+    const hard=ausBase64(map.pathTerrain.hardBlocked,Uint8Array) || source;
+    const heights=ausBase64(map.pathTerrain.heights,Uint8Array);
+    const lifts=ausBase64(map.pathTerrain.constructionLift,Uint8Array);
+    const padding=5,edge=100+2*padding;
+    const blocked=new Uint8Array(edge*edge), hardBlocked=new Uint8Array(edge*edge), ground=new Uint8Array(edge*edge), constructionLift=new Uint8Array(edge*edge);
+    for(let y=-padding;y<100+padding;y++) for(let x=-padding;x<100+padding;x++) {
+      const index=(y+padding)*edge+x+padding;
+      const rotated=geo.rotateGrid(x,99-y,1,keep.orientation);
+      const {mx,my}=geo.mapTileForGrid(rotated.gx,rotated.gy,keep);
+      const valid=mx>=0 && my>=0 && mx<400 && my<400;
+      blocked[index]=valid ? source[my*400+mx] : 1;
+      hardBlocked[index]=valid ? hard[my*400+mx] : 1;
+      ground[index]=valid ? heights[my*400+mx] : 0;
+      constructionLift[index]=valid ? lifts[my*400+mx] : 0;
+    }
+    routeTerrainCache={map,key,padding,blocked,hardBlocked,heights:ground,constructionLift};
+    return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift};
   }
 
   function hasGameMap() { return Boolean(gameMap()); }
@@ -769,7 +807,8 @@
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
     const key = [currentRotation(), terrainKey(), mapMode(), groundFit()].join('/');
     const cache = state.sceneCache;
-    if (!cache || state.sceneDirty || cache.key !== key || cache.stock !== state.kachelVorrat
+    const fireEnabled = !!document.getElementById?.('castleShowFire')?.checked;
+    if (!cache || state.sceneDirty || cache.fireEnabled !== fireEnabled || cache.key !== key || cache.stock !== state.kachelVorrat
         || cache.terrain !== state.terrain || cache.ground !== groundSource()) {
       const sameEnvironment = cache?.key === key && cache.stock === state.kachelVorrat
         && cache.terrain === state.terrain && cache.ground === groundSource() && cache.assetRevision === state.assetRevision;
@@ -795,10 +834,11 @@
         sceneContext.imageSmoothingEnabled = false;
         scene = paintScene(sceneContext, worldWidth, worldHeight, {
           reuseTerrain,
-          previousCommands: reuseTerrain && revision != null && cache.documentRevision === revision ? cache.commands : null
+          previousCommands: reuseTerrain && revision != null && cache.documentRevision === revision ? cache.commands : null,
+          previousFireMask: reuseTerrain ? cache.fireMask : null
         });
       } finally { state.view = view; }
-      state.sceneCache = { key, canvas, overhang, view: sceneView, ...scene, stock: state.kachelVorrat,
+      state.sceneCache = { key, canvas, fireEnabled, overhang, view: sceneView, ...scene, stock: state.kachelVorrat,
         terrain: state.terrain, ground: groundSource(), assetRevision: state.assetRevision,
         documentRevision: window.castleEditor?.getDocumentRevision?.() };
       state.sceneDirty = false;
@@ -809,12 +849,55 @@
     const z = state.view.zoom;
     ctx.drawImage(scene.canvas, state.view.panX - scene.view.panX * z,
       state.view.panY - scene.view.panY * z, scene.canvas.width * z, scene.canvas.height * z);
+    drawAnalysis(ctx);
     paintInteraction(ctx, scene.items);
     const { items, missing } = scene;
     const editor = window.castleEditor;
     const tool = editor && editor.getTool ? editor.getTool() : '—';
     setStatus(items.length + ' items' + (missing ? ', ' + missing + ' without a sprite' : '') +
               ' · tool: ' + tool + mapStatus() + ' · middle-drag pans · right-click clears · camera controls match Map');
+  }
+
+  let fireLayer=null;
+  function drawAnalysis(ctx) {
+    const overlay=window.castleEditor?.getAnalysisOverlay?.(false);
+    if(!overlay) return;
+    const turn=tile=>geo.rotateGrid(tile.x,99-tile.y,1,currentRotation());
+    ctx.save();
+    if(overlay.image) {
+      fireLayer ||= document.createElement('canvas');
+      if(fireLayer.width!==ctx.canvas.width || fireLayer.height!==ctx.canvas.height){fireLayer.width=ctx.canvas.width;fireLayer.height=ctx.canvas.height;}
+      const fireCtx=fireLayer.getContext('2d');fireCtx.clearRect(0,0,fireLayer.width,fireLayer.height);
+      // Image pixels are tile centres. Rotate the whole footprint about the
+      // same tile centre as the castle, then project its two basis vectors.
+      const point=(x,y)=>{
+        const p=geo.rotateGrid(x-.5,y-.5,1,currentRotation());
+        return geo.isoPoint(p.gx+.5,p.gy+.5,state.view);
+      };
+      const a=point(0,0), b=point(100,0), c=point(0,100);
+      fireCtx.save();fireCtx.transform((b[0]-a[0])/100,(b[1]-a[1])/100,(c[0]-a[0])/100,(c[1]-a[1])/100,a[0],a[1]);
+      fireCtx.imageSmoothingEnabled=true;fireCtx.drawImage(overlay.image,0,0);fireCtx.restore();
+      const scene=state.sceneCache,z=state.view.zoom;
+      if(scene?.fireMask){fireCtx.save();fireCtx.globalCompositeOperation='destination-out';fireCtx.drawImage(scene.fireMask,state.view.panX-scene.view.panX*z,state.view.panY-scene.view.panY*z,scene.fireMask.width*z,scene.fireMask.height*z);fireCtx.restore();}
+      ctx.drawImage(fireLayer,0,0);
+    }
+    ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;
+    for(const route of overlay.routes) {
+      if(route.path.length) {
+        ctx.beginPath();
+        route.path.forEach((tile,i)=>{
+          const p=turn(tile),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(tile.height||0));
+          if(i)ctx.lineTo(...xy);else ctx.moveTo(...xy);
+        });ctx.stroke();
+      }
+      if(route.entry) {
+        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(route.entry.height||0));
+        ctx.beginPath();ctx.arc(...xy,3.5,0,Math.PI*2);
+        ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
+        ctx.save();ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();ctx.restore();
+      }
+    }
+    ctx.restore();
   }
 
   function paintScene(ctx, width, height, options = {}) {
@@ -857,7 +940,7 @@
       const loaded = parts.map(part => image(part.bild));
       if (!loaded.every(img => img?.complete && img.naturalWidth)) return [item];
       const lift = bauHoehe(item.gx, item.gy, item.tiles);
-      return parts.map((part, index) => ({ ...part, layer: item.layer ?? 2, draw: target => {
+      return parts.map((part, index) => ({ ...part, itemType: item.itemType, layer: item.layer ?? 2, draw: target => {
         drawNativePart(target, part, loaded[index], lift);
       }}));
     });
@@ -886,7 +969,8 @@
         }
         if (isTerrain) item.commands = recorded;
       }
-      commands.push(...recorded);
+      const flammable = !isTerrain && (window.castleGameData?.flammability[window.castleCostData?.buildings[item.itemType]?.balance] || 0) > 0;
+      commands.push(...recorded.map(command => ({ ...command, flammable })));
       if (!isTerrain) buildingCommands.push(...recorded);
     }
     const dirty = sceneDamage(options.previousCommands, buildingCommands, width, height);
@@ -908,7 +992,30 @@
         }
       } finally { ctx.restore(); }
     }
-    return { items, missing, commands: buildingCommands };
+    // Reuse the same depth-ordered commands and damage bounds for the fire mask.
+    // Burnable sprites mask the halo; foreground nonburnable scenery erases that mask.
+    const fireMask = typeof document !== 'undefined' && document.getElementById?.('castleShowFire')?.checked
+      ? options.previousFireMask || document.createElement('canvas') : null;
+    if (fireMask) {
+      const resized = fireMask.width !== width || fireMask.height !== height;
+      if (resized) { fireMask.width = width; fireMask.height = height; }
+      const damage = options.previousFireMask && !resized ? dirty : {x: 0, y: 0, w: width, h: height};
+      if (damage) {
+        const mask = fireMask.getContext('2d'); mask.save();
+        try {
+          mask.beginPath(); mask.rect(damage.x, damage.y, damage.w, damage.h); mask.clip();
+          mask.clearRect(damage.x, damage.y, damage.w, damage.h);
+          for (const command of commands) {
+            if (command.x < damage.x + damage.w && command.x + command.w > damage.x
+                && command.y < damage.y + damage.h && command.y + command.h > damage.y) {
+              mask.globalCompositeOperation = command.flammable ? 'source-over' : 'destination-out';
+              command.draw(mask);
+            }
+          }
+        } finally { mask.restore(); }
+      }
+    }
+    return { items, missing, commands: buildingCommands, fireMask };
   }
 
   // Compare actual sprite draws, not only placement coordinates: neighbours can
@@ -1377,7 +1484,7 @@
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo,
                      mapMode, setMapMode, setTerrain, terrainKey, terrainReady,
                      viewRotation, turnView, currentRotation,
-                     setMapTiles, hasMapTiles };
+                     setMapTiles, hasMapTiles, analysisTerrain };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
