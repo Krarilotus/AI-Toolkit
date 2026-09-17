@@ -192,13 +192,15 @@
   // eine Burg ueber einem flachen Boden schweben zu lassen waere schlimmer
   // als sie flach zu lassen.
   function bodenHoehe(gx, gy) {
-    const world = geo.unrotateGrid(gx, gy, viewRotation());
     // The full-map atlas takes precedence over paintGround. It already lifts
     // terrain tiles; sprites and picking must use those same heights.
     const atlas = vorrat();
     if (atlas?.plaetze && atlas.bild?.complete && atlas.bild?.naturalWidth && gameMap()) {
-      return geo.mapTileHeight(world.gx, world.gy, currentKeep(), atlas.hoehen);
+      // Dieselbe Rechnung wie beim Malen des Grundes - anders schwebte ein
+      // Bauwerk ueber seiner eigenen Kachel.
+      return geo.mapTileHeight(gx, gy, currentKeep(), atlas.hoehen, viewRotation());
     }
+    const world = geo.unrotateGrid(gx, gy, viewRotation());
     const feld = state.hoehenFeld;
     if (!feld) return 0;
     if (world.gx < 0 || world.gy < 0 || world.gx >= geo.GRID || world.gy >= geo.GRID) return 0;
@@ -467,7 +469,7 @@
   function setMapTiles(daten) {
     if (daten?.path && daten.path !== gameMap()?.path) return;
     releaseMapImages();
-    if (!daten) { state.kachelVorrat = null; paint(); return; }
+    if (!daten) { state.kachelVorrat = null; state.startMarks = null; paint(); return; }
     function cameraStock(daten) {
       const bild = new Image();
       bild.onload = () => refresh();
@@ -538,9 +540,9 @@
     for (let summe = gx0 + gy0; summe <= gx1 + gy1; summe += 1) {
       for (let gx = Math.max(gx0, summe - gy1); gx <= Math.min(gx1, summe - gy0); gx += 1) {
         const gy = summe - gx;
-        const world = geo.unrotateGrid(gx, gy, viewRotation());
-        const mx = world.gx + keep.x - anker.gx;
-        const my = world.gy + keep.y - anker.gy;
+        // Anzeigefeld -> Kartenfeld. Die Rechnung steht in iso-geometry.js,
+        // damit Grund, Hoehe und Marken dieselbe nehmen.
+        const { mx, my } = geo.mapTileForView(gx, gy, keep, viewRotation());
         const feld = kartenFeld(mx, my);
         if (feld < 0) continue;
         const platz = v.plaetze[feld];
@@ -969,11 +971,130 @@
     return {x: left, y: top, w: Math.max(0, Math.min(width, Math.ceil(right)) - left), h: Math.max(0, Math.min(height, Math.ceil(bottom)) - top)};
   }
 
+  // Die anderen Startplaetze der Karte. Gezeichnet wird nur das Dorffenster,
+  // und die anderen Plaetze liegen weit davor - deshalb sitzt ihre Marke am
+  // Rand des Bildes und zeigt als Pfeil in ihre Richtung. Liegt ein Platz
+  // doch im Bild, steht die Marke an seiner Stelle. Ein Klick baut die Burg
+  // auf diesem Platz auf.
+  const MARKE_RAND = 36;      // so weit vom Bildrand sitzt ein Pfeil - Kreis
+                              // und Dreieck muessen ganz hineinpassen
+  const MARKE_RADIUS = 15;    // so gross ist der Kreis, auch zum Treffen
+  function startPlaceMarks() {
+    const map = gameMap();
+    const target = surface();
+    if (!map || !target || !Array.isArray(map.keeps) || map.keeps.length < 2) return [];
+    const keep = currentKeep();
+    const dreh = viewRotation();
+    const mitteX = target.width / 2, mitteY = target.height / 2;
+    const marken = [];
+    map.keeps.forEach((platz, index) => {
+      if (index === map.keepIndex) return;         // hier steht die Burg schon
+      const feld = geo.viewTileForMap(platz.x, platz.y, keep, dreh);
+      const [px, py] = geo.isoPoint(feld.gx + 0.5, feld.gy + 0.5, state.view, 0);
+      if (px > MARKE_RAND && px < target.width - MARKE_RAND
+        && py > MARKE_RAND && py < target.height - MARKE_RAND) {
+        marken.push({ index, platz, x: px, y: py, zeigt: null, seite: null });
+        return;
+      }
+      // Vom Bildmittelpunkt in Richtung des Platzes bis an den Rand. Welche
+      // Kante zuerst erreicht wird, sagt auch, an welcher Seite die Marke
+      // sitzt - das braucht das Entzerren gleich darunter.
+      const dx = px - mitteX, dy = py - mitteY;
+      const laenge = Math.hypot(dx, dy) || 1;
+      const tx = (mitteX - MARKE_RAND) / (Math.abs(dx) || 1e-6);
+      const ty = (mitteY - MARKE_RAND) / (Math.abs(dy) || 1e-6);
+      const t = Math.min(tx, ty);
+      marken.push({ index, platz, x: mitteX + dx * t, y: mitteY + dy * t,
+                    zeigt: { x: dx / laenge, y: dy / laenge },
+                    seite: tx <= ty ? (dx < 0 ? 'links' : 'rechts') : (dy < 0 ? 'oben' : 'unten') });
+    });
+
+    // Zwei Marken an derselben Kante duerfen sich nicht ueberdecken - sonst
+    // liegt eine Nummer unter der anderen und ist nicht anklickbar. Gemessen
+    // an "Crete Peninsula": von acht Startplaetzen landeten sechs an der
+    // linken Kante, zwei davon 11 Punkte auseinander.
+    const abstand = MARKE_RADIUS * 2 + 6;
+    for (const seite of ['links', 'rechts', 'oben', 'unten']) {
+      const reihe = marken.filter(marke => marke.seite === seite);
+      if (reihe.length < 2) continue;
+      const senkrecht = seite === 'links' || seite === 'rechts';
+      const grenze = senkrecht ? target.height : target.width;
+      reihe.sort((a, b) => (senkrecht ? a.y - b.y : a.x - b.x));
+      // Erst von oben nach unten auseinanderschieben, dann von unten zurueck,
+      // damit die letzte Marke nicht aus dem Bild gedraengt wird.
+      let letzte = MARKE_RAND - abstand;
+      for (const marke of reihe) {
+        letzte = Math.max(senkrecht ? marke.y : marke.x, letzte + abstand);
+        if (senkrecht) marke.y = letzte; else marke.x = letzte;
+      }
+      letzte = grenze - MARKE_RAND + abstand;
+      for (const marke of [...reihe].reverse()) {
+        letzte = Math.min(senkrecht ? marke.y : marke.x, letzte - abstand);
+        if (senkrecht) marke.y = letzte; else marke.x = letzte;
+      }
+    }
+    return marken;
+  }
+
+  function drawStartPlaces(ctx) {
+    // Immer zuerst merken, auch wenn nichts zu malen ist: sonst bleibt nach
+    // einem Kartenwechsel die alte Liste liegen, und ein Klick auf die Stelle
+    // einer Marke wechselt auf eine Burg, die es nicht mehr gibt.
+    const marken = startPlaceMarks();
+    state.startMarks = marken;
+    if (!marken.length) return;
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const marke of marken) {
+      if (marke.zeigt) {
+        // Ein Dreieck, das nach draussen zeigt - dorthin, wo der Platz liegt.
+        const winkel = Math.atan2(marke.zeigt.y, marke.zeigt.x);
+        ctx.save();
+        ctx.translate(marke.x, marke.y);
+        ctx.rotate(winkel);
+        ctx.beginPath();
+        ctx.moveTo(MARKE_RADIUS + 11, 0);
+        ctx.lineTo(MARKE_RADIUS + 1, -8);
+        ctx.lineTo(MARKE_RADIUS + 1, 8);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255, 226, 150, .92)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(40, 30, 10, .85)';
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.beginPath();
+      ctx.arc(marke.x, marke.y, MARKE_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(28, 24, 18, .78)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 226, 150, .92)';
+      ctx.stroke();
+      ctx.fillStyle = '#ffe296';
+      // Die Nummer kommt aus der Karte, nicht aus der Fundreihenfolge - sonst
+      // steht am Pfeil eine andere Burg als im Spiel.
+      ctx.fillText(String(marke.platz.player || (marke.index + 1)), marke.x, marke.y + 1);
+    }
+    ctx.restore();
+  }
+
+  // Hat der Zeiger eine Marke getroffen? Dann wird nicht gebaut, sondern die
+  // Burg wechselt auf diesen Startplatz.
+  function startPlaceAt(px, py) {
+    for (const marke of state.startMarks || []) {
+      if (Math.hypot(px - marke.x, py - marke.y) <= MARKE_RADIUS + 4) return marke;
+    }
+    return null;
+  }
+
   function paintInteraction(ctx, items) {
     if (state.hover) drawDiamond(ctx, state.hover.gx, state.hover.gy, 1, null, 'rgba(255,255,255,.5)');
     drawSelection(ctx, items);
     drawPreview(ctx);
     drawMarquee(ctx);
+    drawStartPlaces(ctx);
   }
 
   // Wie hoch der Boden unter dem Dorf steigt, aus dem Kachelvorrat. Frueher
@@ -1194,6 +1315,14 @@
         return;
       }
       const p = pointOf(canvas, event);
+      const marke = startPlaceAt(p.x, p.y);
+      if (marke) {
+        setGameMapKeep(marke.index);
+        window.castleEditor?.updateMapControls?.();
+        const nummer = marke.platz.player || (marke.index + 1);
+        window.castleEditor?.setStatus?.(`Castle moved to start ${nummer} at (${marke.platz.x}, ${marke.platz.y})`);
+        return;
+      }
       const tile = editorTileAt(p.x, p.y);
       if (!tile) return;
       state.drawing = true;
@@ -1210,7 +1339,13 @@
       }
       const tile = editorTileAt(p.x, p.y);
       const grid = geo.tileFromPoint(p.x, p.y, state.view, bodenHoehe);
-      canvas.title = window.castleEditor?.itemLabelAtTile?.(tile) || '';
+      // Ueber einer Startplatzmarke sagt der Zeiger, dass sie anklickbar ist -
+      // sonst sieht man einen Kreis mit Zahl und weiss nicht, was er tut.
+      const ueberMarke = startPlaceAt(p.x, p.y);
+      canvas.style.cursor = ueberMarke ? 'pointer' : '';
+      canvas.title = ueberMarke
+        ? `Start ${ueberMarke.platz.player || (ueberMarke.index + 1)} at (${ueberMarke.platz.x}, ${ueberMarke.platz.y}) - click to build here`
+        : (window.castleEditor?.itemLabelAtTile?.(tile) || '');
       const moved = !state.hover || !grid || state.hover.gx !== grid.gx || state.hover.gy !== grid.gy;
       state.hover = grid;
       if (tile && (state.drawing || moved)) toEditor('move', event, tile);
@@ -1432,7 +1567,10 @@
                      setGround, hasOwnGround, setGroundFit, groundIsStretched,
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo,
                      viewRotation, turnView, currentRotation,
-                     setMapTiles, hasMapTiles, analysisTerrain };
+                     setMapTiles, hasMapTiles, analysisTerrain,
+                     // Fuer das Pruefgeruest: wo die Kamera steht und welche Marken liegen.
+                     viewInfo: () => ({ ...state.view, rotation: currentRotation(), hand: viewRotation() }),
+                     startPlaceMarks };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

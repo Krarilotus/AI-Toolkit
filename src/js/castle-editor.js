@@ -3969,6 +3969,9 @@
     deleteSelected,
     getCameraPreferences: () => ({ ...state.camera }),
     itemLabelAtTile,
+    // Die Ansicht kann den Startplatz wechseln (Klick auf einen Pfeil) - dann
+    // gehoert der Waehler nachgezogen.
+    updateMapControls,
     getAnalysisOverlay,
     chooseBlueprint,
     clearBlueprint,

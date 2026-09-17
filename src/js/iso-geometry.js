@@ -606,14 +606,56 @@
     return rotateGrid(KEEP_TILE, KEEP_TILE, KEEP_EDGE, keep && keep.orientation);
   }
 
+  // DREI RAHMEN, und wer sie verwechselt, liegt um Felder daneben:
+  //
+  //   WELTFELD    so steht es im AIV-Dokument, ungedreht. Der Bergfried
+  //               sitzt dort immer auf (43,43).
+  //   KARTENLAGE  dasselbe Feld, gedreht wie das Spiel das Dorf auf die
+  //               Karte legt (setKeepOffsetAndOrientation, 0x004ecf70). Die
+  //               Drehung bringt der Startplatz mit, das Dokument weiss
+  //               nichts davon.
+  //   ANZEIGEFELD was auf dem Schirm an dieser Stelle liegt: Kartenlage plus
+  //               die Handdrehung mit C und X. Ohne Handdrehung sind
+  //               Kartenlage und Anzeigefeld dasselbe.
+  //
+  // Die Bauwerke werden in einem Schritt gedreht (Karte plus Hand), der Grund
+  // in zwei - deshalb gibt es hier fuer jede Richtung genau eine Funktion und
+  // sonst keine Rechnung im Code.
+
+  // Kartenlage -> Kartenfeld. Der gedrehte Bergfriedblock des Dorfes liegt
+  // mit seiner Nordwestecke auf der Nordwestecke des Blocks in der Karte.
   function mapTileForGrid(gx, gy, keep) {
     const anker = keepAnchor(keep);
     return { mx: keep.x - anker.gx + gx, my: keep.y - anker.gy + gy };
   }
 
-  function mapTileHeight(gx, gy, keep, heights) {
+  // Anzeigefeld -> Kartenfeld: die Handdrehung heraus, dann auf den
+  // Startplatz schieben.
+  function mapTileForView(gx, gy, keep, viewRotation) {
+    if (!keep) return { mx: gx, my: gy };
+    const lage = unrotateGrid(gx, gy, viewRotation);
+    return mapTileForGrid(lage.gx, lage.gy, keep);
+  }
+
+  // Und zurueck - fuer alles, was an einem Kartenfeld haengt und ins Bild
+  // gehoert: die anderen Startplaetze, spaeter Baeume und Felsen. Die Felder
+  // duerfen weit ausserhalb des Dorfes liegen; die Drehung ist eine
+  // Spiegelung und bleibt auch dort gueltig.
+  function viewTileForMap(mx, my, keep, viewRotation) {
+    if (!keep) return { gx: mx, gy: my };
+    const anker = keepAnchor(keep);
+    return rotateGrid(mx - keep.x + anker.gx, my - keep.y + anker.gy, 1, viewRotation);
+  }
+
+  // Die Hoehe unter einem Feld. Ohne viewRotation zaehlt das Feld als
+  // Kartenlage, mit ihr als Anzeigefeld - der Grund und alles, was darauf
+  // steht, muessen dieselbe Rechnung nehmen, sonst schwebt ein Bauwerk ueber
+  // seiner eigenen Kachel.
+  function mapTileHeight(gx, gy, keep, heights, viewRotation = null) {
     if (!keep || !heights) return 0;
-    const { mx, my } = mapTileForGrid(gx, gy, keep);
+    const { mx, my } = viewRotation === null
+      ? mapTileForGrid(gx, gy, keep)
+      : mapTileForView(gx, gy, keep, viewRotation);
     if (!Number.isInteger(mx) || !Number.isInteger(my) || mx < 0 || my < 0 || mx >= 400 || my >= 400) return 0;
     return Number(heights[my * 400 + mx]) || 0;
   }
@@ -710,6 +752,7 @@
            depth, byDepth, renderOrder, spriteRect, groundTextureScale, variantFor, wallLookup, hoehenLookup,
            collectItems, collectPlates, attachDrawbridges, buildingParts, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
-           mapTileForGrid, mapTileHeight, keepAnchor, previewPointForMapTile, centreKeep,
+           mapTileForGrid, mapTileForView, viewTileForMap,
+           mapTileHeight, keepAnchor, previewPointForMapTile, centreKeep,
            mapPreviewRect, mapImageRect, villageWindow };
 });

@@ -1031,6 +1031,92 @@ test('der Bergfried landet dort, wo LaunchSkirmishGame ihn hinsetzt', async (t) 
   assert.deepEqual([...versatz.keys()], ['0/0'], 'es darf keinen anderen Versatz geben');
 });
 
+test('der Grund liegt unter der Burg - auf jedem Startplatz, bei jeder Handdrehung', (t) => {
+  // Zwei Drehungen treffen hier zusammen, und sie werden verschieden
+  // gerechnet: die Bauwerke dreht turnedTiles in EINEM Schritt (Karte plus
+  // Hand, mit der Feldzahl des Bauwerks), der Grund wird in ZWEI gerechnet
+  // (Handdrehung heraus, dann auf den Startplatz schieben, mit der Feldzahl
+  // des Bergfrieds). Dass beides zusammenpasst, folgt nicht aus der Formel -
+  // es muss gemessen werden.
+  //
+  // GEMESSEN am 17.09.2026, 861 Startplaetze der 189 Karten mal vier
+  // Handdrehungen: das Feld, auf dem der Bergfried des Dokuments sitzt, liegt
+  // in allen 3.444 Faellen auf einem Feld mit Bautyp 41 - dem Bergfried der
+  // Karte. Die Ecke wandert mit der Drehung (0/0, 6/0, 6/6, 0/6), die Flaeche
+  // bleibt dieselbe.
+  const { listGameMaps, readGameMap, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
+  const { maps } = listGameMaps(null);
+  if (!maps.length) { t.skip('kein Stronghold Crusader gefunden'); return; }
+  const ECKEN = { 0: '0/0', 2: '6/0', 4: '6/6', 6: '0/6' };
+  let geprueft = 0, zurueck = 0;
+  for (const eintrag of maps) {
+    const karte = readGameMap(eintrag.path, null);
+    if (!karte.keeps.length) continue;
+    const bytes = fs.readFileSync(eintrag.path);
+    const vorschau = internals.readPreview(bytes);
+    const verzeichnis = internals.findDirectory(bytes, vorschau.end);
+    let bau = null;
+    try { bau = internals.readSection(bytes, verzeichnis, internals.BUILDING_SECTION); } catch { bau = null; }
+    if (!bau) continue;
+    const bautyp = (mx, my) => {
+      if (my < 0 || my > 399) return -1;
+      const [von, bis] = internals.rowRange(my);
+      return (mx < von || mx > bis) ? -1 : bau[internals.tileIndex(mx, my)];
+    };
+    for (const keep of karte.keeps) {
+      for (const hand of [0, 2, 4, 6]) {
+        // So legt turnedTiles den Bergfried hin: Karte plus Hand, 7 Felder.
+        const sicht = ((Number(keep.orientation) || 0) + hand) % 8;
+        const anzeige = geometry.rotateGrid(43, 43, 7, sicht);
+        // Und so rechnet paintMapTiles den Grund darunter.
+        const feld = geometry.mapTileForView(anzeige.gx, anzeige.gy, keep, hand);
+        assert.equal(bautyp(feld.mx, feld.my), 41,
+          `${eintrag.name} (${keep.x},${keep.y}) Handdrehung ${hand}: unter dem Bergfried liegt kein Bergfried der Karte`);
+        assert.equal((feld.mx - keep.x) + '/' + (feld.my - keep.y), ECKEN[hand],
+          `${eintrag.name}: Handdrehung ${hand} gehoert auf die Ecke ${ECKEN[hand]}`);
+        // Und der Weg zurueck trifft wieder dasselbe Feld - darauf haengen die
+        // Marken der anderen Startplaetze.
+        const hin = geometry.viewTileForMap(feld.mx, feld.my, keep, hand);
+        if (hin.gx === anzeige.gx && hin.gy === anzeige.gy) zurueck += 1;
+        geprueft += 1;
+      }
+    }
+  }
+  assert.ok(geprueft > 3000, 'es wurden genug Faelle geprueft: ' + geprueft);
+  assert.equal(zurueck, geprueft, 'Kartenfeld und Anzeigefeld sind eine Umkehrung');
+});
+
+test('eine Marke fuer jeden anderen Startplatz, und ein Klick wechselt die Burg', () => {
+  // Die Marken haengen an Kartenfeldern, die weit ausserhalb des gezeichneten
+  // Dorffensters liegen - deshalb wird die Umkehrung auch fuer Felder weit
+  // draussen gebraucht.
+  const keep = { x: 84, y: 223, orientation: 6 };
+  for (const hand of [0, 2, 4, 6]) {
+    for (const ziel of [{ x: 225, y: 77 }, { x: 200, y: 200 }, { x: 12, y: 340 }, { x: 399, y: 0 }]) {
+      const feld = geometry.viewTileForMap(ziel.x, ziel.y, keep, hand);
+      const rueck = geometry.mapTileForView(feld.gx, feld.gy, keep, hand);
+      assert.deepEqual({ x: rueck.mx, y: rueck.my }, ziel,
+        `Handdrehung ${hand}: Marke auf (${ziel.x},${ziel.y}) kommt nicht zurueck`);
+    }
+  }
+
+  const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
+  // Der eigene Platz bekommt keine Marke - dort steht die Burg schon.
+  const marken = iso.slice(iso.indexOf('function startPlaceMarks'), iso.indexOf('function drawStartPlaces'));
+  assert.match(marken, /if \(index === map\.keepIndex\) return;/);
+  assert.match(marken, /geo\.viewTileForMap\(platz\.x, platz\.y, keep, dreh\)/);
+  assert.match(marken, /map\.keeps\.length < 2/, 'bei einem einzigen Platz gibt es nichts zu wechseln');
+  // Die Nummer kommt aus der Karte, nicht aus der Fundreihenfolge.
+  const zeichnen = iso.slice(iso.indexOf('function drawStartPlaces'), iso.indexOf('function startPlaceAt'));
+  assert.match(zeichnen, /marke\.platz\.player \|\| \(marke\.index \+ 1\)/);
+  // Und der Klick baut die Burg dort auf, statt an dieser Stelle zu bauen.
+  assert.match(iso, /const marke = startPlaceAt\(p\.x, p\.y\);/);
+  assert.match(iso, /setGameMapKeep\(marke\.index\);/);
+  assert.match(iso, /window\.castleEditor\?\.updateMapControls\?\.\(\);/);
+  const editor = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
+  assert.match(editor, /\n    updateMapControls,/, 'der Editor gibt seinen Kartenregler nach aussen');
+});
+
 // ------------------------------------------------------- das echte Gelaende
 
 test('das Dorf-Fenster deckt jedes Feld des Bauplans ab und ist nicht groesser als noetig', () => {

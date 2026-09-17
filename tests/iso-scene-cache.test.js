@@ -15,6 +15,9 @@ function renderer() {
     currentRotation: () => state.rotation || 0, kartenSchluessel: () => state.mapKey || '',
     groundFit: () => 'stretch', groundSource: () => state.ground || '',
     vorrat: () => null, paintInteraction() {}, setStatus() {}, mapStatus: () => '',
+    // In dieser Attrappe liegt keine Karte, also gibt es auch keine
+    // Startplatzmarken zu treffen.
+    startPlaceAt: () => null, setGameMapKeep() {},
     paintScene(ctx, width, height) { scenes.push({...state.view}); return {items: [], missing: 0}; },
     requestAnimationFrame: fn => callbacks.push(fn)
   });
@@ -69,6 +72,7 @@ function interactiveRenderer() {
   const source = fs.readFileSync(require.resolve('../src/js/iso-view.js'), 'utf8');
   const listeners = {}, inputs = [], clears = [];
   const canvas = {
+    style: {},         // der Zeiger wechselt ueber einer Startplatzmarke
     focus() {}, setPointerCapture() {}, releasePointerCapture() {},
     getBoundingClientRect: () => ({left: 0, top: 0}),
     addEventListener: (name, fn) => { listeners[name] = fn; }
