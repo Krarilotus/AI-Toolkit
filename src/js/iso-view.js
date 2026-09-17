@@ -976,6 +976,29 @@
     drawMarquee(ctx);
   }
 
+  // Wie hoch der Boden unter dem Dorf steigt, aus dem Kachelvorrat. Frueher
+  // brachte das Gelaendebild diese Hoehen mit; seit es weg ist, stehen sie im
+  // Vorrat. 10.000 Felder werden nur einmal je Karte und Startplatz gezaehlt,
+  // nicht bei jedem Bild.
+  function dorfHoehen() {
+    const atlas = vorrat();
+    const schluessel = kartenSchluessel();
+    if (!atlas?.hoehen || !schluessel) return null;
+    if (state.hoehenSpanne?.key === schluessel) return state.hoehenSpanne.wert;
+    const keep = currentKeep();
+    let tief = 255, hoch = 0;
+    for (let gy = 0; gy < geo.GRID; gy += 1) {
+      for (let gx = 0; gx < geo.GRID; gx += 1) {
+        const wert = geo.mapTileHeight(gx, gy, keep, atlas.hoehen);
+        if (wert < tief) tief = wert;
+        if (wert > hoch) hoch = wert;
+      }
+    }
+    const wert = { tief, hoch };
+    state.hoehenSpanne = { key: schluessel, wert };
+    return wert;
+  }
+
   // Was in der Statuszeile ueber die Karte steht. Die Drehung gehoert dorthin,
   // weil man ihr sonst nur ansieht, DASS etwas anders liegt, aber nicht warum.
   function mapStatus() {
@@ -995,13 +1018,11 @@
     // Und ob der Boden Hoehen hat. Ohne diese Zeile sieht man dem Bild nur an,
     // DASS etwas anders liegt, aber nicht warum - und ob es an dieser Karte
     // liegt oder daran, dass gerade die flache Vorschau darunterliegt.
-    const feld = state.hoehenFeld;
+    const spanne = dorfHoehen();
     let hoehe = '';
-    if (feld) {
-      let tief = 255, hoch = 0;
-      for (const wert of feld) { if (wert < tief) tief = wert; if (wert > hoch) hoch = wert; }
-      hoehe = hoch === tief ? ' · flat ground (height ' + hoch + ')'
-                            : ' · ground rises ' + (hoch - tief) + ' points (height ' + tief + ' to ' + hoch + ')';
+    if (spanne) {
+      hoehe = spanne.hoch === spanne.tief ? ' · flat ground (height ' + spanne.hoch + ')'
+        : ' · ground rises ' + (spanne.hoch - spanne.tief) + ' points (height ' + spanne.tief + ' to ' + spanne.hoch + ')';
     }
     return ' · map: ' + map.name + platz + drehung + hoehe;
   }

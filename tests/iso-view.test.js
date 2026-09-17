@@ -1194,6 +1194,19 @@ test('der Weg ueber ein fertiges Gelaendebild ist zu', () => {
   assert.match(editor, /loadMapTiles/);
 });
 
+test('die Hoehenzeile der Karte kommt aus dem Kachelvorrat', () => {
+  // Die Hoehen brachte bis zum 17.09.2026 das Gelaendebild mit. Mit ihm fiel
+  // state.hoehenFeld leer, und die Statuszeile verlor still ihre Hoehenangabe
+  // - gemessen an "Crete Peninsula", die um 50 Punkte steigt.
+  const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
+  const status = iso.slice(iso.indexOf('function mapStatus'), iso.indexOf('function drawPreview'));
+  assert.match(status, /dorfHoehen\(\)/, 'die Spanne kommt aus dem Vorrat');
+  assert.doesNotMatch(status, /state\.hoehenFeld/, 'und nicht mehr aus dem Gelaendebild');
+  const spanne = iso.slice(iso.indexOf('function dorfHoehen'), iso.indexOf('function mapStatus'));
+  assert.match(spanne, /geo\.mapTileHeight\(gx, gy, keep, atlas\.hoehen\)/);
+  assert.match(spanne, /state\.hoehenSpanne/, '10.000 Felder nur einmal je Karte, nicht je Bild');
+});
+
 // ----------------------------------------------------------------- die Hoehe
 
 test('eine Kachel steigt um genau die Zahl, die im HeightLayer steht', () => {
