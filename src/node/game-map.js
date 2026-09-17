@@ -455,259 +455,15 @@ function readTrees(section) {
   return list;
 }
 
-// -------------------------------------------------------- das Gelaende malen
+// ---------------------------------------------------- wie gross ein Bild ist
 //
-// WIE GROSS DARF DAS BILD WERDEN? Ein Feld ist beim Spiel 30 Punkte breit und
-// 16 hoch, und ein Vorschaupunkt ist genau ein Feld. Die ganze Karte in dieser
-// Aufloesung waere 200*30 x 200*16 = 6000x3200 = 19,2 Millionen Punkte, roh
-// 76,8 MB - das ist als ein Bild nicht zu haben.
-//
-// Gebraucht wird davon nur, was die Ansicht ueberhaupt zeigt: paintGround
-// schneidet den Grund an der Raute des 100x100-Dorfes ab. Diese Raute liegt in
-// einem Rahmen von 100x100 Vorschaupunkten und fuellt davon die Haelfte -
-// 5.000 von 40.000 Punkten der Karte, also ein Achtel. Gemessen an
-// "A Friend Indeed", Startplatz 1:
-//   ganzer Rahmen 3030x1616 = 4,90 Mio Punkte  -> PNG 5,07 MB
-//   nur die Raute darin, der Rest durchsichtig -> PNG 3,02 MB
-// Ueber sechs Karten lag das PNG zwischen 2,77 und 3,60 MB, das Zeichnen bei
-// 197-317 ms, das Packen bei 193-254 ms. Ein einziges Bild traegt damit.
-// In Kacheln zerlegt braeuchte es bei 10x10 Punkten je Kachel 76 der 100
-// Kacheln (nachgerechnet: eine Kachel faellt nur weg, wenn sie ganz ausserhalb
-// der Raute liegt) - das spart ein Viertel und kostet 76 Bilder statt einem.
-//
-// Das Bild geht deshalb NICHT in den Sitzungsspeicher des Fensters: 3 MB als
-// data:-Adresse sind rund 4 MB Text, und localStorage haelt ueblicherweise
-// 5 MB fuer alles zusammen.
-function renderTerrain(buffer, directory, gameRoot, keep) {
-  const window = geometry.villageWindow(keep);
-  const stock = readPictureStock(gameRoot);
-  const gfx = readSection(buffer, directory, GFX_SECTION);
-  if (!gfx || gfx.length !== MAP_TILES * 2) throw new Error('This map carries no terrain layer (section 1001).');
-  let organisms = null;
-  let trees = null;
-  try {
-    organisms = readSection(buffer, directory, ORGANISM_SECTION);
-    trees = readTrees(readSection(buffer, directory, TREES_SECTION));
-  } catch { organisms = null; trees = null; }
-  if (!organisms || organisms.length !== MAP_TILES * 2 || !trees) { organisms = null; trees = null; }
-  // Die Hoehe. Fehlt der Abschnitt, bleibt alles flach - das ist genau die
-  // Ansicht von vorher, also faellt niemand auf die Nase.
-  let heights = null;
-  try { heights = readSection(buffer, directory, HEIGHT_SECTION); } catch { heights = null; }
-  if (!heights || heights.length !== MAP_TILES) heights = null;
-  let pillars = null;
-  try { pillars = readSection(buffer, directory, PILLAR_SECTION); } catch { pillars = null; }
-  if (!pillars || pillars.length !== MAP_TILES * 2) pillars = null;
-  const hoeheAn = (tile) => (heights ? heights[tile] : 0);
-
-  // Die Hoehe je Dorffeld, damit die Ansicht die Burg um dasselbe Mass hebt
-  // wie den Boden. Ein Feld ausserhalb der Karte bekommt 0.
-  const village = Buffer.alloc(geometry.GRID * geometry.GRID, 0);
-  let topLift = 0;
-  let floorLift = MAX_LIFT;
-  for (let gy = 0; gy < geometry.GRID; gy += 1) {
-    for (let gx = 0; gx < geometry.GRID; gx += 1) {
-      const { mx, my } = geometry.mapTileForGrid(gx, gy, keep);
-      if (my < 0 || my > 399) continue;
-      const [von, bis] = rowRange(my);
-      if (mx < von || mx > bis) continue;
-      const wert = Math.min(MAX_LIFT, hoeheAn(tileIndex(mx, my)));
-      village[gy * geometry.GRID + gx] = wert;
-      if (wert > topLift) topLift = wert;
-      if (wert < floorLift) floorLift = wert;
-    }
-  }
-  if (floorLift > topLift) floorLift = topLift;      // gar kein Feld auf der Karte
-
-  const width = window.cells * TILE_W;
-  const flatHeight = window.cells * TILE_H;
-  // Oben kommt so viel Luft dazu, wie das hoechste Feld des Dorfes gehoben
-  // wird - sonst schnitte der Bildrand die Bergkuppe ab.
-  const height = flatHeight + topLift;
-  // Aus der Lage eines Feldes im schraegen Bild hergeleitet: ein Feld sitzt bei
-  // (15*(x-y), 8*(x+y)), und der Vorschaupunkt (px,py) gehoert zu
-  // x-y = 2px-199 und x+y = 2py+199.
-  const originX = TILE_W * window.px0 - 2985;
-  const originY = TILE_H * window.py0 + 1592;
-  const rgba = Buffer.alloc(width * height * 4, 0);
-
-  // Welcher Teil einer Bildzeile gehoert ueberhaupt zum Dorf? Die Ansicht
-  // schneidet den Grund an der Raute ab, also braucht alles ausserhalb gar
-  // nicht erst gemalt zu werden - das ist die halbe Bildflaeche und war im
-  // Versuch der Unterschied zwischen 5,07 MB und 3,02 MB.
-  // Fuer einen Punkt mit den Vorschau-Koordinaten (P,Q) gilt
-  //   gx = P + Q - (keep.x - 43)      gy = Q - P + 199 - (keep.y - 43)
-  // und beide muessen zwischen 0 und 100 liegen. Nach P aufgeloest ergibt das
-  // je Zeile genau ein Stueck.
-  const anchor = geometry.keepAnchor(keep);
-  const anchorX = keep.x - anchor.gx;
-  const anchorY = keep.y - anchor.gy;
-  const low = new Int32Array(flatHeight);
-  const high = new Int32Array(flatHeight);
-  for (let y = 0; y < flatHeight; y += 1) {
-    const q = (y + 0.5) / TILE_H + window.py0;
-    const from = Math.max(anchorX - q, q + (PREVIEW_EDGE - 1) - anchorY - geometry.GRID) - CLIP_MARGIN;
-    const to = Math.min(anchorX - q + geometry.GRID, q + (PREVIEW_EDGE - 1) - anchorY) + CLIP_MARGIN;
-    low[y] = Math.max(0, Math.ceil((from - window.px0) * TILE_W - 0.5));
-    high[y] = Math.min(width - 1, Math.floor((to - window.px0) * TILE_W - 0.5));
-  }
-
-  // Gerechnet wird weiter in der FLACHEN Zeile - erst beim Schreiben kommt
-  // die Hebung dazu. Nur so schneidet die Raute noch richtig: die Grenze
-  // gehoert zu dem Feld, auf dem der Punkt steht, nicht zu der Bildzeile, in
-  // die ihn seine Hoehe hebt. Wer stattdessen die gehobene Zeile prueft,
-  // schneidet einer erhoehten Kachel am Rand die halbe Seite ab.
-  //   y       = Zeile ohne Hebung (darf negativ sein, wenn etwas hoch steht)
-  //   hebung  = wie weit dieser Punkt nach oben rueckt
-  //   pruefen = welche Zeile ueber die Raute entscheidet (die des Feldes)
-  const put = (x, y, r, g, b, hebung, pruefen) => {
-    const zeile = pruefen === undefined ? y : pruefen;
-    if (zeile < 0 || zeile >= flatHeight || x < low[zeile] || x > high[zeile]) return;
-    const bild = y - (hebung || 0) + topLift;
-    if (bild < 0 || bild >= height) return;
-    const at = (bild * width + x) * 4;
-    rgba[at] = r; rgba[at + 1] = g; rgba[at + 2] = b; rgba[at + 3] = 255;
-  };
-
-  // Alles einsammeln, was in den Ausschnitt ragt, und von hinten nach vorn
-  // malen - ein hoher Fels steht weit ueber seiner eigenen Kachel.
-  const order = [];
-  for (let y = 0; y <= 399; y += 1) {
-    const [from, to] = rowRange(y);
-    for (let x = from; x <= to; x += 1) {
-      const sx = 15 * (x - y) - originX;
-      const sy = 8 * (x + y) - originY;
-      if (sx > width + REACH_SIDE || sx < -REACH_SIDE || sy > flatHeight + REACH_SIDE || sy < -REACH_UP) continue;
-      order.push([tileIndex(x, y), sx, sy, x, y]);
-    }
-  }
-  order.sort((a, b) => a[2] - b[2]);
-
-  const painted = { tiles: 0, missing: 0, trees: 0, cliffs: 0 };
-
-  // Welcher Baum steht auf diesem Feld? null, wenn keiner.
-  const treeOn = (tile) => {
-    if (!organisms) return null;
-    const value = organisms.readUInt16LE(tile * 2);
-    if (!value || value >= FIRST_ROCK) return null;   // 0 nichts, ab 2000 ein Fels
-    const tree = trees[value];
-    if (!tree || tree.alive === 0 || tree.picture === 0) return null;
-    const file = stock.byGmId.get(tree.gmId);
-    if (!file || tree.picture > file.count) return null;
-    return { tree, name: file.name };
-  };
-
-  const paintTree = (sx, sy, hit, hebung) => {
-    const tree = hit.tree;
-    const entry = treePicture(gameRoot, hit.name, tree);
-    if (!entry) return;
-    const picture = entry.rgba;
-    const atX = sx - tree.originX + TREE_DX;
-    const atY = sy - tree.originY + TREE_DY;
-    // Der Baum steht auf seinem Feld und steigt mit ihm: renderMap zieht auch
-    // bei ihm DAT_RenderMap_YOffset ab (Zeile 0x004eb70e im Dekompilat).
-    const fuss = sy + TILE_H - 1;
-    for (let y = 0; y < entry.height; y += 1) {
-      for (let x = 0; x < entry.width; x += 1) {
-        const at = (y * entry.width + x) * 4;
-        if (picture[at + 3]) put(atX + x, atY + y, picture[at], picture[at + 1], picture[at + 2], hebung, fuss);
-      }
-    }
-    painted.trees += 1;
-  };
-
-  // Die Steilkante unter einer gehobenen Kachel. Gezeichnet wird nur, was auch
-  // zu sehen ist: liegen beide Nachbarn davor genauso hoch, deckt ihr eigener
-  // Boden die Kante zu. Das spart bei 79 % der Felder die ganze Arbeit.
-  const cliffStrip = cliffReader(gameRoot);
-  const cliffFor = (tile) => {
-    if (pillars) {
-      const found = pictureForValue(stock, pillars.readUInt16LE(tile * 2));
-      if (found && found.name === CLIFF_FILE) {
-        const streifen = cliffStrip(found.name, found.index);
-        if (streifen) return streifen;
-      }
-    }
-    return cliffStrip(CLIFF_FILE, 0);      // der Ersatz, siehe oben bei CLIFF_FILE
-  };
-  // Hoehe eines Nachbarfeldes, ohne aus der Raute zu fallen. Ausserhalb gilt
-  // die eigene Hoehe - dort ist nichts zu sehen, und eine 0 wuerde am
-  // Kartenrand eine Kante erfinden, die es nicht gibt.
-  const hoeheBei = (x, y, ersatz) => {
-    if (y < 0 || y > 399) return ersatz;
-    const [von, bis] = rowRange(y);
-    if (x < von || x > bis) return ersatz;
-    return hoeheAn(tileIndex(x, y));
-  };
-  const paintCliff = (tile, x, y, sx, sy, hebung) => {
-    // Liegt RINGSUM alles gleich hoch, ist die Kante von den Nachbarn verdeckt
-    // und braucht gar nicht gemalt zu werden - das spart auf einer Hochebene
-    // die ganze Arbeit. Es reicht aber nicht, nur nach vorn zu sehen: faellt
-    // das Gelaende nach HINTEN ab, schaut man von oben in die Luecke, und
-    // genau dort blieben sonst Loecher stehen (gemessen auf Rock Face: 8066
-    // durchsichtige Punkte mitten im Dorf).
-    const tiefster = Math.min(hoeheBei(x + 1, y, hebung), hoeheBei(x, y + 1, hebung),
-                              hoeheBei(x - 1, y, hebung), hoeheBei(x, y - 1, hebung));
-    if (tiefster >= hebung) return false;
-    const streifen = cliffFor(tile);
-    if (!streifen) return false;
-    const fuss = sy + TILE_H - 1;
-    for (let i = 0; i < hebung; i += 1) {
-      const quelle = (i % streifen.zeilen) * TILE_W * 4;
-      const zeile = sy + PILLAR_TOP + i;                   // Zeile OHNE Hebung
-      for (let x2 = 0; x2 < TILE_W; x2 += 1) {
-        const at = quelle + x2 * 4;
-        if (streifen.bild[at + 3]) put(sx + x2, zeile, streifen.bild[at], streifen.bild[at + 1], streifen.bild[at + 2], hebung, fuss);
-      }
-    }
-    return true;
-  };
-
-  for (const [tile, sx, sy, mx, my] of order) {
-    const hebung = Math.min(MAX_LIFT, hoeheAn(tile));
-    const hit = treeOn(tile);
-    const found = pictureForValue(stock, gfx.readUInt16LE(tile * 2));
-    if (!found) { painted.missing += 1; if (hit) paintTree(sx, sy, hit, hebung); continue; }
-    const gm1 = heldGm1(gameRoot, found.name);
-    const entry = gm1.pictures[found.index];
-    if (!entry) { painted.missing += 1; continue; }
-    const raw = gm1.buffer.subarray(gm1.picturesAt + entry.offset, gm1.picturesAt + entry.offset + entry.size);
-
-    // erst die Steilkante, dann die Kachel darauf
-    if (hebung > 0 && paintCliff(tile, mx, my, sx, sy, hebung)) painted.cliffs += 1;
-
-    // die Rautenkachel selbst
-    const diamond = diamondToRgba(raw.subarray(0, 512));
-    for (let y = 0; y < TILE_H; y += 1) {
-      for (let x = 0; x < TILE_W; x += 1) {
-        const at = (y * TILE_W + x) * 4;
-        if (diamond[at + 3]) put(sx + x, sy + y, diamond[at], diamond[at + 1], diamond[at + 2], hebung);
-      }
-    }
-    // was darueber steht (Fels, Busch): lift hebt es ueber die eigene Kachel
-    const upper = upperTilePicture(entry, raw);
-    if (upper) {
-      const above = upper.rgba;
-      const fuss = sy + TILE_H - 1;
-      for (let y = 0; y < upper.height; y += 1) {
-        for (let x = 0; x < TILE_W; x += 1) {
-          const at = (y * TILE_W + x) * 4;
-          if (above[at + 3]) put(sx + upper.dx + x, sy + upper.dy + y, above[at], above[at + 1], above[at + 2], hebung, fuss);
-        }
-      }
-    }
-    // und zuletzt, was auf dem Feld STEHT - das Spiel malt den Baum in
-    // derselben Runde direkt nach der Kachel
-    if (hit) paintTree(sx, sy, hit, hebung);
-    painted.tiles += 1;
-  }
-
-  // top: so viele Punkte steht das Bild ueber dem flachen Rahmen. Die Ansicht
-  // muss es um genau dieses Mass hoeher ansetzen, sonst saesse alles zu tief.
-  // village: die Hoehe je Dorffeld, damit die Burg mit dem Boden steigt.
-  return { width, height, top: topLift, floor: floorLift, village,
-           px0: window.px0, py0: window.py0, cells: window.cells, rgba, ...painted };
-}
+// Hier stand bis zum 17.09.2026 renderTerrain: ein fertiges Bild des
+// Dorffensters, 3030x1616 Punkte, als PNG 2,77 bis 3,60 MB ueber sechs Karten,
+// Zeichnen 197-317 ms, Packen 193-254 ms. Es zeigte nur 100x100 der 400x400
+// Felder. Die ganze Karte in derselben Aufloesung waere 12000x6400 Punkte -
+// 293 MB roh. Als ein Bild ist das nicht zu haben, und deshalb geht es
+// ueberhaupt nicht ueber ein Bild: gemalt wird aus dem Kachelvorrat weiter
+// unten, so wie renderMap (0x004e8cf0) es im Spiel macht.
 
 // ------------------------------------------------------------------- aussen
 
@@ -814,9 +570,9 @@ function readGameMap(filePath, gameRoot) {
 
 // Die ganze Karte, ohne sie auszumalen.
 //
-// readMapTerrain malt ein fertiges Bild des Dorffensters: 3030x1634 Punkte,
-// rund 4 MB, und nur 100x100 der 400x400 Felder. Die ganze Karte so zu malen
-// waere 12000x6400 Punkte - 293 MB roh, 401 MB als Text ueber die Bruecke.
+// Ein fertiges Bild des Dorffensters waere rund 4 MB und zeigte nur 100x100
+// der 400x400 Felder. Die ganze Karte so zu malen waere 12000x6400 Punkte -
+// 293 MB roh, 401 MB als Text ueber die Bruecke.
 //
 // Das Spiel macht es anders: renderMap (0x004e8cf0) laeuft den BILDSCHIRM Feld
 // fuer Feld ab und holt jede Kachel einzeln aus ihrer .gm1. Gemalt wird nur,
@@ -1034,60 +790,16 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
   }
 }
 
-// Dieselbe Karte noch einmal, aber als echtes Gelaende statt als Farbpunkte.
-// WELCHER Startplatz gemeint ist, sagt das Fenster - es kennt auch den Fall
-// "keine Startplaetze, Dorf in die Kartenmitte" (geo.centreKeep), und zwei
-// Stellen, die das getrennt entscheiden, waeren zwei Stellen zum Auseinander-
-// laufen. Geprueft wird der Platz trotzdem: er muss auf der Karte liegen.
-function readMapTerrain(filePath, gameRoot, keep) {
-  const known = knownMap(filePath, gameRoot);
-  const root = gameRootOrDefault(gameRoot);
-  if (!root) throw new Error('The game folder is not set.');
-  // Nicht Number(keep && keep.x): fehlt der Platz ganz, waere das die 0, und
-  // die Karte wuerde still an der falschen Ecke gemalt statt zu widersprechen.
-  const x = keep && typeof keep.x === 'number' ? keep.x : NaN;
-  const y = keep && typeof keep.y === 'number' ? keep.y : NaN;
-  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x > 399 || y < 0 || y > 399) {
-    throw new Error('That starting place is not on the map.');
-  }
-
-  const buffer = fs.readFileSync(known.path);
-  const preview = readPreview(buffer);
-  const directory = findDirectory(buffer, preview.end);
-  if (!directory) throw new Error('That map has no section directory.');
-  const terrain = renderTerrain(buffer, directory, root, { x, y, orientation: keep.orientation });
-  return {
-    name: known.name,
-    path: known.path,
-    px0: terrain.px0,
-    py0: terrain.py0,
-    cells: terrain.cells,
-    width: terrain.width,
-    height: terrain.height,
-    top: terrain.top,
-    floor: terrain.floor,
-    tiles: terrain.tiles,
-    missing: terrain.missing,
-    trees: terrain.trees,
-    cliffs: terrain.cliffs,
-    // 10.000 Byte, eins je Dorffeld - als Text rund 13 KB. Klein genug, um es
-    // mit dem Bild zusammen zu schicken, und ohne es stuende die Burg flach
-    // auf einem Gelaende mit Bergen.
-    village: terrain.village.toString('base64'),
-    dataUrl: `data:image/png;base64,${encodeRgbaPng(terrain.width, terrain.height, terrain.rgba).toString('base64')}`
-  };
-}
 
 module.exports = {
   listGameMaps,
   readGameMap,
-  readMapTerrain,
   readMapTiles,
   readNativeMapTiles,
   // fuer die Tests und fuer Werkzeuge, die eine Karte ohne Electron lesen
   internals: { pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
-               readPictureStock, pictureForValue, readGm1, tgxToRgba, renderTerrain, virtualToFile,
+               readPictureStock, pictureForValue, readGm1, tgxToRgba, virtualToFile,
                buildTileAtlas, diamondToRgba, upperTilePicture, packMapPictures, heldGm1, ATLAS_SPALTEN,
                PREVIEW_EDGE, MAP_TILES, BUILDING_SECTION, BUILDINGS_SECTION, STONE_KEEP, KEEP_EDGE,
                TILE_W, TILE_H, GFX_SECTION, ORGANISM_SECTION, TREES_SECTION,

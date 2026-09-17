@@ -26,14 +26,17 @@ window.castleEditor = {
   // Verschiebung nach der Drehung schuld.
   if (p.has('dreh') && karte.keeps[0]) karte.keeps[0].orientation = Number(p.get('dreh'));
   window.isoView.setGameMap(karte);
-  window.isoView.setGameMapKeep(0);
+  window.isoView.setGameMapKeep(Number(p.get('platz') || 0));
+  // Gezeichnet wird aus dem Kachelvorrat. Mit ?modus=preview bleibt er weg,
+  // dann liegt die schnelle Vorschau darunter - derselbe Rueckfall wie im
+  // Editor, wenn der Vorrat nicht kommt.
   if (p.get('modus') !== 'preview') {
-    window.isoView.setMapMode('terrain');
-    const gelaende = await (await fetch('/gelaende?name=' + encodeURIComponent(karte.name) + '&platz=0' + (p.get('ohnekeep') ? '&ohnekeep=1' : ''))).json();
-    window.isoView.setTerrain({ ...gelaende, key: window.isoView.terrainKey() });
+    window.isoView.setMapTiles(await (await fetch('/kacheln?name=' + encodeURIComponent(karte.name))).json());
   }
   window.isoView.fit();
   window.isoView.paint();
-  document.title = 'fertig';
+  // Erst wenn der Atlas geladen ist, steht das Bild. Sonst fotografiert der
+  // Betrachter einen leeren Grund und haelt ihn fuer das Ergebnis.
+  setTimeout(() => { window.isoView.paint(); document.title = 'fertig'; }, 1500);
 })();
 </script>

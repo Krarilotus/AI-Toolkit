@@ -43,7 +43,7 @@ test('full-map atlas elevations anchor sprites and picking to the same map tile 
   }
   assert.equal(iso.mapTileHeight(1000,1000,{x:120,y:210},heights),0);
   const source = fs.readFileSync(path.join(__dirname,'../src/js/iso-view.js'),'utf8');
-  const heightFunction = source.slice(source.indexOf('function bodenHoehe'),source.indexOf('function terrainReady'));
+  const heightFunction = source.slice(source.indexOf('function bodenHoehe'),source.indexOf('function gameMap'));
   assert.match(heightFunction,/geo\.mapTileHeight\(world\.gx, world\.gy, currentKeep\(\), atlas\.hoehen\)/);
 });
 

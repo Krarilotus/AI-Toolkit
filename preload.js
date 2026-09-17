@@ -27,7 +27,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   chooseCastleBackground: () => ipcRenderer.invoke('choose-castle-background'),
   listGameMaps: () => ipcRenderer.invoke('list-game-maps'),
   loadGameMap: (filePath) => ipcRenderer.invoke('load-game-map', filePath),
-  loadMapTerrain: (request) => ipcRenderer.invoke('load-map-terrain', request),
   loadMapTiles: (filePath) => ipcRenderer.invoke('load-map-tiles', filePath),
   scanUcpAiLibrary: (gameRoot) => ipcRenderer.invoke('scan-ucp-ai-library', gameRoot),
   loadUcpAiProject: (request) => ipcRenderer.invoke('load-ucp-ai-project', request),

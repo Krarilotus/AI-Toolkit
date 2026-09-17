@@ -170,7 +170,7 @@ test('only the Map and 2.5D switches stay in the main toolbar', () => {
   assert.match(toolbar, /id="castleMapBtn"/);
   assert.match(toolbar, /id="castleIsoBtn"/);
   for (const id of ['castleIsoGroundBtn', 'castleIsoGroundFit', 'castleIsoGroundReset',
-                    'castleIsoMapBtn', 'castleIsoMapKeep', 'castleIsoMapMode', 'castleIsoMapReset']) {
+                    'castleIsoMapBtn', 'castleIsoMapKeep', 'castleIsoMapReset']) {
     assert.doesNotMatch(toolbar, new RegExp(`id="${id}"`), `${id} must not occupy the main toolbar`);
   }
   const controls = html.slice(html.indexOf('id="castleIsoControls"'), html.indexOf('id="castleMapWindow"'));
@@ -665,7 +665,9 @@ test('die Ansicht legt die Karte mit der Rechnung hin, nicht nach Augenmass', ()
   // nicht ins Nachbarfeld verlaufen. Nur das echte Gelaende wird geglaettet.
   const waehlen = iso.slice(iso.indexOf('function groundPicture'), iso.indexOf('function paintGameMap'));
   assert.match(waehlen, /cells: geo\.MAP_PREVIEW_EDGE, top: 0, floor: 0, hoehen: null, smooth: false/);
-  assert.match(waehlen, /cells: terrain\.cells,\s*\n\s*top: terrain\.top, floor: terrain\.floor, hoehen: terrain\.village, smooth: true/);
+  // Der Zweig fuer das alte Gelaendebild ist am 17.09.2026 entfallen: gezeichnet
+  // wird aus dem Kachelvorrat, und faellt der aus, liegt die Vorschau darunter.
+  assert.doesNotMatch(waehlen, /terrain\.dataUrl/, 'kein zweiter Weg fuer den Grund');
   // Ohne Startplatz die Kartenmitte - und nicht etwa gar nichts.
   const platz = iso.slice(iso.indexOf('function currentKeep'), iso.indexOf('function paintGameMap'));
   assert.match(platz, /map\.keeps\[map\.keepIndex\] \|\| geo\.centreKeep\(\)/);
@@ -1078,150 +1080,118 @@ test('Gelaende und Vorschau werden von derselben Rechnung hingelegt', () => {
   }
 });
 
-test('das gemalte Gelaende zeigt genau die Felder, die die Vorschau an dieser Stelle zeigt', (t) => {
-  // Der Totschlagtest fuer die Lage. Ohne Farbvergleich: fuer jeden Block von
-  // 30x16 Punkten wird nachgesehen, welche Kachel dort steht, und mit der
-  // Bildnummer aus dem GfxLayer verglichen - der Quelle, aus der auch die
-  // Vorschau stammt. Verschoben um ein Feld muss es NICHT mehr passen.
-  const { listGameMaps, readGameMap, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
+test('der Kachelvorrat legt jedes Feld dorthin, wo seine Bildnummer steht', (t) => {
+  // Der Totschlagtest fuer die Lage, seit das fertige Gelaendebild weg ist.
+  // Gemalt wird aus dem Vorrat: je Feld eine Platznummer im Atlas. Sie muss zu
+  // genau der Bildnummer gehoeren, die im GfxLayer steht - und zwar im vollen
+  // 400x400-Raster, nicht in der Rautenzaehlung der Datei. Genau daran ist es
+  // am 09.09.2026 gescheitert, die Karte lag danach in Streifen.
+  const { listGameMaps, readMapTiles, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
   const { maps, gameRoot } = listGameMaps(null);
   if (!maps.length || !gameRoot) { t.skip('kein Stronghold Crusader gefunden'); return; }
   const eintrag = maps.find(m => m.name === 'Crete Peninsula') || maps[0];
-  const karte = readGameMap(eintrag.path, null);
-  const keep = karte.keeps[0] || geometry.centreKeep();
+  const vorrat = readMapTiles(eintrag.path, null);
+  const roh = Buffer.from(vorrat.plaetze, 'base64');
+  const plaetze = new Uint16Array(roh.buffer, roh.byteOffset, roh.length / 2);
+  assert.equal(plaetze.length, 400 * 400, 'ein volles Raster, keine Raute');
 
   const bytes = fs.readFileSync(eintrag.path);
   const vorschau = internals.readPreview(bytes);
   const verzeichnis = internals.findDirectory(bytes, vorschau.end);
-  const gelaende = internals.renderTerrain(bytes, verzeichnis, gameRoot, { x: keep.x, y: keep.y });
   const gfx = internals.readSection(bytes, verzeichnis, internals.GFX_SECTION);
-  const vorrat = internals.readPictureStock(gameRoot);
 
-  const hoehen = internals.readSection(bytes, verzeichnis, internals.HEIGHT_SECTION);
-
-  // Welches Kartenfeld liegt an Vorschaupunkt (px,py)? null ausserhalb.
-  const feldAn = (px, py) => {
-    const mx = px + py;
-    const my = py - px + internals.PREVIEW_EDGE - 1;
-    if (mx < 0 || my < 0 || mx > 399 || my > 399) return null;
-    const [von, bis] = internals.rowRange(my);
-    if (mx < von || mx > bis) return null;
-    return internals.tileIndex(mx, my);
-  };
-  // Welche gm-Datei gehoert zu dem Feld?
-  const dateiAn = (px, py) => {
-    const feld = feldAn(px, py);
-    if (feld === null) return null;
-    const bild = internals.pictureForValue(vorrat, gfx.readUInt16LE(feld * 2));
-    return bild ? bild.name : null;
-  };
-  // Und wie hoch steht es. Das Bild hebt jede Kachel um genau diesen Wert an
-  // (renderMap 0x004e8cf0, Tabelle aus updateShowHiLayerOrResetChangedLayer),
-  // also muss der Block dort gesucht werden, wo die Hoehe ihn hinschiebt -
-  // sonst prueft der Test die falsche Stelle und misst nichts mehr.
-  const hoeheAn = (px, py) => {
-    const feld = feldAn(px, py);
-    return feld === null ? 0 : hoehen[feld];
-  };
-
-  // Wasser oder nicht - ein Ja/Nein je Feld, das man auch im Bild wiederfindet.
-  const nassLaut = (px, py) => /sea|water/i.test(dateiAn(px, py) || '');
-
-  const treffer = (dx, dy) => {
-    let gleich = 0, zahl = 0;
-    for (let cy = 0; cy < gelaende.cells; cy += 1) {
-      for (let cx = 0; cx < gelaende.cells; cx += 1) {
-        const hebung = hoeheAn(gelaende.px0 + cx, gelaende.py0 + cy);
-        const oben = gelaende.top - hebung;      // wo dieser Block im Bild steht
-        let blau = 0, punkte = 0;
-        for (let y = cy * internals.TILE_H + oben; y < (cy + 1) * internals.TILE_H + oben; y += 1) {
-          for (let x = cx * internals.TILE_W; x < (cx + 1) * internals.TILE_W; x += 1) {
-            if (y < 0 || y >= gelaende.height) { punkte = -1; break; }
-            const at = (y * gelaende.width + x) * 4;
-            if (!gelaende.rgba[at + 3]) { punkte = -1; break; }
-            if (gelaende.rgba[at + 2] > gelaende.rgba[at]) blau += 1;
-            punkte += 1;
-          }
-          if (punkte < 0) break;
-        }
-        // nur eindeutige Bloecke: ganz Wasser oder gar kein Wasser
-        if (punkte !== internals.TILE_W * internals.TILE_H) continue;
-        if (blau !== 0 && blau !== punkte) continue;
-        if (dateiAn(gelaende.px0 + cx + dx, gelaende.py0 + cy + dy) === null) continue;
-        if (nassLaut(gelaende.px0 + cx + dx, gelaende.py0 + cy + dy) === (blau > 0)) gleich += 1;
-        zahl += 1;
-      }
-    }
-    return { anteil: zahl ? gleich / zahl : 0, zahl };
-  };
-
-  const genau = treffer(0, 0);
-  assert.ok(genau.zahl > 1000, 'es wurden genug eindeutige Felder geprueft: ' + genau.zahl);
-  assert.ok(genau.anteil > 0.97, 'ohne Versatz passt es: ' + (genau.anteil * 100).toFixed(2) + '%');
-  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1]]) {
-    const daneben = treffer(dx, dy);
-    assert.ok(daneben.anteil < genau.anteil,
-      `um (${dx},${dy}) verschoben passt es genauso gut - dann misst der Test nichts: ` +
-      `${(daneben.anteil * 100).toFixed(2)}% gegen ${(genau.anteil * 100).toFixed(2)}%`);
+  // Die Reihenfolge des Vorrats: jede Bildnummer bekommt beim ersten Auftreten
+  // ihren Platz. Hier unabhaengig noch einmal gebildet.
+  const platzVon = new Map();
+  for (let feld = 0; feld < internals.MAP_TILES; feld += 1) {
+    const wert = gfx.readUInt16LE(feld * 2);
+    if (wert && !platzVon.has(wert)) platzVon.set(wert, platzVon.size);
   }
+  assert.equal(vorrat.kacheln, platzVon.size, 'je vorkommender Bildnummer eine Kachel im Atlas');
+
+  let geprueft = 0, rahmen = 0;
+  for (let my = 0; my < 400; my += 1) {
+    const [von, bis] = internals.rowRange(my);
+    for (let mx = 0; mx < 400; mx += 1) {
+      const platz = plaetze[my * 400 + mx];
+      if (mx < von || mx > bis) { assert.equal(platz, 0xffff, `ausserhalb der Raute: ${mx},${my}`); rahmen += 1; continue; }
+      const wert = gfx.readUInt16LE(internals.tileIndex(mx, my) * 2);
+      assert.equal(platz, wert === 0 ? 0xffff : platzVon.get(wert), `Feld ${mx},${my}`);
+      geprueft += 1;
+    }
+  }
+  assert.equal(geprueft, 80400, 'die ganze Raute geprueft');
+  assert.equal(rahmen, 160000 - 80400, 'und der Rahmen darum bleibt leer');
+
+  // Um ein Feld verschoben darf es NICHT mehr passen, sonst misst der Test
+  // nichts. Gemessen: 6,1 Prozent Zufallstreffer nach Osten, 6,3 nach Sueden.
+  let gleich = 0, verglichen = 0;
+  for (let my = 1; my < 399; my += 1) {
+    const [von, bis] = internals.rowRange(my);
+    for (let mx = von; mx < bis; mx += 1) {
+      const wert = gfx.readUInt16LE(internals.tileIndex(mx, my) * 2);
+      if (!wert) continue;
+      verglichen += 1;
+      if (plaetze[my * 400 + mx + 1] === platzVon.get(wert)) gleich += 1;
+    }
+  }
+  assert.ok(gleich < verglichen * 0.2,
+    `verschoben passt es zu ${(gleich / verglichen * 100).toFixed(1)} Prozent - dann misst der Test nichts`);
 });
 
-test('das Gelaendebild bleibt in der Groesse, die gemessen wurde', (t) => {
-  // Die ganze Karte in Kachelaufloesung waere 6000x3200 Punkte. Gemalt wird
-  // nur die Raute des Dorfes: gemessen 3030x1616 Punkte, davon die Haelfte
-  // durchsichtig, und daraus ein PNG von rund 3 MB. Waechst das unbemerkt,
-  // kommt die data:-Adresse nicht mehr durch den Kanal.
-  const { listGameMaps, readGameMap, readMapTerrain } = require(path.join(root, 'src', 'node', 'game-map.js'));
-  const { maps } = listGameMaps(null);
-  if (!maps.length) { t.skip('kein Stronghold Crusader gefunden'); return; }
+test('der Kachelvorrat bleibt in der Groesse, die gemessen wurde', (t) => {
+  // Die ganze Karte als fertiges Bild waere 293 MB gewesen. Der Vorrat malt
+  // jede Bildnummer EINMAL in einen Atlas und schickt je Feld nur zwei Byte
+  // Platznummer. Gemessen am 17.09.2026: Atlas 561 KB (A Friend Indeed) bis
+  // 1110 KB (Rock Face), alles zusammen rund 4,6 MB. Waechst das unbemerkt,
+  // kommt es nicht mehr durch den Kanal.
+  const { listGameMaps, readMapTiles, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
+  const { maps, gameRoot } = listGameMaps(null);
+  if (!maps.length || !gameRoot) { t.skip('kein Stronghold Crusader gefunden'); return; }
   const eintrag = maps.find(m => m.name === 'A Friend Indeed') || maps[0];
-  const karte = readGameMap(eintrag.path, null);
-  const keep = karte.keeps[0] || geometry.centreKeep();
-  const gelaende = readMapTerrain(eintrag.path, null, keep);
+  const vorrat = readMapTiles(eintrag.path, null);
+  const kb = (text) => Math.round(Buffer.byteLength(text, 'utf8') / 1024);
 
-  assert.equal(gelaende.width, gelaende.cells * 30);
-  // Oben kommt so viel Luft dazu, wie das hoechste Feld des Dorfes gehoben
-  // wird - sonst schnitte der Bildrand die Bergkuppe ab.
-  assert.equal(gelaende.height, gelaende.cells * 16 + gelaende.top);
-  const dorf = Buffer.from(gelaende.village, 'base64');
-  assert.equal(dorf.length, 100 * 100, 'eine Hoehe je Dorffeld');
-  assert.equal(gelaende.top, Math.max(...dorf), 'die Luft oben ist genau die hoechste Hoehe');
-  assert.ok(gelaende.cells <= 101, 'Kante ' + gelaende.cells);
-  assert.equal(gelaende.missing, 0, 'jedes Feld im Fenster hat ein Bild');
-  assert.ok(gelaende.tiles > 15000, 'genug Kacheln gemalt: ' + gelaende.tiles);
-  const megabyte = gelaende.dataUrl.length / 1048576;
-  assert.ok(megabyte < 8, 'die data:-Adresse bleibt unter 8 MB, hier ' + megabyte.toFixed(2));
-  assert.ok(gelaende.dataUrl.startsWith('data:image/png;base64,'));
-  // Nur Karten aus der Liste, und nur Startplaetze auf der Karte.
-  assert.throws(() => readMapTerrain('C:\\Windows\\System32\\drivers\\etc\\hosts', null, keep),
+  assert.equal(vorrat.kachelBreite, internals.TILE_W);
+  assert.equal(vorrat.kachelHoehe, internals.TILE_H);
+  assert.equal(vorrat.spalten, internals.ATLAS_SPALTEN);
+  assert.equal(vorrat.atlasBreite, internals.ATLAS_SPALTEN * internals.TILE_W);
+  assert.equal(vorrat.atlasHoehe, Math.ceil(vorrat.kacheln / internals.ATLAS_SPALTEN) * internals.TILE_H);
+  assert.equal(vorrat.fehlend, 0, 'jede vorkommende Bildnummer hat ein Bild');
+  assert.ok(vorrat.atlas.startsWith('data:image/png;base64,'));
+  assert.ok(kb(vorrat.atlas) < 2048, 'der Atlas bleibt unter 2 MB, hier ' + kb(vorrat.atlas) + ' KB');
+  assert.equal(Buffer.from(vorrat.plaetze, 'base64').length, 400 * 400 * 2, 'zwei Byte je Feld');
+  assert.equal(Buffer.from(vorrat.hoehen, 'base64').length, 400 * 400, 'ein Byte Hoehe je Feld');
+  const ganz = kb(JSON.stringify(vorrat));
+  assert.ok(ganz < 8192, 'der ganze Vorrat bleibt unter 8 MB, hier ' + ganz + ' KB');
+  // Nur Karten aus der Liste.
+  assert.throws(() => readMapTiles('C:\\Windows\\System32\\drivers\\etc\\hosts', null),
                 /not one of the game maps/);
-  assert.throws(() => readMapTerrain(eintrag.path, null, { x: -1, y: 0 }), /not on the map/);
-  assert.throws(() => readMapTerrain(eintrag.path, null, null), /not on the map/);
 });
 
-test('der Umschalter zwischen Vorschau und Gelaende haengt richtig', () => {
-  // Der Knopf steht bei den anderen Kartenknoepfen und zeigt sich nur mit
-  // Karte. Und das Gelaende wird NICHT gemerkt - 3 MB passen nicht in den
-  // Sitzungsspeicher, in dem auch die Karte selbst liegt.
-  assert.match(html, /id="castleIsoMapMode"[^>]*hidden/);
+test('der Weg ueber ein fertiges Gelaendebild ist zu', () => {
+  // Am 17.09.2026 entfallen. Er holte je Kartenwechsel rund vier Megabyte
+  // fertiges Bild ueber die Bruecke und zeigte nur den Ausschnitt um die Burg.
+  // Zwei Wege zum selben Boden sind einer zu viel: einer wird gepflegt, der
+  // andere veraltet, und niemand weiss welcher.
   const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
-  assert.match(iso, /mapMode, setMapMode, setTerrain, terrainKey, terrainReady/, 'von aussen erreichbar');
-  const merken = iso.slice(iso.indexOf('function rememberGameMap'), iso.indexOf('function setGameMap'));
-  assert.doesNotMatch(merken, /terrain/i, 'das Gelaende gehoert nicht in den Sitzungsspeicher');
-  // Karte oder Startplatz gewechselt heisst: das alte Gelaende passt nicht mehr.
-  const schluessel = iso.slice(iso.indexOf('function terrainKey'), iso.indexOf('function setTerrain'));
-  assert.match(schluessel, /map\.path/);
-  assert.match(schluessel, /keep\.x/);
-
-  const preload = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
-  assert.match(preload, /loadMapTerrain: \(request\) => ipcRenderer\.invoke\('load-map-terrain', request\)/);
-  const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
-  assert.match(main, /ipcMain\.handle\('load-map-terrain'/);
   const editor = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
-  assert.match(editor, /window\.electronAPI\.loadMapTerrain\(\{ path: info\.path, keep: info\.keep \}\)/);
-  assert.match(editor, /window\.isoView\.setMapMode\(/);
-  // Kommt die Antwort zu spaet, gehoert sie nicht mehr hierher.
-  assert.match(editor, /if \(window\.isoView\.terrainKey\(\) !== key\) return;/);
+  const preload = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
+  const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
+  const karte = fs.readFileSync(path.join(root, 'src', 'node', 'game-map.js'), 'utf8');
+  for (const [name, text] of [['iso-view.js', iso], ['castle-editor.js', editor],
+                              ['preload.js', preload], ['main.js', main]]) {
+    assert.doesNotMatch(text, /loadMapTerrain|load-map-terrain|readMapTerrain|setTerrain|terrainReady|mapMode/,
+                        'der alte Weg lebt noch in ' + name);
+  }
+  assert.doesNotMatch(karte, /function renderTerrain|function readMapTerrain/, 'auch der Leser ist weg');
+  assert.doesNotMatch(html, /castleIsoMapMode/, 'und der Umschalter aus der Oberflaeche');
+
+  // Gezeichnet wird aus dem Kachelvorrat; faellt der aus, liegt die Vorschau
+  // darunter. Eine Wahl gibt es nicht mehr zu treffen.
+  assert.match(iso, /state\.nativeTerrain = paintMapTiles\(ctx, width, height\)/);
+  assert.match(iso, /if \(!state\.nativeTerrain\) paintGround\(ctx, width, height\)/);
+  assert.match(editor, /loadMapTiles/);
 });
 
 // ----------------------------------------------------------------- die Hoehe
@@ -1301,37 +1271,41 @@ test('die Hoehe kommt aus derselben Quelle wie der Boden', () => {
   assert.match(iso, /geo\.tileFromPoint\(px, py, state\.view, bodenHoehe\)/);
 });
 
-test('das Gelaende bringt eine Hoehe je Dorffeld mit, und die Kanten stehen darunter', (t) => {
-  const { listGameMaps, readGameMap, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
+test('der Vorrat bringt die Hoehe jedes Kartenfeldes mit, und die Steilkanten stehen darunter', (t) => {
+  const { listGameMaps, readMapTiles, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
   const { maps, gameRoot } = listGameMaps(null);
   if (!maps.length || !gameRoot) { t.skip('kein Stronghold Crusader gefunden'); return; }
-  // Eine Karte mit echtem Hoehenunterschied - auf Rock Face liegen 28.188
-  // Felder auf Hoehe 130 und 10.903 auf 0.
+  // Eine Karte mit echtem Hoehenunterschied - auf Rock Face liegen 69.497
+  // Felder ueber null und 10.903 auf null.
   const eintrag = maps.find(m => m.name === 'Rock Face') || maps[0];
-  const karte = readGameMap(eintrag.path, null);
-  const keep = karte.keeps[0] || geometry.centreKeep();
+  const vorrat = readMapTiles(eintrag.path, null);
+  const hoehen = Buffer.from(vorrat.hoehen, 'base64');
+  assert.equal(hoehen.length, 400 * 400);
+
   const bytes = fs.readFileSync(eintrag.path);
   const vorschau = internals.readPreview(bytes);
   const verzeichnis = internals.findDirectory(bytes, vorschau.end);
-  const gelaende = internals.renderTerrain(bytes, verzeichnis, gameRoot, { x: keep.x, y: keep.y });
-  const hoehen = internals.readSection(bytes, verzeichnis, internals.HEIGHT_SECTION);
+  const echt = internals.readSection(bytes, verzeichnis, internals.HEIGHT_SECTION);
 
-  assert.equal(gelaende.village.length, 100 * 100);
-  // Jedes Dorffeld traegt die Hoehe des Kartenfeldes, das die Rechnung nennt.
-  let geprueft = 0;
-  for (let gy = 0; gy < 100; gy += 1) {
-    for (let gx = 0; gx < 100; gx += 1) {
-      const { mx, my } = geometry.mapTileForGrid(gx, gy, keep);
-      if (my < 0 || my > 399) continue;
-      const [von, bis] = internals.rowRange(my);
-      if (mx < von || mx > bis) continue;
-      assert.equal(gelaende.village[gy * 100 + gx], hoehen[internals.tileIndex(mx, my)]);
+  // Jedes Feld traegt die Hoehe, die in der Hoehenschicht steht - in derselben
+  // Zaehlung wie die Plaetze, sonst stuende die Burg neben ihrem Berg.
+  let geprueft = 0, hoch = 0;
+  for (let my = 0; my < 400; my += 1) {
+    const [von, bis] = internals.rowRange(my);
+    for (let mx = von; mx <= bis; mx += 1) {
+      const wert = hoehen[my * 400 + mx];
+      assert.equal(wert, echt[internals.tileIndex(mx, my)], `Feld ${mx},${my}`);
       geprueft += 1;
+      if (wert) hoch += 1;
     }
   }
-  assert.ok(geprueft > 9000, 'fast das ganze Dorf liegt auf der Karte: ' + geprueft);
-  assert.ok(gelaende.top >= 130, 'die Luft oben reicht fuer den Berg: ' + gelaende.top);
-  assert.ok(gelaende.floor <= gelaende.top);
-  // Und die Steilkanten sind gemalt worden - ohne sie stuende der Berg auf nichts.
-  assert.ok(gelaende.cliffs > 500, 'Steilkanten gemalt: ' + gelaende.cliffs);
+  assert.equal(geprueft, 80400, 'die ganze Karte geprueft');
+  assert.ok(hoch > 20000, 'auf dieser Karte liegt echter Hoehenunterschied: ' + hoch);
+
+  // Und die Steilkanten sind dabei - ohne sie stuende der Berg auf nichts.
+  const kanten = Buffer.from(vorrat.cliffSprites, 'base64');
+  assert.equal(kanten.length, 400 * 400 * 2);
+  let gemalt = 0;
+  for (let i = 0; i < kanten.length; i += 2) if (kanten.readUInt16LE(i)) gemalt += 1;
+  assert.ok(gemalt > 500, 'Steilkanten gemalt: ' + gemalt);
 });

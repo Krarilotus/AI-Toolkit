@@ -136,9 +136,6 @@
     state.images.delete(groundSource());
     // Only ever one ground: a picture of your own puts a map of the game away.
     if (url && gameMap()) { state.gameMap = null; rememberGameMap(); }
-    // Und mit der Karte auch ihr Gelaende: das Bild ist entpackt rund 19 MB,
-    // und ohne Karte kommt es nie wieder zum Vorschein.
-    if (url && state.terrain) { state.images.delete(state.terrain.dataUrl); state.terrain = null; }
     paint();
   }
 
@@ -162,12 +159,6 @@
       setGameMap(null);
       return;
     }
-    // Ein kaputtes Gelaendebild kostet nur das Gelaende: die Vorschau liegt
-    // noch da, und der Grund bleibt sichtbar.
-    if (state.terrain && filename === state.terrain.dataUrl) {
-      setTerrain(null);
-      return;
-    }
     refresh();
   }
 
@@ -186,73 +177,24 @@
   // way round. Two pictures on the same floor would hide each other, and no
   // one could tell which of them is to scale.
   const MAP_KEY = 'castleIsoGameMap';
-  const MAP_MODE_KEY = 'castleIsoMapMode';   // 'preview' or 'terrain'
 
-  // Das echte Gelaende wird NICHT gemerkt. Es ist rund 3 MB als PNG, also gut
-  // 4 MB als data:-Adresse - localStorage haelt ueblicherweise 5 MB fuer alles
-  // zusammen, und die Karte laege danach nirgends mehr. Gemerkt wird nur, DASS
-  // der Nutzer das Gelaende sehen will; geholt wird es beim naechsten Start neu.
-  function mapMode() {
-    if (state.mapMode === undefined) {
-      let stored = null;
-      try { stored = window.localStorage.getItem(MAP_MODE_KEY); } catch { stored = null; }
-      state.mapMode = stored === 'terrain' ? 'terrain' : 'preview';
-    }
-    return state.mapMode;
-  }
-
-  function setMapMode(mode) {
-    state.mapMode = mode === 'terrain' ? 'terrain' : 'preview';
-    try { window.localStorage.setItem(MAP_MODE_KEY, state.mapMode); } catch { /* a view must not fall over because storage is off */ }
-    paint();
-  }
-
-  // Welches Gelaende die Ansicht gerade braucht: eine Karte und ein Startplatz.
-  // Wechselt eines von beidem, passt das gehaltene Bild nicht mehr, und die
-  // Ansicht faellt auf die Vorschau zurueck, bis das neue da ist.
-  function terrainKey() {
+  // Welche Karte mit welchem Startplatz gerade liegt. Wechselt eines von
+  // beidem, passt alles Gezeichnete nicht mehr und muss neu entstehen.
+  function kartenSchluessel() {
     const map = gameMap();
     if (!map || !map.path) return null;
     const keep = currentKeep();
     return keep ? `${map.path}#${keep.x},${keep.y}` : null;
   }
 
-  // Das Gelaende bringt seine Hoehen mit: ein Byte je Dorffeld, als Text
-  // verpackt, weil ein Byte-Feld nicht durch den Kanal passt. Ohne sie stuende
-  // die Burg flach auf einem Gelaende, das Berge hat.
-  function dorfHoehen(text) {
-    if (typeof text !== 'string' || !text) return null;
-    try {
-      const roh = typeof atob === 'function' ? atob(text) : null;
-      if (!roh || roh.length !== geo.GRID * geo.GRID) return null;
-      const feld = new Uint8Array(roh.length);
-      for (let i = 0; i < roh.length; i += 1) feld[i] = roh.charCodeAt(i);
-      return feld;
-    } catch { return null; }
-  }
-
-  function setTerrain(terrain) {
-    if (state.terrain) state.images.delete(state.terrain.dataUrl);
-    state.terrain = terrain && terrain.dataUrl
-      ? { key: terrain.key, dataUrl: terrain.dataUrl,
-          px0: Number(terrain.px0) || 0, py0: Number(terrain.py0) || 0,
-          cells: Number(terrain.cells) || geo.MAP_PREVIEW_EDGE,
-          top: Number(terrain.top) || 0,
-          floor: Number(terrain.floor) || 0,
-          village: dorfHoehen(terrain.village) }
-      : null;
-    paint();
-  }
-
   // Wie hoch der Boden unter einem Dorffeld liegt, in Bildpunkten. Null,
-  // solange kein echtes Gelaende liegt: die Vorschau ist ein flaches Bild, und
-  // eine Burg ueber einem flachen Boden schweben zu lassen waere schlimmer als
-  // sie flach zu lassen.
+  // solange kein Kachelvorrat da ist: die Vorschau ist ein flaches Bild, und
+  // eine Burg ueber einem flachen Boden schweben zu lassen waere schlimmer
+  // als sie flach zu lassen.
   function bodenHoehe(gx, gy) {
     const world = geo.unrotateGrid(gx, gy, viewRotation());
     // The full-map atlas takes precedence over paintGround. It already lifts
-    // terrain tiles; sprites and picking must use those same heights, not the
-    // previous cropped image's height buffer (or zero on first load).
+    // terrain tiles; sprites and picking must use those same heights.
     const atlas = vorrat();
     if (atlas?.plaetze && atlas.bild?.complete && atlas.bild?.naturalWidth && gameMap()) {
       return geo.mapTileHeight(world.gx, world.gy, currentKeep(), atlas.hoehen);
@@ -261,11 +203,6 @@
     if (!feld) return 0;
     if (world.gx < 0 || world.gy < 0 || world.gx >= geo.GRID || world.gy >= geo.GRID) return 0;
     return feld[world.gy * geo.GRID + world.gx] || 0;
-  }
-
-  function terrainReady() {
-    const wanted = terrainKey();
-    return Boolean(wanted && state.terrain && state.terrain.key === wanted);
   }
 
   function gameMap() {
@@ -298,7 +235,6 @@
       state.kachelVorrat = null;
     }
     if (previous?.path !== state.gameMap?.path) handDrehung = 0;
-    setTerrain(null);
     window.castleEditor?.extras?.scheduleDraw?.();
     rememberGameMap();
     if (state.gameMap && state.ground) setGround(null);   // paints as well
@@ -356,7 +292,7 @@
     if (!map) return null;
     const keep = currentKeep();
     return { name: map.name, path: map.path || null, keeps: map.keeps, keepIndex: map.keepIndex,
-             keep, mode: mapMode(), terrainKey: terrainKey(), terrainReady: terrainReady() };
+             keep, schluessel: kartenSchluessel() };
   }
 
   // Which starting place the village is built on. Without one the village goes
@@ -402,7 +338,7 @@
     const target = surface();
     if (target) {
       const pivotKey = () => [target.width, target.height, state.view.zoom, state.view.panX,
-        state.view.panY, terrainKey()].join('/');
+        state.view.panY, kartenSchluessel()].join('/');
       // Keep the same world-space pivot between turns. Picking again after
       // each turn can choose a different face of a cliff and move the camera.
       let height = state.rotationPivot?.key === pivotKey() ? state.rotationPivot.height : null;
@@ -464,14 +400,6 @@
   function groundPicture() {
     const map = gameMap();
     if (!map) return null;
-    if (!viewRotation() && mapMode() === 'terrain' && terrainReady()) {
-      const terrain = state.terrain;
-      const img = image(terrain.dataUrl);
-      if (img && img.complete && img.naturalWidth) {
-        return { img, px0: terrain.px0, py0: terrain.py0, cells: terrain.cells,
-                 top: terrain.top, floor: terrain.floor, hoehen: terrain.village, smooth: true };
-      }
-    }
     const img = image(map.dataUrl);
     if (!img || !img.complete || !img.naturalWidth) return null;
     return { img, px0: 0, py0: 0, cells: geo.MAP_PREVIEW_EDGE, top: 0, floor: 0, hoehen: null, smooth: false };
@@ -805,13 +733,13 @@
     if (!target) return;
     const { width, height, ctx } = target;
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
-    const key = [currentRotation(), terrainKey(), mapMode(), groundFit()].join('/');
+    const key = [currentRotation(), kartenSchluessel(), groundFit()].join('/');
     const cache = state.sceneCache;
     const fireEnabled = !!document.getElementById?.('castleShowFire')?.checked;
     if (!cache || state.sceneDirty || cache.fireEnabled !== fireEnabled || cache.key !== key || cache.stock !== state.kachelVorrat
-        || cache.terrain !== state.terrain || cache.ground !== groundSource()) {
+        || cache.ground !== groundSource()) {
       const sameEnvironment = cache?.key === key && cache.stock === state.kachelVorrat
-        && cache.terrain === state.terrain && cache.ground === groundSource() && cache.assetRevision === state.assetRevision;
+        && cache.ground === groundSource() && cache.assetRevision === state.assetRevision;
       const sprites = sameEnvironment ? [] : Object.values(state.catalogue?.gegenstaende || {});
       const scenery = sameEnvironment ? [] : vorrat()?.upperEntries || [];
       const overhang = sameEnvironment ? cache.overhang : Math.ceil(Math.max(64,
@@ -839,7 +767,7 @@
         });
       } finally { state.view = view; }
       state.sceneCache = { key, canvas, fireEnabled, overhang, view: sceneView, ...scene, stock: state.kachelVorrat,
-        terrain: state.terrain, ground: groundSource(), assetRevision: state.assetRevision,
+        ground: groundSource(), assetRevision: state.assetRevision,
         documentRevision: window.castleEditor?.getDocumentRevision?.() };
       state.sceneDirty = false;
     }
@@ -1482,7 +1410,6 @@
   window.isoView = { init, openWindow, closeWindow, mountDock, unmount, refresh, paint, fit, isMounted, panFromKey,
                      setGround, hasOwnGround, setGroundFit, groundIsStretched,
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo,
-                     mapMode, setMapMode, setTerrain, terrainKey, terrainReady,
                      viewRotation, turnView, currentRotation,
                      setMapTiles, hasMapTiles, analysisTerrain };
 
