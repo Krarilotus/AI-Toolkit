@@ -179,14 +179,27 @@ button:disabled { cursor: default; }
 }
 .integratedTitlebar .workspaceSpacer { min-width: 80px; }
 .integratedTitlebar .workspaceStatus { min-width: 0; max-width: 22vw; }
-.titlebarMenus { display: flex; align-items: stretch; margin-right: 10px; }
+.titlebarMenus {
+  display: flex; align-items: stretch; align-self: center;
+  margin-right: 18px; padding: 2px;
+  border: 1px solid var(--line-strong); border-right: 3px solid var(--accent-strong);
+  border-radius: 6px; background: var(--app-bg-deep);
+}
 .titlebarMenus button {
   border: 0;
-  border-radius: 0;
+  border-radius: 3px;
   background: transparent;
   color: var(--text-soft);
-  padding: 0 9px;
-  font: 13px var(--font-ui);
+  min-height: 28px; padding: 0 9px;
+  font: 500 12px var(--font-ui);
+}
+.integratedTitlebar .workspaceTab {
+  margin-top: 5px; border-radius: 6px 6px 0 0;
+  border: 1px solid var(--line-strong); border-bottom: 0;
+  background: var(--surface-2);
+}
+.integratedTitlebar .workspaceTab.active {
+  background: var(--surface-3); border-color: var(--accent-strong);
 }
 .titlebarMenus button:hover, .titlebarMenus button[aria-expanded="true"] {
   background: var(--surface-2);
@@ -790,6 +803,40 @@ button:disabled { cursor: default; }
   box-shadow: inset 0 -1px 0 rgba(0,0,0,.2);
 }
 .toolbarGroup { display: flex; align-items: center; gap: 5px; }
+.castleToolbar > .toolbarGroup {
+  --group-accent: var(--line-strong);
+  flex-wrap: wrap; gap: 5px; max-width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--group-accent);
+  border-radius: 6px;
+  background: var(--app-bg-deep);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.castleToolbar > .toolbarFileGroup { --group-accent: #c79a55; }
+.castleToolbar > .castleViewGroup { --group-accent: #79aec8; }
+.castleToolbar > .castleProjectGroup { --group-accent: #a89bcc; }
+.castleToolbar > .castlePlacementGroup { --group-accent: #88b98b; }
+.castleToolbar > .castleEditGroup { --group-accent: #ce937b; }
+.castleToolbar > .castleOverlayGroup { --group-accent: #74bfb7; }
+.castleToolbar > .castleExtrasGroup { --group-accent: #b4a384; }
+.castleOverlayMenu { position: relative; }
+.castleOverlayMenu summary {
+  cursor: pointer; padding: 5px 8px; min-height: 30px;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: var(--surface-3); color: var(--text-main);
+  font: 600 1.4rem/1.25 var(--font-ui);
+}
+.castleOverlayMenu[open] summary { border-color: var(--accent-strong); }
+.castleOverlayMenu summary:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.castleOverlayOptions {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+  display: grid; gap: 3px; min-width: 180px; padding: 7px;
+  border: 1px solid var(--line-strong); border-radius: 6px;
+  background: var(--surface-2); box-shadow: 0 5px 18px #0008;
+}
+.castleOverlayOptions .compactToggle { padding: 7px 9px; color: var(--text-main); cursor: pointer; }
+.castleOverlayOptions .compactToggle:hover { background: var(--surface-3); border-radius: 3px; }
 .toolbarRight { margin-left: auto; }
 .toolbarFileGroup {
   padding-right: 10px;
@@ -817,6 +864,7 @@ button:disabled { cursor: default; }
   font: 1.2rem var(--font-ui);
 }
 .castleProjectChoice select:disabled { opacity: .5; }
+#castleDeleteMode, #castleSelectMode { width: auto; min-width: 0; }
 .castleToolbar button,
 .castlePanel button {
   width: auto;
@@ -898,7 +946,7 @@ button:disabled { cursor: default; }
 .castleMergeChoice:has(input:disabled) { opacity: .55; }
 .castleShortcutGrid {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) 110px 110px;
+  grid-template-columns: minmax(120px, 1fr) 190px;
   gap: 7px 10px;
   align-items: center;
 }
@@ -1112,7 +1160,7 @@ button:disabled { cursor: default; }
 .castlePanel .paletteCategoryButton:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .paletteItems { min-height: 0; background: rgba(16, 20, 24, .88); }
 .paletteEmpty { padding: 12px 10px; color: var(--text-muted); font-size: 12px; }
-.paletteItem {
+.castlePanel .paletteItem {
   width: 100%;
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr);
@@ -1441,6 +1489,10 @@ button:disabled { cursor: default; }
   font: 1.2rem/1.4 var(--font-data);
 }
 .aiLineField.long textarea { min-height: 78px; }
+.aiLineField textarea::placeholder {
+  color: var(--text-muted);
+  opacity: .65;
+}
 .aiPortraitGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

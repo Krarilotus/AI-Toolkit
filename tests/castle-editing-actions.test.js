@@ -70,7 +70,8 @@ test('camera preferences round-trip, reject conflicts and leave modified shortcu
   assert.equal(camera.keyDelta({ key: 'ArrowRight', ctrlKey: true }, preferences), null);
   assert.equal(camera.keyDelta({ key: 'ArrowRight' }, camera.defaults), null);
   assert.throws(() => camera.validate({ ...camera.arrows, left: 's' }, { single: ['s'] }), /already assigned/);
-  assert.throws(() => camera.validate({ ...camera.arrows, left: 'c' }), /reserved/);
+  assert.throws(() => camera.validate({ ...camera.arrows, left: 'c' }, { rotateLeft: ['c'] }), /already assigned/);
+  assert.equal(camera.validate({ ...camera.arrows, left: 'c' }, { rotateLeft: ['alt+c'] }).left, 'c');
   assert.throws(() => camera.validate({ ...camera.arrows, left: 'ArrowUp' }), /already assigned/);
   assert.throws(() => camera.validate({ ...camera.arrows, panSpeed: 0 }), /speed/);
   assert.equal(camera.validate({ ...camera.defaults, left: 'A' }).left, 'a');

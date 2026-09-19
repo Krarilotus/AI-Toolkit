@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { app, BrowserWindow, Menu, ipcMain, dialog, globalShortcut, shell, nativeImage } = require('electron');
+const castleShortcuts = require('./src/js/castle-shortcuts');
 const {
   normalizeInstallationPath,
   installationLayout,
@@ -200,11 +201,21 @@ function createWindow({ restoreProject = false } = {}) {
   if (fs.existsSync(iconPath)) options.icon = iconPath;
 
   const win = new BrowserWindow(options);
+  function routeCastleShortcuts(contents) {
+    contents.on('before-input-event', (_event, input) => {
+      // Renderer owns Castle key dispatch (including text/dialog focus guards).
+      // Native menus still display the same binding and handle mouse commands.
+      contents.setIgnoreMenuShortcuts(Boolean(win.__castleShortcutCapture ||
+        (win.__activeWorkspace === 'castle' && castleShortcuts.actionFor(input, win.__castleShortcuts || castleShortcuts.defaults))));
+    });
+  }
+  routeCastleShortcuts(win.webContents);
   win.__integratedTitlebar = process.platform === 'win32';
   if (win.__integratedTitlebar) {
     win.setAutoHideMenuBar(false);
     win.setMenuBarVisibility(false);
     win.webContents.on('before-input-event', (event, input) => {
+      if (win.__castleShortcutCapture) return;
       if (input.type !== 'keyDown' || input.control || input.meta) return;
       const key = input.key.toLowerCase();
       const menu = input.alt && !input.shift ? { f: 'file', e: 'edit', v: 'view' }[key] : null;
@@ -222,6 +233,7 @@ function createWindow({ restoreProject = false } = {}) {
   });
   win.webContents.on('will-attach-webview', event => event.preventDefault());
   win.webContents.on('did-create-window', child => {
+    routeCastleShortcuts(child.webContents);
     child.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     child.webContents.on('will-navigate', (event, url) => {
       if (url !== 'about:blank') event.preventDefault();
@@ -344,8 +356,8 @@ function editMenuForWorkspace(workspace, overviewPreferences = defaultCastleOver
   return items;
 }
 
-function menuTemplateForWorkspace(workspace = 'ucp', overviewPreferences = defaultCastleOverviewPreferences()) {
-  return [
+function menuTemplateForWorkspace(workspace = 'ucp', overviewPreferences = defaultCastleOverviewPreferences(), bindings = castleShortcuts.defaults) {
+  const template = [
     { label: 'File', submenu: fileMenuForWorkspace(workspace) },
     {
       label: 'Workspace',
@@ -359,6 +371,16 @@ function menuTemplateForWorkspace(workspace = 'ucp', overviewPreferences = defau
     { label: 'Edit', submenu: editMenuForWorkspace(workspace, overviewPreferences) },
     { role: 'viewMenu' }
   ];
+  if (workspace === 'castle') {
+    const actions = { 'New Castle': 'newCastle', Load: 'openCastle', Save: 'saveCastle', 'Save As': 'saveAs',
+      Undo: 'undo', Redo: 'redo', 'Delete Selected': 'deleteSelected' };
+    for (const section of template) {
+      for (const item of Array.isArray(section.submenu) ? section.submenu : []) {
+        if (actions[item.label]) item.accelerator = castleShortcuts.accelerator(bindings[actions[item.label]]?.[0]);
+      }
+    }
+  }
+  return template;
 }
 
 function installApplicationMenu(workspace = 'ucp', win = BrowserWindow.getFocusedWindow()) {
@@ -366,7 +388,7 @@ function installApplicationMenu(workspace = 'ucp', win = BrowserWindow.getFocuse
   const overview = win && win.__castleOverviewPreferences
     ? win.__castleOverviewPreferences
     : defaultCastleOverviewPreferences();
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplateForWorkspace(selected, overview)));
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplateForWorkspace(selected, overview, win?.__castleShortcuts)));
   // Keep native accelerators registered without restoring a second menu row.
   for (const window of BrowserWindow.getAllWindows()) {
     if (window.__integratedTitlebar) window.setMenuBarVisibility(false);
@@ -382,7 +404,7 @@ ipcMain.handle('show-titlebar-menu', (event, request) => {
   if (!win?.__integratedTitlebar || event.senderFrame !== event.sender.mainFrame) return;
   const index = { file: 0, edit: 2, view: 3 }[request?.menu];
   if (!Number.isInteger(index) || !Number.isFinite(request?.x) || !Number.isFinite(request?.y)) return;
-  const menu = Menu.buildFromTemplate(menuTemplateForWorkspace(win.__activeWorkspace, win.__castleOverviewPreferences));
+  const menu = Menu.buildFromTemplate(menuTemplateForWorkspace(win.__activeWorkspace, win.__castleOverviewPreferences, win.__castleShortcuts));
   const popup = menu.items[index]?.submenu;
   if (!popup) return;
   const [width, height] = win.getContentSize();
@@ -401,6 +423,17 @@ ipcMain.on('set-active-workspace', (event, workspace) => {
   if (!win) return;
   win.__activeWorkspace = workspace;
   if (BrowserWindow.getFocusedWindow() === win) installApplicationMenu(workspace, win);
+});
+
+ipcMain.on('set-castle-shortcuts', (event, bindings) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || event.senderFrame !== event.sender.mainFrame) return;
+  try { win.__castleShortcuts = castleShortcuts.validate(bindings); } catch { return; }
+  if (BrowserWindow.getFocusedWindow() === win && win.__activeWorkspace === 'castle') installApplicationMenu('castle', win);
+});
+ipcMain.on('set-castle-shortcut-capture', (event, active) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && event.senderFrame === event.sender.mainFrame) win.__castleShortcutCapture = active === true;
 });
 
 ipcMain.on('set-castle-overview-preferences', (event, preferences) => {

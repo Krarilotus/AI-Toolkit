@@ -8,21 +8,21 @@ const defaults = source.slice(source.indexOf('  const DEFAULT_TOOL_SHORTCUTS =')
 const validation = source.slice(source.indexOf('  function normalizeShortcutKey('), source.indexOf('  function updateToolShortcutHints('));
 
 test('file shortcut defaults migrate without discarding customized tool bindings', () => {
-  const context = { toolLabel: key => key };
+  const context = { toolLabel: key => key, shortcutConfig: require('../src/js/castle-shortcuts') };
   vm.runInNewContext(defaults + validation + '\nthis.defaults=DEFAULT_TOOL_SHORTCUTS;this.validate=validateToolShortcuts;', context);
   const old = JSON.parse(JSON.stringify(context.defaults));
   delete old.saveCastle; delete old.openCastle; old.brush = ['9', 'b'];
   const restored = context.validate(old);
   assert.equal(restored.brush[0], '9');
-  assert.equal(restored.saveCastle[0], 'f1'); assert.equal(restored.openCastle[0], 'f2');
+  assert.equal(restored.saveCastle[0], 'ctrl+s'); assert.equal(restored.openCastle[0], 'ctrl+o');
   restored.saveCastle = ['F3']; restored.openCastle = ['F4', 'o'];
   assert.equal(context.validate(restored).saveCastle[0], 'f3');
   restored.openCastle = ['f3'];
   assert.throws(() => context.validate(restored), /assigned more than once/);
-  restored.openCastle = ['c'];
-  assert.throws(() => context.validate(restored), /reserved for rotation/);
+  restored.openCastle = ['alt+f'];
+  assert.throws(() => context.validate(restored), /reserved/);
   restored.openCastle = ['F13'];
-  assert.throws(() => context.validate(restored), /primary shortcut/);
+  assert.throws(() => context.validate(restored), /Invalid shortcut/);
 });
 
 test('file actions reuse save/open and suppress overlapping dialogs until completion', async () => {

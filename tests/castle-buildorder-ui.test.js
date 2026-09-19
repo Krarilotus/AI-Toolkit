@@ -138,7 +138,7 @@ test('Castle Brush and Line stay available and split single-step items into cons
   assert.match(brush, /state\.brushOffsets\.map\(off => \(\{ itemType: type, tilePositionOfsets: \[off\]/);
   assert.match(brush, /insertBuildFrames\(newFrames\)/);
   assert.doesNotMatch(setTool, /allowsMultiplePerStep/);
-  assert.match(selectItem, /setTool\(state\.lastPlacementTool\)/);
+  assert.match(selectItem, /state\.itemTools\[state\.currentItemType\]/);
 });
 
 test('Castle multi-placement is for the things that are drawn in a line', () => {
@@ -218,12 +218,13 @@ test('Castle tool shortcuts are editable, validated, and persisted locally', () 
   const html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   assert.match(html, /id="castleShortcutDialog"/);
-  assert.equal((html.match(/class="castleShortcutKey"/g) || []).length, 20);
+  assert.match(html, /id="castleShortcutGrid"/);
+  assert.match(script, /for \(const \[action, label\] of shortcutConfig.actions\)/);
   assert.match(script, /const DEFAULT_TOOL_SHORTCUTS/);
   assert.match(script, /localStorage\.setItem\(SHORTCUT_STORAGE_KEY/);
-  assert.match(script, /assigned more than once/);
+  assert.match(script, /shortcutConfig.validate\(candidate\)/);
   assert.match(script, /function toolForShortcut\(key\)/);
-  assert.match(script, /setTool\(shortcutTool\)/);
+  assert.match(script, /setTool\(action\)/);
 });
 
 // --------------------------------------------------- Ctrl+C and Ctrl+V
@@ -231,10 +232,10 @@ test('Castle tool shortcuts are editable, validated, and persisted locally', () 
 test('Ctrl+C and Ctrl+V go through the copy tool, never around it', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const keys = functionBody(script, 'handleCastleKey');
-  assert.match(keys, /\(event\.ctrlKey \|\| event\.metaKey\) && key === 'c'/);
-  assert.match(keys, /\(event\.ctrlKey \|\| event\.metaKey\) && key === 'v'/);
-  assert.match(keys, /key === 'c'\)\s*\{\s*\n?\s*event\.preventDefault\(\); copySelection\(\);/);
-  assert.match(keys, /key === 'v'\)\s*\{\s*\n?\s*event\.preventDefault\(\); pasteCopy\(\);/);
+  assert.match(keys, /runShortcutAction\(action, event\)/);
+  const actions = functionBody(script, 'runShortcutAction');
+  assert.match(actions, /action === 'copy' \? copySelection\(\) : cutSelection\(\)/);
+  assert.match(actions, /return pasteCopy\(\)/);
 
   // One buffer, one check, one way of placing: the keys must reuse what the
   // marquee already uses, or a copy made with the keyboard could behave
@@ -253,7 +254,7 @@ test('typing in a field keeps its own Ctrl+C, and no menu steals the keys', () =
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const keys = functionBody(script, 'handleCastleKey');
   const editing = keys.indexOf('const editing');
-  const ctrlC = keys.indexOf("key === 'c'");
+  const ctrlC = keys.indexOf('const action = toolForShortcut(event)');
   assert.ok(editing > 0 && editing < ctrlC,
     'the check for an input field comes first, or a name could not be copied any more');
 
@@ -348,7 +349,7 @@ test('the fill tool needs an item like the other placement tools', () => {
   assert.match(html, /data-tool="bucket"/, 'der Knopf steht in der Werkzeugleiste');
   assert.match(html, /id="castleBrushMinus"/);
   assert.match(html, /id="castleBrushPlus"/);
-  assert.match(script, /bucket: \['7', 'f'\]/, 'und hat ein Kuerzel wie die anderen');
+  assert.deepEqual(require('../src/js/castle-shortcuts').defaults.bucket, ['7']);
 });
 
 // -------------------------------------------- gesperrte Bauschritte

@@ -72,6 +72,47 @@
       .replace(/\b\w/g, character => character.toUpperCase());
   }
 
+  // English field guidance translated from the supplied lines_base.json.
+  // These are placeholders only, never default dialogue or saved content.
+  const LINE_HINTS = Object.freeze({
+    ai_name: 'Character name.',
+    description: 'Character description.',
+    unknown_1: 'Character name.',
+    anger_1: "The AI's attack has been repelled.",
+    anger_2: 'One of the AI\'s buildings has been destroyed.',
+    plead: 'The AI has been defeated (if enemy)',
+    victory_1: 'The AI has successfully defended itself.',
+    victory_2: 'The AI destroys a building.',
+    victory_3: 'The AI has killed the player.',
+    victory_4: 'The AI defeats another enemy AI.',
+    request: 'The AI requests goods.',
+    thanks: 'The player sends goods to the AI.',
+    ally_death: 'The AI has been defeated (if ally)',
+    congrats: 'The player defeats an enemy while allied with this AI.',
+    boast: 'The allied AI defeats an enemy.',
+    help: 'The AI is under attack and asks for help.',
+    extra: 'The game has been going on for a long time.',
+    kick_player: 'A player is removed from the map.',
+    add_player: 'A player is added to the map.',
+    siege: 'Not used.',
+    no_sent: 'The AI does not send the requested goods.',
+    sent: 'The AI sends the requested goods.',
+    team_winning: 'The team is winning.',
+    team_losing: 'The team is losing.',
+    help_sent: 'The AI sends the requested help.',
+    will_attack: 'The AI will attack the requested enemy.'
+  });
+
+  function lineHint(key) {
+    if (/^title_[1-8]$/.test(key)) return 'Character title (include quotation marks for a quoted title).';
+    if (/^complete_title_[1-8]$/.test(key)) return 'Character name, followed by the title (include quotation marks for a quoted title).';
+    if (/^taunt_[1-4]$/.test(key)) return 'The AI attacks the player.';
+    if (/^nervous_[1-2]$/.test(key)) return 'The player attacks the AI.';
+    if (/^no_attack_[1-2]$/.test(key)) return 'The AI refuses to attack the requested enemy.';
+    if (/^no_help_[1-2]$/.test(key)) return 'The AI refuses a request for help.';
+    return Object.hasOwn(LINE_HINTS, key) ? LINE_HINTS[key] : '';
+  }
+
   function renderLines() {
     els.form.innerHTML = '';
     for (const key of Object.keys(state.lines)) {
@@ -83,6 +124,7 @@
       const input = document.createElement('textarea');
       input.rows = key === 'description' ? 4 : 2;
       input.value = state.lines[key] == null ? '' : String(state.lines[key]);
+      input.placeholder = lineHint(key);
       input.spellcheck = true;
       input.addEventListener('input', () => {
         state.lines[key] = input.value;

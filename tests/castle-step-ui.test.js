@@ -8,12 +8,14 @@ const section = (start, end) => source.slice(source.indexOf(start), source.index
 
 function setup() {
   let created = 0;
+  const scrolled = [];
   const make = () => {
     created++;
     const node = {children: [], dataset: {}, style: {}, attributes: {}, handlers: {},
       append(...nodes) { this.children.push(...nodes); }, appendChild(node) { this.children.push(node); },
       addEventListener(type, fn) { this.handlers[type] = fn; }, setAttribute(k, v) { this.attributes[k] = v; },
-      removeAttribute(k) { delete this.attributes[k]; }, focus() {}, scrollIntoView() {},
+      removeAttribute(k) { delete this.attributes[k]; }, focus() {},
+      scrollIntoView(options) { scrolled.push({index: Number(this.dataset.index), current: this.attributes['aria-current'], block: options.block}); },
       classList: {add(key) { this[key] = true; }, remove(key) { this[key] = false; }, toggle(key, value) { this[key] = value; }}};
     Object.defineProperty(node, 'innerHTML', {set() { this.children = []; }});
     return node;
@@ -36,8 +38,65 @@ function setup() {
   vm.runInContext(section('  function renderBuildList(', '  function unlockedFrameIndexes('), context);
   vm.runInContext(section('  function closeBuildContextMenu(', '  function placeSingle('), context);
   vm.runInContext(section('  function toggleFrameLock(', '  function deleteRefs('), context);
-  return {context, state, els, doc, get, callbacks, selections, get created() { return created; }};
+  return {context, state, els, doc, get, callbacks, selections, scrolled, get created() { return created; }};
 }
+
+function mapSelectionSetup() {
+  const h = setup();
+  Object.assign(h.context, {
+    hit: 'f:78:0', marquee: new Set(),
+    topmostRefAtTile: () => h.context.hit,
+    refExists: ref => /^f:\d+:0$/.test(ref) || ref === 'u:0',
+    parseRef: ref => ref.startsWith('u:') ? {kind: 'unit', mi: 0} : {kind: 'frame', fi: Number(ref.split(':')[1])},
+    refIsLocked: ref => Boolean(h.doc.frames[Number(ref.split(':')[1])]?.locked), refOffset: () => 0,
+    updateToolAvailability() {}, renderPalette() {}, updateSelectedItemInfo() {},
+    refsInMarquee: () => new Set(h.context.marquee), fromOutside: () => true,
+    placementRefs: () => [...h.context.marquee].map(ref => ({ref})), footprintRects: () => [], GRID: 100,
+    geometry: {...geometry, floodPlacementRefs: () => new Set(h.context.marquee)}
+  });
+  vm.runInContext(section('  function activateBuildStepForRefs(', '  function updateBuildSelection('), h.context);
+  vm.runInContext(section('  function beginSelectGesture(', '  function onPointerMove('), h.context);
+  vm.runInContext(section('  function onPointerUp(', '  function onWheel('), h.context);
+  vm.runInContext(section('  function floodSelect(', '  function floodDelete('), h.context);
+  h.context.renderBuildList();
+  return h;
+}
+
+test('map selection reveals the active row after updating it, including locked and additive selections', () => {
+  for (const event of [{}, {shiftKey: true}, {ctrlKey: true}, {metaKey: true}]) {
+    for (const locked of [false, true]) {
+      const h = mapSelectionSetup();
+      h.doc.frames[78].locked = locked;
+      h.context.beginSelectGesture({x: 10, y: 10}, event);
+      assert.equal(h.state.insertionFrameIndex, 78);
+      assert.deepEqual(h.scrolled, [{index: 78, current: 'step', block: 'nearest'}]);
+      assert.equal(h.state.gesture, (locked && !event.shiftKey) || event.ctrlKey || event.metaKey ? null : 'move');
+      assert.equal(h.state.documentRevision, 1, 'revealing a row does not edit the castle');
+    }
+  }
+});
+
+test('empty-map clicks, unit-only clicks and removing the last selected placement do not reveal a stale step', () => {
+  for (const hit of [null, 'u:0', 'f:78:0']) {
+    const h = mapSelectionSetup(); h.context.hit = hit;
+    const event = hit === 'f:78:0' ? {ctrlKey: true} : {};
+    h.state.selected = new Set(hit === 'f:78:0' ? [hit] : []);
+    h.context.beginSelectGesture({x: 10, y: 10}, event);
+    assert.equal(h.scrolled.length, 0);
+  }
+});
+
+test('completed area and flood selections reveal their existing active-step choice', () => {
+  for (const flood of [false, true]) {
+    const h = mapSelectionSetup();
+    h.context.marquee = new Set(['f:20:0', 'f:60:0']);
+    h.state.gesture = 'select-marquee';
+    if (flood) h.context.floodSelect({x: 10, y: 10}, {});
+    else h.context.onPointerUp({button: 0});
+    assert.deepEqual(h.scrolled, [{index: 60, current: 'step', block: 'nearest'}]);
+    assert.equal(h.state.insertionFrameIndex, 60);
+  }
+});
 
 test('scrubbing updates existing build rows without replacing their DOM or handlers', () => {
   const h = setup(); h.context.renderBuildList();

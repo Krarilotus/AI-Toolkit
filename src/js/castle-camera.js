@@ -1,8 +1,8 @@
 (function (root, factory) {
-  const camera = factory();
+  const camera = factory(typeof module === 'object' && module.exports ? require('./castle-shortcuts') : root.castleShortcuts);
   if (typeof module === 'object' && module.exports) module.exports = camera;
   else root.castleCamera = camera;
-})(typeof globalThis !== 'undefined' ? globalThis : this, () => {
+})(typeof globalThis !== 'undefined' ? globalThis : this, shortcuts => {
   'use strict';
 
   const defaults = {
@@ -15,8 +15,7 @@
   const directions = ['left', 'right', 'up', 'down'];
 
   function normalizeKey(value) {
-    const key = String(value || '').trim().toLowerCase();
-    return /^(?:[a-z0-9]|arrow(?:left|right|up|down))$/.test(key) ? key : '';
+    return shortcuts.normalize(value);
   }
 
   function validate(candidate, toolShortcuts = {}) {
@@ -26,12 +25,13 @@
       throw new Error('Camera speed must be between 1 and 200 pixels.');
     }
     result.panSpeed = Number(result.panSpeed);
-    const used = new Set(['c', 'x', ...Object.values(toolShortcuts).flat().filter(Boolean)]);
+    const used = new Set(Object.values(toolShortcuts).flat().filter(Boolean));
     for (const direction of directions) {
       const supplied = String(result[direction] || '').trim();
       const key = normalizeKey(supplied);
-      if (supplied && !key) throw new Error('Camera keys must be letters, numbers or arrow keys.');
-      if (key && used.has(key)) throw new Error(`The key ${key.toUpperCase()} is already assigned or reserved.`);
+      if (supplied && !key) throw new Error('Invalid camera shortcut.');
+      if (key && shortcuts.isReserved(key)) throw new Error(`${key.toUpperCase()} is reserved for application menus.`);
+      if (key && (used.has(key) || used.has(`shift+${key}`))) throw new Error(`The key ${key.toUpperCase()} is already assigned or reserved.`);
       if (key) used.add(key);
       result[direction] = key;
     }
@@ -39,10 +39,14 @@
   }
 
   function keyDelta(event, preferences) {
-    if (event.ctrlKey || event.metaKey || event.altKey) return null;
-    const key = normalizeKey(event.key);
+    let key = shortcuts.fromEvent(event);
     if (!key) return null;
-    const speed = preferences.panSpeed * (event.shiftKey ? 3 : 1);
+    let fast = false;
+    if (event.shiftKey && !directions.some(direction => preferences[direction] === key)) {
+      key = shortcuts.fromEvent({key: event.key, ctrlKey: event.ctrlKey, metaKey: event.metaKey, altKey: event.altKey});
+      fast = true;
+    }
+    const speed = preferences.panSpeed * (fast ? 3 : 1);
     // Moving the camera right moves the image left, in screen coordinates.
     if (key === preferences.left) return { x: speed, y: 0 };
     if (key === preferences.right) return { x: -speed, y: 0 };

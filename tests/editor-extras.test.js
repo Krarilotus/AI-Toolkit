@@ -103,20 +103,17 @@ test('Nur ein gemeinsames Verschieben laesst die Gruppe neue Felder lernen', () 
 
 test('Das Tastenkuerzel-Fenster kennt jetzt alle Werkzeuge des Editors', () => {
   // Der Editor prueft beim Speichern ALLE Werkzeuge aus DEFAULT_TOOL_SHORTCUTS.
-  const block = editorSource.slice(
-    editorSource.indexOf('const DEFAULT_TOOL_SHORTCUTS'),
-    editorSource.indexOf('const deepClone'));
-  const werkzeuge = [...block.matchAll(/^\s{4}(\w+):\s*\[/gm)].map(m => m[1]);
+  const werkzeuge = Object.keys(require('../src/js/castle-shortcuts').defaults);
   assert.ok(werkzeuge.includes('bucket'), 'bucket muss ein Werkzeug mit Kuerzel sein');
   assert.ok(werkzeuge.includes('replace'), 'replace muss ein Werkzeug mit Kuerzel sein');
-  assert.match(editorSource, /if \(!keys\[0\]\) throw new Error/);
+  assert.match(editorSource, /shortcutConfig.validate\(candidate\)/);
 
   // Das Fenster ist vollstaendig in index.html. Spaet eingefuegte Felder
   // wuerden den beim Start gebundenen Tasten-Hoerer verpassen.
   const dialog = html.slice(html.indexOf('id="castleShortcutDialog"'), html.indexOf('id="castleIsoMapDialog"'));
-  const imFenster = [...dialog.matchAll(/data-tool="(\w+)" data-slot="0"/g)].map(m => m[1]);
-  const fehlend = werkzeuge.filter(tool => !imFenster.includes(tool));
-  assert.deepEqual(fehlend, []);
+  assert.match(dialog, /id="castleShortcutGrid"/);
+  assert.match(editorSource, /for \(const \[action, label\] of shortcutConfig.actions\)/);
+  assert.ok(editorSource.indexOf('shortcutGrid.append(caption, input)') < editorSource.indexOf("input.addEventListener('keydown', event =>", editorSource.indexOf('const shortcutGrid')));
   assert.ok(!extrasSource.includes('addFillShortcutRow'), 'das Zusatzmodul darf keine spaeten Kuerzelfelder mehr nachtragen');
 });
 

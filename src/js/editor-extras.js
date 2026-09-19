@@ -450,7 +450,8 @@
     if (!toolbar || doc.getElementById('castleGroupsBtn')) return;
     const group = doc.createElement('div');
     group.className = 'toolbarGroup castleExtrasGroup';
-    group.setAttribute('aria-label', 'Groups, clipboard and shortcuts');
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', 'Groups and clipboard');
 
     group.appendChild(toolbarButton('castleGroupsBtn', 'Groups',
       'Give a selection a name, find it again later and move it as one',
@@ -469,10 +470,6 @@
       'Empty the clipboard', clearClipboard);
     els.clipboardClear.hidden = true;
     group.appendChild(els.clipboardClear);
-
-    group.appendChild(toolbarButton('castleShortcutsBtn', 'Shortcuts',
-      'Choose your own keys for the tools',
-      () => ed.showShortcutDialog()));
 
     toolbar.appendChild(group);
     updateClipboardButton();
@@ -598,34 +595,10 @@
       loadClipboard();
       updateClipboardButton();
     });
-    // In der Anfassphase - damit der Speicher zurueckliegt, BEVOR der Editor
-    // sein Ctrl+V abarbeitet. Sein eigener Hoerer haengt am Fenster und kommt
-    // erst danach dran.
-    global.addEventListener('keydown', event => {
-      if (els.dialog?.open) return;
-      // Nur in der Burg. Im Charakter-Editor gehoert Strg+C dem Textfeld.
-      if (global.appWorkspace && global.appWorkspace.getActive() !== 'castle') return;
-      if (!event.ctrlKey && !event.metaKey) return;
-      const key = String(event.key || '').toLowerCase();
-      if (key === 'v') armClipboard();
-      else if (key === 'c' || key === 'x') global.setTimeout(rememberClipboard, 0);
-    }, true);
-
-    // Die 2.5D-Ansicht ist ein eigenes Fenster; ihre Tasten erreichen den
-    // Hoerer oben nie, sondern kommen ueber handleKey herein.
-    const original = ed.handleKey;
-    if (typeof original === 'function' && !original.castleExtrasWrapped) {
-      const wrapped = function (event) {
-        if (event?.ctrlKey || event?.metaKey) {
-          const key = String(event.key || '').toLowerCase();
-          if (key === 'v') armClipboard();
-          else if (key === 'c' || key === 'x') global.setTimeout(rememberClipboard, 0);
-        }
-        return original(event);
-      };
-      wrapped.castleExtrasWrapped = true;
-      ed.handleKey = wrapped;
-    }
+    // Copy/cut dispatch this after the action, independent of its assigned keys
+    // and whether the gesture originated in the docked or detached view.
+    global.addEventListener('castle-clipboard-changed', rememberClipboard);
+    global.addEventListener('castle-prepare-paste', armClipboard);
 
     // Mit der Maus kopiert wird beim Loslassen. Dieser Hoerer haengt spaeter
     // am selben Element als der des Editors und kommt deshalb danach dran.

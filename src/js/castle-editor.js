@@ -10,26 +10,17 @@
   const FUTURE_OPACITY = 0.50;
   const FUTURE_FILTER = 'grayscale(1) brightness(.42)';
   const FUTURE_TINT = 'rgba(144, 176, 221, .13)';
-  const SHORTCUT_STORAGE_KEY = 'aiv.castleToolShortcuts.v1';
+  const SHORTCUT_STORAGE_KEY = 'aiv.castleToolShortcuts.v2';
+  const shortcutConfig = window.castleShortcuts;
   const CAMERA_STORAGE_KEY = 'aiv.castleCamera.v1';
+  const ITEM_TOOL_STORAGE_KEY = 'aiv.castleItemTools.v1';
   const camera = window.castleCamera;
   const OVERVIEW_STORAGE_KEY = 'aiv.castleOverviewLayout.v1';
   const DEFAULT_OVERVIEW_LAYOUT = {
     population: { visible: true, side: 'left' },
     costs: { visible: true, side: 'left' }
   };
-  const DEFAULT_TOOL_SHORTCUTS = {
-    single: ['1', 's'],
-    brush: ['2', 'b'],
-    select: ['3', 'v'],
-    delete: ['4', 'd'],
-    copy: ['5'],            // 'c' dreht jetzt die Ansicht, Kopieren bleibt auf 5 und Strg+C
-    line: ['6', 'l'],
-    bucket: ['7', 'f'],
-    replace: ['8', 'r'],
-    saveCastle: ['f1'],
-    openCastle: ['f2']
-  };
+  const DEFAULT_TOOL_SHORTCUTS = shortcutConfig.defaults;
   const deepClone = value => JSON.parse(JSON.stringify(value));
   const retainSourceBytes = value => {
     if (!value) return null;
@@ -111,7 +102,7 @@
     sourceBytes: null,
     dirty: false,
     tool: 'single',
-    lastPlacementTool: 'single',
+    itemTools: Object.create(null),
     currentItemType: null,
     activeCategory: null,
     selected: new Set(),
@@ -590,7 +581,6 @@
     els.fileLabel.textContent = `${name}${state.dirty ? ' *' : ''}`;
     els.fileLabel.title = state.filePath || '';
     document.getElementById('castleSaveBtn').disabled = false;
-    document.getElementById('castleSaveAsBtn').disabled = false;
   }
 
   function pushUndo() {
@@ -1127,11 +1117,12 @@
     }
     state.gesture = null;
     state.currentItemType = null;
-    activateBuildStepForRefs(state.selected);
+    const activatedStep = activateBuildStepForRefs(state.selected);
     updateToolAvailability();
     renderPalette();
     updateSelectedItemInfo();
     renderBuildList();
+    if (activatedStep) scrollToActiveBuildStep();
     scheduleDraw();
     setStatus(`Selected ${state.selected.size} placements ? Shift adds; Ctrl-click toggles a connected group. Switch to Select / Move to drag.`);
   }
@@ -1815,16 +1806,27 @@
     return Array.isArray(walls) && walls.includes(String(type));
   }
 
-  // remember: false for a tool the user did not pick himself. Without it the
-  // line tool that a wall brings along would become the remembered choice and
-  // then greet him again on the next building.
+  function loadItemTools() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(ITEM_TOOL_STORAGE_KEY) || '{}');
+      if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return;
+      for (const [type, tool] of Object.entries(saved)) {
+        if (/^[1-9]\d*$/.test(type) && isPlacementTool(tool)) state.itemTools[type] = tool;
+      }
+    } catch { /* Storage is optional; item defaults still work. */ }
+  }
+
+  // Automatic item defaults must not overwrite an explicit per-item choice.
   function setTool(tool, remember = true) {
     const lineOnly = state.currentItemType != null && isLineSequence(state.currentItemType);
     if (lineOnly && isPlacementTool(tool)) tool = 'line';
     state.tool = tool;
     document.getElementById('castleDeleteModeLabel').hidden = tool !== 'delete';
     document.getElementById('castleSelectModeLabel').hidden = tool !== 'select';
-    if (remember && isPlacementTool(tool) && !lineOnly) state.lastPlacementTool = tool;
+    if (remember && state.currentItemType != null && isPlacementTool(tool)) {
+      state.itemTools[state.currentItemType] = tool;
+      try { localStorage.setItem(ITEM_TOOL_STORAGE_KEY, JSON.stringify(state.itemTools)); } catch { /* Keep session preference. */ }
+    }
     if (tool !== 'copy') state.copyBuffer = null;
     if (tool === 'copy' || tool === 'replace' || tool === 'merge') state.currentItemType = null;
     // Copy remains an internal clipboard mode, not a separate toolbar tool.
@@ -1840,43 +1842,33 @@
   }
 
   function normalizeShortcutKey(value) {
-    const key = String(value || '').trim().toLowerCase();
-    return /^(?:[a-z0-9]|f(?:[1-9]|1[0-2]))$/.test(key) ? key : '';
+    return shortcutConfig.normalize(value);
   }
 
   function validateToolShortcuts(candidate) {
-    const normalized = {};
-    const used = new Set();
-    for (const tool of Object.keys(DEFAULT_TOOL_SHORTCUTS)) {
-      const supplied = Array.isArray(candidate?.[tool]) ? candidate[tool]
-        : ['saveCastle', 'openCastle'].includes(tool) ? DEFAULT_TOOL_SHORTCUTS[tool] : [];
-      const keys = [normalizeShortcutKey(supplied[0]), normalizeShortcutKey(supplied[1])];
-      if (!keys[0]) throw new Error(`${toolLabel(tool)} needs a primary shortcut.`);
-      for (const key of keys) {
-        if (!key) continue;
-        if (key === 'c' || key === 'x') throw new Error(`The key ${key.toUpperCase()} is reserved for rotation.`);
-        if (used.has(key)) throw new Error(`The key ${key.toUpperCase()} is assigned more than once.`);
-        used.add(key);
-      }
-      normalized[tool] = keys;
-    }
-    return normalized;
+    return shortcutConfig.validate(candidate);
   }
 
   function updateToolShortcutHints() {
+    window.electronAPI?.setCastleShortcuts?.(state.toolShortcuts);
     document.querySelectorAll('.castleTool').forEach(button => {
       const keys = state.toolShortcuts[button.dataset.tool] || [];
       const labels = keys.filter(Boolean).map(key => key.toUpperCase());
       const badge = button.querySelector('kbd');
       if (badge) badge.textContent = labels[0] || '';
-      button.title = labels.length ? `Shortcuts: ${labels.join(' or ')}` : '';
+      button.title = labels.length ? `Shortcut: ${labels[0]}` : '';
     });
+    for (const [action, label, , id] of shortcutConfig.actions) {
+      const button = id && document.getElementById(id);
+      if (button) button.title = label + (state.toolShortcuts[action]?.[0] ? ` (${state.toolShortcuts[action][0].toUpperCase()})` : '');
+    }
   }
 
   function loadToolShortcuts() {
     try {
       const saved = JSON.parse(localStorage.getItem(SHORTCUT_STORAGE_KEY) || 'null');
-      if (saved) state.toolShortcuts = validateToolShortcuts(saved);
+      state.toolShortcuts = saved ? validateToolShortcuts(saved)
+        : shortcutConfig.migrate(JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v1') || 'null'));
     } catch (error) {
       console.warn('Ignoring invalid saved Castle shortcuts:', error);
       state.toolShortcuts = deepClone(DEFAULT_TOOL_SHORTCUTS);
@@ -1965,12 +1957,13 @@
   function showShortcutDialog() {
     populateShortcutDialog();
     els.shortcutDialog.showModal();
+    window.electronAPI?.setCastleShortcutCapture?.(true);
     els.shortcutForm.querySelector('.castleShortcutKey')?.focus();
   }
 
   function shortcutDraft() {
     const draft = {};
-    for (const tool of Object.keys(DEFAULT_TOOL_SHORTCUTS)) draft[tool] = ['', ''];
+    for (const tool of Object.keys(DEFAULT_TOOL_SHORTCUTS)) draft[tool] = [''];
     for (const input of els.shortcutForm.querySelectorAll('.castleShortcutKey')) {
       draft[input.dataset.tool][Number(input.dataset.slot)] = normalizeShortcutKey(input.value);
     }
@@ -2000,9 +1993,7 @@
   }
 
   function toolForShortcut(key) {
-    const normalized = normalizeShortcutKey(key);
-    if (!normalized) return null;
-    return Object.entries(state.toolShortcuts).find(([_tool, keys]) => keys.includes(normalized))?.[0] || null;
+    return shortcutConfig.actionFor(key, state.toolShortcuts);
   }
 
   let fileShortcutPending = false;
@@ -2012,6 +2003,8 @@
     try {
       if (action === 'saveCastle') await saveFile();
       else if (action === 'openCastle') await openFile();
+      else if (action === 'newCastle') await newFile();
+      else if (action === 'saveAs') await saveAs();
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -2022,11 +2015,8 @@
   function selectItem(type) {
     state.selected.clear();
     state.currentItemType = Number(type);
-    // Walls open with the line tool - that is how they are built. The choice is
-    // not remembered, so the next ordinary building comes back to what the user
-    // had picked before.
-    if (isWallType(type)) setTool('line', false);
-    else setTool(state.lastPlacementTool);
+    const preferred = state.itemTools[state.currentItemType];
+    setTool(preferred || (isWallType(type) ? 'line' : 'single'), false);
     renderPalette();
     renderBuildList();
     updateSelectedItemInfo();
@@ -2295,6 +2285,12 @@
     });
   }
 
+  function scrollToActiveBuildStep() {
+    const frameIndex = state.insertionFrameIndex;
+    if (!Number.isInteger(frameIndex) || frameIndex < 0 || frameIndex >= frames().length) return;
+    els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`)?.scrollIntoView({ block: 'nearest' });
+  }
+
   function selectBuildStepFromSlider() {
     if (els.buildSlider.disabled || frames().length === 0) return;
     state.pendingScrubIndex = Number(els.buildSlider.value) - 1;
@@ -2307,7 +2303,7 @@
       const frameIndex = Math.max(0, Math.min(frames().length - 1, state.pendingScrubIndex));
       selectBuildFrame(frameIndex);
       renderBuildList();
-      els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`)?.scrollIntoView({ block: 'nearest' });
+      scrollToActiveBuildStep();
       scheduleDraw();
       setStatus(`Selected build step ${frameIndex + 1} — new buildings will be inserted after it`);
     });
@@ -3266,13 +3262,14 @@
       if (event.ctrlKey || event.metaKey) {
         if (state.selected.has(hit)) state.selected.delete(hit);
         else state.selected.add(hit);
-        activateBuildStepForRefs(state.selected);
+        const activatedStep = activateBuildStepForRefs(state.selected);
         state.currentItemType = null;
         state.gesture = null;
         updateToolAvailability();
         renderPalette();
         updateSelectedItemInfo();
         renderBuildList();
+        if (activatedStep) scrollToActiveBuildStep();
         scheduleDraw();
         setStatus(`Selected ${state.selected.size} placement${state.selected.size === 1 ? '' : 's'}`);
         return;
@@ -3281,7 +3278,7 @@
         if (!event.shiftKey) state.selected.clear();
         state.selected.add(hit);
       }
-      activateBuildStepForRefs(state.selected);
+      const activatedStep = activateBuildStepForRefs(state.selected);
       state.currentItemType = null;
       updateToolAvailability();
       // Gesperrte Bauwerke bleiben liegen, auch wenn sie mit ausgewaehlt
@@ -3294,6 +3291,7 @@
         setStatus('Locked - unlock the build step first.');
         state.gesture = null;
         renderBuildList();
+        if (activatedStep) scrollToActiveBuildStep();
         scheduleDraw();
         return;
       }
@@ -3305,6 +3303,7 @@
       renderPalette();
       updateSelectedItemInfo();
       renderBuildList();
+      if (activatedStep) scrollToActiveBuildStep();
       scheduleDraw();
       return;
     }
@@ -3409,8 +3408,9 @@
       if (event.ctrlKey || event.metaKey) refs.forEach(ref => state.selected.has(ref) ? state.selected.delete(ref) : state.selected.add(ref));
       else if (event.shiftKey) refs.forEach(ref => state.selected.add(ref));
       else state.selected = refs;
-      activateBuildStepForRefs(state.selected);
+      const activatedStep = activateBuildStepForRefs(state.selected);
       renderBuildList();
+      if (activatedStep) scrollToActiveBuildStep();
       scheduleDraw();
       setStatus(`Selected ${state.selected.size} placement${state.selected.size === 1 ? '' : 's'}`);
     } else if (state.gesture === 'copy-marquee') {
@@ -3767,8 +3767,19 @@
   document.getElementById('castleNewBtn').addEventListener('click', newFile);
   document.getElementById('castleOpenBtn').addEventListener('click', openFile);
   document.getElementById('castleSaveBtn').addEventListener('click', saveFile);
-  document.getElementById('castleSaveAsBtn').addEventListener('click', saveAs);
   for (const id of ['castleShowFire','castleShowRoutes']) document.getElementById(id)?.addEventListener('change', scheduleDraw);
+  const overlayMenu = document.getElementById('castleOverlayMenu');
+  document.addEventListener('pointerdown', event => {
+    if (!overlayMenu.contains(event.target)) overlayMenu.open = false;
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && overlayMenu.open) {
+      event.preventDefault();
+      overlayMenu.open = false;
+      overlayMenu.querySelector('summary').focus();
+    }
+  });
+  window.addEventListener('blur', () => { overlayMenu.open = false; });
   els.showNames.addEventListener('change', scheduleDraw);
   els.showUnitNumbers.addEventListener('change', scheduleDraw);
   els.showCompatibility.addEventListener('change', scheduleDraw);
@@ -3782,18 +3793,31 @@
     els.blueprintOpacityValue.textContent = `${els.blueprintOpacity.value}%`;
     scheduleDraw();
   });
+  const shortcutGrid = document.getElementById('castleShortcutGrid');
+  for (const text of ['Action', 'Shortcut']) {
+    const heading = document.createElement('strong'); heading.textContent = text; shortcutGrid.append(heading);
+  }
+  for (const [action, label] of shortcutConfig.actions) {
+    const caption = document.createElement('label'); caption.textContent = label; caption.htmlFor = `shortcut-${action}`;
+    const input = document.createElement('input'); input.id = caption.htmlFor;
+    input.className = 'castleShortcutKey'; input.dataset.tool = action; input.dataset.slot = '0';
+    input.setAttribute('readonly', ''); input.placeholder = 'Unassigned'; shortcutGrid.append(caption, input);
+  }
+  els.shortcutDialog.addEventListener('close', () => window.electronAPI?.setCastleShortcutCapture?.(false));
   for (const input of els.shortcutForm.querySelectorAll('.castleShortcutKey')) {
     input.addEventListener('keydown', event => {
-      if (event.key === 'Tab' || event.key === 'Escape') return;
+      if (event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey) return;
       event.preventDefault();
-      if (event.key === 'Backspace' || event.key === 'Delete') {
+      event.stopPropagation();
+      if (event.key === 'Backspace' && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
         input.value = '';
         els.shortcutError.textContent = '';
         return;
       }
-      const key = normalizeShortcutKey(event.key);
-      if (!key || event.ctrlKey || event.metaKey || event.altKey) {
-        els.shortcutError.textContent = 'Use a letter, number or F1–F12 without modifier keys.';
+      if (['Control', 'Alt', 'Shift', 'Meta'].includes(event.key)) return;
+      const key = shortcutConfig.fromEvent(event);
+      if (!key) {
+        els.shortcutError.textContent = 'Use a key, optionally combined with Ctrl, Alt or Shift.';
         return;
       }
       input.value = key.toUpperCase();
@@ -3829,9 +3853,10 @@
       if (event.key === 'Tab' || event.key === 'Escape') return;
       event.preventDefault();
       if (event.key === 'Backspace' || event.key === 'Delete') { input.value = ''; return; }
-      const key = camera.normalizeKey(event.key);
-      if (!key || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
-        els.shortcutError.textContent = 'Use a letter, number or arrow key without modifiers.';
+      if (['Control', 'Alt', 'Shift', 'Meta'].includes(event.key)) return;
+      const key = shortcutConfig.fromEvent(event);
+      if (!key) {
+        els.shortcutError.textContent = 'Use a key, optionally combined with Ctrl, Alt or Shift.';
         return;
       }
       input.value = key.toUpperCase();
@@ -3869,12 +3894,53 @@
   // Aus dem window-Hoerer herausgeloest, damit ein eigenes Fenster (die
   // 2.5D-Ansicht) dieselben Tasten schicken kann: dessen keydown erreicht
   // den Hoerer hier nie, weil es ein anderes window ist.
+  function runShortcutAction(action, event) {
+    if (['saveCastle', 'openCastle', 'newCastle', 'saveAs'].includes(action)) {
+      if (!event.repeat) void runFileShortcut(action);
+      return;
+    }
+    if (['single', 'line', 'brush', 'bucket', 'select', 'replace', 'merge', 'delete'].includes(action)) {
+      setTool(action); return;
+    }
+    if (action === 'brushSmaller' || action === 'brushLarger') {
+      setBrushSize(state.brushSize + (action === 'brushLarger' ? 1 : -1)); return;
+    }
+    if (event.repeat) return;
+    if (action === 'undo') return undo();
+    if (action === 'redo') return redo();
+    if (action === 'copy' || action === 'cut') {
+      action === 'copy' ? copySelection() : cutSelection();
+      window.dispatchEvent(new Event('castle-clipboard-changed')); return;
+    }
+    if (action === 'paste') {
+      window.dispatchEvent(new Event('castle-prepare-paste'));
+      return pasteCopy();
+    }
+    if (action === 'deleteSelected') return deleteSelected();
+    if (action === 'deselect') return clearSelectionAndItem();
+    if (action === 'overlays') { overlayMenu.open = !overlayMenu.open; return; }
+    if (action === 'rotateLeft' || action === 'rotateRight') {
+      const result = window.isoView?.turnView?.(action === 'rotateLeft' ? -1 : 1);
+      if (result === null) setStatus('Map rotation needs the game-generated camera layers. Wait for loading to finish, or reload the map.');
+      return;
+    }
+    const id = shortcutConfig.actions.find(([key]) => key === action)?.[3];
+    const control = id && (document.getElementById(id) || window.isoView?.findControl?.(id));
+    if (control && !control.hidden && !control.disabled) control.click();
+  }
+
   function handleCastleKey(event) {
     if (window.appWorkspace?.getActive() !== 'castle') return;
     if (event.defaultPrevented || document.querySelector('dialog[open]')) return;
     const target = event.target || document.activeElement;
     const editing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName) || target?.isContentEditable;
     if (editing) return;
+    const action = toolForShortcut(event);
+    if (action) {
+      event.preventDefault();
+      runShortcutAction(action, event);
+      return;
+    }
     const delta = camera.keyDelta(event, state.camera);
     if (delta) {
       event.preventDefault();
@@ -3886,48 +3952,12 @@
       }
       return;
     }
-    const key = event.key.toLowerCase();
-    const shortcutTool = !event.ctrlKey && !event.metaKey && !event.altKey ? toolForShortcut(key) : null;
-    if ((event.ctrlKey || event.metaKey) && key === 'z') {
-      event.preventDefault();
-      event.shiftKey ? redo() : undo();
-    } else if ((event.ctrlKey || event.metaKey) && key === 'y') {
-      event.preventDefault(); redo();
-    } else if (!event.ctrlKey && !event.metaKey && (key === '[' || key === ']')) {
-      event.preventDefault();
-      setBrushSize(state.brushSize + (key === ']' ? 1 : -1));
-    } else if ((event.ctrlKey || event.metaKey) && key === 'c') {
-      event.preventDefault(); copySelection();
-    } else if ((event.ctrlKey || event.metaKey) && key === 'x') {
-      event.preventDefault();
-      if (!event.repeat) cutSelection();
-    } else if ((event.ctrlKey || event.metaKey) && key === 'v') {
-      event.preventDefault(); pasteCopy();
-    } else if (!event.ctrlKey && !event.metaKey && !event.altKey
-               && (key === 'c' || key === 'x') && window.isoView && window.isoView.turnView) {
-      // C dreht die Ansicht nach links, X nach rechts - so bestellt. Weil 'c'
-      // vorher das Zweitkuerzel fuers Kopieren war, ist es dort ausgetragen;
-      // Kopieren bleibt auf '5' und Strg+C.
-      event.preventDefault();
-      const wert = window.isoView.turnView(key === 'c' ? -1 : 1);
-      if (wert === null) {
-        setStatus('Map rotation needs the game-generated camera layers. Wait for loading to finish, or reload the map after checking the selected UCP installation.');
-        return;
-      }
-      setStatus('View turned' + (wert ? ' by ' + (wert / 2) + ' quarter turn' + (wert === 2 ? '' : 's') : ' back to the file'));
-    } else if (shortcutTool) {
-      event.preventDefault();
-      if (shortcutTool === 'saveCastle' || shortcutTool === 'openCastle') {
-        if (!event.repeat) void runFileShortcut(shortcutTool);
-      } else setTool(shortcutTool);
-    } else if (event.key === 'Delete') {
-      event.preventDefault(); deleteSelected();
-    } else if (event.key === 'Escape') {
-      event.preventDefault(); clearSelectionAndItem();
-    }
   }
 
   window.addEventListener('keydown', handleCastleKey);
+  window.addEventListener('storage', event => {
+    if (event.key === SHORTCUT_STORAGE_KEY || event.key === CAMERA_STORAGE_KEY) loadToolShortcuts();
+  });
 
   window.electronAPI.onTriggerUndo(() => {
     if (window.appWorkspace?.getActive() === 'castle') undo();
@@ -4052,6 +4082,7 @@
     onWorkspaceShown() { resizeCanvas(); clampPan(); updatePopulationPanel(false); scheduleDraw(); }
   };
 
+  loadItemTools();
   loadOverviewLayout();
   ladeKostenanzeige();
   try { document.head.appendChild(Object.assign(document.createElement('script'), { src: 'js/editor-extras.js' })); } catch (error) { console.warn('Castle extras not loaded:', error); } // Gruppen, Kopierspeicher, Tastenkuerzel

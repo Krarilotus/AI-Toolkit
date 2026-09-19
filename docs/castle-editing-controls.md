@@ -8,6 +8,18 @@ conflicts with each other and camera controls. Existing customized bindings
 are preserved when the new defaults are added. Ctrl+S and Ctrl+O remain
 available through the File menu.
 
+The Castle toolbar separates file actions, views, AI castle selection, placement
+tools, editing tools, overlays, and Groups/Clipboard into bordered groups.
+**New** starts a castle; **Save As** remains in the File menu. Shortcut settings
+remain in the Edit menu rather than taking up a toolbar button.
+The **Overlays** menu contains Item names, Unit Order, Guide lines, Path map and
+Firespread. Click outside the menu or press Escape to close it.
+
+Each item remembers its last chosen placement tool (Single, Line, Brush or Fill),
+including after restarting the editor. Items without a saved choice start with
+Single, or Line for walls. Stair sequences always use Line. Selecting an editing
+tool such as Delete does not overwrite an item's placement preference.
+
 ## Two castles side by side
 
 With the Castle workspace active, use **File > Load In New Window**
@@ -49,7 +61,7 @@ Right-click clears the selection and held item; only middle-drag pans.
 shortcuts. Save persists settings locally; Cancel discards edits.
 
 The **Delete** tool now offers **Area** (the existing rectangle deletion) and
-**Flood fill (same type)**. Flood delete removes the clicked placement and
+**Flood fill**. Flood delete removes the clicked placement and
 placements of that exact type connected through their footprints along eight
 directions, including corner-touching tiles, matching the classic editor. The
 fill bucket uses the same connectivity. Empty gaps do not connect regions.
@@ -68,6 +80,11 @@ The 2.5D scene stops at the selected build step, including ground plates and
 wall/stair/bridge connections. Use the step slider or build list to move the
 cutoff; returning to the last step shows the entire castle. The flat plan
 retains its subdued future-step preview.
+
+Selecting placements on either castle canvas also scrolls the active build-order
+row into view, moving the list only as far as needed. This applies to clicks,
+area selections and flood selections, including locked steps; it does not change
+the selection rules or the castle itself.
 
 Use the **Merge** toolbar tool to draw an area in either view, then check the
 item types to combine in the dialog. Only types configured for multiple

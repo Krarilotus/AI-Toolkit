@@ -1564,6 +1564,7 @@
   }
 
   window.isoView = { init, openWindow, closeWindow, mountDock, unmount, refresh, paint, fit, isMounted, panFromKey,
+                     findControl: id => state.controls?.querySelector(`#${id}`),
                      setGround, hasOwnGround, setGroundFit, groundIsStretched,
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo,
                      viewRotation, turnView, currentRotation,

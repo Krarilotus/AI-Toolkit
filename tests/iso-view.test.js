@@ -495,13 +495,13 @@ test('dragging a wall shows the whole run at half opacity, not just one tile', (
     'und die Ansicht schlaegt je Feld nach');
 });
 
-test('picking a wall opens the line tool, without overwriting the remembered one', () => {
+test('items restore their own placement tool, with Line as the default for walls', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const waehlen = script.slice(script.indexOf('function selectItem('), script.indexOf('function updateSelectedItemInfo'));
-  assert.match(waehlen, /if \(isWallType\(type\)\) setTool\('line', false\)/,
+  assert.match(waehlen, /isWallType\(type\) \? 'line' : 'single'/,
     'Mauern werden gezogen, nicht getupft');
-  assert.match(waehlen, /else setTool\(state\.lastPlacementTool\)/,
-    'alles andere kommt zurueck zu dem, was der Nutzer gewaehlt hatte');
+  assert.match(waehlen, /state\.itemTools\[state\.currentItemType\]/,
+    'each item restores its own remembered choice');
   // Welche Bauten Mauern sind, steht in der Konfiguration - nicht hier.
   const wall = script.slice(script.indexOf('function isWallType('), script.indexOf("function setTool(tool"));
   assert.match(wall, /state\.categories && state\.categories\.Walls/);
@@ -511,7 +511,7 @@ test('picking a wall opens the line tool, without overwriting the remembered one
   // Das Merken haengt am Schalter, nicht am Zufall.
   const setzen = script.slice(script.indexOf('function setTool(tool'), script.indexOf('function selectItem('));
   assert.match(setzen, /function setTool\(tool, remember = true\)/);
-  assert.match(setzen, /if \(remember && isPlacementTool\(tool\) && !lineOnly\)/);
+  assert.match(setzen, /if \(remember && state\.currentItemType != null && isPlacementTool\(tool\)\)/);
 });
 
 test('the ground is tiled at the same scale as the map, not stretched', () => {

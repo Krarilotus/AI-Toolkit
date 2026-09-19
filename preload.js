@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openUcpPath: (request) => ipcRenderer.invoke('open-ucp-path', request),
   setActiveWorkspace: (workspace) => ipcRenderer.send('set-active-workspace', workspace),
   setCastleOverviewPreferences: (preferences) => ipcRenderer.send('set-castle-overview-preferences', preferences),
+  setCastleShortcuts: (bindings) => ipcRenderer.send('set-castle-shortcuts', bindings),
+  setCastleShortcutCapture: (active) => ipcRenderer.send('set-castle-shortcut-capture', active),
 
   onLoadFile: (callback) => {
     ipcRenderer.removeAllListeners('load-file');
