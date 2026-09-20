@@ -58,12 +58,8 @@ test('stock map preview and player start positions match the saved map', () => {
   // selbst: das Gebaeudefeld der Karte merkt sich bei +238/+240 genau diese
   // Ecke, bei allen 486 Bergfrieden der 96 Karten mit Startplatz.
   for (const keep of karte.keeps) {
-    // Nicht Dorffeld (43,43), sondern der Anker: nach einer Drehung sitzt der
-    // Bergfried 7 Felder weiter, und das Dorf wird um genau diesen Betrag
-    // verschoben (keepAnchor). Ungedreht ist der Anker wieder (43,43).
-    assert.deepEqual(geometry.mapTileForGrid(geometry.keepAnchor(keep).gx,
-                                             geometry.keepAnchor(keep).gy, keep),
-                     { mx: keep.x, my: keep.y });
+    // The game's fixed origin maps (43,43) to the original map start.
+    assert.deepEqual(geometry.mapTileForGrid(43, 43, keep), { mx: keep.x, my: keep.y });
   }
   // Und nichts ausserhalb der Liste wird gelesen.
   assert.throws(() => readGameMap('C:\\Windows\\System32\\drivers\\etc\\hosts', TEST_GAME_ROOT),
@@ -147,12 +143,9 @@ test('village coordinates match game rotation at every map start', () => {
       const spielKeep = ersterKeep.get(keep.orientation);
       assert.deepEqual({ gx: keepEcke.gx, gy: keepEcke.gy }, { gx: spielKeep.x, gy: spielKeep.y },
         `${entry.name}: der Bergfried liegt nicht dort, wo placeBuilding ihn hinstellt`);
-      // Und er sitzt auf dem 7x7-Block der Karte - bei JEDER Drehung, nicht
-      // nur ungedreht. Vorher stand hier ein "if (orientation === 0)": die
-      // gedrehte Burg landete 7 Felder neben ihrem Startplatz, und im Bild
-      // sah man den Bergfried der Karte neben dem eigenen stehen.
-      assert.deepEqual(unserKeep, { mx: keep.x, my: keep.y },
-        `${entry.name}: der Bergfried gehoert auf den Block der Karte, Drehung ${keep.orientation}`);
+      // applyAIV adds the unchanged mapKeep - 43 offsets after rotating.
+      assert.deepEqual(unserKeep, { mx: keep.x - 43 + spielKeep.x, my: keep.y - 43 + spielKeep.y },
+        `${entry.name}: rotated keep must retain the game's displacement`);
     }
   }
   assert.ok(plaetze > 400, 'es wurden genug Startplaetze geprueft');
@@ -193,11 +186,8 @@ test('default and displaced AIV keeps match game placement on every map', async 
     return { name, bergfried, spiel };
   });
 
-  // Custom AIVs can move their keep. The default 7x7 keep defines the map
-  // origin; compare every custom keep against an independently rotated grid.
-  const canonical = new Array(10000).fill(0);
-  for (let y = 43; y < 50; y++) for (let x = 43; x < 50; x++) canonical[y * 100 + x] = 38;
-  const anchors = new Map([0, 2, 4, 6].map(turn => [turn, spielFeld(canonical, turn)]));
+  // Custom keep positions are rotated, then translated by the same fixed
+  // mapKeep - 43 offset used by applyAIV in the original executable.
   let plaetze = 0;
   let vergleiche = 0;
   for (const eintrag of maps) {
@@ -213,8 +203,7 @@ test('default and displaced AIV keeps match game placement on every map', async 
         vergleiche += 1;
         assert.deepEqual({ gx: gedreht.gx, gy: gedreht.gy }, { gx: feld.x, gy: feld.y },
           `${eintrag.name} / ${burg.name}: Bergfried nicht dort, wo placeBuilding ihn hinsetzt`);
-        const anchor = anchors.get(dreh);
-        assert.deepEqual(unser, { mx: keep.x + feld.x - anchor.x, my: keep.y + feld.y - anchor.y },
+        assert.deepEqual(unser, { mx: keep.x + feld.x - 43, my: keep.y + feld.y - 43 },
           eintrag.name + ' / ' + burg.name + ': displaced keep must retain its rotated map offset');
       }
     }
@@ -225,36 +214,17 @@ test('default and displaced AIV keeps match game placement on every map', async 
 });
 
 test('terrain and castle coordinates round-trip at every start and camera rotation', () => {
-  // Zwei Drehungen treffen hier zusammen, und sie werden verschieden
-  // gerechnet: die Bauwerke dreht turnedTiles in EINEM Schritt (Karte plus
-  // Hand, mit der Feldzahl des Bauwerks), der Grund wird in ZWEI gerechnet
-  // (Handdrehung heraus, dann auf den Startplatz schieben, mit der Feldzahl
-  // des Bergfrieds). Dass beides zusammenpasst, folgt nicht aus der Formel -
-  // es muss gemessen werden.
-  //
-  // GEMESSEN am 17.09.2026, 861 Startplaetze der 189 Karten mal vier
-  // Handdrehungen: das Feld, auf dem der Bergfried des Dokuments sitzt, liegt
-  // in allen 3.444 Faellen auf einem Feld mit Bautyp 41 - dem Bergfried der
-  // Karte. Die Ecke wandert mit der Drehung (0/0, 6/0, 6/6, 0/6), die Flaeche
-  // bleibt dieselbe.
-  const { listGameMaps, readGameMap, internals } = require(path.join(root, 'src', 'node', 'game-map.js'));
+  // A camera turn changes the corner used to draw the 7x7 keep, not its
+  // absolute map footprint. The game orientation contributes the 7-tile
+  // displacement; camera corners contribute another 0 or 6 tiles.
+  const { listGameMaps, readGameMap } = require(path.join(root, 'src', 'node', 'game-map.js'));
   const { maps } = listGameMaps(TEST_GAME_ROOT);
-  const ECKEN = { 0: '0/0', 2: '6/0', 4: '6/6', 6: '0/6' };
+  const offsets = {0:[0,0],2:[0,7],4:[7,7],6:[7,0]};
+  const corners = {0:[0,0],2:[6,0],4:[6,6],6:[0,6]};
   let geprueft = 0, zurueck = 0;
   for (const eintrag of maps) {
     const karte = readGameMap(eintrag.path, TEST_GAME_ROOT);
     if (!karte.keeps.length) continue;
-    const bytes = fs.readFileSync(eintrag.path);
-    const vorschau = internals.readPreview(bytes);
-    const verzeichnis = internals.findDirectory(bytes, vorschau.end);
-    let bau = null;
-    try { bau = internals.readSection(bytes, verzeichnis, internals.BUILDING_SECTION); } catch { bau = null; }
-    if (!bau) continue;
-    const bautyp = (mx, my) => {
-      if (my < 0 || my > 399) return -1;
-      const [von, bis] = internals.rowRange(my);
-      return (mx < von || mx > bis) ? -1 : bau[internals.tileIndex(mx, my)];
-    };
     for (const keep of karte.keeps) {
       for (const hand of [0, 2, 4, 6]) {
         // So legt turnedTiles den Bergfried hin: Karte plus Hand, 7 Felder.
@@ -262,10 +232,10 @@ test('terrain and castle coordinates round-trip at every start and camera rotati
         const anzeige = geometry.rotateGrid(43, 43, 7, sicht);
         // Und so rechnet paintMapTiles den Grund darunter.
         const feld = geometry.mapTileForView(anzeige.gx, anzeige.gy, keep, hand);
-        assert.equal(bautyp(feld.mx, feld.my), 41,
-          `${eintrag.name} (${keep.x},${keep.y}) Handdrehung ${hand}: unter dem Bergfried liegt kein Bergfried der Karte`);
-        assert.equal((feld.mx - keep.x) + '/' + (feld.my - keep.y), ECKEN[hand],
-          `${eintrag.name}: Handdrehung ${hand} gehoert auf die Ecke ${ECKEN[hand]}`);
+        const [dx,dy] = offsets[keep.orientation];
+        const [cx,cy] = corners[hand];
+        assert.deepEqual(feld, {mx:keep.x+dx+cx,my:keep.y+dy+cy},
+          `${eintrag.name}: game origin and camera corner must be independent`);
         // Und der Weg zurueck trifft wieder dasselbe Feld - darauf haengen die
         // Marken der anderen Startplaetze.
         const hin = geometry.viewTileForMap(feld.mx, feld.my, keep, hand);

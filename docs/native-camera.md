@@ -11,12 +11,39 @@ half-tile displacement. Elevation is removed before inverse projection and
 reapplied after turning.
 
 Terrain origins are restricted to the 100x100 AIV footprint plus five tiles
-on each side. The same rotated keep anchor positions both terrain and castle;
+on each side. The fixed AIV origin `(mapKeep.x - 43, mapKeep.y - 43)` positions both terrain and castle;
 the viewport does not expand this region to the complete 400x400 game map.
 Raised tile tops and attached sprites can overhang the boundary. Hover-only
 updates reuse a screen-sized scene cache, while edits, steps, camera changes
 and image loads invalidate it. Consecutive rotations retain their world-space
 pivot elevation so cliffs cannot make the camera drift between turns.
+
+## AIV origin and rotated keeps
+
+Verified against the installed classic executable on 2026-09-20
+(SHA-256 `0d3d0d0be90a41d0c07d02cb41e6edc3e399288d16039db5b666392660fbda34`)
+and OpenSHC's named Ghidra references:
+
+- `setKeepOffsetAndOrientation`, `0x004ecf70`: instructions at
+  `0x004ecf8b` and `0x004ecf97` subtract 43 from the original map keep X/Y.
+- `rotateAIV`, `0x004ed0b0`: rotates the 100x100 construction/step grids.
+  Its copy loops map `(x,y)` to `(y,99-x)`, `(99-x,99-y)` or `(99-y,x)`
+  for game orientations 2, 4 or 6. No map-origin adjustment occurs here.
+- `applyAIV`, `0x004ef0d0`: the first rotated keep cell is added to those
+  unchanged offsets (`0x004ef194` through `0x004ef1ae`). Buildings and
+  rally points use the same origin.
+- `LaunchSkirmishGame`: `0x00441eb4` through `0x00441ecc` uses those
+  resulting coordinates when placing the replacement 7x7 keep.
+
+Consequently, a standard keep at AIV `(43,43)` is displaced from the map's
+original keep by `(0,0)`, `(0,7)`, `(7,7)` or `(7,0)` for game orientations
+0, 2, 4 or 6. Custom keep positions retain their additional rotated offset.
+The former rotated-anchor subtraction cancelled this intentional shift.
+Camera rotation is separate and must not change the absolute placement.
+
+Absolute-coordinate regressions run without a game installation. Read-only
+integration tests additionally compare the rotated construction grids of
+installed AIVs at every available map start; they do not launch the game.
 
 ## Original game graphics
 
