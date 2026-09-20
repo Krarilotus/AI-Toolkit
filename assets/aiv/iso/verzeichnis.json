@@ -37282,7 +37282,162 @@
       "sy": 2212
      }
     ]
-   ]
+   ],
+   "moatVariants": {
+    "204": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 1,
+     "sy": 1,
+     "nativeMoat": 204
+    },
+    "205": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 33,
+     "sy": 1,
+     "nativeMoat": 205
+    },
+    "206": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 65,
+     "sy": 1,
+     "nativeMoat": 206
+    },
+    "207": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 97,
+     "sy": 1,
+     "nativeMoat": 207
+    },
+    "236": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 20,
+     "sx": 129,
+     "sy": 1,
+     "nativeMoat": 236
+    },
+    "237": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 18,
+     "sx": 161,
+     "sy": 1,
+     "nativeMoat": 237
+    },
+    "238": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 20,
+     "sx": 193,
+     "sy": 1,
+     "nativeMoat": 238
+    },
+    "239": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 20,
+     "sx": 225,
+     "sy": 1,
+     "nativeMoat": 239
+    },
+    "268": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 257,
+     "sy": 1,
+     "nativeMoat": 268
+    },
+    "269": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 289,
+     "sy": 1,
+     "nativeMoat": 269
+    },
+    "270": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 321,
+     "sy": 1,
+     "nativeMoat": 270
+    },
+    "271": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 353,
+     "sy": 1,
+     "nativeMoat": 271
+    },
+    "300": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 385,
+     "sy": 1,
+     "nativeMoat": 300
+    },
+    "301": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 417,
+     "sy": 1,
+     "nativeMoat": 301
+    },
+    "302": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 449,
+     "sy": 1,
+     "nativeMoat": 302
+    },
+    "303": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 481,
+     "sy": 1,
+     "nativeMoat": 303
+    },
+    "332": {
+     "bild": "moat-variants.png",
+     "kacheln": 1,
+     "breite": 30,
+     "hoehe": 16,
+     "sx": 513,
+     "sy": 1,
+     "nativeMoat": 332
+    }
+   }
   },
   "110": {
    "name": "Wachturm",

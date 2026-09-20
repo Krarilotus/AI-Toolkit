@@ -58,7 +58,7 @@ function gm1(count, pillar=false, color=0x7c00) {
 }
 test('building assets run in a worker, share concurrent loads and invalidate after a texture changes', async t => {
   const {root,write}=fixture(t), counts=new Map();
-  for(const s of [...sources,...walls,{file:'killing_pits',index:0},{file:'pitch_ditches',index:3},...walls.map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
+  for(const s of [...sources,...walls,{file:'tile_sea8',index:332},{file:'killing_pits',index:0},{file:'pitch_ditches',index:3},...walls.map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
   for(const [name,count] of counts)write(`gm/${name}.gm1`,gm1(count,name==='tile_walls'));
   const cache=path.join(root,'cache');
   const first=loadGameBuildingAssets(root,cache);
@@ -71,6 +71,8 @@ test('building assets run in a worker, share concurrent loads and invalidate aft
   assert.deepEqual(result.assetWarnings,[]);
   const again=await loadGameBuildingAssets(root,cache);
   assert.deepEqual(again,result);
+  const moat=Object.values(result.gegenstaende[106].moatVariants);
+  assert.equal(new Set(moat.map(v=>`${v.sx},${v.sy}`)).size,17,'each native moat picture has its own atlas location');
   write('gm/tile_castle.gm1',gm1(counts.get('tile_castle'),false,0x03e0));
   const changed=await loadGameBuildingAssets(root,cache);
   assert.notEqual(changed.gegenstaende[61].partsLayouts[0][0].bild,part.bild);

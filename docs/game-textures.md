@@ -74,3 +74,30 @@ folder and activated via a fixture configuration. Neither the original archive
 nor the user's game installation was modified. Both supplied maps selected the installed-pack layout and decoded with
 zero missing terrain pictures: 1,167 and 2,288 unique pictures. This checks an
 explicitly activated pack; it does not establish the friend's runtime setup.
+
+
+## Atomic map loading and moat edges
+
+The 2.5D view no longer stretches the map's 200x200 preview as a loading or
+error fallback. It shows a loading message until every camera atlas and upper
+scenery image has decoded. Failures remain visible with a retry instruction.
+Reselecting a map creates fresh image objects and revalidates the building
+catalogue. Request tokens prevent an older selection or decode from replacing
+the latest map. These operations happen on loading, not during step scrubbing.
+
+Placed moat uses the seven-entry neighbour table in `updateGfxLayer` (0x509180,
+`TerrainDefinedData+0x1d64`). Cardinal edges take precedence over diagonal
+corners; attached bridges count as connected moat. Camera-rotated tile
+coordinates determine the mask. Seventeen lossless pictures cover the
+unshadowed variants from `tile_sea8`; installed texture overrides supply the
+same picture identities. This replaces the constant shaded picture 235.
+It does not reproduce the game's dynamic luminescence/shadow calculation.
+
+Moat variants are cached against visible tile occupancy. Only changed tiles
+and their eight neighbours invalidate cached choices; future steps never
+contribute neighbours. Castles without moat skip this resolver entirely.
+
+Map loading remains read-only with respect to the selected game installation:
+existing compatible native captures may be read, but a miss or stale capture
+uses saved terrain. It never starts or attaches to Crusader. A crash reported
+with an older build has not been reproduced or attributed to a specific cause.

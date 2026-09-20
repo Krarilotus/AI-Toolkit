@@ -192,7 +192,7 @@ test('cached geometry filters the visible prefix before resolving neighbouring b
  const context=vm.createContext({state,window:{castleEditor:{getActiveBuildStep:()=>step}},
   currentDocument:()=>doc,currentRotation:()=>rotation,viewRotation:()=>rotation,image(){},
   turnedTiles:items=>items.map(item=>({...item,rotation})),
-  geo:{collectItems:()=>{collections++;return doc.frames.map((_,frameIndex)=>({frameIndex,entry:null}));},
+  geo:{resolveMoats:require('../src/js/iso-geometry').resolveMoats,collectItems:()=>{collections++;return doc.frames.map((_,frameIndex)=>({frameIndex,entry:null}));},
    attachDrawbridges:items=>{seen.push(items.map(i=>i.frameIndex));return items;}}});
  vm.runInContext(source.slice(source.indexOf('  function visibleSceneItems('),source.indexOf('  function paintScene(')),context);
  assert.equal(context.visibleSceneItems().length,1);
