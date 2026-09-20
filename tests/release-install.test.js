@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
@@ -6,4 +6,27 @@ const {execFileSync} = require('node:child_process');
 test('Windows release installation preserves custom files, refuses locks and records build identity', {skip:process.platform!=='win32'},()=>{
  const output=execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'release-installer-smoke.ps1'),'-Installer',path.resolve(__dirname,'../src/node/release-install.ps1')],{encoding:'utf8',windowsHide:true,timeout:60000});
  assert.match(output,/PASS:/);
+});
+
+test('installer survives Electron exit, replaces files and restarts the installed program', {skip:process.platform!=='win32'},async t=>{
+ const fs=require('node:fs');
+ const fixture=JSON.parse(execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'release-installer-smoke.ps1'),'-Installer',path.resolve(__dirname,'../src/node/release-install.ps1'),'-Handoff'],{encoding:'utf8',windowsHide:true,timeout:60000}));
+ t.after(()=>fs.rmSync(fixture.testRoot,{recursive:true,force:true}));
+ const runner=path.join(fixture.testRoot,'runner.cjs');
+ fs.writeFileSync(runner,`const {app}=require('electron'); app.whenReady().then(async()=>{try{await require(${JSON.stringify(path.resolve(__dirname,'../src/node/release-download.js'))}).launchInstaller(${JSON.stringify(fixture)});app.exit(0);}catch(e){console.error(e);app.exit(1);}});`);
+ const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+ execFileSync(require('electron'),[runner],{windowsHide:true,encoding:'utf8',env,timeout:25000});
+ const deadline=Date.now()+20000, marker=path.join(fixture.root,'restarted.txt');
+ while(!fs.existsSync(marker) && Date.now()<deadline)await new Promise(r=>setTimeout(r,100));
+ assert.ok(fs.existsSync(marker),'new executable must restart after the editor exits');
+ assert.equal(require('../src/node/release-updates').readInstalledBuild(fixture.root)?.key,'snapshot-test');
+ assert.match(fs.readFileSync(path.join(fixture.stage,'installer.log'),'utf16le'),/Installed successfully/);
+});
+
+test('startup failure rejects before the editor is allowed to close', {skip:process.platform!=='win32'},async t=>{
+ const fs=require('node:fs'),os=require('node:os');
+ const stage=fs.mkdtempSync(path.join(os.tmpdir(),'toolkit-failed-helper-'));
+ t.after(()=>fs.rmSync(stage,{recursive:true,force:true}));
+ const script=path.join(stage,'broken.ps1');fs.writeFileSync(script,'exit 1');
+ await assert.rejects(require('../src/node/release-download').launchInstaller({stage,root:stage,script}),/Installer exited before starting/);
 });

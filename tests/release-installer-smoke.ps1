@@ -1,4 +1,4 @@
-param([string]$Installer)
+param([string]$Installer, [switch]$Handoff)
 $ErrorActionPreference='Stop'
 $root=Join-Path $env:TEMP ('release-install-test-'+[Guid]::NewGuid().ToString('N'))
 $live=Join-Path $root 'live';$stage=Join-Path $root 'stage';$package=Join-Path $root 'package'
@@ -11,6 +11,10 @@ Set-Content (Join-Path $package 'locales/en-US.pak') 'new locale'
 Set-Content (Join-Path $package 'user-project.json') 'do not install'
 Set-Content (Join-Path $live 'user-project.json') 'preserve'
 @{'config/template.json'=(Get-FileHash (Join-Path $live 'config/template.json')).Hash;'config/custom.json'='different'} | ConvertTo-Json | Set-Content (Join-Path $stage 'config-baseline.json')
+if($Handoff) {
+ Remove-Item -LiteralPath (Join-Path $package 'AI Toolkit.exe')
+ Add-Type -TypeDefinition 'using System; using System.IO; public class RestartProbe { public static void Main() { File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "restarted.txt"), "restarted"); } }' -OutputAssembly (Join-Path $package 'AI Toolkit.exe') -OutputType WindowsApplication
+}
 Compress-Archive -Path (Join-Path $package '*') -DestinationPath (Join-Path $stage 'release.zip')
 $script=$Installer
 @{repo='Krarilotus/AI-Toolkit';key='snapshot-test';tag='snapshot-test'} | ConvertTo-Json | Set-Content (Join-Path $stage 'release.json')
@@ -18,6 +22,7 @@ $script=$Installer
 if($LASTEXITCODE){throw 'Prepare failed'}
 $manifest=Get-Content (Join-Path $stage 'manifest.json') -Raw | ConvertFrom-Json
 if($manifest.file -contains 'config/custom.json' -or $manifest.file -contains 'user-project.json'){throw 'Custom data included'}
+if($Handoff) { @{stage=$stage;root=$live;script=$script;testRoot=$root} | ConvertTo-Json -Compress; exit 0 }
 $lock=[IO.File]::Open((Join-Path $live 'resources/app.asar'),'Open','ReadWrite','None')
 try {
  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Mode Install -Stage $stage -InstallRoot $live -NoRestart

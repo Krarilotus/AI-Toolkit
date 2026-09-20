@@ -1,4 +1,4 @@
-﻿# Update channels
+# Update channels
 
 The top-bar selector chooses official releases or experimental builds from a
 Toolkit fork. Forks are discovered from GitHub; Other fork accepts owner/repository
@@ -33,3 +33,15 @@ receipt invalidation, and a Windows installer exercise with file locks and custo
 configuration. Live isolated Electron UI checks found official 0.7.2 and
 Krarilotus preview-578a0b9 and switched between them. Full local check: 422 passed,
 10 native-fixture tests skipped, zero failures (432 total).
+
+## Windows handoff regression
+
+The original detached + hidden PowerShell launch could report successful process
+creation without executing the installer. The editor now launches a helper with
+its own hidden console using Start-Process and waits for a unique startup
+confirmation before quitting. Installer output is retained in installer.log.
+Startup failure leaves the editor open; an installation failure after editor
+exit restarts the retained installation. A real Electron regression now verifies
+that the helper survives parent exit, replaces the fixture app, writes its receipt
+and launches the newly installed executable. Full check: 424 pass, 10 native-fixture
+skips, zero failures (434 tests).
