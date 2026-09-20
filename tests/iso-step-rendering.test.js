@@ -40,6 +40,7 @@ function scene(fire = false) {
         state.mapScenery.push({gx, gy, layer: 0, draw: target => target.drawImage(terrainImage, gx, gy, 1, 1)});
       // Foreground scenery must stay interleaved, not become a flat backdrop.
       state.mapScenery.push({gx: 53, gy: 53, layer: 3, draw: target => target.drawImage(frontImage, 49, 48, 6, 6)});
+      context.cacheTerrainCommands();
       return true;
     },
     drawSprite(target, entry, gx, gy, tiles, walls) {
@@ -47,7 +48,7 @@ function scene(fire = false) {
       target.drawImage(images[walls > 1 ? 1 : 0], gx, gy - 5, tiles, 6); return true;
     }
   });
-  vm.runInContext(source.slice(source.indexOf('  function paintScene('), source.indexOf('  function paintInteraction(')), context);
+  vm.runInContext(source.slice(source.indexOf('  function recordSceneCommands('), source.indexOf('  function paintInteraction(')), context);
   return {ctx, mask, state, context, get terrainBuilds() { return terrainBuilds; },
     render(nextItems, previousCommands = null, reuseTerrain = false, previousFireMask = null) {
       items = nextItems; return context.paintScene(ctx, size, size, {previousCommands, reuseTerrain, previousFireMask});
@@ -117,4 +118,69 @@ test('fire mask stays depth-correct during forward/backward partial redraws and 
   enabled.mask.pixels.fill(0);
   enabled.render([first],withoutMask.commands,true,null);
   assert.ok(enabled.mask.pixels.some(value=>value>0),'newly enabled mask is built even with no scene damage');
+});
+
+test('terrain commands retain identity across consecutive scrubs and are immutable', () => {
+  const s = scene(), item = {gx:50,gy:50,entry:{},tiles:4};
+  let previous = s.render([item]);
+  const commands = s.state.mapSceneryCommands, buckets = s.state.mapSceneryBuckets;
+  const original = [...commands];
+  for (const items of [[], [item], []]) {
+    previous = s.render(items, previous.commands, true);
+    assert.equal(s.state.mapSceneryCommands, commands);
+    assert.equal(s.state.mapSceneryBuckets, buckets);
+    original.forEach((command, index) => {
+      assert.equal(commands[index], command);
+      assert.ok(Object.isFrozen(command));
+    });
+  }
+});
+
+test('linear merge matches the previous full stable sort, including exact ties and multipart draws', () => {
+  const {context} = scene();
+  const geo = require('../src/js/iso-geometry');
+  context.geo.renderOrder = geo.renderOrder;
+  const command = (gx, gy, tiles, layer, name) => ({order:{gx,gy,tiles,layer},name});
+  const terrain = [], buildings = [];
+  for (let i=0; i<500; i++) {
+    terrain.push(command(i%17, i%23, 1, i%3, `t${i}`));
+    buildings.push(command(i%19, i%29, i%4+1, i%3, `b${i}`));
+  }
+  terrain.push(command(4,5,1,2,'tie-terrain-a'),command(4,5,1,2,'tie-terrain-b'));
+  buildings.push(command(4,5,1,2,'tie-building-a'),command(4,5,1,2,'tie-building-b'));
+  const compare = (a,b) => geo.renderOrder(a.order,b.order);
+  const expected = [...terrain,...buildings].sort(compare);
+  terrain.sort(compare);buildings.sort(compare);
+  assert.deepEqual([...context.mergeSceneCommands(terrain,buildings)],expected);
+  assert.deepEqual([...context.mergeSceneCommands([],buildings)],buildings);
+  assert.deepEqual([...context.mergeSceneCommands(terrain,[])],terrain);
+});
+
+test('spatial query matches a full scan across negative coordinates, boundaries and multi-cell sprites', () => {
+  const s = scene();
+  s.state.mapScenery = Array.from({length:400},(_,i) => ({gx:i%20,gy:Math.floor(i/20),layer:i%3,
+    draw:target=>target.drawImage({color:1},(i%20)*90-350,Math.floor(i/20)*80-290,i%3===0?600:32,350)}));
+  s.context.cacheTerrainCommands();
+  const commands = s.state.mapSceneryCommands;
+  for (const rect of [{x:-400,y:-400,w:100,h:100},{x:256,y:256,w:1,h:1},
+    {x:255,y:255,w:258,h:258},{x:3000,y:3000,w:1,h:1},{x:-500,y:-500,w:4000,h:4000}]) {
+    const actual = [...s.context.terrainCommandsIn(rect)];
+    const expected = commands.filter(c=>s.context.intersectsSceneRect(c,rect));
+    assert.deepEqual(actual,[...expected]);
+    assert.equal(new Set(actual).size,actual.length);
+  }
+});
+
+test('terrain cache is replaced when terrain is rebuilt or becomes unavailable', () => {
+  const s = scene();
+  s.render([]);
+  const oldCommands = s.state.mapSceneryCommands, oldBuckets = s.state.mapSceneryBuckets;
+  s.render([], null, false);
+  assert.notEqual(s.state.mapSceneryCommands, oldCommands);
+  assert.notEqual(s.state.mapSceneryBuckets, oldBuckets);
+  Object.assign(s.context, {vorrat:()=>null,gameMap:()=>null,currentKeep:()=>null});
+  vm.runInContext(source.slice(source.indexOf('  function paintMapTiles('),source.indexOf('  function paintGround(')),s.context);
+  assert.equal(s.context.paintMapTiles(s.ctx,100,100),false);
+  assert.equal(s.state.mapSceneryCommands.length,0);
+  assert.equal(s.state.mapSceneryBuckets.size,0);
 });

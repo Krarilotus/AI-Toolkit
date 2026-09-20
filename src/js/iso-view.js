@@ -514,6 +514,7 @@
 
   function paintMapTiles(ctx, width, height) {
     state.mapScenery = [];
+    cacheTerrainCommands();
     const v = vorrat();
     const map = gameMap();
     const keep = currentKeep();
@@ -555,7 +556,7 @@
         const tileWidth = kw * state.view.zoom;
         const tileLeft = px - tileWidth / 2;
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
-        state.mapScenery.push({ gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
+        state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
         if (cliff && v.upperImage?.complete && v.upperImage.naturalWidth) {
           const lift = v.hoehen[feld];
           for (let row = 0; row < lift; row += cliff.height) {
@@ -571,7 +572,7 @@
         }});
         const upper = v.upperEntries[platz];
         if (upper && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ gx, gy, tiles: 1, draw: (target = ctx) => {
+          state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
               tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
@@ -581,7 +582,7 @@
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
         if (treePicture && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ gx, gy, tiles: 1, draw: (target = ctx) => {
+          state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
               tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
@@ -591,6 +592,7 @@
         gemalt += 1;
       }
     }
+    cacheTerrainCommands();
     state.letzteKacheln = gemalt;
     return gemalt > 0;
   }
@@ -830,11 +832,85 @@
     ctx.restore();
   }
 
+  /** @typedef {{x:number, y:number, w:number, h:number}} SceneRect */
+  /** @typedef {{gx:number, gy:number, tiles?:number, layer?:number}} SceneOrder */
+  /** @typedef {SceneRect & {key:string, order:SceneOrder, flammable:boolean,
+   * draw:(target:CanvasRenderingContext2D)=>void}} SceneCommand */
+
+  /** Record once in scene coordinates; never mutate shared terrain commands.
+   * @param {SceneOrder} order
+   * @param {boolean} flammable
+   * @param {(recorder: {commands: SceneCommand[], drawImage: CanvasRenderingContext2D['drawImage']}) => void} draw
+   * @returns {SceneCommand[]}
+   */
+  function recordSceneCommands(order, flammable, draw) {
+    if (!state.commandImageIds) { state.commandImageIds = new WeakMap(); state.nextCommandImageId = 0; }
+    /** @type {SceneCommand[]} */
+    const commands = [];
+    draw({commands, drawImage(img, ...args) {
+      const [x, y, w, h] = args.slice(-4);
+      if (!state.commandImageIds.has(img)) state.commandImageIds.set(img, ++state.nextCommandImageId);
+      commands.push({order, flammable, key: `${state.commandImageIds.get(img)}:${args.join(',')}`, x, y, w, h,
+        draw: target => target.drawImage(img, ...args)});
+    }});
+    return commands;
+  }
+
+  /** @param {SceneRect} a @param {SceneRect} b */
+  function intersectsSceneRect(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // Inclusive end cells deliberately over-select at boundaries; the exact
+  // rectangle check removes those candidates. Negative world positions are valid.
+  function* sceneCells(rect) {
+    if (rect.w <= 0 || rect.h <= 0) return;
+    for (let y = Math.floor(rect.y / 256); y <= Math.floor((rect.y + rect.h) / 256); y++)
+      for (let x = Math.floor(rect.x / 256); x <= Math.floor((rect.x + rect.w) / 256); x++) yield `${x}:${y}`;
+  }
+
+  function cacheTerrainCommands() {
+    const commands = state.mapSceneryCommands = [];
+    const buckets = state.mapSceneryBuckets = new Map();
+    for (const item of state.mapScenery.sort(geo.renderOrder)) {
+      for (const command of recordSceneCommands(item, false, recorder => item.draw(recorder))) {
+        Object.freeze(command);
+        const index = commands.push(command) - 1;
+        for (const cell of sceneCells(command)) {
+          if (!buckets.has(cell)) buckets.set(cell, []);
+          buckets.get(cell).push(index);
+        }
+      }
+    }
+  }
+
+  /** Query in original painter order, deduplicating sprites spanning cells. */
+  function terrainCommandsIn(rect) {
+    const found = new Set();
+    for (const cell of sceneCells(rect))
+      for (const index of state.mapSceneryBuckets.get(cell) || []) found.add(index);
+    return [...found].sort((a, b) => a - b).map(index => state.mapSceneryCommands[index])
+      .filter(command => intersectsSceneRect(command, rect));
+  }
+
+  /** Stable merge: terrain preceded buildings in the old full sort, including ties.
+   * @param {SceneCommand[]} terrain @param {SceneCommand[]} buildings
+   * @returns {Generator<SceneCommand>}
+   */
+  function* mergeSceneCommands(terrain, buildings) {
+    let t = 0, b = 0;
+    while (t < terrain.length && b < buildings.length) {
+      if (geo.renderOrder(terrain[t].order, buildings[b].order) <= 0) yield terrain[t++];
+      else yield buildings[b++];
+    }
+    while (t < terrain.length) yield terrain[t++];
+    while (b < buildings.length) yield buildings[b++];
+  }
+
   function paintScene(ctx, width, height, options = {}) {
     // Terrain geometry and its drawing commands do not depend on the build step.
     if (!options.reuseTerrain) state.nativeTerrain = paintMapTiles(ctx, width, height);
     if (!state.nativeTerrain) state.hoehenFeld = gameMap() ? groundPicture()?.hoehen || null : null;
-    if (!state.commandImageIds) { state.commandImageIds = new WeakMap(); state.nextCommandImageId = 0; }
 
     // Die Bodenplatten haengen an der GEDREHTEN Ecke ihres Gebaeudes, und ihr
     // eigener Versatz wird NICHT mitgedreht.
@@ -876,34 +952,26 @@
     });
     // Scenery is no longer flattened underneath every building. Each upper
     // tile participates in the same depth order as the castle sprites.
-    const commands = [], buildingCommands = [];
-    const terrain = new Set(state.mapScenery || []);
-    for (const item of [...(state.mapScenery || []), ...buildingSprites].sort(geo.renderOrder)) {
-      const isTerrain = terrain.has(item);
-      let recorded = isTerrain && item.commands;
-      if (!recorded) {
-        recorded = [];
-        const recorder = {drawImage(img, ...args) {
-          const [x, y, w, h] = args.slice(-4);
-          if (!state.commandImageIds.has(img)) state.commandImageIds.set(img, ++state.nextCommandImageId);
-          recorded.push({key: `${state.commandImageIds.get(img)}:${args.join(',')}`, x, y, w, h,
-            draw: target => target.drawImage(img, ...args)});
-        }};
+    const buildingCommands = [];
+    for (const item of buildingSprites.sort(geo.renderOrder)) {
+      const flammable = (window.castleGameData?.flammability[window.castleCostData?.buildings[item.itemType]?.balance] || 0) > 0;
+      const recorded = recordSceneCommands(item, flammable, recorder => {
         if (item.draw) item.draw(recorder);
         else if (!item.entry || !drawSprite(recorder, item.entry, item.gx, item.gy, item.tiles, mauerAn, hoeheAn)) {
           const [x, y] = geo.isoPoint(item.gx, item.gy, state.view);
           const size = (item.tiles || 1) * 32;
-          recorded.push({key: `missing:${item.gx}:${item.gy}:${item.tiles}`, x: x - size, y: y - 256, w: size * 2, h: size + 256,
+          recorder.commands.push({order: item, flammable,
+            key: `missing:${item.gx}:${item.gy}:${item.tiles}`, x: x - size, y: y - 256, w: size * 2, h: size + 256,
             draw: target => drawDiamond(target, item.gx, item.gy, item.tiles, 'rgba(210,170,90,.55)')});
           missing++;
         }
-        if (isTerrain) item.commands = recorded;
-      }
-      const flammable = !isTerrain && (window.castleGameData?.flammability[window.castleCostData?.buildings[item.itemType]?.balance] || 0) > 0;
-      commands.push(...recorded.map(command => ({ ...command, flammable })));
-      if (!isTerrain) buildingCommands.push(...recorded);
+      });
+      buildingCommands.push(...recorded);
     }
+    const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
+      buildingCommands.filter(command => intersectsSceneRect(command, rect)));
     const dirty = sceneDamage(options.previousCommands, buildingCommands, width, height);
+    const damagedCommands = dirty ? [...commandsIn(dirty)] : [];
     if (dirty) {
       ctx.save();
       try {
@@ -916,10 +984,7 @@
         });
         ctx.closePath();
         if (!state.nativeTerrain) paintGround(ctx, width, height);
-        for (const command of commands) {
-          if (command.x < dirty.x + dirty.w && command.x + command.w > dirty.x
-            && command.y < dirty.y + dirty.h && command.y + command.h > dirty.y) command.draw(ctx);
-        }
+        for (const command of damagedCommands) command.draw(ctx);
       } finally { ctx.restore(); }
     }
     // Reuse the same depth-ordered commands and damage bounds for the fire mask.
@@ -935,12 +1000,9 @@
         try {
           mask.beginPath(); mask.rect(damage.x, damage.y, damage.w, damage.h); mask.clip();
           mask.clearRect(damage.x, damage.y, damage.w, damage.h);
-          for (const command of commands) {
-            if (command.x < damage.x + damage.w && command.x + command.w > damage.x
-                && command.y < damage.y + damage.h && command.y + command.h > damage.y) {
-              mask.globalCompositeOperation = command.flammable ? 'source-over' : 'destination-out';
-              command.draw(mask);
-            }
+          for (const command of damage === dirty ? damagedCommands : commandsIn(damage)) {
+            mask.globalCompositeOperation = command.flammable ? 'source-over' : 'destination-out';
+            command.draw(mask);
           }
         } finally { mask.restore(); }
       }
