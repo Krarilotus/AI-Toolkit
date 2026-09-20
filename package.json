@@ -23,7 +23,8 @@
     "dist": "npm run check && electron-builder --win portable",
     "dist:zip": "npm run check && electron-builder --win zip",
     "postinstall": "node scripts/prepare-renderer.js",
-    "precheck": "node scripts/prepare-renderer.js"
+    "precheck": "node scripts/prepare-renderer.js",
+    "test:game": "node --test tests/integration/*.test.js"
   },
   "devDependencies": {
     "electron": "^44.3.0",

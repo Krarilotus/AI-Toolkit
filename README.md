@@ -38,6 +38,19 @@ npm run dist
 self-contained Node test suite. No example tree, private AIV collection, UCP
 module source, web-build source, or installed game is needed for validation.
 
+Real-game integration checks run separately against your own classic Crusader
+installation (including the stock maps and AIVs):
+
+```powershell
+$env:AI_TOOLKIT_TEST_GAME_ROOT = 'D:\Games\Stronghold Crusader'
+npm run test:game
+```
+
+These checks read installed files without launching the game or modifying them.
+Missing configuration or required fixtures fails explicitly; the suite does not
+silently skip. `npm run check` remains self-contained for CI. Windows installer
+checks run on Windows and are intentionally skipped on other operating systems.
+
 ## Castle editor notes
 
 - Native `.aiv` data is read and written by the bundled JavaScript codec.

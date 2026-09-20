@@ -75,3 +75,15 @@ test('native failures and rejected captures build the saved fallback only when n
     assert.deepEqual(calls,failDuringBuild?[native,undefined]:[undefined]);
   }
 });
+
+test('cactus picture selection clamps each variety and rejects non-cactus types', () => {
+  const { internals } = require('../src/node/game-map');
+  // Die Deckelung ist der Grund, warum das hoechste Bild einer Art doppelt so
+  // oft vorkommt - ohne sie zeigte jede vierte Pflanze ein fremdes Bild.
+  assert.equal(internals.cactusPicture(17, 3), 3, 'Art 17 deckelt die 4 auf 3');
+  assert.equal(internals.cactusPicture(18, 3), 6, 'Art 18 deckelt die 7 auf 6');
+  assert.equal(internals.cactusPicture(19, 3), 9, 'Art 19 deckelt die 10 auf 9');
+  assert.equal(internals.cactusPicture(16, 7), 17, 'Art 16 geht bis 17');
+  assert.equal(internals.cactusPicture(16, 0), 10);
+  assert.equal(internals.cactusPicture(2, 3), 0, 'ein Baum ist kein Kaktus - da wird nichts geraten');
+});
