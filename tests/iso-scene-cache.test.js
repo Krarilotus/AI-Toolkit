@@ -78,10 +78,11 @@ function interactiveRenderer() {
     addEventListener: (name, fn) => { listeners[name] = fn; }
   };
   r.state.bound = new WeakSet();
+  r.context.window.castlePieMenu = {bind: (_canvas, run) => { listeners.contextmenu = event => { event.preventDefault(); run('deselect'); }; }};
   r.context.window.castleCamera = require('../src/js/castle-camera');
   r.context.window.castleEditor = {
     pointerFromOutside: (phase, event) => inputs.push({phase, event}),
-    clearSelectionAndItem: () => clears.push(true)
+    runContextAction: action => { if (action === 'deselect') clears.push(true); }
   };
   Object.assign(r.context, {
     refresh: reuse => { if (reuse !== true) r.state.sceneDirty = true; },

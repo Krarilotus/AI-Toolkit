@@ -1438,12 +1438,7 @@
     state.bound.add(canvas);
     canvas.tabIndex = 0;
 
-    canvas.addEventListener('contextmenu', event => {
-      event.preventDefault();
-      state.drawing = false;
-      window.castleEditor?.clearSelectionAndItem?.();
-      refresh(true);
-    });
+    window.castlePieMenu.bind(canvas, action => window.castleEditor?.runContextAction(action));
 
     canvas.addEventListener('pointerdown', event => {
       canvas.focus({ preventScroll: true });

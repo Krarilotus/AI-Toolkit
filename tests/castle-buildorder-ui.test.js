@@ -494,7 +494,7 @@ test('map rotation stays in 2.5D and never turns or warps the flat editor', () =
     'the 2.5D view still applies the game-map rotation');
 });
 
-test('the dedicated Replace tool opens a per-item-type replacement dialog', () => {
+test('the context Replace action opens a per-item-type replacement dialog', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const nach = functionBody(script, 'selectionByType');
   assert.match(nach, /Number\(refType\(ref\)\)/, 'gebuendelt nach Bauwerk');
@@ -525,13 +525,11 @@ test('the dedicated Replace tool opens a per-item-type replacement dialog', () =
     'danach steht die Auswahl auf denselben Feldern, mit dem neuen Bauwerk darauf');
 
   const html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
-  assert.match(html, /data-tool="replace"/);
+  assert.doesNotMatch(html, /data-tool="(?:replace|merge|delete)"/);
   assert.match(html, /id="castleReplaceDialog"/);
   assert.match(html, /id="castleReplaceRows"/);
   assert.doesNotMatch(html, /id="castleSelectionList"|id="castleReplaceBtn"/);
   assert.doesNotMatch(html, /<button[^>]*data-tool="copy"/);
-  assert.ok(html.indexOf('data-tool="select"') < html.indexOf('data-tool="replace"'));
-  assert.ok(html.indexOf('data-tool="replace"') < html.indexOf('data-tool="delete"'));
 
   const down = functionBody(script, 'onPointerDown');
   const up = functionBody(script, 'onPointerUp');

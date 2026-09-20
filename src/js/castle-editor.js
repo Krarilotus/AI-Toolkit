@@ -514,7 +514,7 @@
     for (const p of placementRefs()) {
       if (ignore.has(p.ref)) continue;
       if (!geometry.footprintsIntersect(proposedFootprint, footprintRects(p.type, p.off))) continue;
-      const existingMode = overlapMode(p.type);
+      const existingMode = geometry.placementOverlap(type, p.type, state.constants);
       if (existingMode === 'allow') continue;
       if (existingMode === 'replace') {
         // Ein gesperrter Bauschritt wird auch nicht ueberbaut.
@@ -1231,7 +1231,7 @@
   }
 
   function mergeableTypes() {
-    return Object.keys(state.constants).map(Number).filter(type => !isUnitType(type) && allowsMultiplePerStep(type));
+    return geometry.MERGEABLE_TYPES.filter(type => state.constants[type]);
   }
 
   function closeBuildContextMenu() {
@@ -1556,7 +1556,7 @@
       const entryFootprint = footprintRectsAtXY(entry.type, entry.x, entry.y);
       for (const other of existing) {
         if (!geometry.footprintsIntersect(entryFootprint, footprintRects(other.type, other.off))) continue;
-        const mode = overlapMode(other.type);
+        const mode = geometry.placementOverlap(entry.type, other.type, state.constants);
         if (mode === 'allow') continue;
         if (mode === 'replace') {
           if (refIsLocked(other.ref)) return { ok: false, reason: 'That build step is locked.', replacements: new Set(), proposal: null };
@@ -1701,7 +1701,7 @@
       for (const other of placementRefs()) {
         if (selectedRefs.has(other.ref)) continue;
         if (!geometry.footprintsIntersect(movedFootprint, footprintRects(other.type, other.off))) continue;
-        const mode = overlapMode(other.type);
+        const mode = geometry.placementOverlap(type, other.type, state.constants);
         if (mode === 'allow') continue;
         if (mode === 'replace') {
           // Ueber einen gesperrten Bauschritt wird nicht gebaut.
@@ -4003,10 +4003,7 @@
   els.canvas.addEventListener('pointerup', onPointerUp);
   els.canvas.addEventListener('pointercancel', onPointerUp);
   els.canvas.addEventListener('wheel', onWheel, { passive: false });
-  els.canvas.addEventListener('contextmenu', event => {
-    event.preventDefault();
-    clearSelectionAndItem();
-  });
+  window.castlePieMenu.bind(els.canvas, action => window.castleEditor.runContextAction(action));
   els.canvas.addEventListener('mouseleave', () => {
     const hadPreview = state.hoverTile && (
       (state.currentItemType != null && isPlacementTool(state.tool)) ||
@@ -4114,6 +4111,13 @@
 
   window.castleEditor = {
     extras: { state, placementRefs, setTool, setStatus, renderBuildList, scheduleDraw }, // fuer editor-extras.js: Gruppen und Kopierspeicher, siehe dort
+    runContextAction(action) {
+      if (action === 'deselect') return clearSelectionAndItem();
+      if (action === 'groups') return window.dispatchEvent(new Event('castle-open-groups'));
+      if (action === 'cut') { cutSelection(); window.dispatchEvent(new Event('castle-clipboard-changed')); return; }
+      if (action === 'replace') return state.selected.size ? openReplacementDialog(state.selected) : setTool('replace');
+      if (action === 'merge') return state.selected.size ? mergeArea(state.selected) : setTool('merge');
+    },
     openFile,
     saveFile,
     saveAs,

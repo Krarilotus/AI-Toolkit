@@ -147,7 +147,21 @@
     return { dx, dy };
   }
 
+  function clipboardFromMembers(members, definitions) {
+    const items = members.filter(member => member.type !== 61 && definitions[member.type]);
+    if (!items.length) return null;
+    const x = Math.min(...items.map(item => item.off % 100));
+    const y = Math.min(...items.map(item => Math.floor(item.off / 100)));
+    const groups = new Map();
+    for (const item of items) {
+      if (!groups.has(item.type)) groups.set(item.type, {kind: definitions[item.type].kind === 'unit' ? 'unit' : 'frame', itemType: item.type, entries: []});
+      groups.get(item.type).entries.push({type: item.type, dx: item.off % 100 - x, dy: Math.floor(item.off / 100) - y});
+    }
+    return {groups: [...groups.values()], count: items.length};
+  }
+
   const pure = {
+    clipboardFromMembers,
     UNSAVED_KEY,
     castleKeyForPath,
     sanitizeClipboard,
@@ -331,6 +345,15 @@
       count.title = `${group.members.length} placement${group.members.length === 1 ? '' : 's'}`;
       row.appendChild(count);
 
+      row.appendChild(rowButton('Paste', 'Load a reusable copy at the cursor', () => {
+        const buffer = clipboardFromMembers(group.members, ed.getItemDefinitions());
+        if (!buffer) return setGroupError('This group has no copyable items.');
+        ex.state.copyBuffer = buffer;
+        rememberClipboard();
+        ex.setTool('copy');
+        els.dialog.close();
+        ex.setStatus('Move the group into place; click to paste, Esc to cancel.');
+      }));
       row.appendChild(rowButton('Select', 'Select this group on the map, then drag to move it', () => selectGroup(group)));
       row.appendChild(rowButton('Update', 'Replace this group with whatever is selected now', () => updateGroupFromSelection(group)));
       row.appendChild(rowButton('Rename', 'Give this group another name', () => renameGroup(group)));
@@ -408,6 +431,8 @@
     clipboard = null;
     ex.state.copyBuffer = null;
     rememberedBuffer = null;
+    if (ex.state.tool === 'copy') ex.setTool('select');
+    ex.scheduleDraw();
     writeStore(CLIP_STORE, null);
     updateClipboardButton();
     ex.setStatus('Clipboard emptied');
@@ -416,7 +441,8 @@
   function updateClipboardButton() {
     if (!els.clipboard) return;
     const count = clipboard?.count || 0;
-    els.clipboard.textContent = count ? `Clipboard (${count})` : 'Clipboard';
+    els.clipboard.textContent = count ? `Paste ${count} ? Ctrl+V` : 'Paste';
+    els.clipboard.parentElement.hidden = !count;
     els.clipboard.disabled = !count;
     els.clipboard.title = count
       ? `${count} placement${count === 1 ? '' : 's'} copied — works in every castle. Click, then click on the map, or press Ctrl+V.`
@@ -445,33 +471,19 @@
     return button;
   }
 
-  function addToolbar() {
-    const toolbar = doc.querySelector('#castleWorkspace .castleToolbar');
-    if (!toolbar || doc.getElementById('castleGroupsBtn')) return;
-    const group = doc.createElement('div');
-    group.className = 'toolbarGroup castleExtrasGroup';
-    group.setAttribute('role', 'group');
-    group.setAttribute('aria-label', 'Groups and clipboard');
-
-    group.appendChild(toolbarButton('castleGroupsBtn', 'Groups',
-      'Give a selection a name, find it again later and move it as one',
-      openGroupsDialog));
-
-    els.clipboard = toolbarButton('castleClipboardBtn', 'Clipboard',
-      'Nothing copied yet.',
-      () => {
-        if (!armClipboard()) return ex.setStatus('Nothing copied yet — select items and use Ctrl+C first');
-        ex.setTool('copy');
-        ex.setStatus(`Clipboard ready: ${clipboard.count} placement${clipboard.count === 1 ? '' : 's'} — click on the map to place them`);
-      });
-    group.appendChild(els.clipboard);
-
-    els.clipboardClear = toolbarButton('castleClipboardClearBtn', '×',
-      'Empty the clipboard', clearClipboard);
-    els.clipboardClear.hidden = true;
-    group.appendChild(els.clipboardClear);
-
-    toolbar.appendChild(group);
+  function addClipboardStatus() {
+    const status = doc.querySelector('.castleStatusBar');
+    if (!status) return;
+    const group = doc.createElement('span');
+    group.className = 'castleClipboardStatus';
+    els.clipboard = toolbarButton('castleClipboardBtn', 'Paste', 'Paste at the cursor', () => {
+      if (!armClipboard()) return;
+      ex.setTool('copy');
+      ex.setStatus('Move the copy into place; click to paste, Esc to cancel.');
+    });
+    els.clipboardClear = toolbarButton('castleClipboardClearBtn', 'Clear', 'Empty the clipboard', clearClipboard);
+    group.append(els.clipboard, els.clipboardClear);
+    status.appendChild(group);
     updateClipboardButton();
   }
 
@@ -599,6 +611,7 @@
     // and whether the gesture originated in the docked or detached view.
     global.addEventListener('castle-clipboard-changed', rememberClipboard);
     global.addEventListener('castle-prepare-paste', armClipboard);
+    global.addEventListener('castle-open-groups', openGroupsDialog);
 
     // Mit der Maus kopiert wird beim Loslassen. Dieser Hoerer haengt spaeter
     // am selben Element als der des Editors und kommt deshalb danach dran.
@@ -622,7 +635,7 @@
     ex = ed?.extras;
     if (!ed || !ex || !ex.state) return false;
     addStylesheet();
-    addToolbar();
+    addClipboardStatus();
     addGroupsDialog();
     castleKey = castleKeyForPath(ed.getPath?.());
     loadGroups(castleKey);

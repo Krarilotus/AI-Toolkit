@@ -2043,3 +2043,11 @@ html.dockResizing * { user-select: none !important; }
 .releaseSourceDialog input { display: block; box-sizing: border-box; width: 100%; margin-top: 8px; padding: 8px; background: var(--surface-2); color: var(--text-main); border: 1px solid var(--line-strong); }
 .releaseSourceDialog p { color: var(--text-soft); font-size: 12px; }
 .releaseSourceActions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Selection and overlay popups share the toolbar's typography. */
+#castleSelectModeLabel, #castleSelectMode, .castleOverlayOptions .compactToggle {
+  font: 600 1.4rem/1.25 var(--font-ui);
+}
+.castleClipboardStatus { display: inline-flex; gap: 4px; margin-left: auto; }
+.castleClipboardStatus[hidden] { display: none; }
+.castleClipboardStatus button { font: 600 1.2rem/1.25 var(--font-ui); padding: 2px 6px; min-height: 22px; color: var(--text-main); background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; }
