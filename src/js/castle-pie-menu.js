@@ -21,7 +21,7 @@
       if (pointer != null && canvas.hasPointerCapture?.(pointer)) canvas.releasePointerCapture(pointer);
     }
     function open(x, y, id) {
-      close();
+      if (!gesture || gesture.id !== id) close();
       menu = doc.createElement('div');
       menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', 'Castle actions');
       menu.style.cssText = 'position:fixed;z-index:10000;width:224px;height:224px;border-radius:50%;background:#202c30;box-shadow:0 3px 18px #0009;border:1px solid #b88645;color:#e8eded;font:600 13px Arial,sans-serif;';
@@ -57,13 +57,16 @@
       if (event.button !== 2) return;
       event.preventDefault(); event.stopImmediatePropagation();
       canvas.focus?.({preventScroll:true});
-      open(event.clientX, event.clientY, event.pointerId);
+      close();
+      gesture = {x:event.clientX, y:event.clientY, id:event.pointerId};
       try { canvas.setPointerCapture(event.pointerId); } catch { /* synthetic pointer */ }
     }, true);
     canvas.addEventListener('pointermove', event => {
       if (!gesture || gesture.id !== event.pointerId) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      gesture.action = direction(event.clientX-gesture.x, event.clientY-gesture.y); highlight(gesture.action);
+      const action = direction(event.clientX-gesture.x, event.clientY-gesture.y);
+      if (!menu && action !== 'deselect') open(gesture.x, gesture.y, gesture.id);
+      if (menu) highlight(action);
     }, true);
     canvas.addEventListener('pointerup', event => {
       if (!gesture || gesture.id !== event.pointerId) return;
@@ -81,7 +84,7 @@
     canvas.addEventListener('pointercancel', close);
     canvas.addEventListener('lostpointercapture', close);
     win.addEventListener('blur', close);
-    doc.addEventListener('keydown', event => { if (event.key === 'Escape' && menu) { event.preventDefault(); close(); } });
+    doc.addEventListener('keydown', event => { if (event.key === 'Escape' && (menu || gesture)) { event.preventDefault(); close(); } });
     doc.addEventListener('pointerdown', event => { if (menu && !gesture && !menu.contains(event.target)) close(); }, true);
   }
   return {direction, bind};

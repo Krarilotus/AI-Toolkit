@@ -52,18 +52,27 @@ test('right gestures release capture; cancellation and focus loss never invoke a
       fire(type, values={}) { for (const fn of handlers[type] || []) fn({button:2,pointerId:1,clientX:300,clientY:300,preventDefault(){},stopImmediatePropagation(){},...values}); }};
   }
   const win=Object.assign(target(),{innerWidth:1000,innerHeight:800});
-  const doc=Object.assign(target(),{defaultView:win,body:{appendChild(){}},createElement(){return {
+  let menusShown=0;
+  const doc=Object.assign(target(),{defaultView:win,body:{appendChild(){menusShown++;}},createElement(){return {
     style:{},dataset:{},children:[],setAttribute(){},addEventListener(){},remove(){},
     appendChild(child){this.children.push(child);},querySelector(){return {focus(){}};}
   };}});
   let captured=false;
   const canvas=Object.assign(target(),{ownerDocument:doc,setPointerCapture(){captured=true;},hasPointerCapture(){return captured;},releasePointerCapture(){captured=false;}});
   const actions=[]; bind(canvas, action=>actions.push(action)); bind(canvas,()=>assert.fail('bound twice'));
-  canvas.fire('pointerdown');canvas.fire('pointermove',{clientY:220});canvas.fire('pointerup',{clientY:220});
+  canvas.fire('pointerdown');
+  assert.equal(menusShown,0,'right press does not open a menu');
+  canvas.fire('pointermove',{clientY:310});
+  assert.equal(menusShown,0,'small pointer jitter does not open a menu');
+  canvas.fire('pointermove',{clientY:220});
+  assert.equal(menusShown,1,'intentional directional drag opens the menu');
+  assert.equal(captured,true,'opening the menu keeps capture until release');
+  canvas.fire('pointerup',{clientY:220});
   assert.deepEqual(actions,['merge']);assert.equal(captured,false);
   for (const cancel of [()=>canvas.fire('pointercancel'),()=>win.fire('blur'),()=>doc.fire('keydown',{key:'Escape'})]) {
     canvas.fire('pointerdown');cancel();canvas.fire('pointerup',{clientX:400});
     assert.equal(captured,false);assert.deepEqual(actions,['merge']);
   }
   canvas.fire('pointerdown');canvas.fire('pointerup');assert.deepEqual(actions,['merge','deselect']);
+  assert.equal(menusShown,1,'plain clicks and cancelled gestures never open a menu');
 });
