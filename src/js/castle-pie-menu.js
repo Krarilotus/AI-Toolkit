@@ -40,7 +40,7 @@
         button.style.cssText = 'position:absolute;width:84px;height:40px;border:0;border-radius:20px;background:transparent;color:inherit;font:inherit;cursor:pointer;';
         if (action === 'groups' || action === 'replace' || action === 'deselect') button.style.width = '68px';
         button.style.left = positions[action][0]+'px'; button.style.top = positions[action][1]+'px';
-        button.addEventListener('click', () => { close(); run(action); }); menu.appendChild(button);
+        button.addEventListener('click', () => { close(); run(action, {x, y, document:doc}); }); menu.appendChild(button);
       }
       doc.body.appendChild(menu);
       // Gesture coordinates remain at the click, even when the visual menu is clamped at an edge.
@@ -69,7 +69,8 @@
       if (!gesture || gesture.id !== event.pointerId) return;
       event.preventDefault(); event.stopImmediatePropagation();
       const action = direction(event.clientX-gesture.x, event.clientY-gesture.y);
-      close(); run(action);
+      const position = {x:gesture.x, y:gesture.y, document:doc};
+      close(); run(action, position);
     }, true);
     canvas.addEventListener('contextmenu', event => { event.preventDefault(); });
     canvas.addEventListener('keydown', event => {

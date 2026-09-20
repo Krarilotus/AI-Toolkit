@@ -4008,7 +4008,7 @@
   els.canvas.addEventListener('pointerup', onPointerUp);
   els.canvas.addEventListener('pointercancel', onPointerUp);
   els.canvas.addEventListener('wheel', onWheel, { passive: false });
-  window.castlePieMenu.bind(els.canvas, action => window.castleEditor.runContextAction(action), action => state.toolShortcuts[action]?.[0]);
+  window.castlePieMenu.bind(els.canvas, (action, position) => window.castleEditor.runContextAction(action, position), action => state.toolShortcuts[action]?.[0]);
   els.canvas.addEventListener('mouseleave', () => {
     const hadPreview = state.hoverTile && (
       (state.currentItemType != null && isPlacementTool(state.tool)) ||
@@ -4120,9 +4120,9 @@
 
   window.castleEditor = {
     extras: { state, placementRefs, setTool, setStatus, renderBuildList, scheduleDraw }, // fuer editor-extras.js: Gruppen und Kopierspeicher, siehe dort
-    runContextAction(action) {
+    runContextAction(action, position) {
       if (action === 'deselect') return clearSelectionAndItem();
-      if (action === 'groups') return window.dispatchEvent(new Event('castle-open-groups'));
+      if (action === 'groups') return window.dispatchEvent(new CustomEvent('castle-open-groups', {detail:position}));
       if (action === 'cut') { cutSelection(); window.dispatchEvent(new Event('castle-clipboard-changed')); return; }
       if (action === 'replace') return state.selected.size ? openReplacementDialog(state.selected) : setTool('replace');
       if (action === 'merge') return state.selected.size ? mergeArea(state.selected) : setTool('merge');

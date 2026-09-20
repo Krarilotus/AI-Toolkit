@@ -1,29 +1,7 @@
 'use strict';
 
-/*
- * Zusatzwerkzeuge für den Burgeneditor.
- *
- * Diese Datei liegt bewusst NEBEN castle-editor.js und nicht darin. Sie haengt
- * sich von aussen an das an, was der Editor unter window.castleEditor schon
- * herausgibt; im Editor selbst steht nur eine einzige Zeile, die diese Datei
- * nachlaedt, und eine, die sein Innenleben unter .extras erreichbar macht.
- *
- * Zwei Dinge stehen hier:
- *
- *   1. Benannte Gruppen. Mehrfachauswahl und gemeinsames Verschieben gibt es
- *      schon; was fehlte, war der Name und das Wiederfinden. Eine Gruppe merkt
- *      sich Bautyp und Feld ihrer Mitglieder - nicht die laufende Nummer des
- *      Bauschritts, denn die verschiebt sich beim Umsortieren. Wird die Gruppe
- *      am Stueck verschoben, zieht sie mit; passiert etwas anderes, bleibt sie
- *      stehen, statt falsche Felder zu lernen.
- *
- *   2. Ein Kopierspeicher, der den Burgenwechsel ueberlebt. Der Editor legt
- *      seine Kopie in state.copyBuffer ab und wirft sie beim Laden einer
- *      anderen Burg weg. Hier wird sie zusaetzlich abgelegt und vor dem
- *      Einfuegen zurueckgereicht. Eingefuegt wird danach ueber den Weg des
- *      Editors selbst (placeCopy), damit die Pruefungen dieselben bleiben -
- *      Kartenrand, Hoechstzahl, Ueberlappung, gesperrte Bauschritte.
- */
+// Named selection snapshots and a persistent cross-castle clipboard.
+// Placement always uses the editor's existing validation and undo pipeline.
 
 (function (global) {
 
@@ -103,59 +81,15 @@
     return out;
   }
 
-  // Eine Gruppe merkt sich Bautyp und Feld, nicht die Nummer des Bauschritts.
-  // Beim Wiederfinden wird jedes Mitglied genau einer Setzung zugeordnet -
-  // liegen zwei gleiche Bauwerke auf demselben Feld, bekommt jedes seine
-  // eigene, statt beide auf dieselbe zu zeigen.
-  function matchMembersToRefs(members, placements) {
-    const byKey = new Map();
-    for (const placement of Array.isArray(placements) ? placements : []) {
-      const key = `${Number(placement.type)}@${Number(placement.off)}`;
-      if (!byKey.has(key)) byKey.set(key, []);
-      byKey.get(key).push(placement.ref);
-    }
-    const refs = [];
-    let missing = 0;
-    for (const member of Array.isArray(members) ? members : []) {
-      const bucket = byKey.get(`${Number(member.type)}@${Number(member.off)}`);
-      if (bucket && bucket.length) refs.push(bucket.shift());
-      else missing += 1;
-    }
-    return { refs, missing };
-  }
-
-  // Sind alle Mitglieder um denselben Betrag gewandert, war es ein
-  // gemeinsames Verschieben - und nur dann darf die Gruppe die neuen Felder
-  // lernen. Alles andere (geloescht, ersetzt, umsortiert) laesst sie in Ruhe,
-  // damit sie sich nie stillschweigend etwas Falsches merkt.
-  function uniformDelta(before, after) {
-    if (!Array.isArray(before) || !Array.isArray(after)) return null;
-    if (!before.length || before.length !== after.length) return null;
-    let dx = null;
-    let dy = null;
-    for (let i = 0; i < before.length; i++) {
-      if (Number(before[i].type) !== Number(after[i].type)) return null;
-      const oldX = Number(before[i].off) % GRID;
-      const oldY = Math.floor(Number(before[i].off) / GRID);
-      const newX = Number(after[i].off) % GRID;
-      const newY = Math.floor(Number(after[i].off) / GRID);
-      const stepX = newX - oldX;
-      const stepY = newY - oldY;
-      if (dx === null) { dx = stepX; dy = stepY; continue; }
-      if (stepX !== dx || stepY !== dy) return null;
-    }
-    return { dx, dy };
-  }
-
   function clipboardFromMembers(members, definitions) {
     const items = members.filter(member => member.type !== 61 && definitions[member.type]);
     if (!items.length) return null;
-    const x = Math.min(...items.map(item => item.off % 100));
-    const y = Math.min(...items.map(item => Math.floor(item.off / 100)));
+    const x = Math.min(...items.map(item => item.off % GRID));
+    const y = Math.min(...items.map(item => Math.floor(item.off / GRID)));
     const groups = new Map();
     for (const item of items) {
       if (!groups.has(item.type)) groups.set(item.type, {kind: definitions[item.type].kind === 'unit' ? 'unit' : 'frame', itemType: item.type, entries: []});
-      groups.get(item.type).entries.push({type: item.type, dx: item.off % 100 - x, dy: Math.floor(item.off / 100) - y});
+      groups.get(item.type).entries.push({type: item.type, dx: item.off % GRID - x, dy: Math.floor(item.off / GRID) - y});
     }
     return {groups: [...groups.values()], count: items.length};
   }
@@ -165,9 +99,7 @@
     UNSAVED_KEY,
     castleKeyForPath,
     sanitizeClipboard,
-    sanitizeGroups,
-    matchMembersToRefs,
-    uniformDelta
+    sanitizeGroups
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = pure;
@@ -188,7 +120,6 @@
   let ex = null;         // dessen Innenleben, in einer Zeile herausgereicht
   let castleKey = null;  // welche Burg gerade offen ist
   let groups = [];       // deren Gruppen
-  let active = null;     // zuletzt geholte Gruppe - sie folgt einem Verschieben
   let clipboard = null;  // Kopie, die den Burgenwechsel ueberlebt
   let rememberedBuffer = null;
   const els = {};
@@ -260,62 +191,6 @@
     return '';
   }
 
-  function selectGroup(group) {
-    const placements = placementList();
-    const { refs, missing } = matchMembersToRefs(group.members, placements);
-    if (!refs.length) {
-      setGroupError(`Nothing of "${group.name}" is on the map any more.`);
-      active = null;
-      return;
-    }
-    const byRef = new Map(placements.map(entry => [entry.ref, entry]));
-    ex.state.selected = new Set(refs);
-    ex.setTool('select');
-    ex.renderBuildList();
-    ex.scheduleDraw();
-    active = {
-      id: group.id,
-      refs: refs.slice(),
-      members: refs.map(ref => ({ type: Number(byRef.get(ref).type), off: Number(byRef.get(ref).off) }))
-    };
-    const note = missing ? ` (${missing} gone)` : '';
-    ex.setStatus(`Group "${group.name}": ${refs.length} placement${refs.length === 1 ? '' : 's'} selected${note} — drag to move them together`);
-    setGroupError('');
-  }
-
-  function updateGroupFromSelection(group) {
-    const members = selectedMembers();
-    if (!members.length) return setGroupError('Select something on the map first.');
-    group.members = members;
-    saveGroups();
-    renderGroups();
-    ex.setStatus(`Group "${group.name}" now holds ${members.length} placement${members.length === 1 ? '' : 's'}`);
-    setGroupError('');
-  }
-
-  // Nach jeder Aenderung nachsehen, ob die zuletzt geholte Gruppe am Stueck
-  // gewandert ist. Nur dann lernt sie die neuen Felder; sonst wird sie
-  // losgelassen und bleibt so, wie der Nutzer sie abgelegt hat.
-  function followActiveGroup() {
-    if (!active) return;
-    const group = groups.find(entry => entry.id === active.id);
-    if (!group) { active = null; return; }
-    const byRef = new Map(placementList().map(entry => [entry.ref, entry]));
-    const now = [];
-    for (const ref of active.refs) {
-      const placement = byRef.get(ref);
-      if (!placement) { active = null; return; }
-      now.push({ type: Number(placement.type), off: Number(placement.off) });
-    }
-    const delta = uniformDelta(active.members, now);
-    if (!delta) { active = null; return; }
-    if (delta.dx === 0 && delta.dy === 0) return;
-    group.members = now;
-    active.members = now;
-    saveGroups();
-    if (els.dialog?.open) renderGroups();
-  }
-
   function setGroupError(text) {
     if (els.error) els.error.textContent = text || '';
   }
@@ -331,21 +206,7 @@
       return;
     }
     for (const group of groups) {
-      const row = doc.createElement('div');
-      row.className = 'castleGroupRow';
-
-      const name = doc.createElement('span');
-      name.className = 'castleGroupName';
-      name.textContent = group.name;
-      row.appendChild(name);
-
-      const count = doc.createElement('span');
-      count.className = 'castleGroupCount';
-      count.textContent = `${group.members.length}`;
-      count.title = `${group.members.length} placement${group.members.length === 1 ? '' : 's'}`;
-      row.appendChild(count);
-
-      row.appendChild(rowButton('Paste', 'Load a reusable copy at the cursor', () => {
+      els.list.appendChild(rowButton(group.name, 'Copy this group for placement', () => {
         const buffer = clipboardFromMembers(group.members, ed.getItemDefinitions());
         if (!buffer) return setGroupError('This group has no copyable items.');
         ex.state.copyBuffer = buffer;
@@ -354,12 +215,6 @@
         els.dialog.close();
         ex.setStatus('Move the group into place; click to paste, Esc to cancel.');
       }));
-      row.appendChild(rowButton('Select', 'Select this group on the map, then drag to move it', () => selectGroup(group)));
-      row.appendChild(rowButton('Update', 'Replace this group with whatever is selected now', () => updateGroupFromSelection(group)));
-      row.appendChild(rowButton('Rename', 'Give this group another name', () => renameGroup(group)));
-      row.appendChild(rowButton('Delete', 'Remove this group — the buildings stay', () => deleteGroup(group)));
-
-      els.list.appendChild(row);
     }
   }
 
@@ -370,26 +225,6 @@
     button.title = title;
     button.addEventListener('click', onClick);
     return button;
-  }
-
-  function renameGroup(group) {
-    const wanted = String(global.prompt?.('New name for this group', group.name) ?? '').trim().slice(0, 60);
-    if (!wanted || wanted === group.name) return;
-    if (groups.some(other => other !== group && other.name.toLowerCase() === wanted.toLowerCase())) {
-      return setGroupError(`A group called "${wanted}" is already there.`);
-    }
-    group.name = wanted;
-    saveGroups();
-    renderGroups();
-    setGroupError('');
-  }
-
-  function deleteGroup(group) {
-    groups = groups.filter(entry => entry !== group);
-    if (active?.id === group.id) active = null;
-    saveGroups();
-    renderGroups();
-    ex.setStatus(`Group "${group.name}" removed — the buildings are untouched`);
   }
 
   // --- 3. Kopierspeicher ueber Burgen hinweg ----------------------------
@@ -441,7 +276,8 @@
   function updateClipboardButton() {
     if (!els.clipboard) return;
     const count = clipboard?.count || 0;
-    els.clipboard.textContent = count ? `Paste ${count} ? Ctrl+V` : 'Paste';
+    const key = ed.getShortcut('paste');
+    els.clipboard.textContent = count ? `Paste ${count}${key ? ' (' + key.toUpperCase() + ')' : ''}` : 'Paste';
     els.clipboard.parentElement.hidden = !count;
     els.clipboard.disabled = !count;
     els.clipboard.title = count
@@ -452,13 +288,13 @@
 
   // --- Oberflaeche einhaengen -------------------------------------------
 
-  function addStylesheet() {
-    if (doc.querySelector('link[data-castle-extras]')) return;
-    const link = doc.createElement('link');
+  function addStylesheet(owner = doc) {
+    if (owner.querySelector('link[data-castle-extras]')) return;
+    const link = owner.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'css/editor-extras.css';
+    link.href = new URL('css/editor-extras.css', doc.baseURI).href;
     link.dataset.castleExtras = 'true';
-    doc.head.appendChild(link);
+    owner.head.appendChild(link);
   }
 
   function toolbarButton(id, label, title, onClick) {
@@ -488,90 +324,51 @@
   }
 
   function addGroupsDialog() {
-    if (doc.getElementById('castleGroupsDialog')) return;
     const dialog = doc.createElement('dialog');
     dialog.id = 'castleGroupsDialog';
-    dialog.className = 'ucpCreateDialog castleGroupsDialog';
-
-    const form = doc.createElement('form');
-    form.id = 'castleGroupsForm';
-
-    const heading = doc.createElement('div');
-    heading.className = 'ucpCreateHeading';
-    const title = doc.createElement('h2');
-    title.textContent = 'Groups';
-    const hint = doc.createElement('p');
-    hint.textContent = 'A group remembers which buildings belong together. Select them on the map, save them under a name, and pick them up again any time — moving them stays the same drag as before.';
-    heading.appendChild(title);
-    heading.appendChild(hint);
-    form.appendChild(heading);
-
-    const newRow = doc.createElement('div');
-    newRow.className = 'castleGroupsNew';
-    els.name = doc.createElement('input');
-    els.name.type = 'text';
-    els.name.id = 'castleGroupNameInput';
-    els.name.placeholder = 'Name for the current selection';
-    els.name.maxLength = 60;
-    els.name.autocomplete = 'off';
-    newRow.appendChild(els.name);
-    const saveBtn = doc.createElement('button');
-    saveBtn.type = 'submit';
-    saveBtn.textContent = 'Save selection';
-    newRow.appendChild(saveBtn);
-    form.appendChild(newRow);
-
-    els.list = doc.createElement('div');
-    els.list.id = 'castleGroupsList';
-    els.list.className = 'castleGroupsList';
-    form.appendChild(els.list);
-
-    els.error = doc.createElement('div');
-    els.error.id = 'castleGroupsError';
-    els.error.className = 'castleShortcutError';
-    els.error.setAttribute('role', 'alert');
-    form.appendChild(els.error);
-
-    const actions = doc.createElement('div');
-    actions.className = 'ucpCreateActions castleShortcutActions';
-    const spacer = doc.createElement('span');
-    spacer.className = 'castleShortcutActionSpacer';
-    actions.appendChild(spacer);
-    const closeBtn = doc.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.textContent = 'Close';
-    closeBtn.addEventListener('click', () => dialog.close());
-    actions.appendChild(closeBtn);
-    form.appendChild(actions);
-
+    dialog.className = 'castleGroupsDialog';
+    dialog.setAttribute('aria-label', 'Groups');
+    const form = doc.createElement('form'); form.id = 'castleGroupsForm';
+    const nameRow = doc.createElement('div'); nameRow.className = 'castleGroupsNew';
+    const name = doc.createElement('input'); name.id = 'castleGroupNameInput';
+    name.placeholder = 'Group name'; name.setAttribute('aria-label', 'Group name');
+    name.maxLength = 60; name.autocomplete = 'off';
+    const save = doc.createElement('button'); save.type = 'submit'; save.textContent = 'Save group';
+    nameRow.append(name, save);
+    const list = doc.createElement('div'); list.id = 'castleGroupsList'; list.className = 'castleGroupsList';
+    const error = doc.createElement('div'); error.setAttribute('role', 'alert');
+    form.append(nameRow, list, error); dialog.appendChild(form); doc.body.appendChild(dialog);
+    Object.assign(els, {dialog, name, nameRow, list, error});
     form.addEventListener('submit', event => {
       event.preventDefault();
-      const name = String(els.name.value || '').trim().slice(0, 60);
-      if (!name) return setGroupError('Give the group a name first.');
-      const problem = newGroupFromSelection(name);
+      const value = name.value.trim();
+      const problem = value ? newGroupFromSelection(value) : 'Enter a group name.';
       if (problem) return setGroupError(problem);
-      els.name.value = '';
-      setGroupError('');
+      name.value = ''; dialog.close();
     });
-
-    // Tasten im Fenster gehoeren dem Fenster. Ohne das wuerde ein "1" im
-    // Namensfeld nebenbei das Werkzeug umschalten.
     dialog.addEventListener('keydown', event => event.stopPropagation());
-
-    dialog.appendChild(form);
-    doc.body.appendChild(dialog);
-    els.dialog = dialog;
+    dialog.addEventListener('click', event => {
+      const bounds = dialog.getBoundingClientRect();
+      if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) dialog.close();
+    });
   }
 
-  function openGroupsDialog() {
-    renderGroups();
-    setGroupError('');
-    const selected = ex.state.selected?.size || 0;
-    els.name.placeholder = selected
-      ? `Name for the ${selected} selected placement${selected === 1 ? '' : 's'}`
-      : 'Select something on the map first';
+  function openGroupsDialog(event) {
+    const selected = selectedMembers().length > 0;
+    els.nameRow.hidden = !selected;
+    els.list.hidden = selected;
+    renderGroups(); setGroupError('');
+    const position = event?.detail;
+    const owner = position?.document || doc;
+    addStylesheet(owner);
+    if (els.dialog.open) els.dialog.close();
+    if (els.dialog.ownerDocument !== owner) owner.body.appendChild(els.dialog);
+    els.dialog.style.margin = position ? '0' : 'auto';
+    els.dialog.style.left = position ? `${Math.max(8, Math.min(position.x, owner.defaultView.innerWidth - 328))}px` : '';
+    els.dialog.style.top = position ? `${Math.max(8, Math.min(position.y, owner.defaultView.innerHeight - 280))}px` : '';
     els.dialog.showModal();
-    els.name.focus();
+    if (selected) els.name.focus();
+    else els.list.querySelector('button')?.focus();
   }
 
   // --- Was sich waehrend der Arbeit aendert ------------------------------
@@ -590,14 +387,12 @@
           writeStore(GROUP_STORE, all);
         }
         castleKey = key;
-        active = null;
         loadGroups(key);
         // Immer neu zeichnen, auch bei geschlossenem Fenster: sonst stehen im
         // zugeklappten Fenster noch die Gruppen der vorigen Burg.
         renderGroups();
         return;
       }
-      if (staticChanged) followActiveGroup();
     });
   }
 
