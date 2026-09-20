@@ -829,7 +829,15 @@ ipcMain.handle('load-config', async (_event, file) => {
   const safeName = path.basename(String(file));
   const filePath = path.join(runtimeConfigDir(), safeName);
   const content = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(content);
+  const configured = JSON.parse(content);
+  // Older customized item files retain their values while receiving newly
+  // introduced item behavior fields. Category names never determine behavior.
+  if (safeName === 'aiv_constants.json') {
+    const defaults = JSON.parse(fs.readFileSync(path.join(defaultConfigDir(), safeName), 'utf-8'));
+    return Object.fromEntries(Object.entries({ ...defaults, ...configured })
+      .map(([id, item]) => [id, { ...defaults[id], ...item }]));
+  }
+  return configured;
 });
 
 ipcMain.handle('load-file-in-new-window', async (_event, kind = 'json') => {
