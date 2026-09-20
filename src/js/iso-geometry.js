@@ -229,8 +229,7 @@
       gewaehlt = suche('treppe') || suche('mauer') || gewaehlt;
     }
     if (!gewaehlt) return sprite;
-    return { bild: gewaehlt.bild, breite: gewaehlt.breite,
-             hoehe: gewaehlt.hoehe, kacheln: sprite.kacheln };
+    return { ...gewaehlt, kacheln: sprite.kacheln };
   }
 
   function variantFor(sprite, gx, gy, mauerAn, hoeheAn) {
@@ -259,8 +258,7 @@
       else if (traegt(gx, gy + 1)) gewaehlt = mauer.rand.quer[welche];
     }
     if (!gewaehlt) gewaehlt = mauer.rand.allein[welche];
-    return { bild: gewaehlt.bild, breite: gewaehlt.breite,
-             hoehe: gewaehlt.hoehe, kacheln: sprite.kacheln };
+    return { ...gewaehlt, kacheln: sprite.kacheln };
   }
 
   // Nachschlagewerk fuer die Regel oben: welches Feld traegt eine Mauer.

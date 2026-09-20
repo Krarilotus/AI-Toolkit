@@ -33,7 +33,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { explode } = require('node-pkware/simple');
 const { encodeRgbaPng } = require('./pixel-image');
-const { colourOf, readGm1, tgxToRgba, diamondToRgba, upperTilePicture } = require('./gm1');
+const { resolveGameGraphics } = require('./game-graphics');
+const { readGm1, tgxToRgba, diamondToRgba, upperTilePicture, pillarPicture } = require('./gm1');
 const { virtualToFile } = require('./pe-addresses');
 const { packMapPictures } = require('./pixel-atlas');
 const { cachedAtlas } = require('./map-atlas-cache');
@@ -122,23 +123,17 @@ const PILLAR_HEAD = 7;             // imh.height - 7 = nutzbare Zeilen (167-7=16
 // = 160 Zeilen zu 60 Byte, also unverpackt zwei Byte je Punkt. Von 4.611.642
 // erhoehten Feldern auf 60 Karten nennen 66 % ein Bild aus dieser Datei, 12 %
 // eines aus tile_land8, 9 % aus tile_chevrons, 12 % gar keines. Nur die aus
-// tile_cliffs sind unverpackte Streifen; fuer die anderen nimmt das Werkzeug
+// tile_cliffs und tile_walls sind unverpackte Streifen; fuer andere nimmt das Werkzeug
 // tile_cliffs #0. Das ist ein ERSATZ, keine Messung - sichtbar ist die Kante
 // ohnehin nur an einer Stufe.
 const CLIFF_FILE = 'tile_cliffs';
-const CLIFF_STRIP = 30 * 2;        // Bytes je Zeile eines Steilkanten-Streifens
 const MAX_LIFT = 255;              // ein Byte, mehr kann der HeightLayer nicht
 const FIRST_ROCK = 2000;           // ab hier ist es ein Fels, kein Baum
 const NAME_LIST_VA = 0xb601c0;     // Namensliste der gm-Dateien in der exe
 const NAME_STRIDE = 1000;
-// Gemessen, nicht hergeleitet: ab Listenplatz 149 liegt der Zaehler des Spiels
-// um 21 Bilder unter der Summe aus exe-Liste und Dateikoepfen. Woher die 21
-// kommen, ist offen - der Wert ist an 11.497.200 Feldern aus 143 Karten
-// angepasst (VillageStudio/lib/gelaende.js).
-const PICTURE_SHIFT_FROM = 149, PICTURE_SHIFT = 21;
+const SAVED_PICTURE_LAYOUT = require('../../config/map-picture-layout.json');
 const TILE_W = 30, TILE_H = 16;    // eine Rautenkachel des Spiels
 const TREE_DX = 14, TREE_DY = 6;   // renderMap haengt einen Baum so an sein Feld
-const GM1_HEAD = 88;
 // Ein Feld ausserhalb des Dorfes wird von der Ansicht ohnehin abgeschnitten.
 // Ein Feld Zugabe, damit am Rand kein durchsichtiger Streifen stehen bleibt.
 const CLIP_MARGIN = 1;
@@ -342,32 +337,6 @@ function treePicture(gameRoot, name, tree) {
     rgba: tgxToRgba(raw, entry.width, entry.height, palette) };
 }
 
-function cliffReader(gameRoot) {
-  const cliffHeld = new Map();
-  return (name, index) => {
-    const key = `${name}#${index}`;
-    const found = cliffHeld.get(key);
-    if (found) return found;
-    const gm1 = heldGm1(gameRoot, name);
-    const entry = gm1.pictures[index];
-    if (!entry || entry.width !== TILE_W) return null;
-    const zeilen = entry.height - PILLAR_HEAD;
-    if (zeilen < 1 || entry.size < zeilen * CLIFF_STRIP) return null;
-    const raw = gm1.buffer.subarray(gm1.picturesAt + entry.offset, gm1.picturesAt + entry.offset + entry.size);
-    const bild = Buffer.alloc(TILE_W * zeilen * 4, 0);
-    for (let y = 0; y < zeilen; y += 1) {
-      for (let x = 0; x < TILE_W; x += 1) {
-        const rgb = colourOf(raw.readUInt16LE(y * CLIFF_STRIP + x * 2));
-        const at = (y * TILE_W + x) * 4;
-        bild[at] = rgb[0]; bild[at + 1] = rgb[1]; bild[at + 2] = rgb[2]; bild[at + 3] = 255;
-      }
-    }
-    const streifen = { bild, zeilen };
-    cliffHeld.set(key, streifen);
-    return streifen;
-  };
-}
-
 // Die Namensliste der exe steht an einer virtuellen Adresse; in der Datei
 // liegt sie woanders. Der PE-Kopf sagt, wie beides zusammenhaengt.
 // Die Ladereihenfolge der gm-Dateien samt Bildzahl und Startplatz. Einmal je
@@ -380,33 +349,67 @@ function readPictureStock(gameRoot) {
   const start = toFile(NAME_LIST_VA);
   if (start < 0) throw new Error('The game executable does not carry the list of picture files.');
 
-  const files = [];
-  let total = 0;
-  for (let index = 0; index < 260; index += 1) {
-    const at = start + index * NAME_STRIDE;
-    if (at + 64 > exe.length) break;
+  for (const entry of SAVED_PICTURE_LAYOUT.files) {
+    const at = start + (entry.gmId - 1) * NAME_STRIDE;
     const name = exe.toString('ascii', at, at + 64).replace(/\0.*$/s, '');
-    if (!/^[\w\-. ]+$/.test(name)) break;
-    if (name === 'null') break;                 // loadGmFiles bricht hier ab
-    let count = 0;
-    const file = path.join(gameRoot, 'gm', `${name}.gm1`);
-    if (fs.existsSync(file)) {
-      const handle = fs.openSync(file, 'r');
-      const head = Buffer.alloc(GM1_HEAD);
-      try { fs.readSync(handle, head, 0, GM1_HEAD, 0); } finally { fs.closeSync(handle); }
-      count = head.readUInt32LE(12);
-    }
-    files.push({ gmId: index + 1, name, count, from: total - (index >= PICTURE_SHIFT_FROM ? PICTURE_SHIFT : 0) });
-    total += count;
+    if (name !== entry.name) throw new Error('Unsupported game picture-file layout.');
   }
-  const stock = {
-    files,
-    withPictures: files.filter(entry => entry.count > 0).sort((a, b) => a.from - b.from),
-    byGmId: new Map(files.map(entry => [entry.gmId, entry])),
-    total
-  };
+  // Saved GFX values belong to the map format's picture layout. Replacement
+  // texture counts must never shift IDs for every subsequent file.
+  const files = SAVED_PICTURE_LAYOUT.files.map(file => ({...file}));
+  const stock = pictureStock(files, 'classic');
   pictureStockHeld = { root: gameRoot, stock };
   return stock;
+}
+
+function pictureStock(files, layout) {
+  return {files, layout, total:Math.max(...files.map(file => file.from + file.count)),
+    withPictures:files.filter(entry => entry.count > 0).sort((a,b) => a.from-b.from),
+    byGmId:new Map(files.map(entry => [entry.gmId,entry]))};
+}
+
+// loadGmFiles advances the global counter by the actual picture
+// count. Saved maps can carry either classic IDs or IDs from a replacement
+// pack. Captures have known provenance and use the base files of that capture.
+function installedPictureStock(gameRoot, overrides = true) {
+  let total = 0;
+  const files = readPictureStock(gameRoot).files.map(entry => {
+    const file = overrides && activeGraphics?.root === path.resolve(gameRoot)
+      ? activeGraphics.file(entry.name) : path.join(gameRoot, 'gm', `${entry.name}.gm1`);
+    let count = 0;
+    if (fs.existsSync(file)) {
+      const header = Buffer.alloc(24), handle = fs.openSync(file, 'r');
+      try { fs.readSync(handle, header, 0, 24, 0); } finally { fs.closeSync(handle); }
+      count = header.readUInt32LE(12);
+    }
+    const from = total; total += count;
+    return {...entry, from, count};
+  });
+  return pictureStock(files, overrides ? 'installed' : 'capture');
+}
+
+function choosePictureStock(gfx, candidates, validPicture) {
+  const values = new Set();
+  for (let at=0;at<gfx.length;at+=2) if (gfx.readUInt16LE(at)) values.add(gfx.readUInt16LE(at));
+  const checked = candidates.map(stock => ({stock, invalid:[...values].filter(value => {
+    const picture = pictureForValue(stock,value);
+    return !picture || !validPicture(picture);
+  }).length}));
+  // Switch only on a fully valid alternative. In ambiguous/unsupported maps
+  // preserve classic compatibility, rather than silently selecting a partial fit.
+  return checked.find(candidate => candidate.invalid === 0)?.stock || candidates[0];
+}
+
+function savedPictureStock(gameRoot, gfx) {
+  const headers = new Map();
+  return choosePictureStock(gfx, [readPictureStock(gameRoot), installedPictureStock(gameRoot)], picture => {
+    if (!headers.has(picture.name)) {
+      try { const file=heldGm1(gameRoot,picture.name); headers.set(picture.name,{type:file.buffer.readUInt32LE(20),count:file.count}); }
+      catch { headers.set(picture.name,{type:0,count:0}); }
+    }
+    const header=headers.get(picture.name);
+    return header.type === 3 && picture.index < header.count;
+  });
 }
 
 // Bildnummer aus dem GfxLayer -> Datei und Nummer darin. renderGM greift auf
@@ -427,12 +430,14 @@ function pictureForValue(stock, value) {
   return null;
 }
 
+let activeGraphics = null;
 const gm1Held = new Map();
 function heldGm1(gameRoot, name) {
-  const key = `${gameRoot}|${name}`;
+  const file = activeGraphics?.root === path.resolve(gameRoot) ? activeGraphics.file(name) : path.join(gameRoot, 'gm', `${name}.gm1`);
+  const key = file;
   const found = gm1Held.get(key);
   if (found) return found;
-  const parsed = readGm1(fs.readFileSync(path.join(gameRoot, 'gm', `${name}.gm1`)));
+  const parsed = readGm1(fs.readFileSync(file));
   if (gm1Held.size >= GM1_CACHE_MAX) gm1Held.delete(gm1Held.keys().next().value);
   gm1Held.set(key, parsed);
   return parsed;
@@ -616,7 +621,7 @@ function readGameMap(filePath, gameRoot) {
 const ATLAS_SPALTEN = 64;          // 64 * 30 = 1920 Punkte breit
 
 function buildTileAtlas(gfx, gameRoot, layers = {}) {
-  const stock = readPictureStock(gameRoot);
+  const stock = layers.stock || savedPictureStock(gameRoot, gfx);
 
   // Welche Bildnummern kommen ueberhaupt vor? Jede bekommt einen festen Platz.
   const platzVon = new Map();
@@ -642,7 +647,7 @@ function buildTileAtlas(gfx, gameRoot, layers = {}) {
     try {
       const gm1 = heldGm1(gameRoot, found.name);
       const entry = gm1.pictures[found.index];
-      if (entry) {
+      if (entry && gm1.buffer.readUInt32LE(20) === 3) {
         const raw = gm1.buffer.subarray(gm1.picturesAt + entry.offset, gm1.picturesAt + entry.offset + entry.size);
         bild = diamondToRgba(raw.subarray(0, 512));
         upperPictures[platz] = upperTilePicture(entry, raw);
@@ -678,7 +683,6 @@ function buildTileAtlas(gfx, gameRoot, layers = {}) {
   const treeSprites = [];
   const cliffSprites = new Uint16Array(400 * 400);
   const cliffIndices = new Map();
-  const readCliff = cliffReader(gameRoot);
   if (layers.heights?.length === MAP_TILES) {
     const atHeight = (x, y, fallback) => {
       if (y < 0 || y >= 400) return fallback;
@@ -693,15 +697,16 @@ function buildTileAtlas(gfx, gameRoot, layers = {}) {
           atHeight(mx, my - 1, lift), atHeight(mx, my + 1, lift)) >= lift) continue;
         const found = layers.pillars?.length === MAP_TILES * 2
           ? pictureForValue(stock, layers.pillars.readUInt16LE(tile * 2)) : null;
-        // Same documented fallback as the cropped renderer.
-        const index = found?.name === CLIFF_FILE ? found.index : 0;
-        let packed = cliffIndices.get(index);
+        const name = found?.name || CLIFF_FILE, index = found?.index || 0;
+        const key = `${name}:${index}:${lift}`;
+        let packed = cliffIndices.get(key);
         if (packed === undefined) {
-          const strip = readCliff(CLIFF_FILE, index) || readCliff(CLIFF_FILE, 0);
+          const strip = pillarPicture(heldGm1(gameRoot, name), index, lift)
+            || pillarPicture(heldGm1(gameRoot, CLIFF_FILE), 0, lift);
           if (!strip) continue;
           packed = upperPictures.length;
-          upperPictures.push({ width: TILE_W, height: strip.zeilen, dx: 0, dy: PILLAR_TOP, rgba: strip.bild });
-          cliffIndices.set(index, packed);
+          upperPictures.push(strip);
+          cliffIndices.set(key, packed);
         }
         cliffSprites[my * 400 + mx] = packed + 1;
       }
@@ -829,18 +834,20 @@ function buildMapTiles(source, nativeLayers = null) {
   }
   // Resolve the desert tile through the executable's GM table, not a global
   // sprite number. tile_land8 picture 0 is a plain desert diamond.
-  const desert = readPictureStock(root).files.find(file => file.name === 'tile_land8' && file.count);
+  const stock = nativeLayers ? installedPictureStock(root, false) : savedPictureStock(root, gfx);
+  const desert = stock.files.find(file => file.name === 'tile_land8' && file.count);
   if (keeps.length && !desert) throw new Error('The game desert terrain graphics are missing.');
   const groundOnly = layer => replaceMapKeeps(layer, keeps, (desert?.from || 0) + 1);
   const heightRaster = heights ? Buffer.from(hoehenRaster(heights)).toString('base64') : null;
   const cameras = nativeLayers?.cameras.map(layer => ({
-    ...buildTileAtlas(groundOnly(layer.gfx), root, { organisms, trees, pillars: layer.pillars, heights: nativeLayers.heights }),
+    ...buildTileAtlas(groundOnly(layer.gfx), root, { stock, organisms, trees, pillars: layer.pillars, heights: nativeLayers.heights }),
     hoehen: heightRaster
   }));
-  const vorrat = cameras?.[0] || buildTileAtlas(groundOnly(gfx), root, { organisms, trees, pillars, heights });
+  const vorrat = cameras?.[0] || buildTileAtlas(groundOnly(gfx), root, { stock, organisms, trees, pillars, heights });
   return {
     name: known.name,
     path: known.path,
+    pictureLayout: stock.layout,
     ...vorrat,
     ...(cameras ? { cameras, nativeRenderer: true } : {}),
     // Hoehen in derselben Zaehlung wie die Plaetze: volles 400x400-Raster.
@@ -849,7 +856,9 @@ function buildMapTiles(source, nativeLayers = null) {
 }
 
 function readMapTiles(filePath, gameRoot, nativeLayers = null) {
-  return buildMapTiles(readMapSource(filePath, gameRoot), nativeLayers);
+  const source = readMapSource(filePath, gameRoot);
+  selectGraphics(source.root);
+  return buildMapTiles(source, nativeLayers);
 }
 
 // Validate/parse once, then materialize exactly the representation that is used.
@@ -862,8 +871,15 @@ async function resolveNativeMapTiles(source, loadNative, build = buildMapTiles) 
 }
 
 let atlasAssetRevision = null;
+function selectGraphics(root) {
+  const graphics = resolveGameGraphics(root);
+  if (activeGraphics?.revision !== graphics.revision || activeGraphics?.root !== graphics.root) gm1Held.clear();
+  activeGraphics = graphics;
+  return graphics;
+}
 async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
   const source = readMapSource(filePath, gameRoot);
+  const graphics = selectGraphics(source.root);
   return resolveNativeMapTiles(source, () => readCachedNativeMap({
     gameRoot, mapPath: source.known.path, cacheRoot
   }), (parsed, layers) => {
@@ -880,7 +896,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, [parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash],
+    return cachedAtlas(cacheRoot, [parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }
@@ -894,7 +910,7 @@ module.exports = {
   // fuer die Tests und fuer Werkzeuge, die eine Karte ohne Electron lesen
   internals: { readMapSource, buildMapTiles, resolveNativeMapTiles, replaceMapKeeps, pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
-               readPictureStock, pictureForValue, readGm1, tgxToRgba, virtualToFile,
+               readPictureStock, pictureForValue, choosePictureStock, pictureStock, readGm1, tgxToRgba, virtualToFile,
                readTrees, cactusPicture, TREE_STRIDE, FIRST_ROCK,
                buildTileAtlas, diamondToRgba, upperTilePicture, packMapPictures, heldGm1, ATLAS_SPALTEN,
                PREVIEW_EDGE, MAP_TILES, BUILDING_SECTION, BUILDINGS_SECTION, STONE_KEEP, KEEP_EDGE,

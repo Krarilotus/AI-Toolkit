@@ -1,0 +1,76 @@
+# Game texture sources and scenery composition
+
+The 2.5D view reads building and terrain GM1 textures from the selected game
+installation. `game-graphics.js` resolves base `gm` files, followed by literal
+`modules.files:registerFileSource(...)` registrations in active UCP plugin load
+order. Later registrations win, matching `extension-files/overrides/registry`.
+Only `resources/gm` participates: a pack's `gmx` folder is inactive under that
+module. No plugin Lua, executable, or game process is run.
+
+This is a deliberately bounded static resolver. Dynamically calculated Lua
+paths, ZIP-only plugins, and runtime texture modification hooks are not
+interpreted. A game's running memory is not a texture source for the editor.
+
+## Buildings
+
+`iso-source-parts.json` maps bundled atlas coordinates to native GM1 picture
+identities. Regenerate it with `scripts/export-native-building-parts.js
+GAME_FOLDER --sources-only` against the documented reference executable.
+`iso-wall-sources.json` records the top tile and wall pillar for each wall/stair
+variant. All 236 composites were matched pixel-for-pixel against the existing
+bundled sprites using the reference game's `tile_land3` and `tile_walls`.
+
+The shared GM1 decoder builds a lossless atlas in a worker thread. The disk
+cache identity includes selected files' paths, sizes, mtimes, catalogue and
+source mappings. Concurrent view mounts share the same job. Geometry does not
+change with a texture pack; no image resizing or lossy conversion is used.
+Missing replacement picture indices fall back to the base file and are listed
+in the returned catalogue's `assetWarnings`. Failure to load the installation
+retains the bundled catalogue, with a console diagnostic.
+
+## Terrain IDs and pillars
+
+Saved map GFX values are global picture IDs. Some maps were saved with the
+classic layout; the supplied Reconquista maps were saved with the replacement
+pack's different picture counts. Neither layout can safely be assumed for all
+maps. The loader tests unique GFX IDs against GM1 type-3 tile files and valid
+local picture indices. It uses the installed pack layout only when the classic
+layout fails validation and the pack layout validates completely. Ambiguous or
+unsupported cases retain classic compatibility. Non-tile references are counted
+as missing instead of decoding animation bytes as raw tile pixels.
+
+`map-picture-layout.json` preserves the existing classic compatibility layout,
+including its empirical 21-picture correction after slot 149. The origin of that
+legacy correction remains unresolved. The installed layout follows the game's
+`TextureRenderCore::loadGmFiles` cumulative counts without that correction.
+Validated native captures use their captured base-installation layout directly,
+independently of currently active overrides. Runtime cache format was bumped so
+old atlas pixels cannot survive the geometry/layout changes.
+
+OpenSHC's decompilation of `Rendering::BlitMapImageWithVerticalClip` (0x453b00)
+writes each two-pixel column at vertical offsets 0,1,...,7,...,1,0. GM1 type-5
+pillar rows therefore need this stagger, not rectangular stretching. Pillars
+are prepared at their displayed height when the map atlas is built. Type-5
+wall pillars are preserved too; non-strip references still use the established
+cliff fallback. Runtime cliff continuation/blending and neighbour half-face
+clipping are not fully emulated.
+
+## Construction clears scenery
+
+Ground and pillar commands remain in the immutable terrain cache. Upper
+scenery and tree commands are also recorded once, but are filtered against the
+visible construction footprints and attached ground plates before merging in
+depth order. Advancing past a placement removes covered scenery; stepping back
+restores the original command objects. Adjacent scenery is retained. Neither
+operation modifies the source map or rebuilds its terrain atlas.
+
+## Reconquista verification
+
+The shared Reconquista 1.0.0 ZIP contains 68 GM1 files under `resources/gmx`,
+not an active `gm` folder. Several picture counts differ from the reference
+installation (including deer, churches, land macros and ruins). For offline
+verification only, the files were copied into an isolated test plugin's `gm`
+folder and activated via a fixture configuration. Neither the original archive
+nor the user's game installation was modified. Both supplied maps selected the installed-pack layout and decoded with
+zero missing terrain pictures: 1,167 and 2,288 unique pictures. This checks an
+explicitly activated pack; it does not establish the friend's runtime setup.

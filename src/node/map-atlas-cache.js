@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 
 // One derived map only: bounded disk usage, no stale per-step or per-map trees.
 // Increment when terrain decoding, composition or the returned schema changes.
-const FORMAT = 'map-atlas-v1';
+const FORMAT = 'map-atlas-v2';
 const MAX_BYTES = 128 * 1024 * 1024;
 function cachedAtlas(directory, identity, build) {
   const key = crypto.createHash('sha256').update(FORMAT + JSON.stringify(identity)).digest('hex');

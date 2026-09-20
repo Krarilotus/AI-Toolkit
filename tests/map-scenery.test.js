@@ -87,3 +87,22 @@ test('cactus picture selection clamps each variety and rejects non-cactus types'
   assert.equal(internals.cactusPicture(16, 0), 10);
   assert.equal(internals.cactusPicture(2, 3), 0, 'ein Baum ist kein Kaktus - da wird nichts geraten');
 });
+
+
+test('native pillars follow both sloped tile edges and repeat source rows without stretching', () => {
+  const {pillarPicture} = require('../src/node/gm1');
+  const buffer = Buffer.alloc(24 + 60 * 2); buffer.writeUInt32LE(5, 20);
+  for (let x=0;x<30;x++) {buffer.writeUInt16LE(0x7c00,24+x*2);buffer.writeUInt16LE(0x03e0,84+x*2);}
+  const file = {buffer, picturesAt:24, pictures:[{offset:0,size:120,width:30,height:9}]};
+  const p = pillarPicture(file, 0, 3);
+  assert.equal(p.height, 10);
+  const pixel = (x,y) => [...p.rgba.subarray((y*30+x)*4,(y*30+x+1)*4)];
+  for (let x=0;x<30;x++) {
+    const shift = Math.min(x>>1,(29-x)>>1);
+    assert.deepEqual(pixel(x,shift),[255,0,0,255]);
+    assert.deepEqual(pixel(x,shift+1),[0,255,0,255]);
+    assert.deepEqual(pixel(x,shift+2),[255,0,0,255]);
+    if (shift) assert.equal(pixel(x,shift-1)[3],0);
+  }
+  buffer.writeUInt32LE(3,20);assert.equal(pillarPicture(file,0,3),null);
+});

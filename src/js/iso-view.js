@@ -49,16 +49,28 @@
 
   // ---------------------------------------------------------- sprites
 
-  async function loadCatalogue() {
-    if (state.catalogue) return state.catalogue;
-    try {
+  let catalogueRequest = null;
+  function loadCatalogue() {
+    if (state.catalogue) return Promise.resolve(state.catalogue);
+    if (!catalogueRequest) catalogueRequest = (async () => {
       const response = await fetch(CATALOGUE_PATH);
       if (!response.ok) throw new Error(String(response.status));
-      state.catalogue = await response.json();
-    } catch {
-      state.catalogue = { gegenstaende: {} };
-    }
-    return state.catalogue;
+      const bundled = await response.json();
+      try { return await window.electronAPI?.loadGameBuildingAssets?.() || bundled; }
+      catch (error) { console.warn('Game building textures unavailable:', error); return bundled; }
+    })().catch(error => { console.warn('Building catalogue unavailable:', error); return {gegenstaende: {}}; });
+    const request = catalogueRequest;
+    return request.then(catalogue => {
+      if (catalogueRequest === request) state.catalogue = catalogue;
+      return catalogue;
+    });
+  }
+
+  async function reloadGameAssets() {
+    catalogueRequest = null;
+    state.catalogue = null;
+    await loadCatalogue();
+    refresh();
   }
 
   function image(filename, terrainAsset = false) {
@@ -511,13 +523,9 @@
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
         state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
         if (cliff && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          const lift = v.hoehen[feld];
-          for (let row = 0; row < lift; row += cliff.height) {
-            const rows = Math.min(cliff.height, lift - row);
-            target.drawImage(v.upperImage, cliff.x, cliff.y, cliff.width, rows,
-              tileLeft, py - hebung + (cliff.dy + row) * state.view.zoom,
-              tileWidth, rows * state.view.zoom);
-          }
+          target.drawImage(v.upperImage, cliff.x, cliff.y, cliff.width, cliff.height,
+            tileLeft, py - hebung + cliff.dy * state.view.zoom,
+            tileWidth, cliff.height * state.view.zoom);
         }
         target.drawImage(v.bild,
           (platz % v.spalten) * kw, Math.floor(platz / v.spalten) * kh, kw, kh,
@@ -525,7 +533,7 @@
         }});
         const upper = v.upperEntries[platz];
         if (upper && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, draw: (target = ctx) => {
+          state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
               tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
@@ -535,7 +543,7 @@
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
         if (treePicture && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, draw: (target = ctx) => {
+          state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
               tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
@@ -617,7 +625,9 @@
     const img = image(variant.bild);
     if (!img || !img.complete || !img.naturalWidth) return false;
     const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, bauHoehe(gx, gy, tiles));
-    ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+    if (Number.isFinite(variant.sx) && Number.isFinite(variant.sy)) {
+      ctx.drawImage(img, variant.sx, variant.sy, variant.breite, variant.hoehe, rect.x, rect.y, rect.w, rect.h);
+    } else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
     return true;
   }
 
@@ -829,10 +839,12 @@
 
   function cacheTerrainCommands() {
     const commands = state.mapSceneryCommands = [];
+    state.mapObjectCommands = [];
     const buckets = state.mapSceneryBuckets = new Map();
     for (const item of state.mapScenery.sort(geo.renderOrder)) {
       for (const command of recordSceneCommands(item, false, recorder => item.draw(recorder))) {
         Object.freeze(command);
+        if (item.clearable) { state.mapObjectCommands.push(command); continue; }
         const index = commands.push(command) - 1;
         for (const cell of sceneCells(command)) {
           if (!buckets.has(cell)) buckets.set(cell, []);
@@ -840,6 +852,18 @@
         }
       }
     }
+  }
+
+  // The ground stays cached. Only overground objects under visible construction
+  // disappear, so stepping backward restores them without rebuilding terrain.
+  function visibleMapObjects(items, plates) {
+    const occupied = new Set();
+    for (const item of [...items, ...plates]) {
+      for (let y = 0; y < item.tiles; y++) for (let x = 0; x < item.tiles; x++)
+        occupied.add(`${item.gx + x}:${item.gy + y}`);
+    }
+    return (state.mapObjectCommands || []).filter(command =>
+      !occupied.has(`${command.order.gx}:${command.order.gy}`));
   }
 
   /** Query in original painter order, deduplicating sprites spanning cells. */
@@ -934,7 +958,7 @@
     });
     // Scenery is no longer flattened underneath every building. Each upper
     // tile participates in the same depth order as the castle sprites.
-    const buildingCommands = [];
+    const placedCommands = [];
     for (const item of buildingSprites.sort(geo.renderOrder)) {
       const flammable = (window.castleGameData?.flammability[window.castleCostData?.buildings[item.itemType]?.balance] || 0) > 0;
       const recorded = recordSceneCommands(item, flammable, recorder => {
@@ -950,8 +974,9 @@
           missing++;
         }
       });
-      buildingCommands.push(...recorded);
+      placedCommands.push(...recorded);
     }
+    const buildingCommands = [...mergeSceneCommands(visibleMapObjects(items, plates), placedCommands)];
     const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
       buildingCommands.filter(command => intersectsSceneRect(command, rect)));
     if (state.nativeTerrain && state.gpu) {
@@ -1630,7 +1655,7 @@
 
   window.isoView = { init, openWindow, closeWindow, mountDock, unmount, refresh, paint, fit, isMounted, panFromKey,
                      findControl: id => state.controls?.querySelector(`#${id}`),
-                     setGameMap, setGameMapKeep, hasGameMap, gameMapInfo,
+                     setGameMap, setGameMapKeep, hasGameMap, gameMapInfo, reloadGameAssets,
                      viewRotation, turnView, currentRotation,
                      setMapTiles, hasMapTiles, analysisTerrain,
                      // Fuer das Pruefgeruest: wo die Kamera steht und welche Marken liegen.
