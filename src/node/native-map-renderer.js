@@ -119,7 +119,7 @@ function readResult(root, request) {
     if (fs.lstatSync(file).isSymbolicLink() || fs.statSync(file).size !== length) throw new Error(`Invalid native renderer layer: ${name}`);
     return fs.readFileSync(file);
   };
-  return { mapHash: request.mapHash, heights: read('height.bin', 80400), baseHeights: read('base-height.bin', 80400), cameras: [0, 2, 4, 6].map(orientation => ({
+  return { sourceHash: request.sourceHash, mapHash: request.mapHash, heights: read('height.bin', 80400), baseHeights: read('base-height.bin', 80400), cameras: [0, 2, 4, 6].map(orientation => ({
     orientation, gfx: read(`camera-${orientation}-gfx.bin`, 160800), pillars: read(`camera-${orientation}-pillar.bin`, 160800)
   })) };
 }

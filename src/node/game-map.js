@@ -36,6 +36,7 @@ const { encodeRgbaPng } = require('./pixel-image');
 const { colourOf, readGm1, tgxToRgba, diamondToRgba, upperTilePicture } = require('./gm1');
 const { virtualToFile } = require('./pe-addresses');
 const { packMapPictures } = require('./pixel-atlas');
+const { cachedAtlas } = require('./map-atlas-cache');
 const { renderNativeMap, internals: nativeRendererInternals } = require('./native-map-renderer');
 // Die Drehregel steht in iso-geometry.js, weil die Ansicht sie auch braucht.
 // Zwei Kopien derselben Regel waeren zwei Regeln, und eine davon veraltet.
@@ -790,13 +791,11 @@ function replaceMapKeeps(gfx, keeps, desertValue) {
   return ground;
 }
 
-function readMapTiles(filePath, gameRoot, nativeLayers = null) {
+function readMapSource(filePath, gameRoot) {
   const known = knownMap(filePath, gameRoot);
   const root = gameRootOrDefault(gameRoot);
   if (!root) throw new Error('The game folder is not set.');
   const buffer = fs.readFileSync(known.path);
-  if (nativeLayers && nativeRendererInternals.sha(buffer) !== nativeLayers.mapHash)
-    throw new Error('The map changed while its native graphics were being generated. Reload the map.');
   const preview = readPreview(buffer);
   const directory = findDirectory(buffer, preview.end);
   if (!directory) throw new Error('This map carries no sections.');
@@ -810,6 +809,15 @@ function readMapTiles(filePath, gameRoot, nativeLayers = null) {
     organisms = readSection(buffer, directory, ORGANISM_SECTION);
     trees = readTrees(readSection(buffer, directory, TREES_SECTION));
   } catch { organisms = null; trees = null; }
+  return { known, root, buffer, directory, gfx, heights, organisms, trees, pillars,
+    keeps: findKeeps(readSection(buffer, directory, BUILDING_SECTION)) };
+}
+
+function buildMapTiles(source, nativeLayers = null) {
+  const { known, root, buffer, directory, gfx, organisms, trees, pillars, keeps } = source;
+  let heights = source.heights;
+  if (nativeLayers && nativeRendererInternals.sha(buffer) !== nativeLayers.mapHash)
+    throw new Error('The map changed while its native graphics were being generated. Reload the map.');
   if (nativeLayers) {
     // Loading a scenario can reset saved stockpile-platform heights.
     // Compare unchanged ground (1045), then use the game's resulting
@@ -819,15 +827,15 @@ function readMapTiles(filePath, gameRoot, nativeLayers = null) {
       throw new Error('The game renderer returned ground heights from a different map.');
     heights = nativeLayers.heights;
   }
-  const keeps = findKeeps(readSection(buffer, directory, BUILDING_SECTION));
   // Resolve the desert tile through the executable's GM table, not a global
   // sprite number. tile_land8 picture 0 is a plain desert diamond.
   const desert = readPictureStock(root).files.find(file => file.name === 'tile_land8' && file.count);
   if (keeps.length && !desert) throw new Error('The game desert terrain graphics are missing.');
   const groundOnly = layer => replaceMapKeeps(layer, keeps, (desert?.from || 0) + 1);
+  const heightRaster = heights ? Buffer.from(hoehenRaster(heights)).toString('base64') : null;
   const cameras = nativeLayers?.cameras.map(layer => ({
     ...buildTileAtlas(groundOnly(layer.gfx), root, { organisms, trees, pillars: layer.pillars, heights: nativeLayers.heights }),
-    hoehen: Buffer.from(hoehenRaster(nativeLayers.heights)).toString('base64')
+    hoehen: heightRaster
   }));
   const vorrat = cameras?.[0] || buildTileAtlas(groundOnly(gfx), root, { organisms, trees, pillars, heights });
   return {
@@ -836,20 +844,45 @@ function readMapTiles(filePath, gameRoot, nativeLayers = null) {
     ...vorrat,
     ...(cameras ? { cameras, nativeRenderer: true } : {}),
     // Hoehen in derselben Zaehlung wie die Plaetze: volles 400x400-Raster.
-    hoehen: heights ? Buffer.from(hoehenRaster(heights)).toString('base64') : null
+    hoehen: heightRaster
   };
 }
 
-async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
-  // Validate the selected map through the existing reader before passing it
-  // to the original executable. The saved atlas remains useful on failure.
-  const saved = readMapTiles(filePath, gameRoot);
+function readMapTiles(filePath, gameRoot, nativeLayers = null) {
+  return buildMapTiles(readMapSource(filePath, gameRoot), nativeLayers);
+}
+
+// Validate/parse once, then materialize exactly the representation that is used.
+async function resolveNativeMapTiles(source, loadNative, build = buildMapTiles) {
   try {
-    const layers = await renderNativeMap({ gameRoot, mapPath: saved.path, cacheRoot });
-    return readMapTiles(saved.path, gameRoot, layers);
+    return build(source, await loadNative());
   } catch (error) {
-    return { ...saved, nativeError: error.message };
+    return { ...build(source), nativeError: error.message };
   }
+}
+
+let atlasAssetRevision = null;
+async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
+  const source = readMapSource(filePath, gameRoot);
+  return resolveNativeMapTiles(source, () => renderNativeMap({
+    gameRoot, mapPath: source.known.path, cacheRoot
+  }), (parsed, layers) => {
+    // Native provenance includes the game executable, helper and GM assets.
+    // Never let a cache bypass map/capture validation or store fallback output.
+    if (!layers?.sourceHash || nativeRendererInternals.sha(parsed.buffer) !== layers.mapHash)
+      return buildMapTiles(parsed, layers);
+    const revision = parsed.root + ':' + layers.sourceHash;
+    if (atlasAssetRevision !== revision) {
+      pictureStockHeld = null;
+      gm1Held.clear();
+      atlasAssetRevision = revision;
+    }
+    const layerHash = nativeRendererInternals.sha(Buffer.concat([
+      layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
+    ]));
+    return cachedAtlas(cacheRoot, [parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash],
+      () => buildMapTiles(parsed, layers));
+  });
 }
 
 
@@ -859,7 +892,7 @@ module.exports = {
   readMapTiles,
   readNativeMapTiles,
   // fuer die Tests und fuer Werkzeuge, die eine Karte ohne Electron lesen
-  internals: { replaceMapKeeps, pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
+  internals: { readMapSource, buildMapTiles, resolveNativeMapTiles, replaceMapKeeps, pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
                readPictureStock, pictureForValue, readGm1, tgxToRgba, virtualToFile,
                readTrees, cactusPicture, TREE_STRIDE, FIRST_ROCK,

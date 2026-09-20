@@ -45,7 +45,8 @@
       "src/**/*",
       "assets/**/*",
       "config/**/*",
-      "integrations/**/*"
+      "integrations/**/*",
+      "!node_modules/js-yaml/dist/*.map"
     ],
     "extraFiles": [
       {

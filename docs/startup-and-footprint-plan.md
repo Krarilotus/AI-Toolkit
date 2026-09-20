@@ -207,3 +207,34 @@ latency separately from worker duration and frame intervals.
 No lossy assets, removed features or favourable zoom settings qualify as a win.
 The next implementation should be phases 1-2, followed by the derived-atlas cache;
 small packaging cleanup can accompany those once its import audit is complete.
+
+## Implementation checkpoint: atlas reuse
+
+Implemented after snapshot-9f25a94:
+
+- Parse/validate map sections once. Build saved-map fallback output only when
+  native loading or validation fails. Rasterize the shared height grid once.
+- Cache one complete native atlas result on disk, capped at 128 MiB per entry.
+  GreekSea occupies 27.75 MB. Atomic replacement can temporarily use space for
+  both old and new entries. There is no unbounded map-cache directory.
+- Key reuse by map content, installation, game/helper/GM provenance, raw native
+  layer content and explicit atlas schema version. Clear decoded GM assets when
+  provenance changes. Failed writes/corrupt caches regenerate normally.
+- Exclude unused js-yaml source maps from packaging; retain its runtime and license.
+
+Identical serialized atlas output was verified for saved-map and all four native
+cameras. A component benchmark using the existing captured native layers measured
+2,718 ms for the previous successful-load path; the new cache miss took 2,122 ms,
+and three cache hits took 68, 65 and 60 ms. These exclude native-helper preparation,
+IPC and image display, and do not establish complete startup time. All images,
+pixel dimensions and PNG payloads are unchanged.
+
+Current local check: 442 tests passed, 10 skipped. The installer integration
+fixture occasionally retained Windows file handles during cleanup; bounded
+cleanup retries were added without weakening its restart/receipt assertions.
+
+Still pending: main-process startup timeline instrumentation, moving cache-miss
+atlas computation off the main thread, latest-request scheduling, reducing the
+31.9 MB IPC payload and lazy camera decoding, direct last-project restore before
+full library scan, and smaller update artifacts. The cache trades bounded local
+disk space for faster reopen; it does not increase the release's bundled assets.

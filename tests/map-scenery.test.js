@@ -46,3 +46,32 @@ test('map keep footprints become desert without modifying captures or adjacent t
     assert.equal(replaceMapKeeps(source, [], 1), source);
   }
 });
+
+test('successful native map loading never constructs the saved-map fallback', async () => {
+  const { resolveNativeMapTiles } = require('../src/node/game-map').internals;
+  const source = {}, native = {}, output = {};
+  const calls = [];
+  const result = await resolveNativeMapTiles(source, async () => native, (parsed, layers) => {
+    calls.push({parsed,layers}); return output;
+  });
+  assert.equal(result, output);
+  assert.deepEqual(calls, [{parsed:source,layers:native}]);
+});
+
+test('native failures and rejected captures build the saved fallback only when needed', async () => {
+  const { resolveNativeMapTiles } = require('../src/node/game-map').internals;
+  for (const failDuringBuild of [false,true]) {
+    const source = {}, native = {}, calls = [];
+    const result = await resolveNativeMapTiles(source, async () => {
+      if (!failDuringBuild) throw Error('capture failed');
+      return native;
+    }, (parsed,layers) => {
+      assert.equal(parsed,source); calls.push(layers);
+      if (layers) throw Error('capture rejected');
+      return {atlas:'saved'};
+    });
+    assert.equal(result.atlas,'saved');
+    assert.match(result.nativeError,/capture (failed|rejected)/);
+    assert.deepEqual(calls,failDuringBuild?[native,undefined]:[undefined]);
+  }
+});
