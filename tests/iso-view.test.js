@@ -175,11 +175,11 @@ test('only the Map and 2.5D switches stay in the main toolbar', () => {
   }
   const controls = html.slice(html.indexOf('id="castleIsoControls"'), html.indexOf('id="castleMapWindow"'));
   assert.match(controls, /role="toolbar"/);
-  assert.match(controls, /id="castleIsoGroundBtn"/);
+  assert.doesNotMatch(html, /id="castleIsoGround/);
   assert.match(controls, /id="castleIsoMapBtn"/);
 
   const panel = fs.readFileSync(path.join(root, 'src', 'js', 'panel-view.js'), 'utf8');
-  assert.match(panel, /node\.active === 'iso'.*strip\.appendChild\(els\.isoControls\)/);
+  assert.match(panel, /node\.active === 'iso' \? els\.isoControls : els\.mapControls/);
   assert.match(panel, /tree\.style\.removeProperty\('flex'\)/,
     'a surviving view must discard the share it had inside a removed split');
   const view = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
@@ -519,50 +519,10 @@ test('the ground is tiled at the same scale as the map, not stretched', () => {
   // die Farbe kommt immer, das Muster nur wenn es da ist.
   assert.match(grund, /ctx\.fillStyle = '#232a1c';[\s\S]{0,20}ctx\.fill\(\);/);
   assert.match(grund, /if \(!pattern\) return;/);
-  const rueckfall = iso.slice(iso.indexOf('function onImageFailed'), iso.indexOf('function hasOwnGround'));
-  assert.match(rueckfall, /if \(state\.ground && filename === state\.ground\)/);
-  assert.match(rueckfall, /setGround\(null\)/, 'ein kaputtes Bild wird vergessen, nicht jedes Mal neu versucht');
   assert.ok(fs.existsSync(path.join(root, 'assets', 'aiv', 'iso', 'grund.png')));
 });
 
-test('the ground can be swapped for one of your own, and swapped back', () => {
-  const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
-  const quelle = iso.slice(iso.indexOf('function groundSource'), iso.indexOf('function paintGround'));
-  assert.match(quelle, /window\.localStorage\.getItem\(GROUND_KEY\)/, 'die Wahl ueberlebt das Schliessen');
-  assert.match(quelle, /return state\.ground \|\| 'grund\.png'/, 'ohne eigene Wahl der mitgelieferte Grund');
-  assert.match(quelle, /state\.images\.delete\(groundSource\(\)\)/, 'das alte Bild wird vergessen');
-  assert.match(quelle, /catch \{ \/\* a view must not fall over because storage is off \*\/ \}/);
-  assert.match(iso, /setGround, hasOwnGround/, 'und beides ist von aussen erreichbar');
-
-  const editor = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
-  assert.match(editor, /window\.electronAPI\.chooseCastleBackground\(\)/);
-  assert.match(editor, /window\.isoView\.setGround\(selection\.dataUrl\)/);
-  assert.match(editor, /window\.isoView\.setGround\(null\)/, 'und zurueck zum Standard');
-  const html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
-  assert.match(html, /id="castleIsoGroundBtn"/);
-  assert.match(html, /id="castleIsoGroundReset"[^>]*hidden/, 'der Zurueck-Knopf zeigt sich erst, wenn er etwas tut');
-});
-
-test('an own ground can be tiled or spread once over the map', () => {
-  const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
-  const art = iso.slice(iso.indexOf('function groundFit'), iso.indexOf('function setGround'));
-  // Der mitgelieferte Grund ist eine Textur und wird IMMER gekachelt.
-  assert.match(art, /return state\.ground \? state\.groundFit : 'tile'/);
-  const malen = iso.slice(iso.indexOf('function paintGround'), iso.indexOf('function drawSprite'));
-  // Gespannt heisst: die Ecken des Bildes auf die Ecken der Karte.
-  assert.match(malen, /if \(groundFit\(\) === 'stretch'\)/);
-  assert.match(malen, /geo\.isoPoint\(0, geo\.GRID, state\.view\)\[0\]/, 'linke Kartenecke');
-  assert.match(malen, /geo\.isoPoint\(geo\.GRID, 0, state\.view\)\[0\]/, 'rechte');
-  assert.match(malen, /ctx\.drawImage\(img, links, oben, rechts - links, unten - oben\)/);
-  assert.match(malen, /ctx\.clip\(\)/, 'auch gespannt endet es am Kartenrand');
-
-  const editor = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
-  assert.match(editor, /window\.isoView\.setGroundFit\(window\.isoView\.groundIsStretched\(\) \? 'tile' : 'stretch'\)/);
-  const html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
-  assert.match(html, /id="castleIsoGroundFit"[^>]*hidden/, 'der Umschalter zeigt sich erst mit eigenem Grund');
-});
-
-test('a ground the user picked is loaded as it is, not as a file name', () => {
+test('game map preview URLs are loaded without the sprite path', () => {
   const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
   const laden = iso.slice(iso.indexOf('function image('), iso.indexOf('function drawDiamond'));
   // Eine data:-Adresse ist schon vollstaendig. Wer ihr den Sprite-Pfad
@@ -660,11 +620,6 @@ test('die Ansicht legt die Karte mit der Rechnung hin, nicht nach Augenmass', ()
   // Ohne Startplatz die Kartenmitte - und nicht etwa gar nichts.
   const platz = iso.slice(iso.indexOf('function currentKeep'), iso.indexOf('function paintGameMap'));
   assert.match(platz, /map\.keeps\[map\.keepIndex\] \|\| geo\.centreKeep\(\)/);
-  // Es gibt nur einen Grund: beide Wege raeumen den jeweils anderen weg.
-  const setzen = iso.slice(iso.indexOf('function setGameMap'), iso.indexOf('function setGameMapKeep'));
-  assert.match(setzen, /if \(state\.gameMap && state\.ground\) setGround\(null\)/);
-  const grund = iso.slice(iso.indexOf('function setGround'), iso.indexOf('function setGroundFit'));
-  assert.match(grund, /if \(url && gameMap\(\)\) \{ state\.gameMap = null; rememberGameMap\(\); \}/);
   assert.match(iso, /setGameMap, setGameMapKeep, hasGameMap, gameMapInfo/, 'von aussen erreichbar');
   assert.match(iso, /const MAP_KEY = 'castleIsoGameMap'/, 'die Wahl ueberlebt das Schliessen');
 });
@@ -702,7 +657,7 @@ test('die Werkzeugleiste holt sich den gemerkten Grund nach, wenn die Ansicht da
             'die Reihenfolge ist der Grund fuer das Nachholen - aendert sie sich, gehoert der Test geprueft');
   const editor = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const nachholen = editor.slice(editor.indexOf("window.addEventListener('DOMContentLoaded'"));
-  assert.match(nachholen.slice(0, 200), /updateGroundControls\(\);\s*updateMapControls\(\);/);
+  assert.match(nachholen.slice(0, 200), /updateMapControls\(\);/);
 });
 
 // --------------------------------------------------------------- die Drehung

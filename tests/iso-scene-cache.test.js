@@ -13,7 +13,6 @@ function renderer() {
     hostIsGone: () => false,
     surface: () => ({width: 800, height: 600, ctx: {clearRect() {}, drawImage(...args) { draws.push(args); }}}),
     currentRotation: () => state.rotation || 0, kartenSchluessel: () => state.mapKey || '',
-    groundFit: () => 'stretch', groundSource: () => state.ground || '',
     vorrat: () => null, paintInteraction() {}, setStatus() {}, mapStatus: () => '',
     // In dieser Attrappe liegt keine Karte, also gibt es auch keine
     // Startplatzmarken zu treffen.
@@ -45,7 +44,7 @@ test('edit, step, camera, map and late image changes cannot leave stale scenery'
     () => { r.state.rotation = 2; },
     () => { r.state.mapKey = 'another keep'; },
     () => { r.state.kachelVorrat = {}; },
-    () => { r.state.ground = 'new image'; }
+    () => { r.state.sceneDirty = true; r.state.assetRevision = 1; }
   ]) {
     const count = r.scenes.length; change(); r.context.paint();
     assert.equal(r.scenes.length, count + 1);

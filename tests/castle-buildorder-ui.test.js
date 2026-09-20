@@ -87,7 +87,7 @@ test('Temporary blueprint controls render an in-memory image beneath castle obje
   assert.match(html, /id="castleBlueprintControls"[^>]+hidden/);
   assert.match(script, /els\.blueprintControls\.hidden\s*=\s*!loaded/);
   assert.doesNotMatch(html, /id="castle(?:Load|Clear)BlueprintBtn"/);
-  assert.match(main, /label: 'Load\/Replace Background…'/);
+  assert.doesNotMatch(main, /label: 'Load\/Replace Background…'/);
   assert.match(main, /label: 'Clear Background'/);
   assert.match(main, /ipcMain\.handle\('choose-castle-background'/);
   assert.match(main, /title: 'Choose temporary castle background'/);

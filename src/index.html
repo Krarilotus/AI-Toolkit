@@ -196,16 +196,6 @@
             </select>
           </label>
         </div>
-        <div id="castleBlueprintControls" class="toolbarGroup castleBlueprintControls" aria-label="Temporary castle blueprint" hidden>
-          <label class="hidden" title="Show or hide the temporary blueprint">
-            <input id="castleShowBlueprint" type="checkbox" checked disabled> Show
-          </label>
-          <label class="blueprintOpacity" for="castleBlueprintOpacity" title="Blueprint opacity">
-            <span>Custom Background Opacity</span>
-            <input id="castleBlueprintOpacity" type="range" min="5" max="100" value="50" step="5" disabled>
-            <output id="castleBlueprintOpacityValue" for="castleBlueprintOpacity">50%</output>
-          </label>
-        </div>
         <div class="toolbarGroup castleOverlayGroup" role="group" aria-label="Display overlays">
           <details id="castleOverlayMenu" class="castleOverlayMenu">
             <summary>Overlays</summary>
@@ -266,10 +256,21 @@
                area: out of the page they cost nothing, and no ResizeObserver
                measures a canvas of no size. -->
           <div id="castleWindowStore" class="windowStore" hidden>
+            <div id="castleMapControls" class="isoViewControls" role="toolbar" aria-label="2D map controls">
+              <button id="castleBackgroundBtn" type="button">Use picture as background</button>
+              <button id="castleSavePictureBtn" type="button" title="Save the whole castle as a full-resolution PNG">Snapshot</button>
+        <div id="castleBlueprintControls" class="toolbarGroup castleBlueprintControls" aria-label="Temporary castle blueprint" hidden>
+          <label class="hidden" title="Show or hide the temporary blueprint">
+            <input id="castleShowBlueprint" type="checkbox" checked disabled> Show
+          </label>
+          <label class="blueprintOpacity" for="castleBlueprintOpacity" title="Blueprint opacity">
+            <span>Opacity</span>
+            <input id="castleBlueprintOpacity" type="range" min="5" max="100" value="50" step="5" disabled>
+            <output id="castleBlueprintOpacityValue" for="castleBlueprintOpacity">50%</output>
+          </label>
+        </div>
+            </div>
             <div id="castleIsoControls" class="isoViewControls" role="toolbar" aria-label="2.5D view controls">
-              <button id="castleIsoGroundBtn" type="button" title="Pick your own ground for the slanted view - any picture, laid out tile by tile">Ground</button>
-              <button id="castleIsoGroundFit" type="button" aria-pressed="false" title="Lay the picture out tile by tile, or spread it once over the whole map" hidden>Tiled</button>
-              <button id="castleIsoGroundReset" class="isoViewReset" type="button" title="Back to the ground that comes with the app" aria-label="Reset ground" hidden>&times;</button>
               <button id="castleIsoMapBtn" type="button" title="Lay a map of the game under the slanted view - to scale, one field of the map on one field of the editor">Game map</button>
               <select id="castleIsoMapKeep" title="Which starting place of the map the castle is built on" aria-label="Map starting place" hidden></select>
               <button id="castleIsoMapReset" class="isoViewReset" type="button" title="Take the map of the game away" aria-label="Remove game map" hidden>&times;</button>
@@ -571,6 +572,16 @@
   <button id="castleContextMerge" type="button" role="menuitem">Merge selected steps…</button>
   <button id="castleContextLock" type="button" role="menuitem">Lock positions</button>
 </div>
+<dialog id="castleSnapshotDialog" class="ucpCreateDialog">
+  <form id="castleSnapshotForm">
+    <div class="ucpCreateHeading"><h2>Save castle picture</h2></div>
+    <label><input id="castleSnapshotBackground" type="checkbox"> Use picture as background</label>
+    <div class="ucpCreateActions">
+      <button id="castleSnapshotCancel" type="button">Cancel</button>
+      <button id="castleSnapshotSave" type="submit">Save PNG</button>
+    </div>
+  </form>
+</dialog>
 <dialog id="castleMergeDialog" class="ucpCreateDialog castleReplaceDialog">
   <form id="castleMergeForm">
     <div class="ucpCreateHeading">

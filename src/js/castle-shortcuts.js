@@ -20,8 +20,6 @@
     ['names', 'Item names', 'n', 'castleShowNames'], ['units', 'Unit Order', 'u', 'castleShowUnitNumbers'],
     ['guides', 'Guide lines', 'h', 'castleShowCompatibility'], ['paths', 'Path map', 'p', 'castleShowRoutes'],
     ['fire', 'Firespread', 'f', 'castleShowFire'],
-    ['ground', '2.5D: Ground', 'b', 'castleIsoGroundBtn'], ['tiled', '2.5D: Tiled', 't', 'castleIsoGroundFit'],
-    ['resetGround', '2.5D: Reset ground', 'shift+b', 'castleIsoGroundReset'],
     ['gameMap', '2.5D: Game map', 'ctrl+m', 'castleIsoMapBtn'], ['resetMap', '2.5D: Remove game map', 'ctrl+shift+m', 'castleIsoMapReset'],
     ['rotateLeft', '2.5D: Rotate left', 'c'], ['rotateRight', '2.5D: Rotate right', 'x'],
     ['saveAs', 'Save As', 'ctrl+shift+s'], ['undo', 'Undo', 'ctrl+z'], ['redo', 'Redo', 'ctrl+y'],

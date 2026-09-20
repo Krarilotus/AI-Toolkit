@@ -13,7 +13,7 @@ test('one binding per action, ordered like the toolbar, with native File/Edit de
   for (const keys of Object.values(shortcuts.defaults)) assert.equal(keys.length, 1);
   assert.deepEqual(shortcuts.validate(shortcuts.defaults), shortcuts.defaults);
   assert.equal(shortcuts.defaults.saveCastle[0], 'ctrl+s');
-  for (const id of ['merge', 'overlays', 'groups', 'paste', 'names', 'units', 'guides', 'paths', 'fire', 'ground', 'gameMap']) {
+  for (const id of ['merge', 'overlays', 'groups', 'paste', 'names', 'units', 'guides', 'paths', 'fire', 'gameMap']) {
     assert.ok(Object.hasOwn(shortcuts.defaults, id), id);
   }
   const migrated = shortcuts.migrate({ saveCastle: ['f1'], openCastle: ['f2'], brush: ['9', 'b'], copy: ['5'] });
@@ -21,7 +21,7 @@ test('one binding per action, ordered like the toolbar, with native File/Edit de
   assert.deepEqual(migrated.copy, ['ctrl+c']);
   assert.deepEqual(migrated.saveCastle, ['ctrl+s']);
   assert.equal(shortcuts.actionFor('f1', migrated), null);
-  assert.equal(shortcuts.actionFor('b', migrated), 'ground');
+  assert.ok(!shortcuts.actions.some(action => action[0] === 'ground'));
 });
 
 test('combinations normalize consistently in Electron and DOM events and validate conflicts', () => {

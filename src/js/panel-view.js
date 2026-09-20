@@ -100,8 +100,8 @@
 
   function fillTabs(el, node) {
     const strip = el.querySelector('.areaTabs');
-    if (els.isoControls && els.isoControls.parentElement === strip) {
-      els.store.appendChild(els.isoControls);
+    for (const controls of [els.isoControls, els.mapControls]) {
+      if (controls?.parentElement === strip) els.store.appendChild(controls);
     }
     strip.textContent = '';
     for (const win of node.tabs) {
@@ -114,7 +114,8 @@
       tab.title = 'Click to show, drag to move it somewhere else';
       strip.appendChild(tab);
     }
-    if (node.active === 'iso' && els.isoControls) strip.appendChild(els.isoControls);
+    const controls = node.active === 'iso' ? els.isoControls : els.mapControls;
+    if (node.active && controls) strip.appendChild(controls);
     const fill = document.createElement('span');
     fill.className = 'areaFill';
     strip.appendChild(fill);
@@ -190,9 +191,8 @@
     // forgotten, or the map would grow one dead box per drag.
     for (const [id, el] of Array.from(built)) {
       if (seen.has(id)) continue;
-      const controlsParent = els.isoControls && els.isoControls.parentElement;
-      if (controlsParent && controlsParent.parentElement === el) {
-        els.store.appendChild(els.isoControls);
+      for (const controls of [els.isoControls, els.mapControls]) {
+        if (controls?.parentElement?.parentElement === el) els.store.appendChild(controls);
       }
       for (const child of Array.from(el.querySelector('.areaBody').children)) {
         els.store.appendChild(child);
@@ -427,6 +427,7 @@
     els.windows = {};
     for (const [win, info] of Object.entries(WINDOWS)) els.windows[win] = need(info.el);
     els.isoControls = need('castleIsoControls');
+    els.mapControls = need('castleMapControls');
     els.buttons = { map: document.getElementById('castleMapBtn'),
                     iso: document.getElementById('castleIsoBtn') };
 

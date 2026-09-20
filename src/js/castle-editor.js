@@ -2623,8 +2623,9 @@
     cacheCtx.restore();
   }
 
-  function paintCanvasBackground() {
-    clearCacheContext(staticCacheCtx, staticCacheCanvas);
+  function paintCanvasBackground(target = staticCacheCanvas) {
+    const staticCacheCtx = target.getContext('2d');
+    clearCacheContext(staticCacheCtx, target);
 
     ctx = staticCacheCtx;
     ctx.fillStyle = '#101216';
@@ -2646,8 +2647,11 @@
 
   }
 
-  function rebuildStaticCache() {
-    paintCanvasBackground();
+  function rebuildStaticCache(target = staticCacheCanvas, future = futureCacheCanvas) {
+    const staticCacheCtx = target.getContext('2d');
+    const futureCacheCanvas = future;
+    const futureCacheCtx = future.getContext('2d');
+    paintCanvasBackground(target);
     const movingRefs = state.gesture === 'move' ? state.moveStartOffsets : null;
     const activeStep = Number.isInteger(state.insertionFrameIndex) ? state.insertionFrameIndex : null;
     const futurePlacements = [];
@@ -3642,54 +3646,6 @@
     }
   }
 
-  // Der Grund der 2.5D-Ansicht. Der Dateidialog ist derselbe, den auch der
-  // Bauplan benutzt - ein Kanal, nicht zwei. Das gewaehlte Bild wird Kachel
-  // fuer Kachel gelegt, nicht gestreckt; sehr grosse Bilder passen unter
-  // Umstaenden nicht in den Speicher der Sitzung und sind dann nur bis zum
-  // Schliessen da. Die Ansicht faengt das ab.
-  const grundKnopf = document.getElementById('castleIsoGroundBtn');
-  const grundZurueck = document.getElementById('castleIsoGroundReset');
-  const grundArt = document.getElementById('castleIsoGroundFit');
-  function updateGroundControls() {
-    const eigener = Boolean(window.isoView && window.isoView.hasOwnGround());
-    if (grundZurueck) grundZurueck.hidden = !eigener;
-    if (grundArt) {
-      grundArt.hidden = !eigener;
-      const gespannt = Boolean(window.isoView && window.isoView.groundIsStretched());
-      grundArt.textContent = gespannt ? 'Stretched' : 'Tiled';
-      grundArt.setAttribute('aria-pressed', String(gespannt));
-    }
-  }
-  if (grundArt) grundArt.addEventListener('click', () => {
-    if (!window.isoView) return;
-    window.isoView.setGroundFit(window.isoView.groundIsStretched() ? 'tile' : 'stretch');
-    updateGroundControls();
-    setStatus(window.isoView.groundIsStretched()
-      ? 'Ground spread once over the whole map'
-      : 'Ground laid out tile by tile');
-  });
-  if (grundKnopf) grundKnopf.addEventListener('click', async () => {
-    if (!window.isoView) return;
-    try {
-      const selection = await window.electronAPI.chooseCastleBackground();
-      if (!selection?.dataUrl) return;
-      window.isoView.setGround(selection.dataUrl);
-      updateGroundControls();
-      // Es gibt nur einen Grund: die Ansicht legt eine Spielkarte dabei weg,
-      // also muessen deren Knoepfe mit verschwinden.
-      updateMapControls();
-      setStatus(`Ground of the slanted view: ${selection.fileName || 'chosen picture'}`);
-    } catch (error) {
-      setStatus(`Could not load ground: ${error.message}`);
-    }
-  });
-  if (grundZurueck) grundZurueck.addEventListener('click', () => {
-    if (!window.isoView) return;
-    window.isoView.setGround(null);
-    updateGroundControls();
-    setStatus('Ground back to the one that comes with the app');
-  });
-
   // Eine Karte des Spiels unter die 2.5D-Ansicht legen. Anders als ein
   // beliebiges Bild hat sie einen Massstab: ein Feld der Karte ist ein Feld
   // des Editors. Damit das gilt, muss der Startplatz bekannt sein - eine
@@ -3805,7 +3761,6 @@
       kachelnLaufen = null;
       ensureMapTiles();
       updateMapControls();
-      updateGroundControls();
         if (karteDialog && karteDialog.open) karteDialog.close();
       // Der Fokus bleibt sonst im Suchfeld des Dialogs, und weil Tasten in
       // Eingabefeldern zu Recht ignoriert werden, ginge danach kein einziges
@@ -3856,11 +3811,9 @@
     kachelnLaufen = null;
     window.isoView.setMapTiles(null);
     updateMapControls();
-    updateGroundControls();
     setStatus('Map of the game taken away');
   });
 
-  updateGroundControls();
   updateMapControls();
   // Diese Datei wird VOR iso-view.js geladen (index.html), also gibt es
   // window.isoView hier noch gar nicht - beide Abfragen oben liefern darum
@@ -3869,7 +3822,6 @@
   // laege da, aber der Weg, sie wieder wegzunehmen, waere unsichtbar. Sobald
   // die Seite fertig geladen ist, wird deshalb noch einmal nachgesehen.
   window.addEventListener('DOMContentLoaded', () => {
-    updateGroundControls();
     updateMapControls();
     ensureMapTiles();
   });
@@ -3895,6 +3847,55 @@
   els.showNames.addEventListener('change', scheduleDraw);
   els.showUnitNumbers.addEventListener('change', scheduleDraw);
   els.showCompatibility.addEventListener('change', scheduleDraw);
+  document.getElementById('castleBackgroundBtn').addEventListener('click', chooseBlueprint);
+  const snapshotDialog = document.getElementById('castleSnapshotDialog');
+  document.getElementById('castleSavePictureBtn').addEventListener('click', () => snapshotDialog.showModal());
+  document.getElementById('castleSnapshotCancel').addEventListener('click', () => snapshotDialog.close());
+  document.getElementById('castleSnapshotForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('castleSnapshotSave');
+    button.disabled = true;
+    try {
+      const png = renderCastlePicture();
+      const saved = await window.electronAPI.saveCastlePicture(png);
+      if (!saved) return;
+      if (document.getElementById('castleSnapshotBackground').checked) {
+        loadBlueprintSelection({dataUrl: png, fileName: saved.split(/[\\/]/).pop()});
+      }
+      snapshotDialog.close();
+      setStatus(`Castle picture saved: ${saved}`);
+    } catch (error) {
+      setStatus(`Could not save castle picture: ${error.message}`);
+    } finally { button.disabled = false; }
+  });
+
+  function renderCastlePicture() {
+    // Render at native sprite resolution (at least 32 px/tile), not viewport zoom.
+    let cell = 32;
+    for (const placement of placementRefs()) {
+      const image = state.skinImages[String(placement.type)];
+      const [w, h] = itemSize(placement.type);
+      if (imageReady(image)) cell = Math.max(cell, image.naturalWidth / w, image.naturalHeight / h);
+    }
+    cell = Math.ceil(cell);
+    const picture = document.createElement('canvas');
+    const future = document.createElement('canvas');
+    picture.width = picture.height = future.width = future.height = GRID * cell;
+    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty'].map(key => [key, state[key]]));
+    const savedContext = ctx;
+    try {
+      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null});
+      rebuildStaticCache(picture, future);
+      ctx = picture.getContext('2d');
+      drawUnitMarkers();
+      if (els.showCompatibility.checked) drawCompatibilityOriginMarker();
+      return picture.toDataURL('image/png');
+    } finally {
+      Object.assign(state, saved);
+      ctx = savedContext;
+    }
+  }
+
   els.showBlueprint.addEventListener('change', () => {
     state.blueprintVisible = els.showBlueprint.checked;
     scheduleDraw();

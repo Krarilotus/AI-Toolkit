@@ -39,7 +39,7 @@ const WINDOW_ELEMENT = { map: 'castleMapWindow', iso: 'castleIsoWindow' };
 
 const IDS = ['castleViewRoot', 'castleWindowStore', 'castleDockOverlay', 'castleDockPreview',
              'castleDockHint', 'castleDragGhost', 'castleMapWindow', 'castleIsoWindow',
-             'castleIsoControls', 'castleMapBtn', 'castleIsoBtn'];
+             'castleIsoControls', 'castleMapControls', 'castleMapBtn', 'castleIsoBtn'];
 
 function boot(saved) {
   const doc = makeDocument();

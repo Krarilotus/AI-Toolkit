@@ -383,7 +383,6 @@ function editMenuForWorkspace(workspace, overviewPreferences = defaultCastleOver
         ]
       },
       { type: 'separator' },
-      { label: 'Load/Replace Background…', click: () => sendToFocused('trigger-load-castle-background') },
       { label: 'Clear Background', click: () => sendToFocused('trigger-clear-castle-background') },
       { label: 'Edit Castle Mapping…', click: () => sendToFocused('trigger-edit-castle-mapping') },
       { type: 'separator' },
@@ -621,6 +620,20 @@ ipcMain.handle('choose-ucp-installation', async event => {
   const gameRoot = normalizeInstallationPath(result.filePaths[0]);
   writeSettings({ ...readSettings(), ucpInstallation: gameRoot });
   return gameRoot;
+});
+
+ipcMain.handle('save-castle-picture', async (event, dataUrl) => {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/png;base64,') || dataUrl.length > 180 * 1024 * 1024) {
+    throw new Error('Invalid PNG image.');
+  }
+  const png = Buffer.from(dataUrl.slice('data:image/png;base64,'.length), 'base64');
+  if (png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Invalid PNG image.');
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const options = { title: 'Save castle as picture', defaultPath: path.join(projectDialogPath(event) || app.getPath('pictures'), 'Castle.png'), filters: [{ name: 'PNG image', extensions: ['png'] }] };
+  const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options);
+  if (result.canceled || !result.filePath) return null;
+  atomicWriteFile(result.filePath, png);
+  return result.filePath;
 });
 
 ipcMain.handle('choose-castle-background', async event => {
