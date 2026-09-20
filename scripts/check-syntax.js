@@ -10,7 +10,7 @@ const files = [path.join(root, 'main.js'), path.join(root, 'preload.js')];
 function collectJavaScript(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const filePath = path.join(directory, entry.name);
-    if (entry.isDirectory()) collectJavaScript(filePath);
+    if (entry.isDirectory() && entry.name !== 'vendor') collectJavaScript(filePath);
     else if (/\.m?js$/i.test(entry.name)) files.push(filePath);
   }
 }

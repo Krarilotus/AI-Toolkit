@@ -873,6 +873,7 @@ button:disabled { cursor: default; }
   font: inherit;
 }
 .buildHeader { grid-template-columns: 1fr auto; align-items: center; }
+#castlePauseBtn { margin-left: 6px; padding: 2px 6px; font-size: 11px; }
 .buildHeader span { color: var(--text-muted); font: 11px var(--font-data); }
 .buildScrubber {
   display: grid;
@@ -923,8 +924,8 @@ button:disabled { cursor: default; }
   width: 100%;
   min-height: 34px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.15;
   color: #ffffff;
   font-size: 14px;
   font-weight: 650;
@@ -1043,6 +1044,7 @@ button:disabled { cursor: default; }
 .castleStatusBar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .buildStep {
+  height: 42px;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 7px;

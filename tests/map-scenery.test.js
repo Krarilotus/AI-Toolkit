@@ -22,3 +22,68 @@ test('map sprite packing preserves blank indices and separates tall sprites', ()
   assert.match(atlas.dataUrl, /^data:image\/png;base64,/);
   assert.throws(() => packMapPictures([make(2048, 1)]), /dimensions/);
 });
+
+test('map keep footprints become desert without modifying captures or adjacent tiles', () => {
+  const { replaceMapKeeps, tileIndex, MAP_TILES } = require('../src/node/game-map').internals;
+  const keeps = [{x:188,y:294},{x:161,y:106}];
+  for (let camera = 0; camera < 4; camera++) {
+    const source = Buffer.alloc(MAP_TILES * 2);
+    for (let tile = 0; tile < MAP_TILES; tile++) source.writeUInt16LE(22000 + camera, tile * 2);
+    const result = replaceMapKeeps(source, keeps, 1);
+    const replaced = new Set();
+    for (const keep of keeps) {
+      // Keep, entrance, forecourt/campfire, stockpile: independently specify
+      // the observed map footprint so a missed component fails this check.
+      for (const [dx,dy,w,h] of [[0,0,7,7],[2,7,3,1],[0,8,7,7],[7,2,5,5]]) {
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++)replaced.add(tileIndex(keep.x+dx+x,keep.y+dy+y));
+      }
+    }
+    assert.equal(replaced.size, 252);
+    for (let tile = 0; tile < MAP_TILES; tile++) {
+      assert.equal(result.readUInt16LE(tile * 2), replaced.has(tile) ? 1 : 22000 + camera);
+      assert.equal(source.readUInt16LE(tile * 2), 22000 + camera);
+    }
+    assert.equal(replaceMapKeeps(source, [], 1), source);
+  }
+});
+
+test('successful native map loading never constructs the saved-map fallback', async () => {
+  const { resolveNativeMapTiles } = require('../src/node/game-map').internals;
+  const source = {}, native = {}, output = {};
+  const calls = [];
+  const result = await resolveNativeMapTiles(source, async () => native, (parsed, layers) => {
+    calls.push({parsed,layers}); return output;
+  });
+  assert.equal(result, output);
+  assert.deepEqual(calls, [{parsed:source,layers:native}]);
+});
+
+test('native failures and rejected captures build the saved fallback only when needed', async () => {
+  const { resolveNativeMapTiles } = require('../src/node/game-map').internals;
+  for (const failDuringBuild of [false,true]) {
+    const source = {}, native = {}, calls = [];
+    const result = await resolveNativeMapTiles(source, async () => {
+      if (!failDuringBuild) throw Error('capture failed');
+      return native;
+    }, (parsed,layers) => {
+      assert.equal(parsed,source); calls.push(layers);
+      if (layers) throw Error('capture rejected');
+      return {atlas:'saved'};
+    });
+    assert.equal(result.atlas,'saved');
+    assert.match(result.nativeError,/capture (failed|rejected)/);
+    assert.deepEqual(calls,failDuringBuild?[native,undefined]:[undefined]);
+  }
+});
+
+test('cactus picture selection clamps each variety and rejects non-cactus types', () => {
+  const { internals } = require('../src/node/game-map');
+  // Die Deckelung ist der Grund, warum das hoechste Bild einer Art doppelt so
+  // oft vorkommt - ohne sie zeigte jede vierte Pflanze ein fremdes Bild.
+  assert.equal(internals.cactusPicture(17, 3), 3, 'Art 17 deckelt die 4 auf 3');
+  assert.equal(internals.cactusPicture(18, 3), 6, 'Art 18 deckelt die 7 auf 6');
+  assert.equal(internals.cactusPicture(19, 3), 9, 'Art 19 deckelt die 10 auf 9');
+  assert.equal(internals.cactusPicture(16, 7), 17, 'Art 16 geht bis 17');
+  assert.equal(internals.cactusPicture(16, 0), 10);
+  assert.equal(internals.cactusPicture(2, 3), 0, 'ein Baum ist kein Kaktus - da wird nichts geraten');
+});

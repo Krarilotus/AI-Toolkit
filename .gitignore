@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+src/vendor/pixi/
 
 # Build and packaged application output
 dist/

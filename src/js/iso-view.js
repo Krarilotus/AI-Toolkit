@@ -61,12 +61,14 @@
     return state.catalogue;
   }
 
-  function image(filename) {
+  function image(filename, terrainAsset = false) {
     if (!filename) return null;
     let img = state.images.get(filename);
-    if (img) return img;
+    if (img) { img.terrainAsset ||= terrainAsset; return img; }
     img = new Image();
-    img.onload = () => refresh();
+    img.terrainAsset = terrainAsset;
+    img.decoding = 'async';
+    img.onload = () => refresh(false, !img.terrainAsset);
     img.onerror = () => onImageFailed(filename);
     // A ground the user picked arrives as a whole data: URL, not as the name
     // of a file next to the sprites. Prefixing the sprite path to it would
@@ -402,7 +404,7 @@
   function groundPicture() {
     const map = gameMap();
     if (!map) return null;
-    const img = image(map.dataUrl);
+    const img = image(map.dataUrl, true);
     if (!img || !img.complete || !img.naturalWidth) return null;
     return { img, px0: 0, py0: 0, cells: geo.MAP_PREVIEW_EDGE, top: 0, floor: 0, hoehen: null, smooth: false };
   }
@@ -474,7 +476,7 @@
       const bild = new Image();
       bild.onload = () => refresh();
       bild.src = daten.atlas;
-      const upperImage = daten.upper?.dataUrl ? image(daten.upper.dataUrl) : null;
+      const upperImage = daten.upper?.dataUrl ? image(daten.upper.dataUrl, true) : null;
       return {
         path: daten.path,
         bild,
@@ -514,6 +516,7 @@
 
   function paintMapTiles(ctx, width, height) {
     state.mapScenery = [];
+    cacheTerrainCommands();
     const v = vorrat();
     const map = gameMap();
     const keep = currentKeep();
@@ -555,7 +558,7 @@
         const tileWidth = kw * state.view.zoom;
         const tileLeft = px - tileWidth / 2;
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
-        state.mapScenery.push({ gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
+        state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
         if (cliff && v.upperImage?.complete && v.upperImage.naturalWidth) {
           const lift = v.hoehen[feld];
           for (let row = 0; row < lift; row += cliff.height) {
@@ -571,7 +574,7 @@
         }});
         const upper = v.upperEntries[platz];
         if (upper && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ gx, gy, tiles: 1, draw: (target = ctx) => {
+          state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
               tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
@@ -581,7 +584,7 @@
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
         if (treePicture && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          state.mapScenery.push({ gx, gy, tiles: 1, draw: (target = ctx) => {
+          state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
               tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
@@ -591,6 +594,7 @@
         gemalt += 1;
       }
     }
+    cacheTerrainCommands();
     state.letzteKacheln = gemalt;
     return gemalt > 0;
   }
@@ -610,7 +614,7 @@
       return;
     }
     state.hoehenFeld = null;
-    const img = image(groundSource());
+    const img = image(groundSource(), true);
     let pattern = null;
     if (img && img.complete && img.naturalWidth) {
       try { pattern = ctx.createPattern(img, 'repeat'); } catch { pattern = null; }
@@ -734,10 +738,16 @@
     const target = surface();
     if (!target) return;
     const { width, height, ctx } = target;
+    if (window.castleGpuStage && !state.gpuRequested) {
+      state.gpuRequested=true;
+      window.castleGpuStage.create(()=>refresh(true)).then(gpu=>{state.gpu=gpu;refresh(false,true);})
+        .catch(error=>{console.warn('GPU preview unavailable:',error);state.gpuFailed=true;refresh(false,true);});
+    }
+    if (state.gpuRequested && !state.gpu && !state.gpuFailed) return;
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
     const key = [currentRotation(), kartenSchluessel(), groundFit()].join('/');
     const cache = state.sceneCache;
-    const fireEnabled = !!document.getElementById?.('castleShowFire')?.checked;
+    const fireEnabled = fireOverlayVisible();
     if (!cache || state.sceneDirty || cache.fireEnabled !== fireEnabled || cache.key !== key || cache.stock !== state.kachelVorrat
         || cache.ground !== groundSource()) {
       const sameEnvironment = cache?.key === key && cache.stock === state.kachelVorrat
@@ -764,7 +774,7 @@
         sceneContext.imageSmoothingEnabled = false;
         scene = paintScene(sceneContext, worldWidth, worldHeight, {
           reuseTerrain,
-          previousCommands: reuseTerrain && revision != null && cache.documentRevision === revision ? cache.commands : null,
+          previousCommands: reuseTerrain && !cache.gpu && revision != null && cache.documentRevision === revision ? cache.commands : null,
           previousFireMask: reuseTerrain ? cache.fireMask : null
         });
       } finally { state.view = view; }
@@ -777,8 +787,21 @@
     ctx.clearRect(0, 0, width, height);
     ctx.imageSmoothingEnabled = state.view.zoom < 1;
     const z = state.view.zoom;
-    ctx.drawImage(scene.canvas, state.view.panX - scene.view.panX * z,
+    if (scene.gpu && state.gpu) {
+      try {
+        const dpr=ctx.canvas.width/width;
+        state.gpu.presentBehind(ctx.canvas);
+        state.gpu.render(ctx.canvas.width,ctx.canvas.height,z*dpr,
+          (state.view.panX-scene.view.panX*z)*dpr,(state.view.panY-scene.view.panY*z)*dpr);
+
+      } catch(error) {
+        console.warn('GPU preview failed:',error);state.gpu.destroy();state.gpu=null;state.gpuFailed=true;state.sceneCache=null;refresh();return;
+      }
+    } else {
+      state.gpu?.hide();
+      ctx.drawImage(scene.canvas, state.view.panX - scene.view.panX * z,
       state.view.panY - scene.view.panY * z, scene.canvas.width * z, scene.canvas.height * z);
+    }
     drawAnalysis(ctx);
     paintInteraction(ctx, scene.items);
     const { items, missing } = scene;
@@ -794,7 +817,8 @@
     if(!overlay) return;
     const turn=tile=>geo.rotateGrid(tile.x,99-tile.y,1,currentRotation());
     ctx.save();
-    if(overlay.image) {
+    const scene=state.sceneCache, fireMask=scene?.gpu ? state.gpu?.fireMask : scene?.fireMask;
+    if(overlay.image && (!scene?.gpu || fireMask)) {
       fireLayer ||= document.createElement('canvas');
       if(fireLayer.width!==ctx.canvas.width || fireLayer.height!==ctx.canvas.height){fireLayer.width=ctx.canvas.width;fireLayer.height=ctx.canvas.height;}
       const fireCtx=fireLayer.getContext('2d');fireCtx.clearRect(0,0,fireLayer.width,fireLayer.height);
@@ -807,8 +831,8 @@
       const a=point(0,0), b=point(100,0), c=point(0,100);
       fireCtx.save();fireCtx.transform((b[0]-a[0])/100,(b[1]-a[1])/100,(c[0]-a[0])/100,(c[1]-a[1])/100,a[0],a[1]);
       fireCtx.imageSmoothingEnabled=true;fireCtx.drawImage(overlay.image,0,0);fireCtx.restore();
-      const scene=state.sceneCache,z=state.view.zoom;
-      if(scene?.fireMask){fireCtx.save();fireCtx.globalCompositeOperation='destination-out';fireCtx.drawImage(scene.fireMask,state.view.panX-scene.view.panX*z,state.view.panY-scene.view.panY*z,scene.fireMask.width*z,scene.fireMask.height*z);fireCtx.restore();}
+      const z=state.view.zoom;
+      if(fireMask){fireCtx.save();fireCtx.globalCompositeOperation='destination-out';fireCtx.drawImage(fireMask,state.view.panX-scene.view.panX*z,state.view.panY-scene.view.panY*z,fireMask.width*z,fireMask.height*z);fireCtx.restore();}
       ctx.drawImage(fireLayer,0,0);
     }
     ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;
@@ -830,11 +854,111 @@
     ctx.restore();
   }
 
+  /** @typedef {{x:number, y:number, w:number, h:number}} SceneRect */
+  /** @typedef {{gx:number, gy:number, tiles?:number, layer?:number}} SceneOrder */
+  /** @typedef {SceneRect & {key:string, order:SceneOrder, flammable:boolean,
+   * draw:(target:CanvasRenderingContext2D)=>void}} SceneCommand */
+
+  /** Record once in scene coordinates; never mutate shared terrain commands.
+   * @param {SceneOrder} order
+   * @param {boolean} flammable
+   * @param {(recorder: {commands: SceneCommand[], drawImage: CanvasRenderingContext2D['drawImage']}) => void} draw
+   * @returns {SceneCommand[]}
+   */
+  function recordSceneCommands(order, flammable, draw) {
+    if (!state.commandImageIds) { state.commandImageIds = new WeakMap(); state.nextCommandImageId = 0; }
+    /** @type {SceneCommand[]} */
+    const commands = [];
+    draw({commands, drawImage(img, ...args) {
+      const [x, y, w, h] = args.slice(-4);
+      if (!state.commandImageIds.has(img)) state.commandImageIds.set(img, ++state.nextCommandImageId);
+      commands.push({order, flammable, image:img, imageId:state.commandImageIds.get(img), args, key: `${state.commandImageIds.get(img)}:${args.join(',')}`, x, y, w, h,
+        draw: target => target.drawImage(img, ...args)});
+    }});
+    return commands;
+  }
+
+  /** @param {SceneRect} a @param {SceneRect} b */
+  function intersectsSceneRect(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // Inclusive end cells deliberately over-select at boundaries; the exact
+  // rectangle check removes those candidates. Negative world positions are valid.
+  function* sceneCells(rect) {
+    if (rect.w <= 0 || rect.h <= 0) return;
+    for (let y = Math.floor(rect.y / 256); y <= Math.floor((rect.y + rect.h) / 256); y++)
+      for (let x = Math.floor(rect.x / 256); x <= Math.floor((rect.x + rect.w) / 256); x++) yield `${x}:${y}`;
+  }
+
+  function cacheTerrainCommands() {
+    const commands = state.mapSceneryCommands = [];
+    const buckets = state.mapSceneryBuckets = new Map();
+    for (const item of state.mapScenery.sort(geo.renderOrder)) {
+      for (const command of recordSceneCommands(item, false, recorder => item.draw(recorder))) {
+        Object.freeze(command);
+        const index = commands.push(command) - 1;
+        for (const cell of sceneCells(command)) {
+          if (!buckets.has(cell)) buckets.set(cell, []);
+          buckets.get(cell).push(index);
+        }
+      }
+    }
+  }
+
+  /** Query in original painter order, deduplicating sprites spanning cells. */
+  function terrainCommandsIn(rect) {
+    const found = new Set();
+    for (const cell of sceneCells(rect))
+      for (const index of state.mapSceneryBuckets.get(cell) || []) found.add(index);
+    return [...found].sort((a, b) => a - b).map(index => state.mapSceneryCommands[index])
+      .filter(command => intersectsSceneRect(command, rect));
+  }
+
+  /** Stable merge: terrain preceded buildings in the old full sort, including ties.
+   * @param {SceneCommand[]} terrain @param {SceneCommand[]} buildings
+   * @returns {Generator<SceneCommand>}
+   */
+  function* mergeSceneCommands(terrain, buildings) {
+    let t = 0, b = 0;
+    while (t < terrain.length && b < buildings.length) {
+      if (geo.renderOrder(terrain[t].order, buildings[b].order) <= 0) yield terrain[t++];
+      else yield buildings[b++];
+    }
+    while (t < terrain.length) yield terrain[t++];
+    while (b < buildings.length) yield buildings[b++];
+  }
+
+  function visibleSceneItems() {
+    const doc = currentDocument(), step = window.castleEditor?.getActiveBuildStep?.();
+    if (!doc) return geo.attachDrawbridges(turnedTiles(geo.collectItems(doc, state.catalogue, step)));
+    const rotation = currentRotation(), camera = viewRotation(), cache = state.geometryCache;
+    if (!cache || cache.doc !== doc || cache.catalogue !== state.catalogue || cache.rotation !== rotation || cache.camera !== camera) {
+      const items = turnedTiles(geo.collectItems(doc, state.catalogue));
+      state.geometryCache = {doc, catalogue:state.catalogue, rotation, camera, items};
+      // Decode every variant used by this document before scrubbing discovers it.
+      const seen = new Set();
+      const preload = entry => {
+        if (!entry || typeof entry !== 'object' || seen.has(entry)) return;
+        seen.add(entry);
+        if (typeof entry.bild === 'string') image(entry.bild);
+        for (const value of Object.values(entry)) if (value && typeof value === 'object') preload(value);
+      };
+      for (const item of items) preload(item.entry);
+    }
+    const items = Number.isInteger(step) ? state.geometryCache.items.filter(item => item.frameIndex <= step) : state.geometryCache.items;
+    // Gates, wall/stair variants and bridges depend on visible neighbours only.
+    return geo.attachDrawbridges(items);
+  }
+
+  function fireOverlayVisible() {
+    return !!document.getElementById?.('castleShowFire')?.checked && !window.castleEditor?.isScrubbing?.();
+  }
+
   function paintScene(ctx, width, height, options = {}) {
     // Terrain geometry and its drawing commands do not depend on the build step.
     if (!options.reuseTerrain) state.nativeTerrain = paintMapTiles(ctx, width, height);
     if (!state.nativeTerrain) state.hoehenFeld = gameMap() ? groundPicture()?.hoehen || null : null;
-    if (!state.commandImageIds) { state.commandImageIds = new WeakMap(); state.nextCommandImageId = 0; }
 
     // Die Bodenplatten haengen an der GEDREHTEN Ecke ihres Gebaeudes, und ihr
     // eigener Versatz wird NICHT mitgedreht.
@@ -845,9 +969,7 @@
     // gleichermassen. Der Startaufbau auf der Karte dreht sich also nicht mit;
     // das Spiel setzt ihn immer gleich hin. Genau diese 7/2 stehen auch im
     // Katalog. Wer die Platten mitdreht, schiebt den Lagerplatz von der Karte.
-    const gerade = geo.collectItems(currentDocument(), state.catalogue,
-      window.castleEditor?.getActiveBuildStep?.());
-    const items = geo.attachDrawbridges(turnedTiles(gerade));
+    const items = visibleSceneItems();
     state.renderItems = items;
     const plates = geo.collectPlates(items);
 
@@ -876,35 +998,34 @@
     });
     // Scenery is no longer flattened underneath every building. Each upper
     // tile participates in the same depth order as the castle sprites.
-    const commands = [], buildingCommands = [];
-    const terrain = new Set(state.mapScenery || []);
-    for (const item of [...(state.mapScenery || []), ...buildingSprites].sort(geo.renderOrder)) {
-      const isTerrain = terrain.has(item);
-      let recorded = isTerrain && item.commands;
-      if (!recorded) {
-        recorded = [];
-        const recorder = {drawImage(img, ...args) {
-          const [x, y, w, h] = args.slice(-4);
-          if (!state.commandImageIds.has(img)) state.commandImageIds.set(img, ++state.nextCommandImageId);
-          recorded.push({key: `${state.commandImageIds.get(img)}:${args.join(',')}`, x, y, w, h,
-            draw: target => target.drawImage(img, ...args)});
-        }};
+    const buildingCommands = [];
+    for (const item of buildingSprites.sort(geo.renderOrder)) {
+      const flammable = (window.castleGameData?.flammability[window.castleCostData?.buildings[item.itemType]?.balance] || 0) > 0;
+      const recorded = recordSceneCommands(item, flammable, recorder => {
         if (item.draw) item.draw(recorder);
         else if (!item.entry || !drawSprite(recorder, item.entry, item.gx, item.gy, item.tiles, mauerAn, hoeheAn)) {
           const [x, y] = geo.isoPoint(item.gx, item.gy, state.view);
           const size = (item.tiles || 1) * 32;
-          recorded.push({key: `missing:${item.gx}:${item.gy}:${item.tiles}`, x: x - size, y: y - 256, w: size * 2, h: size + 256,
+          recorder.commands.push({order: item, flammable,
+            polygon:[[item.gx,item.gy],[item.gx+item.tiles,item.gy],[item.gx+item.tiles,item.gy+item.tiles],[item.gx,item.gy+item.tiles]]
+              .map(([x,y])=>geo.isoPoint(x,y,state.view,bauHoehe(item.gx,item.gy,item.tiles))),
+            key: `missing:${item.gx}:${item.gy}:${item.tiles}`, x: x - size, y: y - 256, w: size * 2, h: size + 256,
             draw: target => drawDiamond(target, item.gx, item.gy, item.tiles, 'rgba(210,170,90,.55)')});
           missing++;
         }
-        if (isTerrain) item.commands = recorded;
-      }
-      const flammable = !isTerrain && (window.castleGameData?.flammability[window.castleCostData?.buildings[item.itemType]?.balance] || 0) > 0;
-      commands.push(...recorded.map(command => ({ ...command, flammable })));
-      if (!isTerrain) buildingCommands.push(...recorded);
+      });
+      buildingCommands.push(...recorded);
+    }
+    const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
+      buildingCommands.filter(command => intersectsSceneRect(command, rect)));
+    if (state.nativeTerrain && state.gpu) {
+      state.gpu.setScene(state.mapSceneryCommands,buildingCommands,window.castleEditor?.getDocumentRevision?.(),
+        fireOverlayVisible() ? [width,height] : null);
+      return {items,missing,commands:buildingCommands,fireMask:null,gpu:true};
     }
     const dirty = sceneDamage(options.previousCommands, buildingCommands, width, height);
-    if (dirty) {
+    const damagedRegions = dirty ? (dirty.regions || [dirty]).map(rect => ({rect, commands:[...commandsIn(rect)]})) : [];
+    for (const {rect: dirty, commands: damagedCommands} of damagedRegions) {
       ctx.save();
       try {
         ctx.beginPath(); ctx.rect(dirty.x, dirty.y, dirty.w, dirty.h); ctx.clip();
@@ -916,31 +1037,26 @@
         });
         ctx.closePath();
         if (!state.nativeTerrain) paintGround(ctx, width, height);
-        for (const command of commands) {
-          if (command.x < dirty.x + dirty.w && command.x + command.w > dirty.x
-            && command.y < dirty.y + dirty.h && command.y + command.h > dirty.y) command.draw(ctx);
-        }
+        for (const command of damagedCommands) command.draw(ctx);
       } finally { ctx.restore(); }
     }
     // Reuse the same depth-ordered commands and damage bounds for the fire mask.
     // Burnable sprites mask the halo; foreground nonburnable scenery erases that mask.
-    const fireMask = typeof document !== 'undefined' && document.getElementById?.('castleShowFire')?.checked
+    const fireMask = typeof document !== 'undefined' && fireOverlayVisible()
       ? options.previousFireMask || document.createElement('canvas') : null;
     if (fireMask) {
       const resized = fireMask.width !== width || fireMask.height !== height;
       if (resized) { fireMask.width = width; fireMask.height = height; }
       const damage = options.previousFireMask && !resized ? dirty : {x: 0, y: 0, w: width, h: height};
-      if (damage) {
+      const regions = damage === dirty ? damagedRegions : damage ? [{rect:damage, commands:[...commandsIn(damage)]}] : [];
+      for (const {rect:damage, commands:damagedCommands} of regions) {
         const mask = fireMask.getContext('2d'); mask.save();
         try {
           mask.beginPath(); mask.rect(damage.x, damage.y, damage.w, damage.h); mask.clip();
           mask.clearRect(damage.x, damage.y, damage.w, damage.h);
-          for (const command of commands) {
-            if (command.x < damage.x + damage.w && command.x + command.w > damage.x
-                && command.y < damage.y + damage.h && command.y + command.h > damage.y) {
-              mask.globalCompositeOperation = command.flammable ? 'source-over' : 'destination-out';
-              command.draw(mask);
-            }
+          for (const command of damagedCommands) {
+            mask.globalCompositeOperation = command.flammable ? 'source-over' : 'destination-out';
+            command.draw(mask);
           }
         } finally { mask.restore(); }
       }
@@ -968,7 +1084,23 @@
       right = Math.max(right, command.x + command.w + 2); bottom = Math.max(bottom, command.y + command.h + 2);
     }
     left = Math.max(0, Math.floor(left)); top = Math.max(0, Math.floor(top));
-    return {x: left, y: top, w: Math.max(0, Math.min(width, Math.ceil(right)) - left), h: Math.max(0, Math.min(height, Math.ceil(bottom)) - top)};
+    const regions = [];
+    for (const command of changed) {
+      let r = {x:Math.max(0,Math.floor(command.x-2)), y:Math.max(0,Math.floor(command.y-2)),
+        right:Math.min(width,Math.ceil(command.x+command.w+2)), bottom:Math.min(height,Math.ceil(command.y+command.h+2))};
+      if (r.right<=r.x || r.bottom<=r.y) continue;
+      // Join overlapping damage, never the empty space between distant edits.
+      for (let i=0;i<regions.length;) {
+        const b=regions[i];
+        if (r.x<=b.right && r.right>=b.x && r.y<=b.bottom && r.bottom>=b.y) {
+          r={x:Math.min(r.x,b.x),y:Math.min(r.y,b.y),right:Math.max(r.right,b.right),bottom:Math.max(r.bottom,b.bottom)};
+          regions.splice(i,1); i=0;
+        } else i++;
+      }
+      regions.push(r);
+    }
+    return {x: left, y: top, w: Math.max(0, Math.min(width, Math.ceil(right)) - left), h: Math.max(0, Math.min(height, Math.ceil(bottom)) - top),
+      regions:regions.map(r=>({x:r.x,y:r.y,w:r.right-r.x,h:r.bottom-r.y}))};
   }
 
   // Die anderen Startplaetze der Karte. Gezeichnet wird nur das Dorffenster,
@@ -1238,13 +1370,15 @@
 
   // One repaint per frame at most. The editor now tells the view about every
   // change it makes, and a build step can be a hundred of them in a row.
-  function refresh(reuseScene = false, contentOnly = false) {
+  function refresh(reuseScene = false, contentOnly = false, immediate = false) {
     if (reuseScene !== true && !contentOnly) state.assetRevision = (state.assetRevision || 0) + 1;
     // A document/image update must win over a camera update queued this frame.
     if (reuseScene !== true) state.sceneDirty = true;
-    if (state.paintPending || hostIsGone()) return;
+    if (hostIsGone()) return;
+    if (immediate) { paint(); return; }
+    if (state.paintPending) return;
     state.paintPending = true;
-    requestAnimationFrame(paint);
+    requestAnimationFrame(() => { if (state.paintPending) paint(); });
   }
 
   function setStatus(text) {
@@ -1551,7 +1685,7 @@
       : `${revision}:${window.castleEditor?.getActiveBuildStep?.()}`;
     const changed = key !== state.editorSceneKey;
     state.editorSceneKey = key;
-    refresh(!changed, true);
+    refresh(!changed, true, true);
   }
 
   function init() {

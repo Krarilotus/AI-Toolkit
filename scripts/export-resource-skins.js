@@ -8,7 +8,8 @@ const { encodeRgbaPng } = require('../src/node/pixel-image');
 const file = process.argv[2];
 if (!file) throw new Error('Provide the original colour tiles.gm1 path.');
 const bytes = fs.readFileSync(file), stock = readGm1(bytes);
-for (const [id, n, colour] of [[70,9,4],[71,9,4],[72,11,4],[73,10,4],[56,6,2],[90,4,2],[91,4,2]]) {
+// Palette 3 is white industry; palette 2 is cyan military.
+for (const [id, n, colour] of [[70,9,4],[71,9,4],[72,11,4],[73,10,4],[56,6,3],[90,4,3],[91,4,3]]) {
   const width=32*n, rgba=Buffer.alloc(width*width*4);
   for (let y=0;y<n;y++) for (let x=0;x<n;x++) {
     // Corners TL/TR/BR/BL: 40/60/80/100. Edges T/R/B/L: 120/140/160/180.

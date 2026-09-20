@@ -1,4 +1,4 @@
-﻿param([ValidateSet('Prepare','Install')][string]$Mode, [string]$Stage, [string]$InstallRoot, [int]$WaitPid=0, [switch]$NoRestart)
+﻿param([ValidateSet('Prepare','Install')][string]$Mode, [string]$Stage, [string]$InstallRoot, [int]$WaitPid=0, [switch]$NoRestart, [string]$ReadyFile)
 $ErrorActionPreference='Stop'
 $ProgressPreference='SilentlyContinue'
 $live=[IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
@@ -10,7 +10,7 @@ function SafePath($root,$name) {
  return $result
 }
 function Allowed($name) {
- return $name -match '^(AI Toolkit\.exe|[a-zA-Z0-9_.-]+\.(dll|pak|bin|dat)|vk_swiftshader_icd\.json|LICENSE[\w.-]*\.(txt|html)|resources/app\.asar|resources/elevate\.exe|locales/[\w-]+\.pak|config/[\w-]+\.json)$'
+ return $name -match '^(\.toolkit-release\.json|AI Toolkit\.exe|[a-zA-Z0-9_.-]+\.(dll|pak|bin|dat)|vk_swiftshader_icd\.json|LICENSE[\w.-]*\.(txt|html)|resources/app\.asar|resources/elevate\.exe|locales/[\w-]+\.pak|config/[\w-]+\.json)$'
 }
 function RestartEditor {
  if ($NoRestart) { return }
@@ -35,7 +35,7 @@ if ($Mode -eq 'Prepare') {
    if(-not $entryName.StartsWith($prefix) -or $entryName.EndsWith('/')) { continue }
    $name=$entryName.Substring($prefix.Length)
    if($entry -eq $exe) { $name='AI Toolkit.exe' }
-   if(-not (Allowed $name)) { continue }
+   if($name -eq '.toolkit-release.json' -or -not (Allowed $name)) { continue }
    if($seen.ContainsKey($name)) { throw 'Duplicate package file.' };$seen[$name]=$true
    $total+=$entry.Length
    if($total -gt 1800000000 -or $manifest.Count -gt 2000) { throw 'Package is too large.' }
@@ -52,12 +52,26 @@ if ($Mode -eq 'Prepare') {
    $manifest+=@{file=$name;sha256=(Hash $file);previous=$previous}
   }
   if(-not ($manifest.file -contains 'AI Toolkit.exe') -or -not ($manifest.file -contains 'resources/app.asar')) { throw 'Incomplete Windows release.' }
+  # The receipt participates in the same locks, backup and rollback as the app.
+  # Ignore package-supplied receipts: only the verified download identifies its source.
+  $release=Get-Content -LiteralPath (Join-Path $stageRoot 'release.json') -Raw | ConvertFrom-Json
+  $receiptName='.toolkit-release.json';$receipt=SafePath $incoming $receiptName
+  @{repo=$release.repo;key=$release.key;tag=$release.tag;asarSha256=(Hash (SafePath $incoming 'resources/app.asar')).ToLowerInvariant()} | ConvertTo-Json | Set-Content -LiteralPath $receipt -Encoding UTF8
+  $previousReceipt=$null
+  if(Test-Path -LiteralPath (SafePath $live $receiptName)) { $previousReceipt=Hash (SafePath $live $receiptName) }
+  $manifest+=@{file=$receiptName;sha256=(Hash $receipt);previous=$previousReceipt}
   $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $stageRoot 'manifest.json') -Encoding UTF8
  } finally { $archive.Dispose() }
  exit 0
 }
 $opened=@();$changed=$false
 try {
+ if($ReadyFile) {
+  $readyPath=SafePath $stageRoot ([IO.Path]::GetFileName($ReadyFile))
+  if($readyPath -ne [IO.Path]::GetFullPath($ReadyFile)) { throw 'Invalid startup confirmation path.' }
+  [IO.File]::WriteAllText($readyPath, 'ready')
+ }
+ Write-Output ('Installer started '+[DateTime]::UtcNow.ToString('o'))
  if($WaitPid) {
   $waiting=Get-Process -Id $WaitPid -ErrorAction SilentlyContinue
   if($waiting -and -not $waiting.WaitForExit(120000)) { throw 'Toolkit did not close; installation cancelled.' }
@@ -106,8 +120,9 @@ try {
  $opened=@()
  $failure.ToString() | Set-Content -LiteralPath (Join-Path $stageRoot 'error.txt') -Encoding UTF8
  if(-not $NoRestart) { Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Update failed. Your previous installation was retained. '+$failure.Exception.Message,'AI Toolkit update') | Out-Null }
- if($changed) { RestartEditor }
+ if(-not $WaitPid -or -not (Get-Process -Id $WaitPid -ErrorAction SilentlyContinue)) { RestartEditor }
  exit 1
 } finally { foreach($item in $opened) { $item.Stream.Dispose() } }
 Copy-Item -LiteralPath (Join-Path $stageRoot 'manifest.json') -Destination (Join-Path $live 'installed-release.json') -Force
+Write-Output ('Installed successfully '+[DateTime]::UtcNow.ToString('o'))
 RestartEditor

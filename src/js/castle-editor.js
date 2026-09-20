@@ -74,7 +74,7 @@
     palettePanel: document.querySelector('.castlePalettePanel'),
     saveNotice: document.getElementById('castleSaveNotice')
   };
-  const displayCtx = els.canvas.getContext('2d', { alpha: false });
+  const displayCtx = els.canvas.getContext('2d');
   const staticCacheCanvas = document.createElement('canvas');
   const staticCacheCtx = staticCacheCanvas.getContext('2d', { alpha: false });
   const futureCacheCanvas = document.createElement('canvas');
@@ -82,20 +82,19 @@
   let ctx = displayCtx;
   const geometry = window.castleGeometry;
   const mapBackground = new Image();
-  mapBackground.onload = () => scheduleDraw();
+  mapBackground.onload = canvasAssetLoaded;
   mapBackground.src = '../assets/aiv/background.png';
   const bundledKeepImage = new Image();
-  bundledKeepImage.onload = () => scheduleDraw();
+  bundledKeepImage.onload = canvasAssetLoaded;
   bundledKeepImage.src = '../assets/aiv/skins/61.png';
   const bundledStockpileImage = new Image();
-  bundledStockpileImage.onload = () => scheduleDraw();
+  bundledStockpileImage.onload = canvasAssetLoaded;
   bundledStockpileImage.src = '../assets/aiv/skins/52.png';
 
   const state = {
     constants: {},
     categories: {},
     populationData: { population_effects: { provides: {}, requires: {} } },
-    unitTypes: new Set(),
     document: newCastleDocument(),
     filePath: null,
     sourcePath: null,
@@ -330,7 +329,7 @@
       : { kind: 'frame', fi: Number(first), oi: Number(second) };
   }
 
-  function isUnitType(type) { return state.unitTypes.has(Number(type)); }
+  function isUnitType(type) { return itemInfo(type).kind === 'unit'; }
 
   function allowsMultiplePerStep(type) {
     return isUnitType(type) || itemInfo(type).multiPlacement === true;
@@ -362,7 +361,6 @@
   }
 
   function normalizeUnitStorage(doc = state.document) {
-    if (!state.unitTypes.size) return doc;
     const retainedFrames = [];
     for (const frame of doc.frames || []) {
       const type = Number(frame.itemType);
@@ -1798,14 +1796,6 @@
     if (state.currentItemType == null && isPlacementTool(state.tool)) setTool('select');
   }
 
-  // A wall is dragged, not dabbed. Which items count as walls is not a list of
-  // our own: it is the "Walls" category from config/aiv_categories.json, so it
-  // stays right when that file changes.
-  function isWallType(type) {
-    const walls = state.categories && state.categories.Walls;
-    return Array.isArray(walls) && walls.includes(String(type));
-  }
-
   function loadItemTools() {
     try {
       const saved = JSON.parse(localStorage.getItem(ITEM_TOOL_STORAGE_KEY) || '{}');
@@ -2016,7 +2006,8 @@
     state.selected.clear();
     state.currentItemType = Number(type);
     const preferred = state.itemTools[state.currentItemType];
-    setTool(preferred || (isWallType(type) ? 'line' : 'single'), false);
+    const defaultTool = itemInfo(type).defaultTool;
+    setTool(preferred || (isPlacementTool(defaultTool) ? defaultTool : 'single'), false);
     renderPalette();
     renderBuildList();
     updateSelectedItemInfo();
@@ -2051,7 +2042,7 @@
       valid.forEach(id => categorized.add(id));
       groups.push([category, valid]);
     }
-    const others = Object.keys(state.constants).filter(id => !categorized.has(id)).sort((a, b) => Number(a) - Number(b));
+    const others = Object.keys(state.constants).filter(id => !categorized.has(id) && itemInfo(id).kind !== 'buildOrder').sort((a, b) => Number(a) - Number(b));
     if (others.length) groups.push(['Other', others]);
     return groups;
   }
@@ -2177,15 +2168,14 @@
     });
   }
 
-  function renderBuildList() {
-    updatePopulationPanel();
-    updateCostPanel();
+  function renderBuildList(scrubbing = false) {
+    if (!scrubbing) { updatePopulationPanel(); updateCostPanel(); }
     const activeStep = Number.isInteger(state.insertionFrameIndex) && state.insertionFrameIndex >= 0 && state.insertionFrameIndex < frames().length
       ? state.insertionFrameIndex
       : null;
     els.buildSlider.min = '1';
     els.buildSlider.max = String(Math.max(1, frames().length));
-    els.buildSlider.value = String(activeStep == null ? 1 : activeStep + 1);
+    if (!state.scrubPending) els.buildSlider.value = String(activeStep == null ? 1 : activeStep + 1);
     els.buildSlider.disabled = frames().length === 0;
     els.buildSliderValue.textContent = activeStep == null ? 'No step selected' : `Step ${activeStep + 1}`;
     const rallypointCount = state.document.miscItems.filter(item => isUnitType(item.itemType)).length;
@@ -2193,9 +2183,24 @@
     // Scrubbing changes row state, not row content. Preserve the DOM, listeners,
     // scroll position and drag target until the actual document changes.
     if (state.buildListRevision === (state.documentRevision || 0)) {
-      for (const row of els.buildList.children) {
+      let rows = els.buildList.children;
+      if (scrubbing && state.buildListViewport) {
+        const {top,height} = state.buildListViewport;
+        const indexes = new Set(state.scrubRowIndexes || [...rows].filter(row=>row.classList.contains?.('selected')||row.classList.contains?.('current')).map(row=>Number(row.dataset.index)));
+        const visible = [];
+        for(let fi=Math.max(0,Math.floor(top/42)-1);fi<Math.min(rows.length,Math.ceil((top+height)/42)+1);fi++) {
+          indexes.add(fi);visible.push(fi);
+        }
+        if(activeStep!=null){indexes.add(activeStep);visible.push(activeStep);}
+        state.scrubRowIndexes=visible;
+        rows=[...indexes].map(fi=>rows[fi]).filter(Boolean);
+      } else state.scrubRowIndexes = null;
+      for (const row of rows) {
         const fi = Number(row.dataset.index), frame = frames()[fi];
         const selected = frame.tilePositionOfsets.length > 0 && frame.tilePositionOfsets.every((_off, oi) => state.selected.has(frameRefKey(fi, oi)));
+        const rowState = `${selected || fi === activeStep}:${activeStep != null && fi > activeStep}:${fi === activeStep}:${!!frame.locked}`;
+        if (row._buildState === rowState) continue;
+        row._buildState = rowState;
         row.classList.toggle('selected', selected || fi === activeStep);
         row.classList.toggle('future', activeStep != null && fi > activeStep);
         row.classList.toggle('current', fi === activeStep);
@@ -2285,14 +2290,40 @@
     });
   }
 
-  function scrollToActiveBuildStep() {
+  function scrollToActiveBuildStep(viewport) {
     const frameIndex = state.insertionFrameIndex;
     if (!Number.isInteger(frameIndex) || frameIndex < 0 || frameIndex >= frames().length) return;
-    els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`)?.scrollIntoView({ block: 'nearest' });
+    // Slider scrubs read the viewport before changing row styles. Fixed-height
+    // rows then allow scrolling without forcing layout of distant hidden rows.
+    if (viewport && Number.isFinite(viewport.height)) {
+      const top = frameIndex * 42, bottom = top + 42;
+      const scroll = top < viewport.top ? top : bottom > viewport.top + viewport.height ? bottom - viewport.height : viewport.top;
+      state.buildListViewport={top:scroll,height:viewport.height};
+      if(scroll!==viewport.top)els.buildList.scrollTop=scroll;
+      return;
+    }
+    const row = els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`);
+    if (!row) return;
+    const top = row.offsetTop - els.buildList.offsetTop;
+    if (top >= els.buildList.scrollTop && top + row.offsetHeight <= els.buildList.scrollTop + els.buildList.clientHeight) return;
+    row.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  }
+
+  function deferAnalysisOverlay() {
+    state.scrubbing = true;
+    clearTimeout(state.overlaySettleTimer);
+    clearTimeout(analysisTimer);
+    ++analysisSerial; // Ignore results from a position we have already left.
+    analysisCache = { key: null, heat: null, routes: [], pending: false };
+    state.overlaySettleTimer = setTimeout(() => {
+      state.scrubbing = false;
+      scheduleDraw();
+    }, 180);
   }
 
   function selectBuildStepFromSlider() {
     if (els.buildSlider.disabled || frames().length === 0) return;
+    deferAnalysisOverlay();
     state.pendingScrubIndex = Number(els.buildSlider.value) - 1;
     if (state.scrubPending) return;
     state.scrubPending = true;
@@ -2301,10 +2332,16 @@
       state.scrubPending = false;
       if (els.buildSlider.disabled || frames().length === 0 || revision !== state.documentRevision) return;
       const frameIndex = Math.max(0, Math.min(frames().length - 1, state.pendingScrubIndex));
+      if (frameIndex === state.insertionFrameIndex && state.lastScrubSelection === state.selected) return;
+      const viewport = {top: els.buildList.scrollTop, height: els.buildList.clientHeight};
       selectBuildFrame(frameIndex);
-      renderBuildList();
-      scrollToActiveBuildStep();
-      scheduleDraw();
+      state.lastScrubSelection = state.selected;
+      // Complete canvas/layout reads before mutating the list's row styles.
+      scheduleDraw(true, true);
+      scrollToActiveBuildStep(viewport);
+      renderBuildList(true);
+      clearTimeout(state.scrubSummaryTimer);
+      state.scrubSummaryTimer = setTimeout(() => { updatePopulationPanel(); updateCostPanel(); }, 150);
       setStatus(`Selected build step ${frameIndex + 1} — new buildings will be inserted after it`);
     });
   }
@@ -2365,7 +2402,7 @@
     state.skinImages = {};
     for (const [id, url] of Object.entries(state.skins)) {
       const img = new Image();
-      img.onload = scheduleDraw;
+      img.onload = canvasAssetLoaded;
       img.src = url;
       state.skinImages[id] = img;
     }
@@ -2463,12 +2500,18 @@
     return () => changeListeners.delete(listener);
   }
 
-  function scheduleDraw(staticChanged = true) {
+  function canvasAssetLoaded() {
+    state.canvasAssetRevision=(state.canvasAssetRevision||0)+1;
+    scheduleDraw();
+  }
+
+  function scheduleDraw(staticChanged = true, immediate = false) {
     if (staticChanged) state.staticCacheDirty = true;
     state.pendingSceneChange = state.pendingSceneChange || staticChanged;
-    if (state.renderPending) return;
+    if (state.renderPending && !immediate) return;
     state.renderPending = true;
-    requestAnimationFrame(() => {
+    const render = () => {
+      if (!state.renderPending) return;
       state.renderPending = false;
       const sceneChanged = state.pendingSceneChange;
       state.pendingSceneChange = false;
@@ -2477,7 +2520,8 @@
       for (const listener of changeListeners) {
         try { listener(sceneChanged); } catch { /* a watcher must not stop the map */ }
       }
-    });
+    };
+    if (immediate) render(); else requestAnimationFrame(render);
   }
 
   function updateBlueprintControls() {
@@ -2551,12 +2595,10 @@
     cacheCtx.restore();
   }
 
-  function rebuildStaticCache() {
+  function paintCanvasBackground() {
     clearCacheContext(staticCacheCtx, staticCacheCanvas);
-    clearCacheContext(futureCacheCtx, futureCacheCanvas);
 
     ctx = staticCacheCtx;
-    ctx.clearRect(0, 0, state.canvasWidth, state.canvasHeight);
     ctx.fillStyle = '#101216';
     ctx.fillRect(0, 0, state.canvasWidth, state.canvasHeight);
     const mapSize = GRID * state.cell;
@@ -2574,6 +2616,10 @@
     if (els.showCompatibility.checked) drawCompatibilityGuide(mapSize);
     drawGrid(mapSize);
 
+  }
+
+  function rebuildStaticCache() {
+    paintCanvasBackground();
     const movingRefs = state.gesture === 'move' ? state.moveStartOffsets : null;
     const activeStep = Number.isInteger(state.insertionFrameIndex) ? state.insertionFrameIndex : null;
     const futurePlacements = [];
@@ -2590,6 +2636,7 @@
     }
 
     if (futurePlacements.length) {
+      clearCacheContext(futureCacheCtx, futureCacheCanvas);
       ctx = futureCacheCtx;
       for (const placement of futurePlacements) {
         drawPlacement(placement.type, placement.off);
@@ -2624,33 +2671,36 @@
   }
 
   let analysisCache = { key: null, heat: null, routes: [], pending: false };
-  let analysisWorker = null, analysisTimer = null, analysisSerial = 0;
+  let analysisWorker = null, analysisTimer = null, analysisSerial = 0, analysisBalanceRevision = 0;
   window.addEventListener('castle-balance-changed', () => {
-    scheduleDraw(); window.isoView?.refresh?.(true);
+    analysisBalanceRevision++;
+    scheduleDraw();
   });
   function getAnalysisOverlay(update = true) {
+    if (state.scrubbing) return { heat: null, routes: [] };
     const showFire = !!document.getElementById('castleShowFire')?.checked;
     const showRoutes = !!document.getElementById('castleShowRoutes')?.checked;
     if (!showFire && !showRoutes) return { heat: null, routes: [] };
     if (!update) return analysisCache;
-    const data = window.castleCostData;
-    const placements = placementRefs().filter(p => p.kind !== 'unit'
-      && (!Number.isInteger(state.insertionFrameIndex) || p.fi <= state.insertionFrameIndex)).flatMap(p => {
-      const name = data?.buildings[p.type]?.balance;
-      const rects = footprintRects(p.type, p.off);
-      const item = { ref: p.ref, type: Number(p.type), name, rects, health: window.castleCostPanel?.getActiveBalance?.()?.buildings?.[name]?.health, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
-      // The keep forces an attached stockpile, encoded as a composite footprint.
-      return p.type === geometry.KEEP_ITEM_TYPE && rects.length > 1
-        ? [{ ...item, rects: rects.filter(r => r.part !== 'stockpile') }, { ref: `${p.ref}:stockpile`, name: 'Stockpile', rects: rects.filter(r => r.part === 'stockpile') }]
-        : [item];
-    });
     const terrain = window.isoView?.analysisTerrain?.() || null;
-    const key = JSON.stringify([showFire, showRoutes, placements, terrain?.key]);
+    const key = [showFire, showRoutes, state.documentRevision, state.insertionFrameIndex,
+      analysisBalanceRevision, terrain?.key].join(':');
     if (analysisCache.key !== key) {
       const id = ++analysisSerial;
       clearTimeout(analysisTimer);
       analysisCache = { key, heat: null, routes: [], pending: true };
       analysisTimer = setTimeout(() => {
+        const data = window.castleCostData;
+        const placements = placementRefs().filter(p => p.kind !== 'unit'
+          && (!Number.isInteger(state.insertionFrameIndex) || p.fi <= state.insertionFrameIndex)).flatMap(p => {
+          const name = data?.buildings[p.type]?.balance;
+          const rects = footprintRects(p.type, p.off);
+          const item = { ref: p.ref, type: Number(p.type), name, rects, health: window.castleCostPanel?.getActiveBalance?.()?.buildings?.[name]?.health, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
+          // The keep forces an attached stockpile, encoded as a composite footprint.
+          return p.type === geometry.KEEP_ITEM_TYPE && rects.length > 1
+            ? [{ ...item, rects: rects.filter(r => r.part !== 'stockpile') }, { ref: `${p.ref}:stockpile`, name: 'Stockpile', rects: rects.filter(r => r.part === 'stockpile') }]
+            : [item];
+        });
         if (!analysisWorker) {
           analysisWorker = new Worker('js/castle-analysis-worker.js');
           analysisWorker.onmessage = ({data}) => {
@@ -2665,7 +2715,7 @@
               }
               context.putImageData(pixels,0,0); analysisCache.image=canvas;
             }
-            scheduleDraw(); window.isoView?.refresh?.(true);
+            scheduleDraw();
           };
           analysisWorker.onerror = () => {
             analysisWorker.terminate(); analysisWorker = null;
@@ -2674,7 +2724,7 @@
           };
         }
         analysisWorker.postMessage({id, placements, terrain, fire:showFire, paths:showRoutes});
-      }, 100);
+      }, 0);
     }
     return analysisCache;
   }
@@ -2721,9 +2771,44 @@
     ctx.restore();
   }
 
+  function renderCanvasScene() {
+    if(!window.castleCanvasScene||state.canvasWorkerFailed)return false;
+    if(!state.canvasWorker)state.canvasWorker=window.castleCanvasScene.create(els.canvas,error=>{
+      console.warn('Canvas worker unavailable:',error);state.canvasWorkerFailed=true;state.canvasWorker?.destroy();state.canvasWorker=null;scheduleDraw();
+    });
+    const inputs=[state.documentRevision,state.document,state.constants,state.skinImages,state.canvasAssetRevision,
+      els.canvas.width,els.canvas.height,state.panX,state.panY,state.cell,state.renderDpr,els.showNames.checked,
+      els.showCompatibility.checked,state.blueprintImage,state.blueprintVisible,state.blueprintOpacity,document.documentElement.lang,els.showUnitNumbers.checked];
+    // Camera motion must not put main-thread analysis on top of an older worker frame.
+    if (state.preparedCanvasInputs && [5,6,7,8,9,10].some(index => inputs[index] !== state.preparedCanvasInputs[index]))
+      deferAnalysisOverlay();
+    if(!state.preparedCanvasInputs||inputs.some((value,index)=>value!==state.preparedCanvasInputs[index])){
+      state.preparedCanvasInputs=inputs;
+      paintCanvasBackground();ctx=displayCtx;
+      state.canvasWorker.setScene(staticCacheCanvas,placementRefs(),(target,p,selected)=>{
+        const previous=ctx;ctx=target;
+        try { if(selected==='outline')drawPlacementOutline(p.type,p.off);else drawPlacement(p.type,p.off,selected); }finally{ctx=previous;}
+      },staticCacheCtx,{width:els.canvas.width,height:els.canvas.height,dpr:state.renderDpr||1,tint:FUTURE_TINT,filter:FUTURE_FILTER,opacity:FUTURE_OPACITY}, target => {
+        const previous=ctx;ctx=target;try { drawUnitMarkers(); } finally { ctx=previous; }
+      })
+        .catch(error=>{console.warn('Canvas scene preparation failed:',error);state.canvasWorkerFailed=true;state.canvasWorker?.destroy();state.canvasWorker=null;scheduleDraw();});
+    }
+    const overlay=getAnalysisOverlay(false);
+    const foreground=!!(overlay.image || overlay.routes.length);
+    state.canvasWorker.render({foreground,step:Number.isInteger(state.insertionFrameIndex)?state.insertionFrameIndex:null,
+      selected:[...state.selected],moving:state.gesture==='move'?[...state.moveStartOffsets.keys()]:[]});
+    ctx=displayCtx;displayCtx.clearRect(0,0,state.canvasWidth,state.canvasHeight);
+    drawAnalysisOverlay();
+    if(foreground)
+      for(const p of placementRefs())if(p.kind==='unit' && !(state.gesture==='move' && state.moveStartOffsets.has(p.ref)))drawPlacement(p.type,p.off,state.selected.has(p.ref));
+    return true;
+  }
+
   function draw() {
     if (!state.canvasWidth || !state.canvasHeight) return;
     if (els.canvas.getClientRects && !els.canvas.getClientRects().length) return;
+    const workerScene = renderCanvasScene();
+    if (!workerScene) {
     if (state.staticCacheDirty) rebuildStaticCache();
 
     ctx = displayCtx;
@@ -2731,6 +2816,7 @@
     displayCtx.setTransform(1, 0, 0, 1, 0, 0);
     displayCtx.drawImage(staticCacheCanvas, 0, 0);
     displayCtx.restore();
+    }
 
     const proposed = state.gesture === 'move' ? proposedMove() : null;
 
@@ -2771,7 +2857,7 @@
     }
 
     // Draw markers last so stacked sprites cannot cover their numbers or counts.
-    drawUnitMarkers(proposed);
+    if (!workerScene || proposed || getAnalysisOverlay(false).image || getAnalysisOverlay(false).routes.length) drawUnitMarkers(proposed);
 
     if ((state.gesture === 'select-marquee' || state.gesture === 'copy-marquee' || state.gesture === 'replace-marquee' || state.gesture === 'merge-marquee' || state.gesture === 'delete-marquee') && state.dragStartScreen && state.marqueeEnd) {
       const x = Math.min(state.dragStartScreen.x, state.marqueeEnd.x);
@@ -3509,9 +3595,6 @@
       ]);
       state.constants = constants || {};
       state.categories = categories?.categories || {};
-      const unitCategory = Object.entries(state.categories)
-        .find(([name]) => name.toLowerCase() === 'units');
-      state.unitTypes = new Set((unitCategory?.[1] || []).map(Number));
       state.populationData = populationData || { population_effects: { provides: {}, requires: {} } };
       applyLoadedSkins(skins);
       if (skins?.background) mapBackground.src = skins.background;
@@ -3848,6 +3931,11 @@
   window.addEventListener('blur', closeBuildContextMenu);
   window.addEventListener('resize', closeBuildContextMenu);
   els.buildList.addEventListener('scroll', closeBuildContextMenu);
+  els.buildList.addEventListener('scroll', () => {
+    const top=els.buildList.scrollTop,height=els.buildList.clientHeight;
+    if(state.buildListViewport?.top===top&&state.buildListViewport?.height===height)return;
+    state.buildListViewport={top,height};renderBuildList(true);
+  }, {passive:true});
   for (const input of els.shortcutForm.querySelectorAll('.castleCameraKey')) {
     input.addEventListener('keydown', event => {
       if (event.key === 'Tab' || event.key === 'Escape') return;
@@ -3870,6 +3958,20 @@
   if (els.brushMinus) els.brushMinus.addEventListener('click', () => setBrushSize(state.brushSize - 1));
   if (els.brushPlus) els.brushPlus.addEventListener('click', () => setBrushSize(state.brushSize + 1));
   els.buildSlider.addEventListener('input', selectBuildStepFromSlider);
+  document.getElementById('castlePauseBtn').addEventListener('click', () => selectItem(200));
+  let scrubKey = null;
+  els.buildSlider.addEventListener('keydown', event => {
+    const direction = {ArrowRight:1, ArrowUp:1, ArrowLeft:-1, ArrowDown:-1}[event.key];
+    if (!direction || event.altKey || event.ctrlKey || event.metaKey) return;
+    event.preventDefault(); event.stopPropagation();
+    const now = performance.now();
+    if (!event.repeat || scrubKey?.key !== event.key) scrubKey = {key:event.key, since:now};
+    const elapsed = now - scrubKey.since, stride = elapsed >= 2000 ? 5 : elapsed >= 1000 ? 3 : 1;
+    els.buildSlider.value = String(Math.max(1, Math.min(frames().length, Number(els.buildSlider.value) + direction*stride)));
+    selectBuildStepFromSlider();
+  });
+  for (const event of ['keyup','blur','pointerdown']) els.buildSlider.addEventListener(event, () => { scrubKey = null; });
+
   window.addEventListener('character-population-changed', () => updatePopulationPanel(false));
 
   els.canvas.addEventListener('pointerdown', onPointerDown);
@@ -4003,6 +4105,7 @@
     // gehoert der Waehler nachgezogen.
     updateMapControls,
     getAnalysisOverlay,
+    isScrubbing: () => !!state.scrubbing,
     chooseBlueprint,
     clearBlueprint,
     showShortcutDialog,

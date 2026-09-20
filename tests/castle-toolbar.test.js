@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require.resolve('../src/js/castle-editor.js'), 'utf8');
 const html = fs.readFileSync(require.resolve('../src/index.html'), 'utf8');
+const constants = require('../config/aiv_constants.json');
 const section = (start, end) => source.slice(source.indexOf(start), source.indexOf(end));
 
 function editor(store = new Map()) {
@@ -11,10 +12,12 @@ function editor(store = new Map()) {
   const context = vm.createContext({state, ITEM_TOOL_STORAGE_KEY: 'itemTools',
     localStorage: {getItem: key => store.get(key), setItem: (key, value) => store.set(key, value)},
     document: {getElementById: () => ({}), querySelectorAll: () => []}, els: {canvas: {classList: {toggle() {}}}},
-    isLineSequence: type => type === 10001, isWallType: type => Number(type) === 25,
+    isLineSequence: type => type === 10001, itemInfo: type => constants[String(type)] || {},
     updateToolAvailability() {}, updateBrushSizeUI() {}, updateSelectedItemInfo() {}, renderPalette() {},
     renderBuildList() {}, setStatus() {}, scheduleDraw() {}, toolLabel: tool => tool, itemName: type => String(type)});
   vm.runInContext(section('  function isPlacementTool(', '  // Was man ohne'), context);
+  vm.runInContext(section('  function isUnitType(', '  function allowsMultiplePerStep('), context);
+  vm.runInContext(section('  function renumberUnits(', '  function refExists('), context);
   vm.runInContext(section('  function loadItemTools(', '  function normalizeShortcutKey('), context);
   vm.runInContext(section('  function selectItem(', '  function updateSelectedItemInfo('), context);
   context.loadItemTools();
@@ -37,6 +40,42 @@ test('placement tools are remembered independently for each item and across rest
   reopened.context.selectItem(99); reopened.context.setTool('bucket');
   reopened.context.selectItem(54); reopened.context.selectItem(99);
   assert.equal(reopened.state.tool, 'bucket');
+});
+
+test('regrouping all items leaves placement defaults and unit storage unchanged', () => {
+  const h = editor();
+  h.state.categories = { Walls: ['54'], Buildings: ['6', '25', '181', '10001'] };
+  for (const [id, tool] of [[25, 'line'], [26, 'line'], [35, 'line'], [46, 'line'], [54, 'single'], [181, 'single'], [10001, 'line']]) {
+    h.context.selectItem(id);
+    assert.equal(h.state.tool, tool, `item ${id}`);
+  }
+  const doc = { frames: [
+    { itemType: 6, tilePositionOfsets: [101, 102] },
+    { itemType: 54, tilePositionOfsets: [303] }
+  ], miscItems: [] };
+  h.context.normalizeUnitStorage(doc);
+  assert.deepEqual(Array.from(doc.frames, frame => frame.itemType), [54]);
+  assert.deepEqual(Array.from(doc.miscItems, item => [item.itemType, item.positionOfset, item.number]), [[6, 101, 0], [6, 102, 1]]);
+  for (let id = 1; id <= 21; id++) assert.equal(h.context.isUnitType(id), true);
+  assert.equal(h.context.isUnitType(54), false);
+});
+
+test('palette retains twelve semantic groups and a separate Dummy Step control', () => {
+  const state = { constants, categories: require('../config/aiv_categories.json').categories };
+  const context = vm.createContext({ state, itemInfo: type => constants[String(type)] || {} });
+  vm.runInContext(section('  function getPaletteGroups(', '  function renderPalette('), context);
+  const groups = Array.from(context.getPaletteGroups(), ([name, ids]) => [name, Array.from(ids)]);
+  assert.deepEqual(groups.map(([name]) => name), ['Castle', 'Gatehouses', 'Military', 'Walls, Moat & Pitch',
+    'Town', 'Stairs', 'Industry', 'Food', 'Good Things', 'Bad Things', 'Arabians', 'Europeans']);
+  assert.deepEqual(state.categories.Arabians, ['16','13','14','15','17','18','19','20','21','5']);
+  assert.deepEqual(state.categories.Europeans, ['6','7','8','9','10','11','12','1','2','3','4']);
+  const available = groups.flatMap(([, ids]) => ids).concat('200').sort();
+  assert.deepEqual(available, Object.keys(constants).sort(), 'every item remains available exactly once');
+  assert.match(html, /id="castlePauseBtn"/);
+  assert.match(source, /getElementById\('castlePauseBtn'\)\.addEventListener\('click', \(\) => selectItem\(200\)\)/);
+  const h = editor(); h.context.selectItem(200);
+  assert.equal(h.state.currentItemType, 200);
+  assert.equal(h.state.tool, 'single');
 });
 
 test('tool preferences reject corrupt data and preserve line-only item constraints', () => {

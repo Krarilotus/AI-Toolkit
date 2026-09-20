@@ -8,7 +8,8 @@ const geometry = require('../src/js/castle-geometry');
 const camera = require('../src/js/castle-camera');
 const palette = require('../src/js/castle-palette');
 const categories = require('../config/aiv_categories.json').categories;
-const allowed = [...categories.Walls, ...categories.Moat, 99];
+const allowed = Object.entries(require('../config/aiv_constants.json'))
+  .filter(([, item]) => item.multiPlacement).map(([id]) => id);
 const step = (itemType, offsets, shouldPause = false) => ({ itemType, tilePositionOfsets: offsets, shouldPause });
 
 test('merge keeps earliest position, unrelated steps and offset order, with pauses disabled', () => {
@@ -126,7 +127,7 @@ test('every configured item has a readable name and every category has a persist
   assert.equal(palette.itemName({ 25: { name: ' Wall ' } }, 25), 'Wall');
   assert.equal(palette.categoryStyle('Food').background, '#f8f8c0');
   assert.equal(palette.categoryStyle('Bad Things').background, '#f88080');
-  assert.equal(palette.categoryStyle('Military').background, palette.categoryStyle('Weapons').background);
+  assert.equal(palette.categoryStyle('Military').background, '#88b0b8');
 });
 
 test('hover names include units and one-tile items, with a safe fallback for unknown types', () => {

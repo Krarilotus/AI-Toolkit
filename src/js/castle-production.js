@@ -111,9 +111,12 @@
       for (const [good, info] of Object.entries(GOODS)) {
         const desired = Math.min(1000, Math.max(placed[info.building] || 0, Math.floor(Number(info.aic ? stats[info.aic] : farms[info.farm]) || 0)));
         for (let index = 0; index < desired; index++) {
-          const details = cycleDetails(good,opts,index);
-          const worker = workers[good][index] ||= { progress: -details.startup, cycles: 0 };
-          const cycle = details.ticks;
+          let worker = workers[good][index];
+          if (!worker) {
+            const details = cycleDetails(good,opts,index);
+            worker = workers[good][index] = { progress: -details.startup, cycles: 0, ticks: details.ticks };
+          }
+          const cycle = worker.ticks;
           if (cycle == null) continue;
           worker.progress += 50;
           const completed = Math.max(0,Math.floor(worker.progress / cycle));

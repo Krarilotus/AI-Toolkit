@@ -44,17 +44,19 @@ test('a freshly opened castle window can use the persisted clipboard',()=>{
  assert.equal(JSON.parse(store.get('clipboard')).groups[0].entries[0].dx,0);
 });
 
-function projectWindow({restore=true,interrupt=false,castle='GreekSea.aiv',rootPath='D:/Games/Liga'}={}){
+function projectWindow({restore=true,interrupt=false,edit=false,openFile=false,newCastle=false,navigate=false,castle='GreekSea.aiv',rootPath='D:/Games/Liga'}={}){
  const saved={gameRoot:rootPath,aiRoot:rootPath+'/ucp/plugins/Test/resources/ai/Gatekeeper',castleFile:castle,workspace:'character'};
  const store=new Map([['aiv.lastProject.v1',JSON.stringify(saved)]]),events=new Map(),opened=[],active=[];
  const state={initialized:false,gameRoot:null,library:null,loadedProject:null};
+ let dirty=false,file=null,revision=0,workspace='castle';
  const window={localStorage:{getItem:key=>store.get(key)||null,setItem:(key,v)=>store.set(key,v)},
    location:{search:'?restoreProject='+(restore?'1':'0')},
    addEventListener:(key,fn)=>events.set(key,fn),removeEventListener:key=>events.delete(key),
    electronAPI:{getUcpInstallation:async()=> 'D:/Games/Liga'},
-   appWorkspace:{getActive:()=> 'castle',setActive:name=>active.push(name)}};
+   castleEditor:{isDirty:()=>dirty,getPath:()=>file,getDocumentRevision:()=>revision},
+   appWorkspace:{getActive:()=>workspace,setActive:name=>{workspace=name;active.push(name);}}};
  const context={window,state,URLSearchParams,console,renderList(){},renderDetails(){},setStatus(){},
-   scan:async()=>{state.library={ais:[{key:'gatekeeper',rootPath:'D:/Games/Liga/ucp/plugins/Test/resources/ai/Gatekeeper'}]};if(interrupt)events.get('pointerdown')();},
+   scan:async()=>{state.library={ais:[{key:'gatekeeper',rootPath:'D:/Games/Liga/ucp/plugins/Test/resources/ai/Gatekeeper'}]};if(interrupt){events.get('pointerdown')?.();events.get('keydown')?.();}if(edit)dirty=true;if(openFile)file='manual.aiv';if(newCastle)revision++;if(navigate)workspace='content';},
    openSelected:async options=>{opened.push(options);return true;}};
  vm.createContext(context);
  vm.runInContext(projectSource.slice(projectSource.indexOf('  const LAST_PROJECT'),projectSource.indexOf('  const placeholderPortrait')),context);
@@ -72,8 +74,8 @@ test('startup restores the exact project, selected castle and workspace',async()
  assert.equal(JSON.parse(setup.store.get('aiv.lastProject.v1')).castleFile,'Gatekeeper.aiv');
 });
 
-test('new windows, user interaction, another installation and invalid castle paths prevent restore',async()=>{
- for(const options of [{restore:false},{interrupt:true},{rootPath:'E:/Different'},{castle:'../other.aiv'}]){
+test('new windows, document changes, another installation and invalid castle paths prevent restore',async()=>{
+ for(const options of [{restore:false},{edit:true},{openFile:true},{newCastle:true},{rootPath:'E:/Different'},{castle:'../other.aiv'}]){
    const setup=projectWindow(options);await setup.context.initialize();
    assert.equal(setup.opened.length,0,JSON.stringify(options));
  }
@@ -100,4 +102,13 @@ test('vanilla restoration distinguishes lords sharing a folder, including older 
  assert.equal(context.projectInLibrary(saved),null,'a missing lord must not silently become another lord');
  saved.aiKey=wolf.key;saved.gameRoot='E:/Other';
  assert.equal(context.projectInLibrary(saved),null);
+});
+
+test('startup clicks and keys do not cancel restoration or override a selected tab',async()=>{
+ for(const navigate of [false,true]){
+  const setup=projectWindow({interrupt:true,navigate});await setup.context.initialize();
+  assert.equal(setup.opened.length,1);
+  assert.equal(setup.opened[0].activateWorkspace,false);
+  assert.deepEqual(setup.active,navigate?[]:['character']);
+ }
 });

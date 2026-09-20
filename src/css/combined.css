@@ -181,9 +181,9 @@ button:disabled { cursor: default; }
 .integratedTitlebar .workspaceStatus { min-width: 0; max-width: 22vw; }
 .titlebarMenus {
   display: flex; align-items: stretch; align-self: center;
-  margin-right: 18px; padding: 2px;
-  border: 1px solid var(--line-strong); border-right: 3px solid var(--accent-strong);
-  border-radius: 6px; background: var(--app-bg-deep);
+  margin-right: 10px; padding: 0 12px 0 0;
+  border: 0; border-right: 1px solid var(--line-strong);
+  border-radius: 0; background: transparent;
 }
 .titlebarMenus button {
   border: 0;
@@ -191,7 +191,7 @@ button:disabled { cursor: default; }
   background: transparent;
   color: var(--text-soft);
   min-height: 28px; padding: 0 9px;
-  font: 500 12px var(--font-ui);
+  font: 600 13px var(--font-ui);
 }
 .integratedTitlebar .workspaceTab {
   margin-top: 5px; border-radius: 6px 6px 0 0;
@@ -1086,6 +1086,7 @@ button:disabled { cursor: default; }
   font: inherit;
 }
 .buildHeader { grid-template-columns: 1fr auto; align-items: center; }
+#castlePauseBtn { margin-left: 6px; padding: 2px 6px; font-size: 11px; }
 .buildHeader span { color: var(--text-muted); font: 11px var(--font-data); }
 .buildScrubber {
   display: grid;
@@ -1123,7 +1124,7 @@ button:disabled { cursor: default; }
 /* Lists use the space left by the docked overviews, regardless of item count. */
 .castlePalette { flex: 1 1 0; }
 .castlePalettePanel {
-  background: #20221c url('../../assets/aiv/village-sidebar.png') center top / 100% auto no-repeat;
+  background: #20221c url('../../assets/aiv/village-sidebar.png') center / cover no-repeat;
 }
 .castlePalettePanel .panelHeader { background: rgba(20, 24, 24, .88); }
 .paletteCategoryButtons {
@@ -1142,8 +1143,8 @@ button:disabled { cursor: default; }
   width: 100%;
   min-height: 34px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.15;
   background: var(--category-color, #505050);
   border-color: var(--category-color, #505050);
   color: var(--category-text, #ffffff);
@@ -1163,11 +1164,11 @@ button:disabled { cursor: default; }
 .castlePanel .paletteItem {
   width: 100%;
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   gap: 2px 9px;
   align-items: center;
-  min-height: 54px;
-  padding: 5px 8px;
+  min-height: 42px;
+  padding: 0 8px 0 0;
   border: 0;
   border-bottom: 1px solid rgba(83, 97, 104, .32);
   background: transparent;
@@ -1179,17 +1180,19 @@ button:disabled { cursor: default; }
 .paletteItem.selected { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent-strong); }
 .paletteThumb {
   grid-row: span 2;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 100%;
+  min-height: 42px;
+  align-self: stretch;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 0;
   background: var(--app-bg-deep);
   color: var(--text-muted);
   font-size: 11px;
 }
-.paletteThumb img { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
+.paletteThumb img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; }
 .paletteItemName { min-width: 0; overflow-wrap: anywhere; white-space: normal; font-size: 14px; }
 .paletteItemMeta { grid-column: 2; color: var(--text-muted); font: 11px var(--font-data); white-space: normal; }
 .selectedItemCard { padding: 9px; border-top: 1px solid var(--line); background: var(--surface-2); }
@@ -1353,6 +1356,7 @@ button:disabled { cursor: default; }
 .castleStatusBar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .buildStep {
+  height: 42px;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 7px;
@@ -2033,3 +2037,9 @@ html.dockResizing * { user-select: none !important; }
 .workspaceTabs .releaseUpdateButton:focus-visible { outline: 2px solid var(--text-main); outline-offset: 2px; }
 
 .characterFieldGroup { font-size: 12px; color: var(--accent-strong); border-top: 1px solid var(--line); margin: 14px 0 6px; padding-top: 10px; }
+.workspaceTabs .releaseSourceSelect { max-width: 185px; align-self: center; margin-bottom: 5px; padding: 4px 6px; font: 11px var(--font-ui); background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); -webkit-app-region: no-drag; }
+.releaseSourceDialog { max-width: 430px; padding: 20px; background: var(--surface-1, #20282c); color: var(--text-main); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); }
+.releaseSourceDialog::backdrop { background: #0008; }
+.releaseSourceDialog input { display: block; box-sizing: border-box; width: 100%; margin-top: 8px; padding: 8px; background: var(--surface-2); color: var(--text-main); border: 1px solid var(--line-strong); }
+.releaseSourceDialog p { color: var(--text-soft); font-size: 12px; }
+.releaseSourceActions { display: flex; justify-content: flex-end; gap: 8px; }

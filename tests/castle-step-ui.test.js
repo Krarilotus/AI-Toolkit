@@ -6,6 +6,28 @@ const geometry = require('../src/js/castle-geometry');
 const source = fs.readFileSync(require.resolve('../src/js/castle-editor.js'), 'utf8');
 const section = (start, end) => source.slice(source.indexOf(start), source.indexOf(end));
 
+test('holding slider arrows accelerates after one and two seconds and resets on release', () => {
+  let now = 0, updates = 0;
+  const handlers = {};
+  const slider = {value:'50', addEventListener(name, callback) {handlers[name]=callback;}};
+  const context = vm.createContext({els:{buildSlider:slider}, performance:{now:()=>now},
+    frames:()=>Array(100), selectBuildStepFromSlider:()=>updates++});
+  vm.runInContext(section('  let scrubKey = null;', "  window.addEventListener('character-population-changed'"), context);
+  const key = (name, repeat=false, extras={}) => handlers.keydown({key:name,repeat,preventDefault(){},stopPropagation(){},...extras});
+  key('ArrowRight'); assert.equal(slider.value,'51');
+  now=999; key('ArrowRight',true); assert.equal(slider.value,'52');
+  now=1000; key('ArrowRight',true); assert.equal(slider.value,'55');
+  now=2000; key('ArrowRight',true); assert.equal(slider.value,'60');
+  key('ArrowLeft',true); assert.equal(slider.value,'59','changing direction restarts acceleration');
+  now=4000; key('ArrowLeft',true); assert.equal(slider.value,'54');
+  for (const reset of ['keyup','blur','pointerdown']) {
+    handlers[reset](); key('ArrowLeft',true); assert.equal(slider.value,String(53-['keyup','blur','pointerdown'].indexOf(reset)));
+  }
+  slider.value='100'; key('ArrowRight'); assert.equal(slider.value,'100');
+  slider.value='1'; key('ArrowLeft'); assert.equal(slider.value,'1');
+  const before=updates; key('ArrowRight',false,{ctrlKey:true}); key('a'); assert.equal(updates,before);
+});
+
 function setup() {
   let created = 0;
   const scrolled = [];
@@ -26,11 +48,11 @@ function setup() {
   const els = Object.fromEntries(['buildList', 'buildSlider', 'buildSliderValue', 'buildCount'].map(key => [key, make()]));
   els.buildList.querySelector = () => els.buildList.children[state.insertionFrameIndex];
   const callbacks = [], selections = [];
-  const context = vm.createContext({state, els, geometry,
+  const context = vm.createContext({state, els, geometry, analysisTimer:null, analysisSerial:0, analysisCache:{},
     document: {createElement: make, getElementById: get}, window: {innerWidth: 800, innerHeight: 600},
     frames: () => doc.frames, frameRefKey: (fi, oi) => `f:${fi}:${oi}`, itemName: () => 'Wall', isUnitType: () => false,
     updatePopulationPanel() {}, updateCostPanel() {}, scheduleDraw() {}, setStatus() {},
-    requestAnimationFrame: fn => callbacks.push(fn),
+    requestAnimationFrame: fn => callbacks.push(fn), clearTimeout() {}, setTimeout() {},
     selectBuildFrame: fi => { state.insertionFrameIndex = fi; state.selected = new Set([`f:${fi}:0`]); selections.push(fi); },
     selectedBuildFrameIndexes: () => [...state.selected].map(ref => Number(ref.split(':')[1])),
     frameIsLocked: fi => Boolean(doc.frames[fi].locked), mergeableTypes: () => [25], mergeSelectedSteps() {}
@@ -123,6 +145,25 @@ test('rapid slider input performs one update at the latest selected step', () =>
   h.callbacks.shift()();
   assert.deepEqual(h.selections, [99]);
   assert.equal(h.state.scrubPending, false);
+  h.context.selectBuildStepFromSlider(); h.callbacks.shift()();
+  assert.deepEqual(h.selections, [99], 'repeated input at the same step does not schedule another render');
+});
+
+test('scrubbing refreshes visible rows without overwriting a newer thumb position', () => {
+  const h = setup(); h.context.renderBuildList();
+  h.state.buildListViewport = {top: 70 * 42, height: 5 * 42};
+  h.context.selectBuildFrame(72); h.context.renderBuildList(true);
+  const rows = h.els.buildList.children;
+  assert.equal(rows[72].attributes['aria-current'], 'step');
+  assert.equal(rows[74].classList.future, true);
+  assert.equal(rows[90]._buildState, undefined, 'offscreen rows are not refreshed');
+  h.state.buildListViewport = {top: 10 * 42, height: 5 * 42};
+  h.context.selectBuildFrame(12); h.context.renderBuildList(true);
+  assert.equal(rows[72].attributes['aria-current'], undefined, 'previous active row is cleared');
+  assert.equal(rows[12].attributes['aria-current'], 'step');
+  h.state.scrubPending = true; h.els.buildSlider.value = '83';
+  h.context.renderBuildList(true);
+  assert.equal(h.els.buildSlider.value, '83', 'list scrolling must not snap the thumb back');
 });
 
 test('right-click preserves a multi-step selection and locks/unlocks all selected positions', () => {
@@ -144,4 +185,18 @@ test('right-click preserves a multi-step selection and locks/unlocks all selecte
   h.context.openBuildContextMenu(event, 4);
   assert.deepEqual([...h.state.selected], ['f:4:0'], 'right-click outside selection targets only that step');
   assert.equal(h.get('castleContextMerge').disabled, true);
+});
+
+test('scrubbing defers analysis until the latest position settles and rejects earlier results', () => {
+  const timers=new Map();let serial=0,draws=0;
+  const h={state:{},analysisTimer:7,analysisSerial:4,analysisCache:{image:'old'},
+    clearTimeout:id=>timers.delete(id),setTimeout:fn=>{timers.set(++serial,fn);return serial;},scheduleDraw:()=>draws++};
+  vm.createContext(h);
+  vm.runInContext(section('  function deferAnalysisOverlay()', '  function selectBuildStepFromSlider()'),h);
+  h.deferAnalysisOverlay();h.deferAnalysisOverlay();
+  assert.equal(h.state.scrubbing,true);assert.equal(h.analysisSerial,6);
+  assert.equal(h.analysisCache.image,undefined);assert.equal(timers.size,1);
+  vm.runInContext(section('  function getAnalysisOverlay(', '  function drawAnalysisOverlay('),h);
+  assert.equal(h.getAnalysisOverlay().routes.length,0,'no DOM, terrain or worker work while scrubbing');
+  [...timers.values()][0]();assert.equal(h.state.scrubbing,false);assert.equal(draws,1);
 });

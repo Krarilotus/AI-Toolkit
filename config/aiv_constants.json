@@ -1,5 +1,6 @@
 {
     "1": {
+        "kind": "unit",
         "name": "Oil Engineer",
         "size": [
             1,
@@ -9,6 +10,7 @@
         "overlap": "allow"
     },
     "2": {
+        "kind": "unit",
         "name": "Magonel",
         "size": [
             1,
@@ -18,6 +20,7 @@
         "overlap": "allow"
     },
     "3": {
+        "kind": "unit",
         "name": "Ballista",
         "size": [
             1,
@@ -27,6 +30,7 @@
         "overlap": "allow"
     },
     "4": {
+        "kind": "unit",
         "name": "Trebuchet",
         "size": [
             1,
@@ -36,6 +40,7 @@
         "overlap": "allow"
     },
     "5": {
+        "kind": "unit",
         "name": "Fireballista",
         "size": [
             1,
@@ -45,6 +50,7 @@
         "overlap": "allow"
     },
     "6": {
+        "kind": "unit",
         "name": "Archer",
         "size": [
             1,
@@ -54,6 +60,7 @@
         "overlap": "allow"
     },
     "7": {
+        "kind": "unit",
         "name": "Crossbowman",
         "size": [
             1,
@@ -63,6 +70,7 @@
         "overlap": "allow"
     },
     "8": {
+        "kind": "unit",
         "name": "Spearman",
         "size": [
             1,
@@ -72,6 +80,7 @@
         "overlap": "allow"
     },
     "9": {
+        "kind": "unit",
         "name": "Pikeman",
         "size": [
             1,
@@ -81,6 +90,7 @@
         "overlap": "allow"
     },
     "10": {
+        "kind": "unit",
         "name": "Maceman",
         "size": [
             1,
@@ -90,6 +100,7 @@
         "overlap": "allow"
     },
     "11": {
+        "kind": "unit",
         "name": "Swordsman",
         "size": [
             1,
@@ -99,6 +110,7 @@
         "overlap": "allow"
     },
     "12": {
+        "kind": "unit",
         "name": "Knight",
         "size": [
             1,
@@ -108,6 +120,7 @@
         "overlap": "allow"
     },
     "13": {
+        "kind": "unit",
         "name": "Slave",
         "size": [
             1,
@@ -117,6 +130,7 @@
         "overlap": "allow"
     },
     "14": {
+        "kind": "unit",
         "name": "Slinger",
         "size": [
             1,
@@ -126,6 +140,7 @@
         "overlap": "allow"
     },
     "15": {
+        "kind": "unit",
         "name": "Assassin",
         "size": [
             1,
@@ -135,6 +150,7 @@
         "overlap": "allow"
     },
     "16": {
+        "kind": "unit",
         "name": "Arab Archer",
         "size": [
             1,
@@ -144,6 +160,7 @@
         "overlap": "allow"
     },
     "17": {
+        "kind": "unit",
         "name": "Horse Archer",
         "size": [
             1,
@@ -153,6 +170,7 @@
         "overlap": "allow"
     },
     "18": {
+        "kind": "unit",
         "name": "Arab Swordsman",
         "size": [
             1,
@@ -162,6 +180,7 @@
         "overlap": "allow"
     },
     "19": {
+        "kind": "unit",
         "name": "Fire Thrower",
         "size": [
             1,
@@ -171,6 +190,7 @@
         "overlap": "allow"
     },
     "20": {
+        "kind": "unit",
         "name": "Brazier",
         "size": [
             1,
@@ -180,6 +200,7 @@
         "overlap": "allow"
     },
     "21": {
+        "kind": "unit",
         "name": "Flag",
         "size": [
             1,
@@ -189,6 +210,7 @@
         "overlap": "allow"
     },
     "25": {
+        "defaultTool": "line",
         "name": "High Wall",
         "size": [
             1,
@@ -198,6 +220,7 @@
         "multiPlacement": true
     },
     "26": {
+        "defaultTool": "line",
         "name": "High Crenel",
         "size": [
             1,
@@ -207,6 +230,7 @@
         "multiPlacement": true
     },
     "35": {
+        "defaultTool": "line",
         "name": "Low Crenel",
         "size": [
             1,
@@ -216,6 +240,7 @@
         "multiPlacement": true
     },
     "46": {
+        "defaultTool": "line",
         "name": "Low Wall",
         "size": [
             1,
@@ -632,6 +657,7 @@
         "multiPlacement": true
     },
     "200": {
+        "kind": "buildOrder",
         "name": "Dummy Step",
         "size": [
             1,
