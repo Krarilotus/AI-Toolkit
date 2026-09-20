@@ -87,10 +87,11 @@ test('only an idle canvas uses direct groups; selections and placement previews 
   const start=source.indexOf('    neutralContextAction:');
   const code='({' + source.slice(start,source.indexOf('    runContextAction(',start)) + '})';
   const state={selected:new Set(),currentItemType:null,tool:'select',copyBuffer:null};
-  const api=vm.runInNewContext(code,{state});
+  const api=vm.runInNewContext(code,{state,isPlacementTool: tool=>['single','line','brush','bucket'].includes(tool)});
   assert.equal(api.neutralContextAction(),'groups');
   state.selected.add('f:1:0');assert.equal(api.neutralContextAction(),'deselect');
-  state.selected.clear();state.currentItemType=25;assert.equal(api.neutralContextAction(),'deselect');
+  state.selected.clear();state.currentItemType=25;assert.equal(api.neutralContextAction(),'groups','Select/Move is not holding the last palette item');
+  state.tool='single';assert.equal(api.neutralContextAction(),'deselect');
   state.currentItemType=null;state.tool='copy';state.copyBuffer={count:1};assert.equal(api.neutralContextAction(),'deselect');
   state.copyBuffer=null;assert.equal(api.neutralContextAction(),'groups');
 });

@@ -4120,7 +4120,7 @@
 
   window.castleEditor = {
     extras: { state, placementRefs, setTool, setStatus, renderBuildList, scheduleDraw }, // fuer editor-extras.js: Gruppen und Kopierspeicher, siehe dort
-    neutralContextAction: () => !state.selected.size && state.currentItemType == null && !(state.tool === 'copy' && state.copyBuffer) ? 'groups' : 'deselect',
+    neutralContextAction: () => !state.selected.size && !(isPlacementTool(state.tool) && state.currentItemType != null) && !(state.tool === 'copy' && state.copyBuffer) ? 'groups' : 'deselect',
     runContextAction(action, position) {
       if (action === 'deselect') return clearSelectionAndItem();
       if (action === 'groups') return window.dispatchEvent(new CustomEvent('castle-open-groups', {detail:position}));
