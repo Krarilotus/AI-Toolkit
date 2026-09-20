@@ -26,6 +26,10 @@ require('../main');
       window.addEventListener('error',event=>errors.push(event.message));
       window.addEventListener('unhandledrejection',event=>errors.push(String(event.reason)));
       window.alert=message=>{throw new Error(message)};
+      // This software-rendering suite inspects Canvas calls and pixels. Exercise
+      // the compatibility renderer explicitly, independently of overlay state;
+      // fire overlays now correctly retain the GPU renderer when available.
+      window.castleGpuStage=null;
       window.appWorkspace.setActive('character');
       await window.characterEditor.ready;
       const troopToggle=document.getElementById('toggleTroops');
