@@ -10,7 +10,7 @@
   const colors = {
     'Bad Things': '#f88080', Castle: '#a0a0a0', Food: '#f8f8c0',
     Gatehouses: '#808080', 'Good Things': '#c0c0f8', Industry: '#e0e0e0',
-    Keep: '#505050', Military: '#88b0b8', Moat: '#087080', Stairs: '#505050',
+    Keep: '#505050', Military: '#88b0b8', 'Moat & Pitch': '#087080', Stairs: '#505050',
     Towers: '#505050', Town: '#f8f840', Units: '#a0a0a0', Walls: '#505050',
     Weapons: '#88b0b8', Pause: '#a0a0a0'
   };

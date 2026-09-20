@@ -7,11 +7,12 @@ const { pipeline } = require('node:stream/promises');
 const { execFile, spawn } = require('node:child_process');
 const { promisify } = require('node:util');
 async function prepareRelease(release, { root, cache, baseline }) {
-  if (!release.asset) throw new Error('This release has no supported Windows ZIP with a published checksum.');
+  if (!release.asset || !release.key || !release.repo) throw new Error('This build has no supported Windows ZIP with a published checksum.');
   const stage = fs.mkdtempSync(path.join(cache, 'release-'));
   const script = path.join(stage, 'install.ps1');
   fs.copyFileSync(path.join(__dirname, 'release-install.ps1'), script);
   fs.writeFileSync(path.join(stage, 'config-baseline.json'), JSON.stringify(baseline));
+  fs.writeFileSync(path.join(stage, 'release.json'), JSON.stringify({repo:release.repo, key:release.key, tag:release.latest}));
   const response = await fetch(release.asset.url, { signal: AbortSignal.timeout(300000) });
   if (!response.ok || !response.body) throw new Error('Release download failed. Please retry.');
   let bytes = 0;

@@ -8,7 +8,7 @@ const geometry = require('../src/js/castle-geometry');
 const camera = require('../src/js/castle-camera');
 const palette = require('../src/js/castle-palette');
 const categories = require('../config/aiv_categories.json').categories;
-const allowed = [...categories.Walls, ...categories.Moat, 99];
+const allowed = [...categories.Walls, ...categories['Moat & Pitch']];
 const step = (itemType, offsets, shouldPause = false) => ({ itemType, tilePositionOfsets: offsets, shouldPause });
 
 test('merge keeps earliest position, unrelated steps and offset order, with pauses disabled', () => {

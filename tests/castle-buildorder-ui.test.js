@@ -69,11 +69,11 @@ test('Temporary canvas and item selections cannot clear or replace the active bu
   assert.match(functionBody('clampActiveBuildStep'), /Math\.max\(0, Math\.min\(frames\(\)\.length - 1/);
 });
 
-test('Castle palette uses larger category controls and item thumbnails', () => {
+test('Castle palette keeps clear category controls and compact full-height thumbnails', () => {
   const css = fs.readFileSync(path.join(root, 'src', 'css', 'combined.css'), 'utf8');
   assert.match(css, /\.castlePanel \.paletteCategoryButton\s*\{[\s\S]*?min-height:\s*34px;[\s\S]*?font-size:\s*13px;/);
-  assert.match(css, /\.paletteItem\s*\{[\s\S]*?min-height:\s*54px;/);
-  assert.match(css, /\.paletteThumb\s*\{[\s\S]*?width:\s*44px;[\s\S]*?height:\s*44px;/);
+  assert.match(css, /\.paletteItem\s*\{[\s\S]*?min-height:\s*42px;/);
+  assert.match(css, /\.paletteThumb\s*\{[\s\S]*?width:\s*42px;[\s\S]*?height:\s*100%;/);
 });
 
 test('Temporary blueprint controls render an in-memory image beneath castle objects', () => {

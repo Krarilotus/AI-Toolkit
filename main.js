@@ -24,16 +24,34 @@ const { listGameMaps, readGameMap, readNativeMapTiles, internals: mapInternals }
 const { withStartPlaces } = require('./src/node/map-startplaces');
 const { transferableBytes, writeNativeAiv } = require('./src/node/aiv-file');
 
-const checkReleaseUpdate = require('./src/node/release-updates').createReleaseChecker(app.getVersion());
-ipcMain.handle('check-release-update', () => checkReleaseUpdate());
+const releaseUpdates = require('./src/node/release-updates');
+let releaseChecker;
+function updateChecker() {
+  return releaseChecker ||= releaseUpdates.createReleaseChecker(releaseUpdates.readInstalledBuild(projectRoot()));
+}
+function updateSource() {
+  try { return releaseUpdates.repository(JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'update-source.json'), 'utf8')).repo); }
+  catch { return releaseUpdates.OFFICIAL; }
+}
+const checkReleaseUpdate = force => updateChecker()({repo:updateSource(), force:force === true});
+ipcMain.handle('check-release-update', (_event, force) => checkReleaseUpdate(force));
+ipcMain.handle('list-update-sources', async () => ({selected:updateSource(), repos:await updateChecker().listSources()}));
 let preparedRelease = null, preparingRelease = false;
-ipcMain.handle('prepare-release-update', async () => {
+ipcMain.handle('set-update-source', async (_event, repo) => {
+  if (preparingRelease) throw new Error('Wait for the current download before switching sources.');
+  const selected = await updateChecker().validate(repo);
+  fs.writeFileSync(path.join(app.getPath('userData'), 'update-source.json'), JSON.stringify({repo:selected}));
+  preparedRelease = null;
+  for (const win of BrowserWindow.getAllWindows()) win.webContents.send('update-source-changed', selected);
+  return selected;
+});
+ipcMain.handle('prepare-release-update', async (_event, expectedKey) => {
   if (!app.isPackaged || process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Automatic installation is available in the Windows x64 packaged app.');
   if (BrowserWindow.getAllWindows().length !== 1) throw new Error('Close other Toolkit windows before updating.');
   if (preparingRelease) throw new Error('An update is already downloading.');
   const release = await checkReleaseUpdate();
-  if (release.status !== 'available') throw new Error('No newer official release is available.');
-  if (preparedRelease?.version === release.latest) return { version: release.latest };
+  if (release.status !== 'available' || release.key !== expectedKey) throw new Error('The selected build changed. Check updates again.');
+  if (preparedRelease?.key === release.key) return { version: release.latest, key:release.key };
   preparingRelease = true;
   try {
     const baseline = {};
@@ -41,8 +59,8 @@ ipcMain.handle('prepare-release-update', async () => {
       baseline['config/' + name] = require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(defaultConfigDir(), name))).digest('hex');
     }
     const cache = path.join(app.getPath('userData'), 'release-updates'); fs.mkdirSync(cache, { recursive: true });
-    preparedRelease = { ...await require('./src/node/release-download').prepareRelease(release, { root: projectRoot(), cache, baseline }), version: release.latest };
-    return { version: release.latest };
+    preparedRelease = { ...await require('./src/node/release-download').prepareRelease(release, { root: projectRoot(), cache, baseline }), version: release.latest, key:release.key };
+    return { version: release.latest, key:release.key };
   } finally { preparingRelease = false; }
 });
 ipcMain.handle('install-release-update', async event => {

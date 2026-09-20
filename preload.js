@@ -1,8 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  checkReleaseUpdate: () => ipcRenderer.invoke('check-release-update'),
-  prepareReleaseUpdate: () => ipcRenderer.invoke('prepare-release-update'),
+  checkReleaseUpdate: force => ipcRenderer.invoke('check-release-update', force),
+  listUpdateSources: () => ipcRenderer.invoke('list-update-sources'),
+  setUpdateSource: repo => ipcRenderer.invoke('set-update-source', repo),
+  onUpdateSourceChanged: callback => ipcRenderer.on('update-source-changed', (_event, repo) => callback(repo)),
+  prepareReleaseUpdate: key => ipcRenderer.invoke('prepare-release-update', key),
   installReleaseUpdate: () => ipcRenderer.invoke('install-release-update'),
   getWindowChrome: () => ipcRenderer.invoke('get-window-chrome'),
   showTitlebarMenu: (request) => ipcRenderer.invoke('show-titlebar-menu', request),

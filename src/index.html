@@ -11,6 +11,16 @@
 </head>
 
 <body>
+<dialog id="releaseSourceDialog" class="releaseSourceDialog">
+  <form id="releaseSourceForm">
+    <h2>Experimental snapshots</h2>
+    <label for="releaseSourceRepo">Toolkit fork (owner/repository)</label>
+    <input id="releaseSourceRepo" placeholder="Krarilotus/AI-Toolkit" required autocomplete="off" spellcheck="false">
+    <p>Fork builds are experimental. Switching sources does not install a build until you press Install.</p>
+    <p id="releaseSourceError" role="alert"></p>
+    <div class="releaseSourceActions"><button id="releaseSourceCancel" type="button">Cancel</button><button type="submit">Use fork</button></div>
+  </form>
+</dialog>
 <div id="appRoot">
   <nav class="workspaceTabs" aria-label="Editor workspace">
     <img class="appIcon" src="../assets/icon.png" width="28" height="28" alt="AI Toolkit" draggable="false">
@@ -24,6 +34,9 @@
     <button id="tabCastle" class="workspaceTab" type="button" data-workspace="castle">Castle</button>
     <button id="tabAiContent" class="workspaceTab" type="button" data-workspace="content">AI Content</button>
     <div class="workspaceSpacer"></div>
+    <select id="releaseSourceSelect" class="releaseSourceSelect" aria-label="Update source" title="Update source">
+      <option value="Schlossgespensty/AI-Toolkit">Official releases</option>
+    </select>
     <button id="releaseUpdateButton" class="releaseUpdateButton" type="button" aria-live="polite" title="Check official releases">Check updates</button>
     <span id="workspaceStatus" class="workspaceStatus">UCP AI Library</span>
     <span class="appIdentity" aria-hidden="true"><span>AI</span> Toolkit</span>
