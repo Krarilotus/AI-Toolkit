@@ -607,7 +607,7 @@
       window.castleCostPanel?.loadProjectBalance?.();
       populateCastleSwitcher(ai, project.castle?.fileName || null);
       renderDetails();
-      window.appWorkspace?.setActive('castle');
+      if (options.activateWorkspace !== false) window.appWorkspace?.setActive('castle');
       rememberProject();
       setStatus(`${ai.name} opened for editing${project.castle ? ` with ${project.castle.fileName}` : ''}.`, 'success');
       return true;
@@ -832,24 +832,32 @@
   async function initialize() {
     if (state.initialized) return;
     state.initialized = true;
-    let interrupted = false;
-    const interrupt = () => { interrupted = true; };
-    window.addEventListener('pointerdown', interrupt, true);
-    window.addEventListener('keydown', interrupt, true);
+    const editors = [window.castleEditor, window.characterEditor, window.aiContentEditor].filter(Boolean);
+    const initialPaths = editors.map(editor => editor.getPath?.());
+    const initialRevision = window.castleEditor?.getDocumentRevision?.();
+    const initialWorkspace = window.appWorkspace?.getActive();
+    // Navigation and focusing the window are not document changes. Protect work
+    // opened/edited during the asynchronous scan and project read instead.
+    const shouldAbort = () => Boolean(state.loadedProject)
+      || window.castleEditor?.getDocumentRevision?.() !== initialRevision
+      || editors.some((editor, i) => editor.isDirty?.() || editor.getPath?.() !== initialPaths[i]);
     try {
       state.gameRoot = await window.electronAPI.getUcpInstallation();
       if (state.gameRoot) await scan();
       // Only the application's startup window restores a project. Explicit
       // Add Window / Load In New Window must never have its document replaced.
-      if (!interrupted && new URLSearchParams(window.location.search).get('restoreProject') === '1') {
+      if (!shouldAbort() && new URLSearchParams(window.location.search).get('restoreProject') === '1') {
         const saved = previousProject();
         const ai = projectInLibrary(saved);
         if (ai) {
           state.selectedKey = ai.key;
           renderList();
           renderDetails();
-          if (await openSelected({ castleFile: saved.castleFile, shouldAbort: () => interrupted })) {
-            window.appWorkspace?.setActive(['castle', 'character', 'content', 'ucp'].includes(saved.workspace) ? saved.workspace : 'castle');
+          if (await openSelected({ castleFile: saved.castleFile, shouldAbort, activateWorkspace: false })) {
+            if (window.appWorkspace?.getActive() === initialWorkspace) {
+              window.appWorkspace?.setActive(['castle', 'character', 'content', 'ucp'].includes(saved.workspace) ? saved.workspace : 'castle');
+            }
+            rememberProject();
           }
         } else if (saved) {
           setStatus('The last AI project is unavailable in this installation. Choose a project to continue.');
@@ -857,9 +865,6 @@
       }
     } catch (error) {
       setStatus(`Could not restore the UCP installation: ${error.message}`, 'error');
-    } finally {
-      window.removeEventListener('pointerdown', interrupt, true);
-      window.removeEventListener('keydown', interrupt, true);
     }
   }
 
