@@ -59,13 +59,14 @@ test('right gestures release capture; cancellation and focus loss never invoke a
   };}});
   let captured=false;
   const canvas=Object.assign(target(),{ownerDocument:doc,setPointerCapture(){captured=true;},hasPointerCapture(){return captured;},releasePointerCapture(){captured=false;}});
-  const actions=[]; bind(canvas, action=>actions.push(action)); bind(canvas,()=>assert.fail('bound twice'));
+  let neutral='deselect';
+  const actions=[]; bind(canvas, action=>actions.push(action), () => '', () => neutral); bind(canvas,()=>assert.fail('bound twice'));
   canvas.fire('pointerdown');
-  assert.equal(menusShown,0,'right press does not open a menu');
+  assert.equal(menusShown,1,'active right press retains the existing pie menu');
   canvas.fire('pointermove',{clientY:310});
-  assert.equal(menusShown,0,'small pointer jitter does not open a menu');
+  assert.equal(menusShown,1,'pointer jitter does not create another menu');
   canvas.fire('pointermove',{clientY:220});
-  assert.equal(menusShown,1,'intentional directional drag opens the menu');
+  assert.equal(menusShown,1,'directional drag reuses the active menu');
   assert.equal(captured,true,'opening the menu keeps capture until release');
   canvas.fire('pointerup',{clientY:220});
   assert.deepEqual(actions,['merge']);assert.equal(captured,false);
@@ -74,5 +75,22 @@ test('right gestures release capture; cancellation and focus loss never invoke a
     assert.equal(captured,false);assert.deepEqual(actions,['merge']);
   }
   canvas.fire('pointerdown');canvas.fire('pointerup');assert.deepEqual(actions,['merge','deselect']);
-  assert.equal(menusShown,1,'plain clicks and cancelled gestures never open a menu');
+  assert.equal(menusShown,5,'active selection gestures retain the previous menu behavior');
+  neutral='groups';canvas.fire('pointerdown');canvas.fire('pointerup');
+  assert.deepEqual(actions,['merge','deselect','groups'],'idle right-click opens groups directly');
+  canvas.fire('pointerdown');canvas.fire('pointermove',{clientY:200});canvas.fire('pointerup',{clientY:200});
+  assert.equal(actions.at(-1),'groups');assert.equal(menusShown,5,'idle right-click never shows the full pie');
+});
+
+test('only an idle canvas uses direct groups; selections and placement previews retain the pie', () => {
+  const source=fs.readFileSync(require.resolve('../src/js/castle-editor'),'utf8');
+  const start=source.indexOf('    neutralContextAction:');
+  const code='({' + source.slice(start,source.indexOf('    runContextAction(',start)) + '})';
+  const state={selected:new Set(),currentItemType:null,tool:'select',copyBuffer:null};
+  const api=vm.runInNewContext(code,{state});
+  assert.equal(api.neutralContextAction(),'groups');
+  state.selected.add('f:1:0');assert.equal(api.neutralContextAction(),'deselect');
+  state.selected.clear();state.currentItemType=25;assert.equal(api.neutralContextAction(),'deselect');
+  state.currentItemType=null;state.tool='copy';state.copyBuffer={count:1};assert.equal(api.neutralContextAction(),'deselect');
+  state.copyBuffer=null;assert.equal(api.neutralContextAction(),'groups');
 });

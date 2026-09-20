@@ -1438,7 +1438,7 @@
     state.bound.add(canvas);
     canvas.tabIndex = 0;
 
-    window.castlePieMenu.bind(canvas, (action, position) => window.castleEditor?.runContextAction(action, position), action => window.castleEditor?.getShortcut(action));
+    window.castlePieMenu.bind(canvas, (action, position) => window.castleEditor?.runContextAction(action, position), action => window.castleEditor?.getShortcut(action), () => window.castleEditor?.neutralContextAction());
 
     canvas.addEventListener('pointerdown', event => {
       canvas.focus({ preventScroll: true });

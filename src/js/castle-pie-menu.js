@@ -9,7 +9,7 @@
     return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'replace' : 'groups') : (dy > 0 ? 'cut' : 'merge');
   }
   const bound = new WeakSet();
-  function bind(canvas, run, getShortcut = () => '') {
+  function bind(canvas, run, getShortcut = () => '', neutralAction = () => 'deselect') {
     if (bound.has(canvas)) return;
     bound.add(canvas);
     const doc = canvas.ownerDocument, win = doc.defaultView;
@@ -44,7 +44,7 @@
       }
       doc.body.appendChild(menu);
       // Gesture coordinates remain at the click, even when the visual menu is clamped at an edge.
-      gesture = id == null ? null : {x, y, id, action:'deselect'};
+      gesture = id == null ? null : {x, y, id, center:'deselect'};
       if (id == null) menu.querySelector('button').focus();
       else highlight('deselect');
     }
@@ -58,27 +58,31 @@
       event.preventDefault(); event.stopImmediatePropagation();
       canvas.focus?.({preventScroll:true});
       close();
-      gesture = {x:event.clientX, y:event.clientY, id:event.pointerId};
+      gesture = {x:event.clientX, y:event.clientY, id:event.pointerId, center:neutralAction()};
+      if (gesture.center !== 'groups') open(gesture.x, gesture.y, gesture.id);
       try { canvas.setPointerCapture(event.pointerId); } catch { /* synthetic pointer */ }
     }, true);
     canvas.addEventListener('pointermove', event => {
       if (!gesture || gesture.id !== event.pointerId) return;
       event.preventDefault(); event.stopImmediatePropagation();
+      if (gesture.center === 'groups') return;
       const action = direction(event.clientX-gesture.x, event.clientY-gesture.y);
-      if (!menu && action !== 'deselect') open(gesture.x, gesture.y, gesture.id);
       if (menu) highlight(action);
     }, true);
     canvas.addEventListener('pointerup', event => {
       if (!gesture || gesture.id !== event.pointerId) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      const action = direction(event.clientX-gesture.x, event.clientY-gesture.y);
+      const action = gesture.center === 'groups' ? 'groups' : direction(event.clientX-gesture.x, event.clientY-gesture.y);
       const position = {x:gesture.x, y:gesture.y, document:doc};
       close(); run(action, position);
     }, true);
     canvas.addEventListener('contextmenu', event => { event.preventDefault(); });
     canvas.addEventListener('keydown', event => {
       if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-        event.preventDefault(); const rect = canvas.getBoundingClientRect(); open(rect.left+rect.width/2, rect.top+rect.height/2);
+        event.preventDefault(); const rect = canvas.getBoundingClientRect();
+        const x = rect.left+rect.width/2, y = rect.top+rect.height/2;
+        if (neutralAction() === 'groups') run('groups', {x,y,document:doc});
+        else open(x,y);
       }
     });
     canvas.addEventListener('pointercancel', close);
