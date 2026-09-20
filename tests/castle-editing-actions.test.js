@@ -126,7 +126,7 @@ test('every configured item has a readable name and every category has a persist
   assert.equal(palette.itemName({ 25: { name: ' Wall ' } }, 25), 'Wall');
   assert.equal(palette.categoryStyle('Food').background, '#f8f8c0');
   assert.equal(palette.categoryStyle('Bad Things').background, '#f88080');
-  assert.equal(palette.categoryStyle('Military').background, palette.categoryStyle('Weapons').background);
+  assert.equal(palette.categoryStyle('Military').background, '#88b0b8');
 });
 
 test('hover names include units and one-tile items, with a safe fallback for unknown types', () => {

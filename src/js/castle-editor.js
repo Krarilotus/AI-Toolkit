@@ -95,7 +95,6 @@
     constants: {},
     categories: {},
     populationData: { population_effects: { provides: {}, requires: {} } },
-    unitTypes: new Set(),
     document: newCastleDocument(),
     filePath: null,
     sourcePath: null,
@@ -330,7 +329,7 @@
       : { kind: 'frame', fi: Number(first), oi: Number(second) };
   }
 
-  function isUnitType(type) { return state.unitTypes.has(Number(type)); }
+  function isUnitType(type) { return itemInfo(type).kind === 'unit'; }
 
   function allowsMultiplePerStep(type) {
     return isUnitType(type) || itemInfo(type).multiPlacement === true;
@@ -362,7 +361,6 @@
   }
 
   function normalizeUnitStorage(doc = state.document) {
-    if (!state.unitTypes.size) return doc;
     const retainedFrames = [];
     for (const frame of doc.frames || []) {
       const type = Number(frame.itemType);
@@ -1798,14 +1796,6 @@
     if (state.currentItemType == null && isPlacementTool(state.tool)) setTool('select');
   }
 
-  // A wall is dragged, not dabbed. Which items count as walls is not a list of
-  // our own: it is the "Walls" category from config/aiv_categories.json, so it
-  // stays right when that file changes.
-  function isWallType(type) {
-    const walls = state.categories && state.categories.Walls;
-    return Array.isArray(walls) && walls.includes(String(type));
-  }
-
   function loadItemTools() {
     try {
       const saved = JSON.parse(localStorage.getItem(ITEM_TOOL_STORAGE_KEY) || '{}');
@@ -2016,7 +2006,8 @@
     state.selected.clear();
     state.currentItemType = Number(type);
     const preferred = state.itemTools[state.currentItemType];
-    setTool(preferred || (isWallType(type) ? 'line' : 'single'), false);
+    const defaultTool = itemInfo(type).defaultTool;
+    setTool(preferred || (isPlacementTool(defaultTool) ? defaultTool : 'single'), false);
     renderPalette();
     renderBuildList();
     updateSelectedItemInfo();
@@ -2051,7 +2042,7 @@
       valid.forEach(id => categorized.add(id));
       groups.push([category, valid]);
     }
-    const others = Object.keys(state.constants).filter(id => !categorized.has(id)).sort((a, b) => Number(a) - Number(b));
+    const others = Object.keys(state.constants).filter(id => !categorized.has(id) && itemInfo(id).kind !== 'buildOrder').sort((a, b) => Number(a) - Number(b));
     if (others.length) groups.push(['Other', others]);
     return groups;
   }
@@ -3604,9 +3595,6 @@
       ]);
       state.constants = constants || {};
       state.categories = categories?.categories || {};
-      const unitCategory = Object.entries(state.categories)
-        .find(([name]) => name.toLowerCase() === 'units');
-      state.unitTypes = new Set((unitCategory?.[1] || []).map(Number));
       state.populationData = populationData || { population_effects: { provides: {}, requires: {} } };
       applyLoadedSkins(skins);
       if (skins?.background) mapBackground.src = skins.background;
@@ -3970,6 +3958,7 @@
   if (els.brushMinus) els.brushMinus.addEventListener('click', () => setBrushSize(state.brushSize - 1));
   if (els.brushPlus) els.brushPlus.addEventListener('click', () => setBrushSize(state.brushSize + 1));
   els.buildSlider.addEventListener('input', selectBuildStepFromSlider);
+  document.getElementById('castlePauseBtn').addEventListener('click', () => selectItem(200));
   let scrubKey = null;
   els.buildSlider.addEventListener('keydown', event => {
     const direction = {ArrowRight:1, ArrowUp:1, ArrowLeft:-1, ArrowDown:-1}[event.key];

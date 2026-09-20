@@ -6,7 +6,7 @@ const test = require('node:test');
 const root = path.resolve(__dirname, '..');
 const readJson = relativePath => JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
 
-test('every AIV item has valid dimensions and exactly one category', () => {
+test('every AIV item has valid dimensions and a category or build-order control', () => {
   const constants = readJson('config/aiv_constants.json');
   const categories = readJson('config/aiv_categories.json').categories;
   const assignments = new Map();
@@ -23,7 +23,8 @@ test('every AIV item has valid dimensions and exactly one category', () => {
     assert.equal(Array.isArray(info.size), true, `item ${id} size`);
     assert.equal(info.size.length, 2, `item ${id} size dimensions`);
     assert.ok(info.size.every(value => Number(value) > 0), `item ${id} positive size`);
-    assert.equal(assignments.get(id)?.length, 1, `item ${id} category assignments`);
+    assert.equal(assignments.get(id)?.length || 0, info.kind === 'buildOrder' ? 0 : 1, `item ${id} category assignments`);
+    if (info.kind === 'buildOrder') assert.equal(id, '200', 'Dummy Step remains available through the Pause control');
   }
 });
 

@@ -498,16 +498,11 @@ test('dragging a wall shows the whole run at half opacity, not just one tile', (
 test('items restore their own placement tool, with Line as the default for walls', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const waehlen = script.slice(script.indexOf('function selectItem('), script.indexOf('function updateSelectedItemInfo'));
-  assert.match(waehlen, /isWallType\(type\) \? 'line' : 'single'/,
-    'Mauern werden gezogen, nicht getupft');
-  assert.match(waehlen, /state\.itemTools\[state\.currentItemType\]/,
-    'each item restores its own remembered choice');
-  // Welche Bauten Mauern sind, steht in der Konfiguration - nicht hier.
-  const wall = script.slice(script.indexOf('function isWallType('), script.indexOf("function setTool(tool"));
-  assert.match(wall, /state\.categories && state\.categories\.Walls/);
-  const kategorien = JSON.parse(fs.readFileSync(path.join(root, 'config', 'aiv_categories.json'), 'utf8'));
-  assert.deepEqual(kategorien.categories.Walls.sort(), ['25', '26', '35', '46'],
-    'die vier Mauern - aendert sich das, aendert sich das Verhalten mit');
+  assert.match(waehlen, /itemInfo\(type\)\.defaultTool/);
+  assert.match(waehlen, /state\.itemTools\[state\.currentItemType\]/);
+  assert.doesNotMatch(script, /state\.categories\.Walls|unitCategory/);
+  const constants = JSON.parse(fs.readFileSync(path.join(root, 'config', 'aiv_constants.json'), 'utf8'));
+  assert.deepEqual(Object.keys(constants).filter(id => constants[id].defaultTool === 'line'), ['25', '26', '35', '46']);
   // Das Merken haengt am Schalter, nicht am Zufall.
   const setzen = script.slice(script.indexOf('function setTool(tool'), script.indexOf('function selectItem('));
   assert.match(setzen, /function setTool\(tool, remember = true\)/);
