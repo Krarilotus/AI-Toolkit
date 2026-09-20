@@ -39,19 +39,6 @@ test('partial native layers cannot become a usable camera cache', t => {
   assert.throws(() => native.readResult(root, request), /Invalid native renderer layer/);
 });
 
-test('helper setup refuses unrelated directories and unknown game executables', t => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'toolkit-owner-test-'));
-  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-  fs.writeFileSync(path.join(root, 'castle.aiv'), 'keep this');
-  assert.throws(() => native.ownedDirectory(root), /unrelated/);
-  assert.equal(fs.readFileSync(path.join(root, 'castle.aiv'), 'utf8'), 'keep this');
-  const owned = path.join(root, 'cache');
-  native.ownedDirectory(owned); native.ownedDirectory(owned);
-  const bytes = Buffer.from('not a supported executable');
-  assert.throws(() => native.isolatedExecutable(bytes), /supports Crusader 1.41/);
-  assert.equal(bytes.toString(), 'not a supported executable');
-});
-
 test('native Lua loads once, regenerates every direction and exits after closing exports', () => {
   const source = fs.readFileSync(path.join(__dirname, '../integrations/native-map-renderer/init.lua'), 'utf8');
   const fixture = `
@@ -92,9 +79,29 @@ test('native Lua loads once, regenerates every direction and exits after closing
   } finally { lua.lua_close(L); }
 });
 
-test('native renderer configuration disables cursor capture and edge scrolling',()=>{
- const config=require('js-yaml').load(native.RENDER_CONFIG)['config-full'].modules.graphicsApiReplacer.config;
- assert.equal(config.control.clipCursor.contents.value,false);
- assert.equal(config.control.scrollActive.contents.value,false);
- assert.equal(config.window.continueOutOfFocus.contents.value,'render');
+test('missing camera cache performs no setup and never starts a process', t => {
+  const { readCachedNativeMap } = require('../src/node/native-map-renderer');
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'toolkit-readonly-'));
+  t.after(() => fs.rmSync(parent, { recursive: true, force: true }));
+  const root = path.join(parent, 'absent');
+  assert.throws(() => readCachedNativeMap({gameRoot: parent, mapPath: 'missing.map', cacheRoot: root}), /game will not be started/);
+  assert.equal(fs.existsSync(root), false);
+  const source = fs.readFileSync(require.resolve('../src/node/native-map-renderer'), 'utf8');
+  assert.doesNotMatch(source, /child_process|spawn\(|execFile\(|writeFile|mkdir|symlink/);
+});
+
+test('valid existing camera captures remain usable; stale ones fall back without regeneration', t => {
+  const { readCachedNativeMap } = require('../src/node/native-map-renderer');
+  const { root, request, receipt } = fixture(t);
+  const mapPath = path.join(root, 'source.map'); fs.writeFileSync(mapPath, 'map data');
+  request.mapHash = native.sha(Buffer.from('map data')); request.sourceHash = 'assets';
+  receipt({mapHash:request.mapHash});
+  const completed = path.join(root, 'completed-request.json');
+  fs.writeFileSync(completed, JSON.stringify(request));
+  const options = {gameRoot: root, mapPath, cacheRoot: root};
+  const fingerprint = () => ({engineHash:'engine',sourceHash:'assets'});
+  assert.equal(readCachedNativeMap(options, fingerprint).cameras.length, 4);
+  fs.writeFileSync(mapPath, 'changed map');
+  assert.throws(() => readCachedNativeMap(options, fingerprint), /outdated/);
+  assert.equal(fs.readFileSync(completed,'utf8'),JSON.stringify(request));
 });

@@ -37,7 +37,7 @@ const { colourOf, readGm1, tgxToRgba, diamondToRgba, upperTilePicture } = requir
 const { virtualToFile } = require('./pe-addresses');
 const { packMapPictures } = require('./pixel-atlas');
 const { cachedAtlas } = require('./map-atlas-cache');
-const { renderNativeMap, internals: nativeRendererInternals } = require('./native-map-renderer');
+const { readCachedNativeMap, internals: nativeRendererInternals } = require('./native-map-renderer');
 // Die Drehregel steht in iso-geometry.js, weil die Ansicht sie auch braucht.
 // Zwei Kopien derselben Regel waeren zwei Regeln, und eine davon veraltet.
 const geometry = require('../js/iso-geometry.js');
@@ -864,7 +864,7 @@ async function resolveNativeMapTiles(source, loadNative, build = buildMapTiles) 
 let atlasAssetRevision = null;
 async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
   const source = readMapSource(filePath, gameRoot);
-  return resolveNativeMapTiles(source, () => renderNativeMap({
+  return resolveNativeMapTiles(source, () => readCachedNativeMap({
     gameRoot, mapPath: source.known.path, cacheRoot
   }), (parsed, layers) => {
     // Native provenance includes the game executable, helper and GM assets.
