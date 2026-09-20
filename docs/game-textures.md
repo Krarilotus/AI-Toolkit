@@ -108,5 +108,11 @@ by sprite height with original picture indices preserved. Each page is cropped
 to its occupied extent and encoded separately. No image resizing is involved.
 The renderer selects the page when recording immutable terrain commands; it
 does not repack during step changes. Cache format v3 discards old single-image
-atlases. This addresses the reported single-atlas size-limit failure; the exact
-Double Trouble map from the report was not available locally for verification.
+atlases. The supplied Double Trouble map (SHA256
+`cc840ca2fdec37f90e1b7575d60cd689575f11a0cb07ae40b5e1ecaf921499c9`)
+reproduces the previous size-limit exception with 6,134 scenery sprites. The
+paged packer uses three pages (1986x3969, 2048x4015, 2048x2849), about 83.7 MiB
+of RGBA pixels. Released snapshot-4aa3336 loaded and reloaded this map in
+packaged Electron with the activated Reconquista fixture: 1,938 unique terrain
+pictures, zero missing pictures and zero renderer errors. This used saved
+terrain without native captures or starting the game.
