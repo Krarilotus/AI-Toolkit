@@ -392,12 +392,13 @@
       const bild = new Image();
       bild.src = daten.atlas;
       pending.push(bild.decode());
-      const upperImage = daten.upper?.dataUrl ? new Image() : null;
-      if (upperImage) { upperImage.src = daten.upper.dataUrl; pending.push(upperImage.decode()); }
+      const upperImages = (daten.upper?.pages || (daten.upper?.dataUrl ? [daten.upper.dataUrl] : [])).map(url => {
+        const img = new Image(); img.src = url; pending.push(img.decode()); return img;
+      });
       return {
         path: daten.path,
         bild,
-        upperImage, upperEntries: daten.upper?.entries || [],
+        upperImages, upperEntries: daten.upper?.entries || [],
         treeSprites: new Map((daten.treeSprites || []).map(tree => [tree[1] * KARTE_FELDER + tree[0], tree])),
         cliffSprites: ausBase64(daten.cliffSprites, Uint16Array),
         plaetze: ausBase64(daten.plaetze, Uint16Array),
@@ -483,9 +484,10 @@
         const tileWidth = kw * state.view.zoom;
         const tileLeft = px - tileWidth / 2;
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
+        const cliffImage = v.upperImages?.[cliff?.page || 0] || v.upperImage;
         state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
-        if (cliff && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          target.drawImage(v.upperImage, cliff.x, cliff.y, cliff.width, cliff.height,
+        if (cliff && cliffImage?.complete && cliffImage.naturalWidth) {
+          target.drawImage(cliffImage, cliff.x, cliff.y, cliff.width, cliff.height,
             tileLeft, py - hebung + cliff.dy * state.view.zoom,
             tileWidth, cliff.height * state.view.zoom);
         }
@@ -494,20 +496,22 @@
           tileLeft, py - hebung, tileWidth, kh * state.view.zoom);
         }});
         const upper = v.upperEntries[platz];
-        if (upper && v.upperImage?.complete && v.upperImage.naturalWidth) {
+        const upperImage = v.upperImages?.[upper?.page || 0] || v.upperImage;
+        if (upper && upperImage?.complete && upperImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
-            target.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
+            target.drawImage(upperImage, upper.x, upper.y, upper.width, upper.height,
               tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
               upper.width * scaleX, upper.height * scaleY);
           }});
         }
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
-        if (treePicture && v.upperImage?.complete && v.upperImage.naturalWidth) {
+        const treeImage = v.upperImages?.[treePicture?.page || 0] || v.upperImage;
+        if (treePicture && treeImage?.complete && treeImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
-            target.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
+            target.drawImage(treeImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
               tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
               treePicture.width * scaleX, treePicture.height * scaleY);
           }});

@@ -68,3 +68,12 @@ test('future moat tiles do not leak into an earlier build step; stepping back re
  geo.resolveMoats(items,cache);
  assert.equal(geo.resolveMoats(items.slice(0,1),cache)[0].entry,early);
 });
+
+test('paged scenery does not commit before its last texture page has decoded',async()=>{
+ const s=loader(),pending=s.context.setMapTiles({...payload(),upper:{pages:['page0','page1','page2'],entries:[]}});
+ assert.equal(s.images.length,4);
+ s.images[0].resolve();s.images[1].resolve();s.images[2].resolve();await Promise.resolve();
+ assert.equal(s.state.kachelVorrat,undefined);
+ s.images[3].resolve();assert.equal(await pending,true);
+ assert.equal(s.state.kachelVorrat.upperImages.length,3);
+});

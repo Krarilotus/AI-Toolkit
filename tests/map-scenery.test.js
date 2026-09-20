@@ -106,3 +106,23 @@ test('native pillars follow both sloped tile edges and repeat source rows withou
   }
   buffer.writeUInt32LE(3,20);assert.equal(pillarPicture(file,0,3),null);
 });
+
+test('large scenery atlases split into bounded pages, preserving indices and native pixels',()=>{
+ const picture={width:1020,height:1020,dx:14,dy:-100,rgba:Buffer.alloc(1020*1020*4)};
+ picture.rgba.set([12,34,56,255]);
+ const pictures=Array(35).fill(picture);pictures.splice(3,0,null);
+ assert.throws(()=>packMapPictures(pictures),/size limit/);
+ const atlas=packMapPictures(pictures,{paged:true});
+ assert.equal(atlas.entries[3],null);assert.ok(atlas.pages.length>1);
+ const decoded=atlas.pages.map(url=>{
+  const png=Buffer.from(url.split(',')[1],'base64'),width=png.readUInt32BE(16),height=png.readUInt32BE(20),chunks=[];
+  assert.ok(width<=2048&&height<=4096);
+  for(let at=8;at<png.length;){const n=png.readUInt32BE(at);if(png.toString('ascii',at+4,at+8)==='IDAT')chunks.push(png.subarray(at+8,at+8+n));at+=n+12;}
+  return {width,raw:require('node:zlib').inflateSync(Buffer.concat(chunks))};
+ });
+ for(const entry of atlas.entries.filter(Boolean)) {
+  assert.equal(entry.dx,14);assert.equal(entry.dy,-100);
+  const {raw,width}=decoded[entry.page],at=entry.y*(width*4+1)+1+entry.x*4;
+  assert.deepEqual([...raw.subarray(at,at+4)],[12,34,56,255]);
+ }
+});

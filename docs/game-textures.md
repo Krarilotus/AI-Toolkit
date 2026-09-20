@@ -101,3 +101,12 @@ Map loading remains read-only with respect to the selected game installation:
 existing compatible native captures may be read, but a miss or stale capture
 uses saved terrain. It never starts or attaches to Crusader. A crash reported
 with an older build has not been reproduced or attributed to a specific cause.
+
+
+Large scenery atlases now pack into up to eight 2048x4096 texture pages, sorted
+by sprite height with original picture indices preserved. Each page is cropped
+to its occupied extent and encoded separately. No image resizing is involved.
+The renderer selects the page when recording immutable terrain commands; it
+does not repack during step changes. Cache format v3 discards old single-image
+atlases. This addresses the reported single-atlas size-limit failure; the exact
+Double Trouble map from the report was not available locally for verification.
