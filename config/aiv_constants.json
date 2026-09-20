@@ -804,6 +804,109 @@
             4,
             4
         ]
+    },
+    "79": {
+        "name": "Bedouin Stockade",
+        "size": [
+            10,
+            10
+        ],
+        "edition": "de"
+    },
+    "53": {
+        "name": "Bedouin Outpost",
+        "size": [
+            5,
+            5
+        ],
+        "edition": "de"
+    },
+    "9022": {
+        "name": "Camel Lancer",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
+    },
+    "9023": {
+        "name": "Healer",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
+    },
+    "9024": {
+        "name": "Eunuch",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
+    },
+    "9025": {
+        "name": "Ambusher",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
+    },
+    "9026": {
+        "name": "Skirmisher",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
+    },
+    "9027": {
+        "name": "Heavy Camel",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
+    },
+    "9028": {
+        "name": "Sapper",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
+    },
+    "9029": {
+        "name": "Demolisher",
+        "size": [
+            1,
+            1
+        ],
+        "kind": "unit",
+        "edition": "de",
+        "overlap": "allow",
+        "maxAmount": 10
     }
-
 }

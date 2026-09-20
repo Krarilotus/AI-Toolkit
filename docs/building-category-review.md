@@ -46,3 +46,10 @@ footprints (192x192, 128x128 and 128x128 pixels). The resource exporter previous
 selected cyan palette 2; these industry buildings use white palette 3. Farm
 exports are unchanged. The existing GM1 decoder preserves the source tile
 artwork; no image downscaling or lossy compression is involved.
+
+
+DE extension: the twelve classic groups remain in their established order.
+Bedouins is a thirteenth group for the eight DE unit markers. The Bedouin
+Stockade and Outpost are under Military; their preview tiles are light green.
+New SVG previews are original Toolkit artwork; no AIVE texture-pack assets are
+redistributed, and existing PNG artwork is unchanged.

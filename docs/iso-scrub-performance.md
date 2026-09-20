@@ -197,3 +197,18 @@ runs, not a sub-10 ms promise or isolated GPU completion times. The full overlay
 was visually verified; a real WebGL overlap test matched Canvas mask alpha values
 exactly, including translucent foreground erasure. All image dimensions and
 pixels remain unchanged. Local suite: 446 passed, 10 skipped, zero failures.
+
+
+## Starting-position switching (2026-09-20)
+
+GreekSea/Kratoloros, existing native capture, real worker-owned WebGL renderer.
+Four alternating switches between starts 1 and 2: input handler 33?40 ms before,
+0?0.2 ms after storing the small position preference separately from the map.
+Full terrain updates still occur when the region/height anchor changes.
+
+Worker completion initially took 407?870 ms. Reusing GPU atlas textures and
+terrain sprite slots, with one bulk detach instead of repeated child removals,
+reduced the measured worker portion to 78?95 ms. Submission occurred 35?45 ms
+after input: roughly 115?141 ms combined, not sub-10 ms and not an exact display
+latency measurement. Tests verify reuse plus retirement of assets from old maps.
+No native renderer process was launched for this profiling.

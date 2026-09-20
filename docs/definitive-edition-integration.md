@@ -1,6 +1,7 @@
 # AIVE comparison and Definitive Edition integration
 
-Reviewed 2026-09-20. This is an implementation plan, not a claim of DE support.
+Reviewed 2026-09-20. DE JSON editing/export is implemented as an experimental interchange feature.
+DE game execution and DE terrain/assets are not yet verified.
 
 ## Evidence and limits
 
@@ -86,46 +87,43 @@ not necessarily the 998-step document shown in earlier editor screenshots.
 No original file was modified. This checks executable availability and basic
 classic-to-JSON conversion only; no DE game or GUI round-trip was performed.
 
-## Concrete gaps in this branch
+## Implemented in this branch
 
-1. `main.js` accepts `.aivjson` on open, but Save As offers only classic `.aiv`.
-   Quick Save also routes through the native writer. An imported JSON path
-   must never receive binary contents just because its document kind is `aiv`.
-2. `castle-editor.js::normalizeDocument` removes empty frames and clears
-   `shouldPause`; `outputDocument` repeats that normalization. This is
-   intentional current classic-editor behavior, but cannot be used as a
-   lossless DE importer/exporter. A JSON stringify button alone is insufficient.
-3. Classic validation, metadata, footprints, unit limits and the native codec
-   do not define all DE items. Unknown DE IDs must not silently become ordinary
-   buildings or disappear from saved data.
-4. Unit normalization renumbers markers. Preserve DE numbering unless actual
-   fixtures establish that it is safe to regenerate; validate per-type limits.
-5. The selected classic game installation supplies terrain, graphics and balance.
-   Reusing that integration for DE without an explicit game profile would make
-   incorrect compatibility promises.
+- Open `.aivjson` (and the `.aijson` alias); Export DE writes `.aivjson`.
+  Save keeps the selected format and JSON is written atomically as UTF-8.
+- DE import/save preserves empty frames, pauses, marker numbering and unknown
+  JSON fields/IDs. Classic import retains its existing pause/compaction policy.
+- Classic export rejects DE-only items, unsupported markers and timing loss
+  with actionable diagnostics. It does not silently substitute or discard them.
+- Bedouin Stockade (79, 10x10), Bedouin Outpost (53, 5x5), and the eight
+  9022?9029 markers are selectable. Bedouins have a separate category.
+  New artwork is original vector preview artwork, not extracted DE game sprites;
+  existing raster assets retain their original resolution. Unavailable 2.5D
+  building sprites use a footprint-sized placeholder.
+- Classic maps, balance and analysis remain classic integrations. DE terrain,
+  accurate DE costs/workers/fire/path rules and actual DE 2.5D building sprites
+  remain outside verified support. Do not call this full DE game compatibility.
 
-## Implementation sequence
+Schlossgespensty's supplied `Fix_for_AIVE-0.9.6.zip` was inspected as an archive
+without executing its flagged binary. Its JSON adds Hunter and Caged War Dogs
+classic templates and Dummy Step (200); those classic items already exist in
+Toolkit's native definitions. These data changes do not establish which fixes
+are present inside the patched converter executable.
+
+## Remaining verification
 
 1. **Acquire fixtures and define the contract.** AIVE 0.9.6 is acquired. Obtain a DE game
    export and an AIVE GUI save of the same asymmetric castle. Include rotated gates,
    a displaced keep, a multi-tile wall step, all new unit types, marker numbering,
    empty steps and pauses. Record which behaviors belong to the game versus the
    editor. Validate actual files in both applications before claiming interoperability.
-2. **Introduce a format boundary.** Track source/target format explicitly and
-   expose import, validate and export functions around one shared castle model.
-   Preserve timing and unknown fields during import; keep classic restrictions
-   in the classic adapter rather than unconditional normalization. Do not
-   change established classic pause behavior implicitly.
-3. **Add game profiles to item metadata.** Extend the existing item-based rules
-   with verified DE definitions and compatibility flags. Keep faction/category
-   display separate from placement rules. Future Bedouin units may need another
-   faction group; do not force them into Arabians merely to preserve twelve
-   buttons. Drawing and selection continue to share the same pipeline.
-4. **Implement explicit DE save/export.** Offer a `.aivjson` target, serialize
-   its validated schema through the existing atomic writer, and preserve the
-   source on failed conversion. Reject unsupported classic exports with a list
-   of incompatible items. Never substitute or discard them silently. Keep
-   binary-source preservation limited to matching classic files.
+2. **Verify DE definitions against the game.** The provided AIVE definitions
+   support the current catalogue. Compare them with a current DE installation,
+   including additional items and per-unit limits before expanding coverage.
+3. **Validate timing-aware editing.** Round-trip tests cover empty and paused
+   steps. Merging paused DE steps is rejected instead of dropping their timing.
+4. **Separate DE runtime data.** Add an explicit DE game profile before exposing
+   DE map rendering, balance or analysis as accurate game behavior.
 5. **Verify both directions.** Test semantic import/export equality, asymmetric
    coordinate anchors, timing and unknown IDs, save-path/content agreement,
    failure atomicity, and unchanged classic regression coverage. Open Toolkit

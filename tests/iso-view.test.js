@@ -751,7 +751,7 @@ test('die Ansicht dreht die Burg und rechnet die Maus zurueck', () => {
   const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
   // Erst einsammeln, dann drehen - sonst landen die Bodenplatten neben ihrem
   // Gebaeude, weil sie aus dessen Ecke gerechnet werden.
-  assert.match(iso, /turnedTiles\(geo\.collectItems\(doc, state\.catalogue\)\)/);
+  assert.match(iso, /turnedTiles\(geo\.collectItems\(doc, state\.catalogue, null, window\.castleEditor\?\.getItemDefinitions\?\.\(\)\)\)/);
   assert.match(iso, /const items = visibleSceneItems\(\)/);
   // Die Platten haengen an der GEDREHTEN Ecke, ihr eigener Versatz wird nicht
   // mitgedreht. Gemessen an 201 Startplaetzen aus 60 Karten: 194 davon tragen

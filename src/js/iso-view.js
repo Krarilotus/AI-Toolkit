@@ -179,6 +179,7 @@
   // way round. Two pictures on the same floor would hide each other, and no
   // one could tell which of them is to scale.
   const MAP_KEY = 'castleIsoGameMap';
+  const MAP_POSITION_KEY = 'castleIsoGameMapPosition';
 
   // Welche Karte mit welchem Startplatz gerade liegt. Wechselt eines von
   // beidem, passt alles Gezeichnete nicht mehr und muss neu entstehen.
@@ -214,6 +215,12 @@
       let stored = null;
       try { stored = window.localStorage.getItem(MAP_KEY); } catch { stored = null; }
       try { state.gameMap = stored ? JSON.parse(stored) : null; } catch { state.gameMap = null; }
+      try {
+        const position = JSON.parse(window.localStorage.getItem(MAP_POSITION_KEY) || 'null');
+        if (state.gameMap && position?.path === state.gameMap.path && Number.isInteger(position.index)) {
+          state.gameMap.keepIndex = Math.max(0, Math.min(state.gameMap.keeps.length - 1, position.index));
+        }
+      } catch { /* Ignore a corrupt position preference; retain the loaded map. */ }
     }
     return state.gameMap;
   }
@@ -241,6 +248,7 @@
     if (previous?.path !== state.gameMap?.path) handDrehung = 0;
     window.castleEditor?.extras?.scheduleDraw?.();
     rememberGameMap();
+    try { window.localStorage.removeItem(MAP_POSITION_KEY); } catch {}
     if (state.gameMap && state.ground) setGround(null);   // paints as well
     else paint();
   }
@@ -248,10 +256,13 @@
   function setGameMapKeep(index) {
     const map = gameMap();
     if (!map || !map.keeps.length) return;
-    map.keepIndex = Math.max(0, Math.min(map.keeps.length - 1, Number(index) || 0));
-    rememberGameMap();
+    const next = Math.max(0, Math.min(map.keeps.length - 1, Number(index) || 0));
+    if (map.keepIndex === next) return;
+    map.keepIndex = next;
+    // A starting place is a tiny preference, not a change to the map payload.
+    try { window.localStorage.setItem(MAP_POSITION_KEY, JSON.stringify({ path: map.path, index: next })); } catch {}
     window.castleEditor?.extras?.scheduleDraw?.();
-    paint();
+    refresh();
   }
 
   let routeTerrainCache = null, terrainRequest = null;
@@ -934,7 +945,7 @@
     if (!doc) return geo.attachDrawbridges(turnedTiles(geo.collectItems(doc, state.catalogue, step)));
     const rotation = currentRotation(), camera = viewRotation(), cache = state.geometryCache;
     if (!cache || cache.doc !== doc || cache.catalogue !== state.catalogue || cache.rotation !== rotation || cache.camera !== camera) {
-      const items = turnedTiles(geo.collectItems(doc, state.catalogue));
+      const items = turnedTiles(geo.collectItems(doc, state.catalogue, null, window.castleEditor?.getItemDefinitions?.()));
       state.geometryCache = {doc, catalogue:state.catalogue, rotation, camera, items};
       // Decode every variant used by this document before scrubbing discovers it.
       const seen = new Set();

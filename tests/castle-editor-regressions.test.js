@@ -51,7 +51,7 @@ test('import disables pauses and marks paused native castles dirty to prevent by
     invalidatePlacementCache() {}, retainSourceBytes: value => value,
     updateToolAvailability() {}, renderPalette() {}, renderBuildList() {}, centerMap() {},
     setDirty: value => { state.dirty = value; }, setStatus: text => statuses.push(text),
-    frames: () => state.document.frames, window: {},
+    frames: () => state.document.frames, window: {castleFormat: require('../src/js/castle-format')},
     alert: text => assert.fail(text), console});
   vm.runInContext(section('  function normalizeDocument(', '  // Build-step locks'), context);
   vm.runInContext(section('  function loadDocument(', '  function loadFromContent('), context);

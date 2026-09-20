@@ -345,7 +345,7 @@
       .map(([gx, gy]) => isoPoint(gx, gy, view));
   }
 
-  function collectItems(document_, catalogue, throughFrame = null) {
+  function collectItems(document_, catalogue, throughFrame = null, definitions = {}) {
     const out = [];
     const counts = new Map();
     if (!document_ || !Array.isArray(document_.frames)) return out;
@@ -365,7 +365,7 @@
           // welcher Gegenstand ausgewaehlt ist.
           ref: 'f:' + frameIndex + ':' + offsetIndex,
           itemType: frame.itemType,
-          tiles: entry ? entry.kacheln : 1
+          tiles: entry ? entry.kacheln : (definitions[String(frame.itemType)]?.size?.[0] || 1)
         });
       });
     });

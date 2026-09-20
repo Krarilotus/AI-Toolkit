@@ -1,3 +1,4 @@
+const castleFormat = require('./src/js/castle-format');
 const path = require('path');
 const fs = require('fs');
 const { app, BrowserWindow, Menu, ipcMain, dialog, globalShortcut, shell, nativeImage, screen } = require('electron');
@@ -160,6 +161,8 @@ function asCastleDocument(value) {
 async function writeAivDocument(document, destination, { sourcePath = null, sourceBytes = null, unchanged = false } = {}) {
   const codec = await aivCodecPromise;
   const inputDocument = asCastleDocument(document);
+  const issues = castleFormat.classicIssues(inputDocument, require('./config/aiv_constants.json'));
+  if (issues.length) throw new Error('Cannot export this castle as classic AIV:\n' + issues.join('\n') + '\nSave as Definitive Edition (.aivjson) to preserve it.');
   // writeNativeAiv ist SYNCHRON und gibt ein Ergebnis zurueck, kein Versprechen.
   // Hier stand einmal ein .then() daran - das warf "writeNativeAiv(...).then is
   // not a function", und Speichern wie Schnellspeichern gingen gar nicht mehr.
@@ -174,6 +177,12 @@ async function writeAivDocument(document, destination, { sourcePath = null, sour
     unchanged
   });
   return ergebnis;
+}
+
+async function writeCastleDocument(content, destination, options) {
+  if (!castleFormat.isJsonPath(destination)) return writeAivDocument(content, destination, options);
+  atomicWriteFile(destination, castleFormat.stringify(asCastleDocument(content)), 'utf8');
+  return { path: destination, native: false, sourceBytes: null };
 }
 
 function placeholderPortrait(size) {
@@ -558,7 +567,7 @@ ipcMain.handle('set-dialog-project', (event, root) => {
 });
 ipcMain.handle('open-file', async (_event, kind = 'json') => {
   const filters = kind === 'aiv'
-    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson'] }]
+    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson', 'aijson'] }]
     : [{ name: 'JSON', extensions: ['json'] }];
   const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(_event.sender), { properties: ['openFile'], filters, defaultPath: projectDialogPath(_event) });
   if (result.canceled || result.filePaths.length === 0) return null;
@@ -581,20 +590,21 @@ ipcMain.handle('save-file', async (_event, {
   unchanged = false
 } = {}) => {
   const filters = kind === 'aiv'
-    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv'] }]
+    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv'] }, { name: 'Definitive Edition castle', extensions: ['aivjson'] }]
+    : kind === 'aivjson' ? [{ name: 'Definitive Edition castle', extensions: ['aivjson'] }, { name: 'Stronghold AIV Castle', extensions: ['aiv'] }]
     : [{ name: 'JSON', extensions: ['json'] }];
   const result = await dialog.showSaveDialog(BrowserWindow.fromWebContents(_event.sender), { filters, defaultPath: projectDialogPath(_event, defaultPath) });
   if (result.canceled || !result.filePath) return null;
-  if (kind === 'aiv') {
-    const filePath = result.filePath.toLowerCase().endsWith('.aiv') ? result.filePath : `${result.filePath}.aiv`;
-    return writeAivDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
+  if (kind === 'aiv' || kind === 'aivjson') {
+    const filePath = /\.(aiv|aivjson|aijson)$/i.test(result.filePath) ? result.filePath : `${result.filePath}.${kind}`;
+    return writeCastleDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
   }
   atomicWriteFile(result.filePath, content, 'utf8');
   return result.filePath;
 });
 
 ipcMain.handle('quick-save-file', async (_event, { path: filePath, content, kind = 'json', sourcePath = null, sourceBytes = null, unchanged = false }) => {
-  if (kind === 'aiv') return writeAivDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
+  if (kind === 'aiv' || kind === 'aivjson') return writeCastleDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
   atomicWriteFile(filePath, content, 'utf8');
   return filePath;
 });
@@ -842,7 +852,7 @@ ipcMain.handle('load-config', async (_event, file) => {
 
 ipcMain.handle('load-file-in-new-window', async (_event, kind = 'json') => {
   const filters = kind === 'aiv'
-    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson'] }]
+    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson', 'aijson'] }]
     : [{ name: 'JSON', extensions: ['json'] }];
   const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(_event.sender), { filters, properties: ['openFile'], defaultPath: projectDialogPath(_event) });
   if (result.canceled || result.filePaths.length === 0) return null;
@@ -886,7 +896,7 @@ ipcMain.handle('load-aiv-skins', async () => {
   for (const directory of [bundledSkinDir(), skinDir()]) {
     if (!fs.existsSync(directory)) continue;
     for (const file of fs.readdirSync(directory)) {
-      if (!/^\d+\.png$/i.test(file)) continue;
+      if (!(directory === bundledSkinDir() ? /^\d+\.(png|svg)$/i : /^\d+\.png$/i).test(file)) continue;
       const key = path.basename(file, path.extname(file));
       result[key] = imageFileToDataUrl(path.join(directory, file));
       if (directory === skinDir()) customSkinTypes.push(key);
@@ -903,5 +913,5 @@ ipcMain.handle('open-aiv-skins-folder', async () => {
 
 function imageFileToDataUrl(filePath) {
   const data = fs.readFileSync(filePath).toString('base64');
-  return `data:image/png;base64,${data}`;
+  return `data:image/${path.extname(filePath).toLowerCase() === '.svg' ? 'svg+xml' : 'png'};base64,${data}`;
 }

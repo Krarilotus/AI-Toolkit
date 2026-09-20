@@ -99,6 +99,7 @@
     filePath: null,
     sourcePath: null,
     sourceBytes: null,
+    format: 'aiv',
     dirty: false,
     tool: 'single',
     itemTools: Object.create(null),
@@ -252,6 +253,16 @@
   }
 
   function normalizeDocument(doc, diagnostics = null) {
+    if (state.format === 'aivjson') {
+      window.castleFormat.validate(doc);
+      // Empty DE frames consume time. Non-enumerable offsets let the editor
+      // navigate them while their serialized representation remains {}.
+      for (const frame of doc.frames) if (!Object.keys(frame).length) {
+        Object.defineProperty(frame, 'tilePositionOfsets', { value: [], configurable: true });
+      }
+      doc.miscItems ||= [];
+      return doc;
+    }
     if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('The AIV castle document is invalid.');
     if (!Array.isArray(doc.frames)) throw new Error("The AIV file must contain a 'frames' array.");
     const normalizedFrames = [];
@@ -345,7 +356,15 @@
     return lineSequence(type).length > 0;
   }
 
+  function availableUnitNumber(type) {
+    const used = new Set(state.document.miscItems.filter(item => Number(item.itemType) === Number(type)).map(item => item.number));
+    let number = 0;
+    while (used.has(number)) number++;
+    return number;
+  }
+
   function renumberUnits(doc = state.document) {
+    if (state.format === 'aivjson') return;
     const nextNumber = new Map();
     for (const item of doc.miscItems || []) {
       const type = Number(item.itemType);
@@ -361,6 +380,7 @@
   }
 
   function normalizeUnitStorage(doc = state.document) {
+    if (state.format === 'aivjson') return doc;
     const retainedFrames = [];
     for (const frame of doc.frames || []) {
       const type = Number(frame.itemType);
@@ -645,6 +665,7 @@
       setStatus(`New castle added to the loaded AI as ${added.fileName}`);
       return true;
     }
+    state.format = 'aiv';
     state.document = document;
     invalidatePlacementCache();
     state.filePath = null;
@@ -692,7 +713,9 @@
   }
 
   function loadDocument(document, path, options = {}) {
+    const previousFormat = state.format;
     try {
+      state.format = options.source === 'aivjson' || window.castleFormat.isJsonPath(path) ? 'aivjson' : 'aiv';
       const diagnostics = { removedLegacySteps: 0 };
       const parsed = stripSessionLocks(normalizeUnitStorage(normalizeDocument(deepClone(document), diagnostics)));
       state.document = parsed;
@@ -719,10 +742,11 @@
         : '';
       const formatNote = options.source === 'aiv'
         ? 'native AIV'
-        : options.source === 'aivjson' ? 'AIVJSON compatibility import' : 'castle document';
+        : options.source === 'aivjson' ? 'Definitive Edition JSON' : 'castle document';
       const pauseNote = diagnostics.removedPauses ? ` — disabled ${diagnostics.removedPauses} build-step pause(s)` : '';
       setStatus(`Opened ${path ? path.split(/[\\/]/).pop() : 'castle'} — ${frames().length} build steps · ${formatNote}${legacyNote}${pauseNote}`);
     } catch (err) {
+      state.format = previousFormat;
       alert(`Could not open AIV castle:\n\n${err.message}`);
       console.error(err);
     }
@@ -750,7 +774,7 @@
   }
 
   async function saveFile() {
-    if (!state.filePath || !/\.aiv$/i.test(state.filePath)) return saveAs();
+    if (!state.filePath || !/\.(aiv|aivjson|aijson)$/i.test(state.filePath)) return saveAs();
     try {
       const result = await window.electronAPI.quickSaveFile({
         path: state.filePath,
@@ -764,8 +788,8 @@
         setStatus('Save cancelled; the existing castle was not changed');
         return false;
       }
-      state.sourcePath = state.filePath;
-      state.sourceBytes = retainSourceBytes(result.sourceBytes) || state.sourceBytes;
+      state.sourcePath = result.native === false ? null : state.filePath;
+      state.sourceBytes = retainSourceBytes(result.sourceBytes) || (result.native === false ? null : state.sourceBytes);
       setDirty(false);
       const name = state.filePath.split(/[\\/]/).pop();
       const message = `Saved ${name}`;
@@ -779,20 +803,22 @@
     }
   }
 
-  async function saveAs() {
+  async function saveAs(format = state.format) {
+    if (typeof format !== 'string') format = state.format;
     try {
       const defaultPath = state.filePath
-        ? state.filePath.replace(/\.aivjson$/i, '.aiv')
-        : 'Castle.aiv';
-      const result = await window.electronAPI.saveFile(outputDocument(), 'aiv', defaultPath, {
+        ? state.filePath.replace(/\.(aiv|aivjson|aijson)$/i, `.${format}`)
+        : `Castle.${format}`;
+      const result = await window.electronAPI.saveFile(outputDocument(), format, defaultPath, {
         sourcePath: state.sourcePath,
         sourceBytes: state.sourceBytes,
         unchanged: !state.dirty
       });
       if (!result) return false;
       state.filePath = result.path || result;
-      state.sourcePath = state.filePath;
-      state.sourceBytes = retainSourceBytes(result.sourceBytes) || state.sourceBytes;
+      state.format = window.castleFormat.isJsonPath(state.filePath) ? 'aivjson' : 'aiv';
+      state.sourcePath = result.native === false ? null : state.filePath;
+      state.sourceBytes = retainSourceBytes(result.sourceBytes) || (result.native === false ? null : state.sourceBytes);
       setDirty(false);
       const name = state.filePath.split(/[\\/]/).pop();
       const message = `Saved ${name}`;
@@ -1183,6 +1209,7 @@
       if (pendingMerge.document !== state.document || pendingMerge.revision !== state.documentRevision)
         throw new Error('The castle changed. Cancel and select the placements again.');
       const checked = [...document.querySelectorAll('#castleMergeRows input:checked:not(:disabled)')].map(input => Number(input.value));
+      if (state.format === 'aivjson' && [...pendingMerge.selections.keys()].some(fi => frames()[fi]?.shouldPause)) throw new Error('These DE steps contain pauses. Merge would change their timing.');
       const proposal = geometry.mergeStepPlacements(frames(), pendingMerge.selections, checked, mergeableTypes());
       pushUndo();
       state.document.frames = proposal.frames;
@@ -1243,7 +1270,7 @@
     deleteRefs(result.replacements);
     if (isUnitType(type)) {
       const mi = state.document.miscItems.length;
-      state.document.miscItems.push({ positionOfset: off, itemType: type, number: countType(type) });
+      state.document.miscItems.push({ positionOfset: off, itemType: type, number: availableUnitNumber(type) });
       state.selected = new Set([unitRefKey(mi)]);
       changed(`Placed ${itemName(type)} rallypoint #${unitDisplayNumber(state.document.miscItems[mi].number)} at ${off}`);
     } else {
@@ -1359,9 +1386,8 @@
       changed(`${itemName(type)}: placed ${newFrames.length} consecutive stair steps`);
     } else if (isUnitType(type)) {
       const firstMi = state.document.miscItems.length;
-      let nextNumber = countType(type);
       for (const off of state.brushOffsets) {
-        state.document.miscItems.push({ positionOfset: off, itemType: type, number: nextNumber++ });
+        state.document.miscItems.push({ positionOfset: off, itemType: type, number: availableUnitNumber(type) });
       }
       state.selected = new Set(state.brushOffsets.map((_off, i) => unitRefKey(firstMi + i)));
       changed(`${toolName}: placed ${state.brushOffsets.length} ${itemName(type)} rallypoints`);
@@ -1551,18 +1577,15 @@
     const startUnit = state.document.miscItems.length;
     const newUnitSelection = new Set();
     const newFrames = [];
-    const nextUnitNumber = new Map();
     for (const group of result.proposal.groups) {
       const offsets = group.entries.map(entry => xyToOffset(entry.x, entry.y));
       if (group.kind === 'unit') {
         const type = Number(group.itemType);
-        let number = nextUnitNumber.has(type) ? nextUnitNumber.get(type) : countType(type);
         for (const off of offsets) {
           const mi = state.document.miscItems.length;
-          state.document.miscItems.push({ positionOfset: off, itemType: type, number: number++ });
+          state.document.miscItems.push({ positionOfset: off, itemType: type, number: availableUnitNumber(type) });
           newUnitSelection.add(unitRefKey(mi));
         }
-        nextUnitNumber.set(type, number);
         continue;
       }
       const type = Number(group.itemType);
@@ -2233,7 +2256,7 @@
       index.textContent = String(fi + 1);
       const name = document.createElement('span');
       name.className = 'buildName';
-      name.textContent = itemName(type);
+      name.textContent = count ? itemName(type) : 'Empty step';
       name.title = `${itemName(type)} [${type}]`;
       const right = document.createElement('div');
       right.className = 'buildStepControls';
@@ -3850,6 +3873,7 @@
   document.getElementById('castleNewBtn').addEventListener('click', newFile);
   document.getElementById('castleOpenBtn').addEventListener('click', openFile);
   document.getElementById('castleSaveBtn').addEventListener('click', saveFile);
+  document.getElementById('castleExportDeBtn').addEventListener('click', () => saveAs('aivjson'));
   for (const id of ['castleShowFire','castleShowRoutes']) document.getElementById(id)?.addEventListener('change', scheduleDraw);
   const overlayMenu = document.getElementById('castleOverlayMenu');
   document.addEventListener('pointerdown', event => {
@@ -4119,6 +4143,7 @@
     },
     getSourceBytes: () => state.sourceBytes,
     getDocument: outputDocument,
+    getItemDefinitions: () => state.constants,
     getDocumentRevision: () => state.documentRevision || 0,
     getActiveBuildStep: () => state.insertionFrameIndex,
     // Fuer die 2.5D-Ansicht: ein Zeigerereignis mit { tileFromOutside: {x, y} }
