@@ -3,18 +3,24 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {execFileSync} = require('node:child_process');
+// GitHub's pwsh runner exports PowerShell 7 module paths. These fixtures launch
+// Windows PowerShell 5.1, whose Get-FileHash/Compress-Archive modules must come
+// from its own installation rather than an incompatible inherited module path.
+const childEnv = {...process.env};
+if (process.platform === 'win32') childEnv.PSModulePath = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/Modules');
+delete childEnv.ELECTRON_RUN_AS_NODE;
 test('Windows release installation preserves custom files, refuses locks and records build identity', {skip:process.platform!=='win32'},()=>{
- const output=execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'release-installer-smoke.ps1'),'-Installer',path.resolve(__dirname,'../src/node/release-install.ps1')],{encoding:'utf8',windowsHide:true,timeout:60000});
+ const output=execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'release-installer-smoke.ps1'),'-Installer',path.resolve(__dirname,'../src/node/release-install.ps1')],{encoding:'utf8',windowsHide:true,timeout:60000,env:childEnv});
  assert.match(output,/PASS:/);
 });
 
 test('installer survives Electron exit, replaces files and restarts the installed program', {skip:process.platform!=='win32'},async t=>{
  const fs=require('node:fs');
- const fixture=JSON.parse(execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'release-installer-smoke.ps1'),'-Installer',path.resolve(__dirname,'../src/node/release-install.ps1'),'-Handoff'],{encoding:'utf8',windowsHide:true,timeout:60000}));
+ const fixture=JSON.parse(execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'release-installer-smoke.ps1'),'-Installer',path.resolve(__dirname,'../src/node/release-install.ps1'),'-Handoff'],{encoding:'utf8',windowsHide:true,timeout:60000,env:childEnv}));
  t.after(()=>fs.rmSync(fixture.testRoot,{recursive:true,force:true}));
  const runner=path.join(fixture.testRoot,'runner.cjs');
  fs.writeFileSync(runner,`const {app}=require('electron'); app.whenReady().then(async()=>{try{await require(${JSON.stringify(path.resolve(__dirname,'../src/node/release-download.js'))}).launchInstaller(${JSON.stringify(fixture)});app.exit(0);}catch(e){console.error(e);app.exit(1);}});`);
- const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+ const env=childEnv;
  execFileSync(require('electron'),[runner],{windowsHide:true,encoding:'utf8',env,timeout:25000});
  const deadline=Date.now()+20000, marker=path.join(fixture.root,'restarted.txt');
  while(!fs.existsSync(marker) && Date.now()<deadline)await new Promise(r=>setTimeout(r,100));
@@ -42,7 +48,7 @@ test('Electron recognizes the physical installed ASAR and does not offer it agai
  fs.writeFileSync(path.join(root,'.toolkit-release.json'),JSON.stringify(receipt));
  const runner=path.join(root,'runner.cjs');
  fs.writeFileSync(runner,`const {app}=require('electron');try { const u=require(${JSON.stringify(path.resolve(__dirname,'../src/node/release-updates.js'))});require('node:assert/strict').deepEqual(u.readInstalledBuild(${JSON.stringify(root)}),${JSON.stringify(receipt)});console.log('PASS: physical ASAR receipt');app.exit(0);}catch(e){console.error(e);app.exit(1);}`);
- const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+ const env=childEnv;
  const output=execFileSync(require('electron'),[runner],{windowsHide:true,encoding:'utf8',env,timeout:25000});
  assert.match(output,/PASS: physical ASAR receipt/);
 });
