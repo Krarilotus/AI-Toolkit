@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const castleFormat = require('../js/castle-format');
+const constants = require('../../config/aiv_constants.json');
 
 function binaryBuffer(value) {
   if (!value) return null;
@@ -49,6 +51,10 @@ function writeNativeAiv({
 
   const resolvedDestination = path.resolve(destination);
   const source = sourceForSave(sourceBytes, sourcePath);
+  if (!(source.bytes && unchanged)) {
+    const issues = castleFormat.classicIssues(document, constants);
+    if (issues.length) throw new Error('Cannot export this castle as classic AIV:\n' + issues.join('\n') + '\nSave as Definitive Edition (.aivjson) to preserve it.');
+  }
   const encoded = source.bytes && unchanged
     ? Uint8Array.from(source.bytes)
     : codec.encodeAiv(document, templates, { source: source.bytes });

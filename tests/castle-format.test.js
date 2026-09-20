@@ -60,3 +60,14 @@ test('DE building placeholders keep their real footprint without classic sprites
   const items = geometry.collectItems({frames:[{itemType:79,tilePositionOfsets:[5524]}]}, {}, null, constants);
   assert.equal(items[0].tiles,10);
 });
+
+
+test('unchanged native castles retain original bytes, while re-encoding diagnoses timing loss', () => {
+  const {writeNativeAiv} = require('../src/node/aiv-file');
+  const bytes=Buffer.from([1,2,3]); const writes=[];
+  const options={codec:{encodeAiv:()=>assert.fail('unchanged native file must not be re-encoded')},document:{frames:[{itemType:25,tilePositionOfsets:[1724],shouldPause:true}]},destination:'castle.aiv',sourceBytes:bytes,unchanged:true,atomicWriteFile:(file,buffer)=>writes.push(buffer)};
+  writeNativeAiv(options);
+  assert.deepEqual(writes[0],bytes);
+  assert.throws(()=>writeNativeAiv({...options,unchanged:false}),/pauses/);
+  assert.equal(writes.length,1,'failed conversion does not touch destination');
+});

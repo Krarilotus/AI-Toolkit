@@ -161,8 +161,6 @@ function asCastleDocument(value) {
 async function writeAivDocument(document, destination, { sourcePath = null, sourceBytes = null, unchanged = false } = {}) {
   const codec = await aivCodecPromise;
   const inputDocument = asCastleDocument(document);
-  const issues = castleFormat.classicIssues(inputDocument, require('./config/aiv_constants.json'));
-  if (issues.length) throw new Error('Cannot export this castle as classic AIV:\n' + issues.join('\n') + '\nSave as Definitive Edition (.aivjson) to preserve it.');
   // writeNativeAiv ist SYNCHRON und gibt ein Ergebnis zurueck, kein Versprechen.
   // Hier stand einmal ein .then() daran - das warf "writeNativeAiv(...).then is
   // not a function", und Speichern wie Schnellspeichern gingen gar nicht mehr.
