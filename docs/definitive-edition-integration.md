@@ -66,6 +66,10 @@ with asymmetric fixtures, not inferred from a visually symmetric keep.
 
 The older third-party converter's names conflict with the supplied AIVE
 release: AIVE identifies item 79 as a 10x10 Bedouin Post, not a stockade.
+The supplied AIVE 0.9.6 config puts 79 under Castle Buildings and 53
+(Beduin Outpost, 5x5) under Outposts alongside classic outposts 178/179.
+These are distinct editor items, not two recruitment buildings. The Outpost
+entry is retained for AIVE parity; its in-game buildability is not verified.
 Its definitions identify 9022 Camel Lancer, 9023 Healer, 9024 Eunuch,
 9025 Ambusher, 9026 Skirmisher, 9027 Heavy Camel, 9028 Sapper and
 9029 Demolisher. Treat these as AIVE definitions pending DE game verification,
@@ -95,7 +99,7 @@ classic-to-JSON conversion only; no DE game or GUI round-trip was performed.
   JSON fields/IDs. Classic import retains its existing pause/compaction policy.
 - Classic export rejects DE-only items, unsupported markers and timing loss
   with actionable diagnostics. It does not silently substitute or discard them.
-- Bedouin Stockade (79, 10x10), Bedouin Outpost (53, 5x5), and the eight
+- Bedouin Post (79, 10x10), Bedouin Outpost (53, 5x5), and the eight
   9022?9029 markers are selectable. Bedouins have a separate category.
   New artwork is original vector preview artwork, not extracted DE game sprites;
   existing raster assets retain their original resolution. Unavailable 2.5D
