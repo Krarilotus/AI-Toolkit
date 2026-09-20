@@ -5,11 +5,22 @@ Reviewed 2026-09-20. This is an implementation plan, not a claim of DE support.
 ## Evidence and limits
 
 The author publishes [AIVE 0.9.6 on ModDB](https://www.moddb.com/downloads/aive-ai-village-editor).
-No public AIVE source repository was identified, and the user confirmed ModDB
-as the distribution source. Direct download requests returned HTTP 403; cached
-mirror URLs were expired. The archive was therefore **not downloaded, inspected
-or executed**. Feature comparisons below use the author's release description,
-not a hands-on test or an assumption about AIVE's implementation.
+The user supplied the release ZIP. Its 144,240,006-byte size and MD5
+`b857fb06bf47a4473733b8037e6bafd9` match the publisher's metadata. Inspected the
+archive, configuration, item definitions, translations and bundled converter.
+The editor GUI itself has not been tested; configuration evidence confirms
+available controls, not their runtime correctness.
+
+`AIVEditor.exe` is a PyInstaller package containing Python 3.10, PySide6/Qt6
+and Microsoft runtime DLLs. No separate Python or Qt installation is indicated.
+The bundled converter ran successfully without installing a framework. The ZIP
+is about 137.6 MiB, so this particular Python/Qt distribution is not evidence
+that replacing Electron alone produces a tiny download.
+
+The archive's `plugins/source.txt` identifies the author's public
+[AIVConverter repository on Codeberg](https://codeberg.org/SuschisWorld/AIVConverter).
+Reviewed commit `25ec0c430029fda0ef268fe7420ccb4048c9f181` (GPL-3.0).
+This is converter source, not the editor source; no implementation was copied.
 
 For format evidence, inspected
 [IIJanII's converter](https://github.com/IIJanII/AIV-to-AIVJson-Converter/blob/main/src/AIVtoAIVJson.py)
@@ -23,7 +34,9 @@ copied into the Toolkit.
 AIVE's author describes shape/curve drawing, guide lines, reusable structures,
 image export, customizable categories, localization, extended analysis, DE
 items, pause controls, and a scratchpad. The following comparison is against
-the Toolkit code inspected in this branch; it does not validate AIVE's claims.
+the Toolkit code inspected in this branch. Bundled settings additionally confirm
+shape tools, guide-line docks, showcase/animation settings, converter profiles
+and nine translation dictionaries; these have not been GUI-tested.
 
 | Area | Toolkit status / missing work |
 | --- | --- |
@@ -50,10 +63,28 @@ and `shouldPause`; miscellaneous markers use `itemType`, `positionOfset` and
 Sourcehold with `invert_x=False, invert_y=True`; orientation must be verified
 with asymmetric fixtures, not inferred from a visually symmetric keep.
 
-The converter maps an optional stockade to item 79 and contains partial DE unit
-IDs. Its own interface labels several types unknown. That is evidence that
-classic-only validation is insufficient, not a complete or current DE registry.
-Obtain real DE files before defining additional units or their limits.
+The older third-party converter's names conflict with the supplied AIVE
+release: AIVE identifies item 79 as a 10x10 Bedouin Post, not a stockade.
+Its definitions identify 9022 Camel Lancer, 9023 Healer, 9024 Eunuch,
+9025 Ambusher, 9026 Skirmisher, 9027 Heavy Camel, 9028 Sapper and
+9029 Demolisher. Treat these as AIVE definitions pending DE game verification,
+not as a universally authoritative game registry.
+
+The shipped config selects `Bedouin2Arab`. Its mappings substitute the Bedouin
+Post with the Mercenary Post and several DE troops with classic troops.
+These are deliberate compatibility substitutions, not lossless DE export.
+The converter source preserves empty frames as `{}`, defaults to Y inversion,
+uses multi-tile templates, and stores pause flags separately. Its classic
+writer caps the pause array and only writes classic miscellaneous unit indices.
+Those restrictions must be surfaced during export rather than silently applied.
+
+Executed the bundled converter against the existing saved `Kratoloros.aiv`,
+with an explicit output path outside both the repository and game directory.
+It produced valid JSON with 716 frames, 50 miscellaneous markers and pause
+amount 100. The first keep anchor is 5643. This is the saved file on disk,
+not necessarily the 998-step document shown in earlier editor screenshots.
+No original file was modified. This checks executable availability and basic
+classic-to-JSON conversion only; no DE game or GUI round-trip was performed.
 
 ## Concrete gaps in this branch
 
@@ -75,11 +106,11 @@ Obtain real DE files before defining additional units or their limits.
 
 ## Implementation sequence
 
-1. **Acquire fixtures and define the contract.** Obtain AIVE 0.9.6, a DE game
-   export and an AIVE save of the same asymmetric castle. Include rotated gates,
+1. **Acquire fixtures and define the contract.** AIVE 0.9.6 is acquired. Obtain a DE game
+   export and an AIVE GUI save of the same asymmetric castle. Include rotated gates,
    a displaced keep, a multi-tile wall step, all new unit types, marker numbering,
    empty steps and pauses. Record which behaviors belong to the game versus the
-   editor. Resolve the archive-download blocker before claiming interoperability.
+   editor. Validate actual files in both applications before claiming interoperability.
 2. **Introduce a format boundary.** Track source/target format explicitly and
    expose import, validate and export functions around one shared castle model.
    Preserve timing and unknown fields during import; keep classic restrictions
@@ -105,6 +136,6 @@ Obtain real DE files before defining additional units or their limits.
    rendering. They are independent of DE file compatibility and should be
    reviewed separately. Avoid a second renderer or document model.
 
-Estimated scope should be revisited after the real files are available. The
-missing archive and game-level verification currently prevent an honest
-feature-parity or working-DE-export claim.
+Estimated scope should be revisited after the real files are available. GUI and
+game-level verification still remain before a feature-parity or working-DE-export
+claim is justified.
