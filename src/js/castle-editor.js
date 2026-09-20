@@ -74,7 +74,7 @@
     palettePanel: document.querySelector('.castlePalettePanel'),
     saveNotice: document.getElementById('castleSaveNotice')
   };
-  const displayCtx = els.canvas.getContext('2d', { alpha: false });
+  const displayCtx = els.canvas.getContext('2d');
   const staticCacheCanvas = document.createElement('canvas');
   const staticCacheCtx = staticCacheCanvas.getContext('2d', { alpha: false });
   const futureCacheCanvas = document.createElement('canvas');
@@ -82,13 +82,13 @@
   let ctx = displayCtx;
   const geometry = window.castleGeometry;
   const mapBackground = new Image();
-  mapBackground.onload = () => scheduleDraw();
+  mapBackground.onload = canvasAssetLoaded;
   mapBackground.src = '../assets/aiv/background.png';
   const bundledKeepImage = new Image();
-  bundledKeepImage.onload = () => scheduleDraw();
+  bundledKeepImage.onload = canvasAssetLoaded;
   bundledKeepImage.src = '../assets/aiv/skins/61.png';
   const bundledStockpileImage = new Image();
-  bundledStockpileImage.onload = () => scheduleDraw();
+  bundledStockpileImage.onload = canvasAssetLoaded;
   bundledStockpileImage.src = '../assets/aiv/skins/52.png';
 
   const state = {
@@ -2184,7 +2184,7 @@
       : null;
     els.buildSlider.min = '1';
     els.buildSlider.max = String(Math.max(1, frames().length));
-    els.buildSlider.value = String(activeStep == null ? 1 : activeStep + 1);
+    if (!state.scrubPending) els.buildSlider.value = String(activeStep == null ? 1 : activeStep + 1);
     els.buildSlider.disabled = frames().length === 0;
     els.buildSliderValue.textContent = activeStep == null ? 'No step selected' : `Step ${activeStep + 1}`;
     const rallypointCount = state.document.miscItems.filter(item => isUnitType(item.itemType)).length;
@@ -2192,7 +2192,19 @@
     // Scrubbing changes row state, not row content. Preserve the DOM, listeners,
     // scroll position and drag target until the actual document changes.
     if (state.buildListRevision === (state.documentRevision || 0)) {
-      for (const row of els.buildList.children) {
+      let rows = els.buildList.children;
+      if (scrubbing && state.buildListViewport) {
+        const {top,height} = state.buildListViewport;
+        const indexes = new Set(state.scrubRowIndexes || [...rows].filter(row=>row.classList.contains?.('selected')||row.classList.contains?.('current')).map(row=>Number(row.dataset.index)));
+        const visible = [];
+        for(let fi=Math.max(0,Math.floor(top/42)-1);fi<Math.min(rows.length,Math.ceil((top+height)/42)+1);fi++) {
+          indexes.add(fi);visible.push(fi);
+        }
+        if(activeStep!=null){indexes.add(activeStep);visible.push(activeStep);}
+        state.scrubRowIndexes=visible;
+        rows=[...indexes].map(fi=>rows[fi]).filter(Boolean);
+      } else state.scrubRowIndexes = null;
+      for (const row of rows) {
         const fi = Number(row.dataset.index), frame = frames()[fi];
         const selected = frame.tilePositionOfsets.length > 0 && frame.tilePositionOfsets.every((_off, oi) => state.selected.has(frameRefKey(fi, oi)));
         const rowState = `${selected || fi === activeStep}:${activeStep != null && fi > activeStep}:${fi === activeStep}:${!!frame.locked}`;
@@ -2287,9 +2299,18 @@
     });
   }
 
-  function scrollToActiveBuildStep() {
+  function scrollToActiveBuildStep(viewport) {
     const frameIndex = state.insertionFrameIndex;
     if (!Number.isInteger(frameIndex) || frameIndex < 0 || frameIndex >= frames().length) return;
+    // Slider scrubs read the viewport before changing row styles. Fixed-height
+    // rows then allow scrolling without forcing layout of distant hidden rows.
+    if (viewport && Number.isFinite(viewport.height)) {
+      const top = frameIndex * 42, bottom = top + 42;
+      const scroll = top < viewport.top ? top : bottom > viewport.top + viewport.height ? bottom - viewport.height : viewport.top;
+      state.buildListViewport={top:scroll,height:viewport.height};
+      if(scroll!==viewport.top)els.buildList.scrollTop=scroll;
+      return;
+    }
     const row = els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`);
     if (!row) return;
     const top = row.offsetTop - els.buildList.offsetTop;
@@ -2308,11 +2329,13 @@
       if (els.buildSlider.disabled || frames().length === 0 || revision !== state.documentRevision) return;
       const frameIndex = Math.max(0, Math.min(frames().length - 1, state.pendingScrubIndex));
       if (frameIndex === state.insertionFrameIndex && state.lastScrubSelection === state.selected) return;
+      const viewport = {top: els.buildList.scrollTop, height: els.buildList.clientHeight};
       selectBuildFrame(frameIndex);
       state.lastScrubSelection = state.selected;
-      renderBuildList(true);
-      scrollToActiveBuildStep();
+      // Complete canvas/layout reads before mutating the list's row styles.
       scheduleDraw(true, true);
+      scrollToActiveBuildStep(viewport);
+      renderBuildList(true);
       clearTimeout(state.scrubSummaryTimer);
       state.scrubSummaryTimer = setTimeout(() => { updatePopulationPanel(); updateCostPanel(); }, 150);
       setStatus(`Selected build step ${frameIndex + 1} — new buildings will be inserted after it`);
@@ -2375,7 +2398,7 @@
     state.skinImages = {};
     for (const [id, url] of Object.entries(state.skins)) {
       const img = new Image();
-      img.onload = scheduleDraw;
+      img.onload = canvasAssetLoaded;
       img.src = url;
       state.skinImages[id] = img;
     }
@@ -2473,6 +2496,11 @@
     return () => changeListeners.delete(listener);
   }
 
+  function canvasAssetLoaded() {
+    state.canvasAssetRevision=(state.canvasAssetRevision||0)+1;
+    scheduleDraw();
+  }
+
   function scheduleDraw(staticChanged = true, immediate = false) {
     if (staticChanged) state.staticCacheDirty = true;
     state.pendingSceneChange = state.pendingSceneChange || staticChanged;
@@ -2563,7 +2591,7 @@
     cacheCtx.restore();
   }
 
-  function rebuildStaticCache() {
+  function paintCanvasBackground() {
     clearCacheContext(staticCacheCtx, staticCacheCanvas);
 
     ctx = staticCacheCtx;
@@ -2584,6 +2612,10 @@
     if (els.showCompatibility.checked) drawCompatibilityGuide(mapSize);
     drawGrid(mapSize);
 
+  }
+
+  function rebuildStaticCache() {
+    paintCanvasBackground();
     const movingRefs = state.gesture === 'move' ? state.moveStartOffsets : null;
     const activeStep = Number.isInteger(state.insertionFrameIndex) ? state.insertionFrameIndex : null;
     const futurePlacements = [];
@@ -2734,9 +2766,35 @@
     ctx.restore();
   }
 
+  function renderCanvasScene() {
+    if(!window.castleCanvasScene||state.canvasWorkerFailed)return false;
+    if(!state.canvasWorker)state.canvasWorker=window.castleCanvasScene.create(els.canvas,error=>{
+      console.warn('Canvas worker unavailable:',error);state.canvasWorkerFailed=true;state.canvasWorker?.destroy();state.canvasWorker=null;scheduleDraw();
+    });
+    const inputs=[state.documentRevision,state.document,state.constants,state.skinImages,state.canvasAssetRevision,
+      els.canvas.width,els.canvas.height,state.panX,state.panY,state.cell,state.renderDpr,els.showNames.checked,
+      els.showCompatibility.checked,state.blueprintImage,state.blueprintVisible,state.blueprintOpacity,document.documentElement.lang];
+    if(!state.preparedCanvasInputs||inputs.some((value,index)=>value!==state.preparedCanvasInputs[index])){
+      state.preparedCanvasInputs=inputs;
+      paintCanvasBackground();ctx=displayCtx;
+      state.canvasWorker.setScene(staticCacheCanvas,placementRefs().filter(p=>p.kind!=='unit'),(target,p,selected)=>{
+        const previous=ctx;ctx=target;
+        try { if(selected==='outline')drawPlacementOutline(p.type,p.off);else drawPlacement(p.type,p.off,selected); }finally{ctx=previous;}
+      },staticCacheCtx,{width:els.canvas.width,height:els.canvas.height,dpr:state.renderDpr||1,tint:FUTURE_TINT,filter:FUTURE_FILTER,opacity:FUTURE_OPACITY})
+        .catch(error=>{console.warn('Canvas scene preparation failed:',error);state.canvasWorkerFailed=true;state.canvasWorker?.destroy();state.canvasWorker=null;scheduleDraw();});
+    }
+    state.canvasWorker.render({step:Number.isInteger(state.insertionFrameIndex)?state.insertionFrameIndex:null,
+      selected:[...state.selected],moving:state.gesture==='move'?[...state.moveStartOffsets.keys()]:[]});
+    ctx=displayCtx;displayCtx.clearRect(0,0,state.canvasWidth,state.canvasHeight);
+    drawAnalysisOverlay();
+    for(const p of placementRefs())if(p.kind==='unit')drawPlacement(p.type,p.off,state.selected.has(p.ref));
+    return true;
+  }
+
   function draw() {
     if (!state.canvasWidth || !state.canvasHeight) return;
     if (els.canvas.getClientRects && !els.canvas.getClientRects().length) return;
+    if (!renderCanvasScene()) {
     if (state.staticCacheDirty) rebuildStaticCache();
 
     ctx = displayCtx;
@@ -2744,6 +2802,7 @@
     displayCtx.setTransform(1, 0, 0, 1, 0, 0);
     displayCtx.drawImage(staticCacheCanvas, 0, 0);
     displayCtx.restore();
+    }
 
     const proposed = state.gesture === 'move' ? proposedMove() : null;
 
@@ -3861,6 +3920,11 @@
   window.addEventListener('blur', closeBuildContextMenu);
   window.addEventListener('resize', closeBuildContextMenu);
   els.buildList.addEventListener('scroll', closeBuildContextMenu);
+  els.buildList.addEventListener('scroll', () => {
+    const top=els.buildList.scrollTop,height=els.buildList.clientHeight;
+    if(state.buildListViewport?.top===top&&state.buildListViewport?.height===height)return;
+    state.buildListViewport={top,height};renderBuildList(true);
+  }, {passive:true});
   for (const input of els.shortcutForm.querySelectorAll('.castleCameraKey')) {
     input.addEventListener('keydown', event => {
       if (event.key === 'Tab' || event.key === 'Escape') return;

@@ -149,6 +149,23 @@ test('rapid slider input performs one update at the latest selected step', () =>
   assert.deepEqual(h.selections, [99], 'repeated input at the same step does not schedule another render');
 });
 
+test('scrubbing refreshes visible rows without overwriting a newer thumb position', () => {
+  const h = setup(); h.context.renderBuildList();
+  h.state.buildListViewport = {top: 70 * 42, height: 5 * 42};
+  h.context.selectBuildFrame(72); h.context.renderBuildList(true);
+  const rows = h.els.buildList.children;
+  assert.equal(rows[72].attributes['aria-current'], 'step');
+  assert.equal(rows[74].classList.future, true);
+  assert.equal(rows[90]._buildState, undefined, 'offscreen rows are not refreshed');
+  h.state.buildListViewport = {top: 10 * 42, height: 5 * 42};
+  h.context.selectBuildFrame(12); h.context.renderBuildList(true);
+  assert.equal(rows[72].attributes['aria-current'], undefined, 'previous active row is cleared');
+  assert.equal(rows[12].attributes['aria-current'], 'step');
+  h.state.scrubPending = true; h.els.buildSlider.value = '83';
+  h.context.renderBuildList(true);
+  assert.equal(h.els.buildSlider.value, '83', 'list scrolling must not snap the thumb back');
+});
+
 test('right-click preserves a multi-step selection and locks/unlocks all selected positions', () => {
   const h = setup(); h.context.renderBuildList();
   h.state.selected = new Set(['f:1:0', 'f:2:0']);

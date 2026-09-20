@@ -1043,6 +1043,7 @@ button:disabled { cursor: default; }
 .castleStatusBar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .buildStep {
+  height: 42px;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 7px;

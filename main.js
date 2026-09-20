@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const { app, BrowserWindow, Menu, ipcMain, dialog, globalShortcut, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, globalShortcut, shell, nativeImage, screen } = require('electron');
+const { restoreBounds } = require('./src/node/window-state');
 const castleShortcuts = require('./src/js/castle-shortcuts');
 const {
   normalizeInstallationPath,
@@ -198,9 +199,15 @@ function ensureRuntimeFiles() {
 }
 
 function createWindow({ restoreProject = false } = {}) {
+  const savedWindow = readSettings().mainWindow;
+  const savedBounds = savedWindow?.bounds;
+  const validBounds = savedBounds && savedBounds.width > 0 && savedBounds.height > 0
+    && ['x', 'y', 'width', 'height'].every(key => Number.isInteger(savedBounds[key]) && Math.abs(savedBounds[key]) < 2147483647);
+  const bounds = validBounds ? restoreBounds(savedBounds, screen.getDisplayMatching(savedBounds).workArea) : null;
   const options = {
     width: 1500,
     height: 950,
+    ...bounds,
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#101416',
@@ -219,6 +226,11 @@ function createWindow({ restoreProject = false } = {}) {
   if (fs.existsSync(iconPath)) options.icon = iconPath;
 
   const win = new BrowserWindow(options);
+  if (savedWindow?.maximized) win.maximize();
+  win.on('close', () => {
+    try { writeSettings({...readSettings(), mainWindow: {bounds: win.getNormalBounds(), maximized: win.isMaximized()}}); }
+    catch (error) { console.warn('Could not save window state:', error); }
+  });
   function routeCastleShortcuts(contents) {
     contents.on('before-input-event', (_event, input) => {
       // Renderer owns Castle key dispatch (including text/dialog focus guards).

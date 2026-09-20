@@ -21,12 +21,15 @@
     "check": "npm run check:syntax && npm test",
     "package": "npm run check && electron-builder --dir",
     "dist": "npm run check && electron-builder --win portable",
-    "dist:zip": "npm run check && electron-builder --win zip"
+    "dist:zip": "npm run check && electron-builder --win zip",
+    "postinstall": "node scripts/prepare-renderer.js",
+    "precheck": "node scripts/prepare-renderer.js"
   },
   "devDependencies": {
     "electron": "^44.3.0",
     "electron-builder": "^26.15.3",
-    "fengari": "0.1.5"
+    "fengari": "0.1.5",
+    "pixi.js": "8.21.0"
   },
   "build": {
     "appId": "de.schlossgespenst.aitoolkit",
@@ -60,6 +63,17 @@
       "artifactName": "AI-Toolkit-${version}-${arch}.${ext}",
       "requestedExecutionLevel": "asInvoker",
       "icon": "assets/icon.ico"
-    }
+    },
+    "electronLanguages": [
+      "en-US",
+      "de",
+      "fr",
+      "ru",
+      "hu",
+      "tr",
+      "zh-CN",
+      "es",
+      "fa"
+    ]
   }
 }

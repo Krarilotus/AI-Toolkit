@@ -124,3 +124,36 @@ off native helper cursor clipping/edge scrolling. The intermittent cursor issue
 was not reproduced under instrumentation, so that configuration change is a
 mitigation, not proof of complete resolution. No native helper is launched by
 the local performance harness; it uses the previously captured map data.
+
+## Retained worker rendering snapshot
+
+The native-map 2.5D scene now uses a worker-owned WebGL canvas. Terrain commands,
+textures and sprite objects are retained; scrubbing sends visible building IDs,
+not a newly rasterized whole-scene bitmap. The 2D view records the existing
+placement drawing functions and replays those commands on a worker-owned canvas.
+Neither path caches complete build steps. Both keep only the latest pending frame.
+Interaction and analysis overlays stay on the existing foreground canvas.
+
+The build list updates visible rows during scrubbing and avoids forced layout
+reads after DOM writes. Scene assets invalidate on document, camera, skin and
+asset changes, not on every slider input. Canvas fallbacks remain for unsupported
+workers/WebGL and for the isometric fire overlay. These fallbacks are intentional;
+fire-overlay performance is still a follow-up, not covered by the speed claim.
+
+Validation: 437 tests pass, 10 skipped, no failures. Worker tests cover latest-only
+queues, identity reuse, revision resets and disposal. Real Electron comparisons
+of the 2D worker and original Canvas rendering at steps 1, 101, 400, 901 and 998
+found no channel differences greater than one, including names and fractional
+camera positions. GPU geometry/occlusion was checked visually.
+
+Representative manual observation uses a maximized 2560 x 1392 viewport, native
+isometric zoom and both views visible, with five synthetic back-and-forth sweeps
+per second. Earlier small-window timings are not representative of this setup.
+The installed baseline repeatedly stalls for hundreds of milliseconds; the new
+path is visibly improved, but sub-10 ms end-to-end input latency is not established.
+The snapshot is released for hands-on updater and responsiveness testing before
+calling the performance work complete.
+
+Packaging includes only the Pixi browser bundles and license, not its development
+package tree. Electron locales retain the nine UCP languages. Window normal bounds
+and maximized state are now persisted for subsequent launches.

@@ -738,6 +738,12 @@
     const target = surface();
     if (!target) return;
     const { width, height, ctx } = target;
+    if (window.castleGpuStage && !state.gpuRequested) {
+      state.gpuRequested=true;
+      window.castleGpuStage.create(()=>refresh(true)).then(gpu=>{state.gpu=gpu;refresh(false,true);})
+        .catch(error=>{console.warn('GPU preview unavailable:',error);state.gpuFailed=true;refresh(false,true);});
+    }
+    if (state.gpuRequested && !state.gpu && !state.gpuFailed) return;
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
     const key = [currentRotation(), kartenSchluessel(), groundFit()].join('/');
     const cache = state.sceneCache;
@@ -768,7 +774,7 @@
         sceneContext.imageSmoothingEnabled = false;
         scene = paintScene(sceneContext, worldWidth, worldHeight, {
           reuseTerrain,
-          previousCommands: reuseTerrain && revision != null && cache.documentRevision === revision ? cache.commands : null,
+          previousCommands: reuseTerrain && !cache.gpu && revision != null && cache.documentRevision === revision ? cache.commands : null,
           previousFireMask: reuseTerrain ? cache.fireMask : null
         });
       } finally { state.view = view; }
@@ -781,8 +787,21 @@
     ctx.clearRect(0, 0, width, height);
     ctx.imageSmoothingEnabled = state.view.zoom < 1;
     const z = state.view.zoom;
-    ctx.drawImage(scene.canvas, state.view.panX - scene.view.panX * z,
+    if (scene.gpu && state.gpu) {
+      try {
+        const dpr=ctx.canvas.width/width;
+        state.gpu.presentBehind(ctx.canvas);
+        state.gpu.render(ctx.canvas.width,ctx.canvas.height,z*dpr,
+          (state.view.panX-scene.view.panX*z)*dpr,(state.view.panY-scene.view.panY*z)*dpr);
+
+      } catch(error) {
+        console.warn('GPU preview failed:',error);state.gpu.destroy();state.gpu=null;state.gpuFailed=true;state.sceneCache=null;refresh();return;
+      }
+    } else {
+      state.gpu?.hide();
+      ctx.drawImage(scene.canvas, state.view.panX - scene.view.panX * z,
       state.view.panY - scene.view.panY * z, scene.canvas.width * z, scene.canvas.height * z);
+    }
     drawAnalysis(ctx);
     paintInteraction(ctx, scene.items);
     const { items, missing } = scene;
@@ -852,7 +871,7 @@
     draw({commands, drawImage(img, ...args) {
       const [x, y, w, h] = args.slice(-4);
       if (!state.commandImageIds.has(img)) state.commandImageIds.set(img, ++state.nextCommandImageId);
-      commands.push({order, flammable, key: `${state.commandImageIds.get(img)}:${args.join(',')}`, x, y, w, h,
+      commands.push({order, flammable, image:img, imageId:state.commandImageIds.get(img), args, key: `${state.commandImageIds.get(img)}:${args.join(',')}`, x, y, w, h,
         draw: target => target.drawImage(img, ...args)});
     }});
     return commands;
@@ -983,6 +1002,8 @@
           const [x, y] = geo.isoPoint(item.gx, item.gy, state.view);
           const size = (item.tiles || 1) * 32;
           recorder.commands.push({order: item, flammable,
+            polygon:[[item.gx,item.gy],[item.gx+item.tiles,item.gy],[item.gx+item.tiles,item.gy+item.tiles],[item.gx,item.gy+item.tiles]]
+              .map(([x,y])=>geo.isoPoint(x,y,state.view,bauHoehe(item.gx,item.gy,item.tiles))),
             key: `missing:${item.gx}:${item.gy}:${item.tiles}`, x: x - size, y: y - 256, w: size * 2, h: size + 256,
             draw: target => drawDiamond(target, item.gx, item.gy, item.tiles, 'rgba(210,170,90,.55)')});
           missing++;
@@ -992,6 +1013,10 @@
     }
     const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
       buildingCommands.filter(command => intersectsSceneRect(command, rect)));
+    if (state.nativeTerrain && state.gpu && !document.getElementById('castleShowFire')?.checked) {
+      state.gpu.setScene(state.mapSceneryCommands,buildingCommands,window.castleEditor?.getDocumentRevision?.());
+      return {items,missing,commands:buildingCommands,fireMask:null,gpu:true};
+    }
     const dirty = sceneDamage(options.previousCommands, buildingCommands, width, height);
     const damagedRegions = dirty ? (dirty.regions || [dirty]).map(rect => ({rect, commands:[...commandsIn(rect)]})) : [];
     for (const {rect: dirty, commands: damagedCommands} of damagedRegions) {
