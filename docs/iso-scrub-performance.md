@@ -175,3 +175,25 @@ Validation: 445 tests passed, 10 skipped. A maximized real Electron comparison
 at steps 1, 101, 400, 901 and 998 matched the original 2D output pixel-for-pixel.
 Focused tests cover unit/marker order, foreground ownership, deferred analysis,
 stale-request rejection and the GPU fire-disabled path during scrubbing.
+
+## Fire-checkbox rendering cost
+
+Profiling the maximized GreekSea/Kratoloros view separated fire math from drawing:
+fireExposure took 3.1 ms for 2,433 placements, while checking fire caused 56,671
+main-thread drawImage calls (1,004 ms) and a 1,079 ms frame gap. The checkbox was
+switching the entire native scene from the retained GPU path to Canvas and then
+painting a second pass for its occlusion mask.
+
+Native scenes now remain on WebGL. The rendering worker builds the fire mask in
+a GPU render texture using the same depth-ordered commands and source/erase alpha
+rules, then transfers the completed bitmap. The UI retains only the current mask;
+obsolete results and replaced bitmaps are closed. Camera-only updates reuse it.
+Canvas remains the compatibility fallback, not the normal fire path. The redundant
+100 ms analysis delay is removed; navigation already has its settle timer.
+
+Two updated runs measured heat availability at 69/64 ms (previously 1,117 ms),
+159 main-thread image draws and maximum frame gaps of 30/42 ms. These are observed
+runs, not a sub-10 ms promise or isolated GPU completion times. The full overlay
+was visually verified; a real WebGL overlap test matched Canvas mask alpha values
+exactly, including translucent foreground erasure. All image dimensions and
+pixels remain unchanged. Local suite: 446 passed, 10 skipped, zero failures.

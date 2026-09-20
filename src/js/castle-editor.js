@@ -2733,7 +2733,7 @@
           };
         }
         analysisWorker.postMessage({id, placements, terrain, fire:showFire, paths:showRoutes});
-      }, 100);
+      }, 0);
     }
     return analysisCache;
   }

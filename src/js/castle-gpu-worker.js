@@ -104,6 +104,22 @@ async function createStage(canvas) {
       }
     },
 
+    async renderMask(ordered, width, height) {
+      const maskStage = new P.Container({eventMode:"none",interactiveChildren:false});
+      const texture = P.RenderTexture.create({width, height, resolution:1});
+      try {
+        for (const command of ordered) {
+          const sprite = node(command);
+          sprite.blendMode = command.flammable ? "normal" : "erase";
+          maskStage.addChild(sprite);
+        }
+        renderer.render({container:maskStage,target:texture,clear:true});
+        return await createImageBitmap(renderer.extract.canvas({target:texture}));
+      } finally {
+        maskStage.destroy({children:true});
+        texture.destroy(true);
+      }
+    },
     render(width, height, zoom, x, y) {
       if (renderer.gl.isContextLost()) throw new Error("GPU context lost");
       if (renderer.width !== width || renderer.height !== height)
@@ -116,6 +132,7 @@ async function createStage(canvas) {
 }
 let ready;
 let terrain = [];
+let maskVersion = null;
 const commands = new Map();
 function order(a, b) {
   return (
@@ -148,6 +165,11 @@ onmessage = async ({ data }) => {
     const buildings = Array.from(data.visible, (id) => commands.get(id));
     stage.setScene(terrain, merge(terrain, buildings), data.revision);
     stage.render(...data.view);
+    let mask = null;
+    if (data.mask && maskVersion !== data.sceneVersion) {
+      mask = await stage.renderMask(merge(terrain, buildings), ...data.mask);
+      maskVersion = data.sceneVersion;
+    }
     const released = [];
     if (data.terrain) {
       const used = new Set([...terrain, ...buildings].map(command => command.imageId));
@@ -155,7 +177,7 @@ onmessage = async ({ data }) => {
         bitmap.close(); assets.delete(id); released.push(id);
       }
     }
-    postMessage({ id: data.id, released });
+    postMessage({ id: data.id, released, mask, sceneVersion:data.sceneVersion }, mask ? [mask] : []);
   } catch (error) {
     postMessage({ error: String(error.stack || error) });
   }

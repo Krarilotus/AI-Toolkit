@@ -211,12 +211,13 @@ test('distant step changes keep separate damage regions rather than repainting t
 });
 
 test('enabled fire overlays do not force Canvas scene rendering during slider motion', () => {
-  const s=scene(true);let scrubbing=true,submitted=0;
-  s.state.gpu={setScene(){submitted++;}};
+  const s=scene(true);let scrubbing=true,submitted=0,maskRequest;
+  s.state.gpu={setScene(...args){submitted++;maskRequest=args[3];}};
   s.context.window.castleEditor.isScrubbing=()=>scrubbing;
   const moving=s.render([{itemType:54,gx:50,gy:50,entry:{},tiles:4}]);
   assert.equal(moving.gpu,true);assert.equal(moving.fireMask,null);assert.equal(submitted,1);
   scrubbing=false;
   const settled=s.render([{itemType:54,gx:50,gy:50,entry:{},tiles:4}]);
-  assert.ok(settled.fireMask,'fire mask is built after motion settles');
+  assert.equal(settled.gpu,true,'fire never switches the scene back to Canvas');
+  assert.deepEqual(Array.from(maskRequest),[100,100],'settled fire requests a worker mask');
 });

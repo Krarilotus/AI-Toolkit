@@ -12,6 +12,7 @@ window.castleGpuStage = {
     const canvas = document.createElement("canvas");
     canvas.style.cssText =
       "position:absolute;inset:0;width:100%;height:100%;pointer-events:none";
+    let fireMask = null, sceneVersion = 0;
     let latest,
       scene,
       terrainSent,
@@ -33,6 +34,7 @@ window.castleGpuStage = {
       imageId: command.imageId,
       args: command.args,
       polygon: command.polygon,
+      flammable: !!command.flammable,
       order: [
         command.order.gx + command.order.gy + ((command.order.tiles || 1) - 1),
         command.order.gx,
@@ -75,7 +77,7 @@ window.castleGpuStage = {
             "|" +
             order.tiles +
             "|" +
-            order.layer;
+            order.layer + "|" + !!command.flammable;
           let id = commands.get(key);
           if (id === undefined) {
             id = ++nextCommand;
@@ -96,6 +98,8 @@ window.castleGpuStage = {
             reset,
             revision: request.scene.revision,
             view: request.view,
+            mask: request.scene.mask,
+            sceneVersion: request.scene.version,
           },
           [visible.buffer, ...assets.map(([, image]) => image)],
         );
@@ -107,7 +111,7 @@ window.castleGpuStage = {
       }
     }
     worker.onmessage = ({ data }) => {
-      if (disposed) return;
+      if (disposed) { data.mask?.close(); return; }
       if (data.error) {
         failed = new Error(data.error);
         busy = false;
@@ -118,6 +122,11 @@ window.castleGpuStage = {
       if (data.ready) {
         resolveReady();
         return;
+      }
+      if (data.mask) {
+        if (data.sceneVersion === scene?.version) {
+          fireMask?.close(); fireMask = data.mask; onFrame();
+        } else data.mask.close();
       }
       for (const id of data.released || []) sentImages.delete(id);
       busy = false;
@@ -139,8 +148,10 @@ window.castleGpuStage = {
       throw error;
     }
     return {
-      setScene(terrain, buildings, revision) {
-        scene = { terrain, buildings, revision };
+      get fireMask() { return fireMask; },
+      setScene(terrain, buildings, revision, mask = null) {
+        fireMask?.close(); fireMask = null;
+        scene = { terrain, buildings, revision, mask, version: ++sceneVersion };
       },
       presentBehind(target) {
         if (canvas.parentNode !== target.parentNode) {
@@ -169,6 +180,7 @@ window.castleGpuStage = {
       },
       destroy() {
         disposed = true;
+        fireMask?.close(); fireMask = null;
         worker.terminate();
         canvas.remove();
         latest = null;

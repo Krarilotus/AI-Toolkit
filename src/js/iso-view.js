@@ -817,7 +817,8 @@
     if(!overlay) return;
     const turn=tile=>geo.rotateGrid(tile.x,99-tile.y,1,currentRotation());
     ctx.save();
-    if(overlay.image) {
+    const scene=state.sceneCache, fireMask=scene?.gpu ? state.gpu?.fireMask : scene?.fireMask;
+    if(overlay.image && (!scene?.gpu || fireMask)) {
       fireLayer ||= document.createElement('canvas');
       if(fireLayer.width!==ctx.canvas.width || fireLayer.height!==ctx.canvas.height){fireLayer.width=ctx.canvas.width;fireLayer.height=ctx.canvas.height;}
       const fireCtx=fireLayer.getContext('2d');fireCtx.clearRect(0,0,fireLayer.width,fireLayer.height);
@@ -830,8 +831,8 @@
       const a=point(0,0), b=point(100,0), c=point(0,100);
       fireCtx.save();fireCtx.transform((b[0]-a[0])/100,(b[1]-a[1])/100,(c[0]-a[0])/100,(c[1]-a[1])/100,a[0],a[1]);
       fireCtx.imageSmoothingEnabled=true;fireCtx.drawImage(overlay.image,0,0);fireCtx.restore();
-      const scene=state.sceneCache,z=state.view.zoom;
-      if(scene?.fireMask){fireCtx.save();fireCtx.globalCompositeOperation='destination-out';fireCtx.drawImage(scene.fireMask,state.view.panX-scene.view.panX*z,state.view.panY-scene.view.panY*z,scene.fireMask.width*z,scene.fireMask.height*z);fireCtx.restore();}
+      const z=state.view.zoom;
+      if(fireMask){fireCtx.save();fireCtx.globalCompositeOperation='destination-out';fireCtx.drawImage(fireMask,state.view.panX-scene.view.panX*z,state.view.panY-scene.view.panY*z,fireMask.width*z,fireMask.height*z);fireCtx.restore();}
       ctx.drawImage(fireLayer,0,0);
     }
     ctx.strokeStyle='#64e8ef';ctx.lineWidth=1.5;
@@ -1017,8 +1018,9 @@
     }
     const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
       buildingCommands.filter(command => intersectsSceneRect(command, rect)));
-    if (state.nativeTerrain && state.gpu && !fireOverlayVisible()) {
-      state.gpu.setScene(state.mapSceneryCommands,buildingCommands,window.castleEditor?.getDocumentRevision?.());
+    if (state.nativeTerrain && state.gpu) {
+      state.gpu.setScene(state.mapSceneryCommands,buildingCommands,window.castleEditor?.getDocumentRevision?.(),
+        fireOverlayVisible() ? [width,height] : null);
       return {items,missing,commands:buildingCommands,fireMask:null,gpu:true};
     }
     const dirty = sceneDamage(options.previousCommands, buildingCommands, width, height);

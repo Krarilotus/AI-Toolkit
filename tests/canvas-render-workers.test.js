@@ -199,3 +199,20 @@ test('2D worker paints units and labels with the same scene as buildings, above 
   context.onmessage({data:{frame:{step:10,selected:[],moving:[],foreground:true}}});
   assert.deepEqual(draws,['image','future'],'analysis foreground owns units without duplicate drawing');
 });
+
+test('GPU fire masks discard stale results and release bitmaps on toggling off', async () => {
+  const h=harness('castle-gpu-stage.js');let frames=0;
+  const stage=await h.api.castleGpuStage.create(()=>frames++),worker=h.workers[0];
+  stage.setScene([command(0)],[{...command(1),flammable:true}],1,[100,100]);
+  stage.render(100,100,1,0,0);await flush();
+  const first=worker.messages.at(-1).data;
+  assert.equal(first.records[0][1].flammable,true);
+  let closed=0;const bitmap={close(){closed++;}};
+  worker.finish({mask:bitmap,sceneVersion:first.sceneVersion});
+  assert.equal(stage.fireMask,bitmap);assert.equal(frames,1);
+  stage.setScene([command(0)],[],1,null);
+  assert.equal(closed,1);assert.equal(stage.fireMask,null);
+  worker.finish({mask:{close(){closed++;}},sceneVersion:first.sceneVersion});
+  assert.equal(closed,2);assert.equal(frames,1,'obsolete mask does not trigger a repaint');
+  stage.destroy();
+});
