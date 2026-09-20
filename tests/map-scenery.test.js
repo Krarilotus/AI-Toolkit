@@ -22,3 +22,27 @@ test('map sprite packing preserves blank indices and separates tall sprites', ()
   assert.match(atlas.dataUrl, /^data:image\/png;base64,/);
   assert.throws(() => packMapPictures([make(2048, 1)]), /dimensions/);
 });
+
+test('map keep footprints become desert without modifying captures or adjacent tiles', () => {
+  const { replaceMapKeeps, tileIndex, MAP_TILES } = require('../src/node/game-map').internals;
+  const keeps = [{x:188,y:294},{x:161,y:106}];
+  for (let camera = 0; camera < 4; camera++) {
+    const source = Buffer.alloc(MAP_TILES * 2);
+    for (let tile = 0; tile < MAP_TILES; tile++) source.writeUInt16LE(22000 + camera, tile * 2);
+    const result = replaceMapKeeps(source, keeps, 1);
+    const replaced = new Set();
+    for (const keep of keeps) {
+      // Keep, entrance, forecourt/campfire, stockpile: independently specify
+      // the observed map footprint so a missed component fails this check.
+      for (const [dx,dy,w,h] of [[0,0,7,7],[2,7,3,1],[0,8,7,7],[7,2,5,5]]) {
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++)replaced.add(tileIndex(keep.x+dx+x,keep.y+dy+y));
+      }
+    }
+    assert.equal(replaced.size, 252);
+    for (let tile = 0; tile < MAP_TILES; tile++) {
+      assert.equal(result.readUInt16LE(tile * 2), replaced.has(tile) ? 1 : 22000 + camera);
+      assert.equal(source.readUInt16LE(tile * 2), 22000 + camera);
+    }
+    assert.equal(replaceMapKeeps(source, [], 1), source);
+  }
+});
