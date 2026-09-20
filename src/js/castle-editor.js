@@ -10,7 +10,7 @@
   const FUTURE_OPACITY = 0.50;
   const FUTURE_FILTER = 'grayscale(1) brightness(.42)';
   const FUTURE_TINT = 'rgba(144, 176, 221, .13)';
-  const SHORTCUT_STORAGE_KEY = 'aiv.castleToolShortcuts.v2';
+  const SHORTCUT_STORAGE_KEY = 'aiv.castleToolShortcuts.v3';
   const shortcutConfig = window.castleShortcuts;
   const CAMERA_STORAGE_KEY = 'aiv.castleCamera.v1';
   const ITEM_TOOL_STORAGE_KEY = 'aiv.castleItemTools.v1';
@@ -99,6 +99,7 @@
     filePath: null,
     sourcePath: null,
     sourceBytes: null,
+    format: 'aiv',
     dirty: false,
     tool: 'single',
     itemTools: Object.create(null),
@@ -252,6 +253,16 @@
   }
 
   function normalizeDocument(doc, diagnostics = null) {
+    if (state.format === 'aivjson') {
+      window.castleFormat.validate(doc);
+      // Empty DE frames consume time. Non-enumerable offsets let the editor
+      // navigate them while their serialized representation remains {}.
+      for (const frame of doc.frames) if (!Object.keys(frame).length) {
+        Object.defineProperty(frame, 'tilePositionOfsets', { value: [], configurable: true });
+      }
+      doc.miscItems ||= [];
+      return doc;
+    }
     if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('The AIV castle document is invalid.');
     if (!Array.isArray(doc.frames)) throw new Error("The AIV file must contain a 'frames' array.");
     const normalizedFrames = [];
@@ -345,7 +356,15 @@
     return lineSequence(type).length > 0;
   }
 
+  function availableUnitNumber(type) {
+    const used = new Set(state.document.miscItems.filter(item => Number(item.itemType) === Number(type)).map(item => item.number));
+    let number = 0;
+    while (used.has(number)) number++;
+    return number;
+  }
+
   function renumberUnits(doc = state.document) {
+    if (state.format === 'aivjson') return;
     const nextNumber = new Map();
     for (const item of doc.miscItems || []) {
       const type = Number(item.itemType);
@@ -361,6 +380,7 @@
   }
 
   function normalizeUnitStorage(doc = state.document) {
+    if (state.format === 'aivjson') return doc;
     const retainedFrames = [];
     for (const frame of doc.frames || []) {
       const type = Number(frame.itemType);
@@ -494,7 +514,7 @@
     for (const p of placementRefs()) {
       if (ignore.has(p.ref)) continue;
       if (!geometry.footprintsIntersect(proposedFootprint, footprintRects(p.type, p.off))) continue;
-      const existingMode = overlapMode(p.type);
+      const existingMode = geometry.placementOverlap(type, p.type, state.constants);
       if (existingMode === 'allow') continue;
       if (existingMode === 'replace') {
         // Ein gesperrter Bauschritt wird auch nicht ueberbaut.
@@ -645,6 +665,7 @@
       setStatus(`New castle added to the loaded AI as ${added.fileName}`);
       return true;
     }
+    state.format = 'aiv';
     state.document = document;
     invalidatePlacementCache();
     state.filePath = null;
@@ -692,7 +713,9 @@
   }
 
   function loadDocument(document, path, options = {}) {
+    const previousFormat = state.format;
     try {
+      state.format = options.source === 'aivjson' || window.castleFormat.isJsonPath(path) ? 'aivjson' : 'aiv';
       const diagnostics = { removedLegacySteps: 0 };
       const parsed = stripSessionLocks(normalizeUnitStorage(normalizeDocument(deepClone(document), diagnostics)));
       state.document = parsed;
@@ -719,10 +742,11 @@
         : '';
       const formatNote = options.source === 'aiv'
         ? 'native AIV'
-        : options.source === 'aivjson' ? 'AIVJSON compatibility import' : 'castle document';
+        : options.source === 'aivjson' ? 'Definitive Edition JSON' : 'castle document';
       const pauseNote = diagnostics.removedPauses ? ` — disabled ${diagnostics.removedPauses} build-step pause(s)` : '';
       setStatus(`Opened ${path ? path.split(/[\\/]/).pop() : 'castle'} — ${frames().length} build steps · ${formatNote}${legacyNote}${pauseNote}`);
     } catch (err) {
+      state.format = previousFormat;
       alert(`Could not open AIV castle:\n\n${err.message}`);
       console.error(err);
     }
@@ -750,7 +774,7 @@
   }
 
   async function saveFile() {
-    if (!state.filePath || !/\.aiv$/i.test(state.filePath)) return saveAs();
+    if (!state.filePath || !/\.(aiv|aivjson|aijson)$/i.test(state.filePath)) return saveAs();
     try {
       const result = await window.electronAPI.quickSaveFile({
         path: state.filePath,
@@ -764,8 +788,8 @@
         setStatus('Save cancelled; the existing castle was not changed');
         return false;
       }
-      state.sourcePath = state.filePath;
-      state.sourceBytes = retainSourceBytes(result.sourceBytes) || state.sourceBytes;
+      state.sourcePath = result.native === false ? null : state.filePath;
+      state.sourceBytes = retainSourceBytes(result.sourceBytes) || (result.native === false ? null : state.sourceBytes);
       setDirty(false);
       const name = state.filePath.split(/[\\/]/).pop();
       const message = `Saved ${name}`;
@@ -779,20 +803,22 @@
     }
   }
 
-  async function saveAs() {
+  async function saveAs(format = state.format) {
+    if (typeof format !== 'string') format = state.format;
     try {
       const defaultPath = state.filePath
-        ? state.filePath.replace(/\.aivjson$/i, '.aiv')
-        : 'Castle.aiv';
-      const result = await window.electronAPI.saveFile(outputDocument(), 'aiv', defaultPath, {
+        ? state.filePath.replace(/\.(aiv|aivjson|aijson)$/i, `.${format}`)
+        : `Castle.${format}`;
+      const result = await window.electronAPI.saveFile(outputDocument(), format, defaultPath, {
         sourcePath: state.sourcePath,
         sourceBytes: state.sourceBytes,
         unchanged: !state.dirty
       });
       if (!result) return false;
       state.filePath = result.path || result;
-      state.sourcePath = state.filePath;
-      state.sourceBytes = retainSourceBytes(result.sourceBytes) || state.sourceBytes;
+      state.format = window.castleFormat.isJsonPath(state.filePath) ? 'aivjson' : 'aiv';
+      state.sourcePath = result.native === false ? null : state.filePath;
+      state.sourceBytes = retainSourceBytes(result.sourceBytes) || (result.native === false ? null : state.sourceBytes);
       setDirty(false);
       const name = state.filePath.split(/[\\/]/).pop();
       const message = `Saved ${name}`;
@@ -1183,6 +1209,7 @@
       if (pendingMerge.document !== state.document || pendingMerge.revision !== state.documentRevision)
         throw new Error('The castle changed. Cancel and select the placements again.');
       const checked = [...document.querySelectorAll('#castleMergeRows input:checked:not(:disabled)')].map(input => Number(input.value));
+      if (state.format === 'aivjson' && [...pendingMerge.selections.keys()].some(fi => frames()[fi]?.shouldPause)) throw new Error('These DE steps contain pauses. Merge would change their timing.');
       const proposal = geometry.mergeStepPlacements(frames(), pendingMerge.selections, checked, mergeableTypes());
       pushUndo();
       state.document.frames = proposal.frames;
@@ -1204,7 +1231,7 @@
   }
 
   function mergeableTypes() {
-    return Object.keys(state.constants).map(Number).filter(type => !isUnitType(type) && allowsMultiplePerStep(type));
+    return geometry.MERGEABLE_TYPES.filter(type => state.constants[type]);
   }
 
   function closeBuildContextMenu() {
@@ -1243,7 +1270,7 @@
     deleteRefs(result.replacements);
     if (isUnitType(type)) {
       const mi = state.document.miscItems.length;
-      state.document.miscItems.push({ positionOfset: off, itemType: type, number: countType(type) });
+      state.document.miscItems.push({ positionOfset: off, itemType: type, number: availableUnitNumber(type) });
       state.selected = new Set([unitRefKey(mi)]);
       changed(`Placed ${itemName(type)} rallypoint #${unitDisplayNumber(state.document.miscItems[mi].number)} at ${off}`);
     } else {
@@ -1359,9 +1386,8 @@
       changed(`${itemName(type)}: placed ${newFrames.length} consecutive stair steps`);
     } else if (isUnitType(type)) {
       const firstMi = state.document.miscItems.length;
-      let nextNumber = countType(type);
       for (const off of state.brushOffsets) {
-        state.document.miscItems.push({ positionOfset: off, itemType: type, number: nextNumber++ });
+        state.document.miscItems.push({ positionOfset: off, itemType: type, number: availableUnitNumber(type) });
       }
       state.selected = new Set(state.brushOffsets.map((_off, i) => unitRefKey(firstMi + i)));
       changed(`${toolName}: placed ${state.brushOffsets.length} ${itemName(type)} rallypoints`);
@@ -1530,7 +1556,7 @@
       const entryFootprint = footprintRectsAtXY(entry.type, entry.x, entry.y);
       for (const other of existing) {
         if (!geometry.footprintsIntersect(entryFootprint, footprintRects(other.type, other.off))) continue;
-        const mode = overlapMode(other.type);
+        const mode = geometry.placementOverlap(entry.type, other.type, state.constants);
         if (mode === 'allow') continue;
         if (mode === 'replace') {
           if (refIsLocked(other.ref)) return { ok: false, reason: 'That build step is locked.', replacements: new Set(), proposal: null };
@@ -1551,18 +1577,15 @@
     const startUnit = state.document.miscItems.length;
     const newUnitSelection = new Set();
     const newFrames = [];
-    const nextUnitNumber = new Map();
     for (const group of result.proposal.groups) {
       const offsets = group.entries.map(entry => xyToOffset(entry.x, entry.y));
       if (group.kind === 'unit') {
         const type = Number(group.itemType);
-        let number = nextUnitNumber.has(type) ? nextUnitNumber.get(type) : countType(type);
         for (const off of offsets) {
           const mi = state.document.miscItems.length;
-          state.document.miscItems.push({ positionOfset: off, itemType: type, number: number++ });
+          state.document.miscItems.push({ positionOfset: off, itemType: type, number: availableUnitNumber(type) });
           newUnitSelection.add(unitRefKey(mi));
         }
-        nextUnitNumber.set(type, number);
         continue;
       }
       const type = Number(group.itemType);
@@ -1678,7 +1701,7 @@
       for (const other of placementRefs()) {
         if (selectedRefs.has(other.ref)) continue;
         if (!geometry.footprintsIntersect(movedFootprint, footprintRects(other.type, other.off))) continue;
-        const mode = overlapMode(other.type);
+        const mode = geometry.placementOverlap(type, other.type, state.constants);
         if (mode === 'allow') continue;
         if (mode === 'replace') {
           // Ueber einen gesperrten Bauschritt wird nicht gebaut.
@@ -1857,8 +1880,13 @@
   function loadToolShortcuts() {
     try {
       const saved = JSON.parse(localStorage.getItem(SHORTCUT_STORAGE_KEY) || 'null');
+      const previous = JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v2') || 'null');
+      const savedCamera = JSON.parse(localStorage.getItem(CAMERA_STORAGE_KEY) || 'null');
+      const cameraKeys = camera.directions.flatMap(direction => savedCamera?.[direction] ? [savedCamera[direction], `shift+${savedCamera[direction]}`] : []);
       state.toolShortcuts = saved ? validateToolShortcuts(saved)
+        : previous ? shortcutConfig.upgrade(previous, cameraKeys)
         : shortcutConfig.migrate(JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v1') || 'null'));
+      if (!saved) localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(state.toolShortcuts));
     } catch (error) {
       console.warn('Ignoring invalid saved Castle shortcuts:', error);
       state.toolShortcuts = deepClone(DEFAULT_TOOL_SHORTCUTS);
@@ -2233,7 +2261,7 @@
       index.textContent = String(fi + 1);
       const name = document.createElement('span');
       name.className = 'buildName';
-      name.textContent = itemName(type);
+      name.textContent = count ? itemName(type) : 'Empty step';
       name.title = `${itemName(type)} [${type}]`;
       const right = document.createElement('div');
       right.className = 'buildStepControls';
@@ -2595,8 +2623,9 @@
     cacheCtx.restore();
   }
 
-  function paintCanvasBackground() {
-    clearCacheContext(staticCacheCtx, staticCacheCanvas);
+  function paintCanvasBackground(target = staticCacheCanvas) {
+    const staticCacheCtx = target.getContext('2d');
+    clearCacheContext(staticCacheCtx, target);
 
     ctx = staticCacheCtx;
     ctx.fillStyle = '#101216';
@@ -2618,8 +2647,11 @@
 
   }
 
-  function rebuildStaticCache() {
-    paintCanvasBackground();
+  function rebuildStaticCache(target = staticCacheCanvas, future = futureCacheCanvas) {
+    const staticCacheCtx = target.getContext('2d');
+    const futureCacheCanvas = future;
+    const futureCacheCtx = future.getContext('2d');
+    paintCanvasBackground(target);
     const movingRefs = state.gesture === 'move' ? state.moveStartOffsets : null;
     const activeStep = Number.isInteger(state.insertionFrameIndex) ? state.insertionFrameIndex : null;
     const futurePlacements = [];
@@ -3614,54 +3646,6 @@
     }
   }
 
-  // Der Grund der 2.5D-Ansicht. Der Dateidialog ist derselbe, den auch der
-  // Bauplan benutzt - ein Kanal, nicht zwei. Das gewaehlte Bild wird Kachel
-  // fuer Kachel gelegt, nicht gestreckt; sehr grosse Bilder passen unter
-  // Umstaenden nicht in den Speicher der Sitzung und sind dann nur bis zum
-  // Schliessen da. Die Ansicht faengt das ab.
-  const grundKnopf = document.getElementById('castleIsoGroundBtn');
-  const grundZurueck = document.getElementById('castleIsoGroundReset');
-  const grundArt = document.getElementById('castleIsoGroundFit');
-  function updateGroundControls() {
-    const eigener = Boolean(window.isoView && window.isoView.hasOwnGround());
-    if (grundZurueck) grundZurueck.hidden = !eigener;
-    if (grundArt) {
-      grundArt.hidden = !eigener;
-      const gespannt = Boolean(window.isoView && window.isoView.groundIsStretched());
-      grundArt.textContent = gespannt ? 'Stretched' : 'Tiled';
-      grundArt.setAttribute('aria-pressed', String(gespannt));
-    }
-  }
-  if (grundArt) grundArt.addEventListener('click', () => {
-    if (!window.isoView) return;
-    window.isoView.setGroundFit(window.isoView.groundIsStretched() ? 'tile' : 'stretch');
-    updateGroundControls();
-    setStatus(window.isoView.groundIsStretched()
-      ? 'Ground spread once over the whole map'
-      : 'Ground laid out tile by tile');
-  });
-  if (grundKnopf) grundKnopf.addEventListener('click', async () => {
-    if (!window.isoView) return;
-    try {
-      const selection = await window.electronAPI.chooseCastleBackground();
-      if (!selection?.dataUrl) return;
-      window.isoView.setGround(selection.dataUrl);
-      updateGroundControls();
-      // Es gibt nur einen Grund: die Ansicht legt eine Spielkarte dabei weg,
-      // also muessen deren Knoepfe mit verschwinden.
-      updateMapControls();
-      setStatus(`Ground of the slanted view: ${selection.fileName || 'chosen picture'}`);
-    } catch (error) {
-      setStatus(`Could not load ground: ${error.message}`);
-    }
-  });
-  if (grundZurueck) grundZurueck.addEventListener('click', () => {
-    if (!window.isoView) return;
-    window.isoView.setGround(null);
-    updateGroundControls();
-    setStatus('Ground back to the one that comes with the app');
-  });
-
   // Eine Karte des Spiels unter die 2.5D-Ansicht legen. Anders als ein
   // beliebiges Bild hat sie einen Massstab: ein Feld der Karte ist ein Feld
   // des Editors. Damit das gilt, muss der Startplatz bekannt sein - eine
@@ -3777,7 +3761,6 @@
       kachelnLaufen = null;
       ensureMapTiles();
       updateMapControls();
-      updateGroundControls();
         if (karteDialog && karteDialog.open) karteDialog.close();
       // Der Fokus bleibt sonst im Suchfeld des Dialogs, und weil Tasten in
       // Eingabefeldern zu Recht ignoriert werden, ginge danach kein einziges
@@ -3828,11 +3811,9 @@
     kachelnLaufen = null;
     window.isoView.setMapTiles(null);
     updateMapControls();
-    updateGroundControls();
     setStatus('Map of the game taken away');
   });
 
-  updateGroundControls();
   updateMapControls();
   // Diese Datei wird VOR iso-view.js geladen (index.html), also gibt es
   // window.isoView hier noch gar nicht - beide Abfragen oben liefern darum
@@ -3841,7 +3822,6 @@
   // laege da, aber der Weg, sie wieder wegzunehmen, waere unsichtbar. Sobald
   // die Seite fertig geladen ist, wird deshalb noch einmal nachgesehen.
   window.addEventListener('DOMContentLoaded', () => {
-    updateGroundControls();
     updateMapControls();
     ensureMapTiles();
   });
@@ -3850,6 +3830,7 @@
   document.getElementById('castleNewBtn').addEventListener('click', newFile);
   document.getElementById('castleOpenBtn').addEventListener('click', openFile);
   document.getElementById('castleSaveBtn').addEventListener('click', saveFile);
+  document.getElementById('castleExportDeBtn').addEventListener('click', () => saveAs('aivjson'));
   for (const id of ['castleShowFire','castleShowRoutes']) document.getElementById(id)?.addEventListener('change', scheduleDraw);
   const overlayMenu = document.getElementById('castleOverlayMenu');
   document.addEventListener('pointerdown', event => {
@@ -3866,6 +3847,55 @@
   els.showNames.addEventListener('change', scheduleDraw);
   els.showUnitNumbers.addEventListener('change', scheduleDraw);
   els.showCompatibility.addEventListener('change', scheduleDraw);
+  document.getElementById('castleBackgroundBtn').addEventListener('click', chooseBlueprint);
+  const snapshotDialog = document.getElementById('castleSnapshotDialog');
+  document.getElementById('castleSavePictureBtn').addEventListener('click', () => snapshotDialog.showModal());
+  document.getElementById('castleSnapshotCancel').addEventListener('click', () => snapshotDialog.close());
+  document.getElementById('castleSnapshotForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('castleSnapshotSave');
+    button.disabled = true;
+    try {
+      const png = renderCastlePicture();
+      const saved = await window.electronAPI.saveCastlePicture(png);
+      if (!saved) return;
+      if (document.getElementById('castleSnapshotBackground').checked) {
+        loadBlueprintSelection({dataUrl: png, fileName: saved.split(/[\\/]/).pop()});
+      }
+      snapshotDialog.close();
+      setStatus(`Castle picture saved: ${saved}`);
+    } catch (error) {
+      setStatus(`Could not save castle picture: ${error.message}`);
+    } finally { button.disabled = false; }
+  });
+
+  function renderCastlePicture() {
+    // Render at native sprite resolution (at least 32 px/tile), not viewport zoom.
+    let cell = 32;
+    for (const placement of placementRefs()) {
+      const image = state.skinImages[String(placement.type)];
+      const [w, h] = itemSize(placement.type);
+      if (imageReady(image)) cell = Math.max(cell, image.naturalWidth / w, image.naturalHeight / h);
+    }
+    cell = Math.ceil(cell);
+    const picture = document.createElement('canvas');
+    const future = document.createElement('canvas');
+    picture.width = picture.height = future.width = future.height = GRID * cell;
+    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty'].map(key => [key, state[key]]));
+    const savedContext = ctx;
+    try {
+      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null});
+      rebuildStaticCache(picture, future);
+      ctx = picture.getContext('2d');
+      drawUnitMarkers();
+      if (els.showCompatibility.checked) drawCompatibilityOriginMarker();
+      return picture.toDataURL('image/png');
+    } finally {
+      Object.assign(state, saved);
+      ctx = savedContext;
+    }
+  }
+
   els.showBlueprint.addEventListener('change', () => {
     state.blueprintVisible = els.showBlueprint.checked;
     scheduleDraw();
@@ -3908,7 +3938,7 @@
     });
   }
   els.shortcutDefaults.addEventListener('click', () => populateShortcutDialog(DEFAULT_TOOL_SHORTCUTS, camera.defaults));
-  document.getElementById('castleCameraLegacy').addEventListener('click', () => populateCameraDialog(camera.defaults));
+  document.getElementById('castleCameraLegacy').addEventListener('click', () => populateCameraDialog(camera.legacy));
   document.getElementById('castleCameraArrows').addEventListener('click', () => populateCameraDialog(camera.arrows));
   document.getElementById('castleMergeForm').addEventListener('submit', applyMerge);
   document.getElementById('castleMergeCancel').addEventListener('click', () => document.getElementById('castleMergeDialog').close());
@@ -3979,10 +4009,7 @@
   els.canvas.addEventListener('pointerup', onPointerUp);
   els.canvas.addEventListener('pointercancel', onPointerUp);
   els.canvas.addEventListener('wheel', onWheel, { passive: false });
-  els.canvas.addEventListener('contextmenu', event => {
-    event.preventDefault();
-    clearSelectionAndItem();
-  });
+  window.castlePieMenu.bind(els.canvas, (action, position) => window.castleEditor.runContextAction(action, position), action => state.toolShortcuts[action]?.[0], () => window.castleEditor.neutralContextAction());
   els.canvas.addEventListener('mouseleave', () => {
     const hadPreview = state.hoverTile && (
       (state.currentItemType != null && isPlacementTool(state.tool)) ||
@@ -4001,7 +4028,11 @@
       if (!event.repeat) void runFileShortcut(action);
       return;
     }
-    if (['single', 'line', 'brush', 'bucket', 'select', 'replace', 'merge', 'delete'].includes(action)) {
+    if (['groups', 'replace', 'merge'].includes(action)) {
+      if (!event.repeat) window.castleEditor.runContextAction(action);
+      return;
+    }
+    if (['single', 'line', 'brush', 'bucket', 'select', 'delete'].includes(action)) {
       setTool(action); return;
     }
     if (action === 'brushSmaller' || action === 'brushLarger') {
@@ -4090,6 +4121,20 @@
 
   window.castleEditor = {
     extras: { state, placementRefs, setTool, setStatus, renderBuildList, scheduleDraw }, // fuer editor-extras.js: Gruppen und Kopierspeicher, siehe dort
+    neutralContextAction: () => !state.selected.size && !(isPlacementTool(state.tool) && state.currentItemType != null) && !(state.tool === 'copy' && state.copyBuffer) ? 'groups' : 'deselect',
+    runContextAction(action, position) {
+      if (action === 'deselect') return clearSelectionAndItem();
+      if (action === 'groups') {
+        setTool('select');
+        return window.dispatchEvent(new CustomEvent('castle-open-groups', {detail:position}));
+      }
+      if (action === 'cut') { cutSelection(); window.dispatchEvent(new Event('castle-clipboard-changed')); return; }
+      if (action === 'replace' || action === 'merge') {
+        setTool('select');
+        if (!state.selected.size) return setStatus(`Select items first to ${action}.`);
+        return action === 'replace' ? openReplacementDialog(state.selected) : mergeArea(state.selected);
+      }
+    },
     openFile,
     saveFile,
     saveAs,
@@ -4119,6 +4164,7 @@
     },
     getSourceBytes: () => state.sourceBytes,
     getDocument: outputDocument,
+    getItemDefinitions: () => state.constants,
     getDocumentRevision: () => state.documentRevision || 0,
     getActiveBuildStep: () => state.insertionFrameIndex,
     // Fuer die 2.5D-Ansicht: ein Zeigerereignis mit { tileFromOutside: {x, y} }
@@ -4132,6 +4178,7 @@
     handleKey: handleCastleKey,
     addChangeListener,
     getTool: () => state.tool,
+    getShortcut: action => state.toolShortcuts[action]?.[0] || '',
     getCurrentItemType: () => state.currentItemType,
     // Fuer die 2.5D-Ansicht: was ausgewaehlt ist, und welcher Kasten gerade
     // gezogen wird. Beides als Kopie und in KACHELN - die Ansicht rechnet in

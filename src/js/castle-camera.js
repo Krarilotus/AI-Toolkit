@@ -5,13 +5,14 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, shortcuts => {
   'use strict';
 
-  const defaults = {
+  const legacy = {
     wheel: 'legacy', left: '', right: '', up: '', down: '', panSpeed: 40
   };
   const arrows = {
     wheel: 'zoom', left: 'arrowleft', right: 'arrowright',
     up: 'arrowup', down: 'arrowdown', panSpeed: 40
   };
+  const defaults = arrows;
   const directions = ['left', 'right', 'up', 'down'];
 
   function normalizeKey(value) {
@@ -62,5 +63,5 @@
     return 'panY';
   }
 
-  return { defaults, arrows, directions, normalizeKey, validate, keyDelta, wheelAction };
+  return { defaults, legacy, arrows, directions, normalizeKey, validate, keyDelta, wheelAction };
 });

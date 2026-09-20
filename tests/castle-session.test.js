@@ -10,7 +10,7 @@ const buffer=type=>({count:1,groups:[{kind:'frame',itemType:type,entries:[{type,
 
 function clipboardWindow(store){
  const context={clipboard:null,rememberedBuffer:null,CLIP_STORE:'clipboard',sanitizeClipboard:extras.sanitizeClipboard,
-   ex:{state:{copyBuffer:null},setStatus(){}},updateClipboardButton(){},
+   ex:{state:{copyBuffer:null},setStatus(){},scheduleDraw(){},setTool(){}},updateClipboardButton(){},
    readStore:(key,fallback)=>store.has(key)?JSON.parse(store.get(key)):fallback,
    writeStore:(key,value)=>value===null?store.delete(key):store.set(key,JSON.stringify(value))};
  vm.createContext(context);
@@ -55,7 +55,7 @@ function projectWindow({restore=true,interrupt=false,edit=false,openFile=false,n
    electronAPI:{getUcpInstallation:async()=> 'D:/Games/Liga'},
    castleEditor:{isDirty:()=>dirty,getPath:()=>file,getDocumentRevision:()=>revision},
    appWorkspace:{getActive:()=>workspace,setActive:name=>{workspace=name;active.push(name);}}};
- const context={window,state,URLSearchParams,console,renderList(){},renderDetails(){},setStatus(){},
+ const context={window,state,URLSearchParams,console,renderList(){},renderDetails(){},setStatus(){},scheduleDraw(){},setTool(){},
    scan:async()=>{state.library={ais:[{key:'gatekeeper',rootPath:'D:/Games/Liga/ucp/plugins/Test/resources/ai/Gatekeeper'}]};if(interrupt){events.get('pointerdown')?.();events.get('keydown')?.();}if(edit)dirty=true;if(openFile)file='manual.aiv';if(newCastle)revision++;if(navigate)workspace='content';},
    openSelected:async options=>{opened.push(options);return true;}};
  vm.createContext(context);

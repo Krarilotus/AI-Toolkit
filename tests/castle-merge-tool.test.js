@@ -82,6 +82,6 @@ test('wheel-zoom preset supports Alt and Shift vertical scrolling while Photosho
   assert.equal(camera.wheelAction({altKey: true}, camera.arrows), 'panY');
   assert.equal(camera.wheelAction({shiftKey: true}, camera.arrows), 'panY');
   assert.equal(camera.wheelAction({ctrlKey: true, altKey: true}, camera.arrows), 'panX');
-  assert.equal(camera.wheelAction({altKey: true}, camera.defaults), 'zoom');
+  assert.equal(camera.wheelAction({altKey: true}, camera.legacy), 'zoom');
   assert.equal(camera.wheelAction({}, camera.arrows), 'zoom');
 });

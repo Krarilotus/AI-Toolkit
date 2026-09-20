@@ -135,9 +135,7 @@ require('../main');
       slider.value='1';slider.dispatchEvent(new Event('input',{bubbles:true}));
       await pause();window.isoView.paint();await pause();
       const incrementalScene=canvas.toDataURL();
-      const fitBefore=window.isoView.groundIsStretched()?'stretch':'tile';
-      window.isoView.setGroundFit(fitBefore==='tile'?'stretch':'tile');
-      window.isoView.setGroundFit(fitBefore);
+      window.isoView.refresh();window.isoView.paint();
       if(canvas.toDataURL()!==incrementalScene)throw new Error('Incremental step differs from a full scene rebuild');
 
       slider.value=slider.max;slider.dispatchEvent(new Event('input',{bubbles:true}));

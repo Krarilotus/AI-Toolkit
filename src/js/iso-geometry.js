@@ -345,7 +345,7 @@
       .map(([gx, gy]) => isoPoint(gx, gy, view));
   }
 
-  function collectItems(document_, catalogue, throughFrame = null) {
+  function collectItems(document_, catalogue, throughFrame = null, definitions = {}) {
     const out = [];
     const counts = new Map();
     if (!document_ || !Array.isArray(document_.frames)) return out;
@@ -365,7 +365,7 @@
           // welcher Gegenstand ausgewaehlt ist.
           ref: 'f:' + frameIndex + ':' + offsetIndex,
           itemType: frame.itemType,
-          tiles: entry ? entry.kacheln : 1
+          tiles: entry ? entry.kacheln : (definitions[String(frame.itemType)]?.size?.[0] || 1)
         });
       });
     });
@@ -587,23 +587,14 @@
     return [a,b,c,d,x-a*view.panX-c*view.panY,y-b*view.panX-d*view.panY];
   }
 
-  // Welches Kartenfeld unter einem Dorffeld liegt.
-  // Wo der Bergfried nach der Drehung im Dorfraster sitzt.
-  //
-  // Gedreht wird um die Rastermitte (rotateGrid, so wie rotateAIV 0x004ed0b0
-  // es im Spiel tut). Danach steht der Bergfried NICHT mehr auf Dorffeld
-  // (43,43) - bei einer Vierteldrehung wandert er 7 Felder zur Seite. Das
-  // Spiel faengt das mit setKeepOffsetAndOrientation (0x004ecf70) ab: erst
-  // drehen, dann so verschieben, dass der Bergfried wieder auf dem Startplatz
-  // liegt. Genau dieser zweite Schritt fehlte hier.
-  //
-  // GEMESSEN am 07.09.2026, Dorffeld (43,43) durch rotateGrid geschickt:
-  //   A Friend Indeed (84,223) Drehung 6 -> Dorffeld (50,43), 7 Felder daneben
-  //   Armenia        (131,200) Drehung 6 -> Dorffeld (50,43), 7 Felder daneben
-  //   A New Land      (218,86) Drehung 4 -> Dorffeld (50,50), 7 in beide
-  // Ohne Drehung ist der Anker wieder (43,43), also bleibt alles wie vorher.
-  function keepAnchor(keep) {
-    return rotateGrid(KEEP_TILE, KEEP_TILE, KEEP_EDGE, keep && keep.orientation);
+  // The AIV origin stays at mapKeep - (43,43), including after rotation.
+  // setKeepOffsetAndOrientation (0x004ecf70) stores these offsets before
+  // rotateAIV; applyAIV (0x004ef0d0) adds them to the rotated grid unchanged.
+  // This anchor is NOT the rotated keep footprint: subtracting that footprint
+  // would incorrectly cancel the game's 7-tile displacement.
+  const AIV_MAP_ANCHOR = Object.freeze({ gx: KEEP_TILE, gy: KEEP_TILE });
+  function keepAnchor() {
+    return AIV_MAP_ANCHOR;
   }
 
   // DREI RAHMEN, und wer sie verwechselt, liegt um Felder daneben:
@@ -622,8 +613,7 @@
   // in zwei - deshalb gibt es hier fuer jede Richtung genau eine Funktion und
   // sonst keine Rechnung im Code.
 
-  // Kartenlage -> Kartenfeld. Der gedrehte Bergfriedblock des Dorfes liegt
-  // mit seiner Nordwestecke auf der Nordwestecke des Blocks in der Karte.
+  // Rotated AIV grid -> map tile, using the fixed pre-rotation origin.
   function mapTileForGrid(gx, gy, keep) {
     const anker = keepAnchor(keep);
     return { mx: keep.x - anker.gx + gx, my: keep.y - anker.gy + gy };
@@ -700,9 +690,7 @@
     const luft = (Number(oben) || 0) * view.zoom;
     const anker = keepAnchor(keep);
     return {
-      // Der Anker, nicht die feste 43: nach einer Drehung sitzt der Bergfried
-      // auf einem anderen Dorffeld, und das Bild muss mitwandern. Bei (43,43)
-      // ist ax-ay = 0 und ax+ay = 86 - dann steht hier wieder das Alte.
+      // Use the same fixed AIV origin as terrain tiles and picking.
       x: view.panX - hw * (keep.x - keep.y + MAP_PREVIEW_EDGE - (anker.gx - anker.gy)) + left * 2 * hw,
       y: view.panY - hh * (keep.x + keep.y - (MAP_PREVIEW_EDGE - 1 + anker.gx + anker.gy)) + top * 2 * hh - luft,
       w: edge * 2 * hw,

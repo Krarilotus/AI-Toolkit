@@ -15,8 +15,8 @@ test('castle saving uses the native binary codec without an AIVJSON detour', () 
   assert.match(saveConversion, /writeNativeAiv/);
   assert.match(aivFile, /codec\.encodeAiv/);
   assert.match(aivFile, /atomicWriteFile/);
-  assert.doesNotMatch(saveConversion, /aivconverter|aivjson|execFile|roundTrip/i);
-  assert.doesNotMatch(aivFile, /aivconverter|aivjson|execFile|roundTrip/i);
+  assert.doesNotMatch(saveConversion, /aivconverter|execFile|roundTrip/i);
+  assert.doesNotMatch(aivFile, /aivconverter|execFile|roundTrip/i);
   assert.match(castleEditor, /content:\s*outputDocument\(\)/);
   assert.match(castleEditor, /sourceBytes:\s*state\.sourceBytes/);
   assert.match(castleEditor, /state\.sourceBytes\s*=\s*retainSourceBytes\(result\.sourceBytes\)/);

@@ -13,69 +13,18 @@
   padding-right: 8px;
 }
 
-.castleGroupsDialog { width: min(620px, calc(100vw - 40px)); }
+.castleGroupsDialog { width: min(320px, calc(100vw - 16px)); padding: 10px; border: 1px solid var(--line-strong, #536367); border-radius: 6px; background: var(--surface-2, #202c30); color: var(--text-main, #e8eded); font: 600 14px/1.25 var(--font-ui, Arial, sans-serif); }
+.castleGroupsDialog::backdrop { background: transparent; }
+.castleGroupsNew { display: flex; gap: 6px; }
+.castleGroupsNew input { min-width: 0; width: 100%; font: inherit; color: inherit; background: var(--surface-3, #29373d); border: 1px solid var(--line, #3b494e); padding: 6px; }
+.castleGroupsDialog button { font: inherit; color: inherit; background: var(--surface-3, #29373d); border: 1px solid var(--line, #3b494e); border-radius: 3px; padding: 7px 10px; cursor: pointer; white-space: nowrap; }
+.castleGroupsDialog button:hover, .castleGroupsDialog button:focus-visible { border-color: var(--accent, #c79a55); background: var(--surface-raised, #35474e); }
+.castleGroupsList { display: grid; gap: 4px; max-height: 240px; overflow-y: auto; }
+.castleGroupsList button { text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.castleGroupsNew[hidden], .castleGroupsList[hidden] { display: none; }
+.castleGroupsEmpty { margin: 4px; font-weight: 400; color: var(--text-muted, #aab8bd); }
 
-.castleGroupsNew {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.castleGroupsNew input {
-  width: 100%;
-  min-height: 32px;
-  padding: 0 9px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--app-bg-deep);
-  color: var(--text-main);
-  font: inherit;
-}
-
-.castleGroupsNew input:focus { border-color: var(--accent); outline: 1px solid var(--accent); }
-
-.castleGroupsList {
-  display: grid;
-  gap: 6px;
-  max-height: 46vh;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.castleGroupsEmpty {
-  margin: 4px 0;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-/* Name links, Anzahl daneben, danach die vier Knoepfe. Die Anzahl bekommt
-   eine feste Spalte, damit die Knoepfe aller Zeilen untereinander stehen. */
-.castleGroupRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 34px repeat(4, auto);
-  gap: 6px;
-  align-items: center;
-  padding: 5px 7px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-}
-
-.castleGroupRow:hover { border-color: var(--line-strong); }
-
-.castleGroupName {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-main);
-}
-
-.castleGroupCount {
-  color: var(--text-muted);
-  font: 12px var(--font-data);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.castleGroupRow button { min-height: 28px; padding: 3px 9px; font-size: 12px; }
+.castleGroupEntry { display: grid; grid-template-columns: minmax(0, 1fr) 30px; gap: 4px; }
+.castleGroupsList .castleGroupRemove { padding: 4px; text-align: center; }
+.castleGroupRemove svg { display: block; width: 16px; height: 18px; margin: auto; }
+.castleGroupsList .castleGroupRemove:hover { color: #ff9c95; }

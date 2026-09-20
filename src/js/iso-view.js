@@ -70,9 +70,7 @@
     img.decoding = 'async';
     img.onload = () => refresh(false, !img.terrainAsset);
     img.onerror = () => onImageFailed(filename);
-    // A ground the user picked arrives as a whole data: URL, not as the name
-    // of a file next to the sprites. Prefixing the sprite path to it would
-    // make an address that leads nowhere - and nothing would appear.
+    // Game map previews use data URLs; bundled sprites use relative paths.
     img.src = /^(data:|blob:|https?:|file:)/.test(filename) ? filename : SPRITE_PATH + filename;
     state.images.set(filename, img);
     return img;
@@ -103,59 +101,7 @@
   // browser will not make a pattern from it, the old flat colour is used - the
   // view must never depend on a decoration.
   const GAME_TILE_WIDTH = 30;
-  const GROUND_KEY = 'castleIsoGround';        // remembered between sessions
-  const GROUND_FIT_KEY = 'castleIsoGroundFit'; // 'tile' or 'stretch'
-
-  // Which picture the ground is made of. Empty means the one that ships with
-  // the app; anything else is a file the user picked.
-  function groundSource() {
-    if (state.ground === undefined) {
-      let stored = null;
-      try { stored = window.localStorage.getItem(GROUND_KEY); } catch { stored = null; }
-      state.ground = stored || null;
-    }
-    return state.ground || 'grund.png';
-  }
-
-  // Laid out tile by tile, or spread once over the whole map? A texture wants
-  // the first, a picture of a finished map the second. The app's own ground is
-  // a texture and is always tiled.
-  function groundFit() {
-    if (state.groundFit === undefined) {
-      let stored = null;
-      try { stored = window.localStorage.getItem(GROUND_FIT_KEY); } catch { stored = null; }
-      state.groundFit = stored === 'stretch' ? 'stretch' : 'tile';
-    }
-    return state.ground ? state.groundFit : 'tile';
-  }
-
-  function setGround(url) {
-    state.ground = url || null;
-    try {
-      if (url) window.localStorage.setItem(GROUND_KEY, url);
-      else window.localStorage.removeItem(GROUND_KEY);
-    } catch { /* a view must not fall over because storage is off */ }
-    state.images.delete(groundSource());
-    // Only ever one ground: a picture of your own puts a map of the game away.
-    if (url && gameMap()) { state.gameMap = null; rememberGameMap(); }
-    paint();
-  }
-
-  function setGroundFit(fit) {
-    state.groundFit = fit === 'stretch' ? 'stretch' : 'tile';
-    try { window.localStorage.setItem(GROUND_FIT_KEY, state.groundFit); } catch { /* egal */ }
-    paint();
-  }
-
-  // A picture that will not load must not leave an empty map behind. If it was
-  // the ground the user picked, we fall back to the one that comes with the
-  // app and forget the broken choice - otherwise it would greet him again
-  // after every restart.
   function onImageFailed(filename) {
-    if (state.ground && filename === state.ground) {
-      setGround(null);
-      return;
-    }
     const map = state.gameMap;
     if (map && filename === map.dataUrl) {
       setGameMap(null);
@@ -163,9 +109,6 @@
     }
     refresh();
   }
-
-  function hasOwnGround() { return Boolean(state.ground); }
-  function groundIsStretched() { return groundFit() === 'stretch'; }
 
   // ------------------------------------------------- a map of the game
   //
@@ -175,10 +118,9 @@
   // place, because that is the only thing that says WHERE on the map the
   // village of 100x100 stands.
   //
-  // Only ever one ground: choosing a map puts an own ground away and the other
-  // way round. Two pictures on the same floor would hide each other, and no
-  // one could tell which of them is to scale.
+
   const MAP_KEY = 'castleIsoGameMap';
+  const MAP_POSITION_KEY = 'castleIsoGameMapPosition';
 
   // Welche Karte mit welchem Startplatz gerade liegt. Wechselt eines von
   // beidem, passt alles Gezeichnete nicht mehr und muss neu entstehen.
@@ -214,6 +156,12 @@
       let stored = null;
       try { stored = window.localStorage.getItem(MAP_KEY); } catch { stored = null; }
       try { state.gameMap = stored ? JSON.parse(stored) : null; } catch { state.gameMap = null; }
+      try {
+        const position = JSON.parse(window.localStorage.getItem(MAP_POSITION_KEY) || 'null');
+        if (state.gameMap && position?.path === state.gameMap.path && Number.isInteger(position.index)) {
+          state.gameMap.keepIndex = Math.max(0, Math.min(state.gameMap.keeps.length - 1, position.index));
+        }
+      } catch { /* Ignore a corrupt position preference; retain the loaded map. */ }
     }
     return state.gameMap;
   }
@@ -241,17 +189,20 @@
     if (previous?.path !== state.gameMap?.path) handDrehung = 0;
     window.castleEditor?.extras?.scheduleDraw?.();
     rememberGameMap();
-    if (state.gameMap && state.ground) setGround(null);   // paints as well
-    else paint();
+    try { window.localStorage.removeItem(MAP_POSITION_KEY); } catch {}
+    paint();
   }
 
   function setGameMapKeep(index) {
     const map = gameMap();
     if (!map || !map.keeps.length) return;
-    map.keepIndex = Math.max(0, Math.min(map.keeps.length - 1, Number(index) || 0));
-    rememberGameMap();
+    const next = Math.max(0, Math.min(map.keeps.length - 1, Number(index) || 0));
+    if (map.keepIndex === next) return;
+    map.keepIndex = next;
+    // A starting place is a tiny preference, not a change to the map payload.
+    try { window.localStorage.setItem(MAP_POSITION_KEY, JSON.stringify({ path: map.path, index: next })); } catch {}
     window.castleEditor?.extras?.scheduleDraw?.();
-    paint();
+    refresh();
   }
 
   let routeTerrainCache = null, terrainRequest = null;
@@ -614,7 +565,7 @@
       return;
     }
     state.hoehenFeld = null;
-    const img = image(groundSource(), true);
+    const img = image('grund.png', true);
     let pattern = null;
     if (img && img.complete && img.naturalWidth) {
       try { pattern = ctx.createPattern(img, 'repeat'); } catch { pattern = null; }
@@ -626,20 +577,6 @@
     ctx.fill();
     ctx.restore();
     if (!pattern) return;
-
-    // Spread once: the picture covers exactly the box around the map diamond,
-    // so its corners land on the map's corners.
-    if (groundFit() === 'stretch') {
-      const links = geo.isoPoint(0, geo.GRID, state.view)[0];
-      const rechts = geo.isoPoint(geo.GRID, 0, state.view)[0];
-      const oben = geo.isoPoint(0, 0, state.view)[1];
-      const unten = geo.isoPoint(geo.GRID, geo.GRID, state.view)[1];
-      ctx.save();
-      ctx.clip();
-      ctx.drawImage(img, links, oben, rechts - links, unten - oben);
-      ctx.restore();
-      return;
-    }
 
     const scale = geo.groundTextureScale(state.view.zoom, GAME_TILE_WIDTH, 16);
     ctx.save();
@@ -745,13 +682,12 @@
     }
     if (state.gpuRequested && !state.gpu && !state.gpuFailed) return;
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
-    const key = [currentRotation(), kartenSchluessel(), groundFit()].join('/');
+    const key = [currentRotation(), kartenSchluessel()].join('/');
     const cache = state.sceneCache;
     const fireEnabled = fireOverlayVisible();
-    if (!cache || state.sceneDirty || cache.fireEnabled !== fireEnabled || cache.key !== key || cache.stock !== state.kachelVorrat
-        || cache.ground !== groundSource()) {
+    if (!cache || state.sceneDirty || cache.fireEnabled !== fireEnabled || cache.key !== key || cache.stock !== state.kachelVorrat) {
       const sameEnvironment = cache?.key === key && cache.stock === state.kachelVorrat
-        && cache.ground === groundSource() && cache.assetRevision === state.assetRevision;
+        && cache.assetRevision === state.assetRevision;
       const sprites = sameEnvironment ? [] : Object.values(state.catalogue?.gegenstaende || {});
       const scenery = sameEnvironment ? [] : vorrat()?.upperEntries || [];
       const overhang = sameEnvironment ? cache.overhang : Math.ceil(Math.max(64,
@@ -779,7 +715,7 @@
         });
       } finally { state.view = view; }
       state.sceneCache = { key, canvas, fireEnabled, overhang, view: sceneView, ...scene, stock: state.kachelVorrat,
-        ground: groundSource(), assetRevision: state.assetRevision,
+        assetRevision: state.assetRevision,
         documentRevision: window.castleEditor?.getDocumentRevision?.() };
       state.sceneDirty = false;
     }
@@ -934,7 +870,7 @@
     if (!doc) return geo.attachDrawbridges(turnedTiles(geo.collectItems(doc, state.catalogue, step)));
     const rotation = currentRotation(), camera = viewRotation(), cache = state.geometryCache;
     if (!cache || cache.doc !== doc || cache.catalogue !== state.catalogue || cache.rotation !== rotation || cache.camera !== camera) {
-      const items = turnedTiles(geo.collectItems(doc, state.catalogue));
+      const items = turnedTiles(geo.collectItems(doc, state.catalogue, null, window.castleEditor?.getItemDefinitions?.()));
       state.geometryCache = {doc, catalogue:state.catalogue, rotation, camera, items};
       // Decode every variant used by this document before scrubbing discovers it.
       const seen = new Set();
@@ -1427,12 +1363,7 @@
     state.bound.add(canvas);
     canvas.tabIndex = 0;
 
-    canvas.addEventListener('contextmenu', event => {
-      event.preventDefault();
-      state.drawing = false;
-      window.castleEditor?.clearSelectionAndItem?.();
-      refresh(true);
-    });
+    window.castlePieMenu.bind(canvas, (action, position) => window.castleEditor?.runContextAction(action, position), action => window.castleEditor?.getShortcut(action), () => window.castleEditor?.neutralContextAction());
 
     canvas.addEventListener('pointerdown', event => {
       canvas.focus({ preventScroll: true });
@@ -1699,7 +1630,6 @@
 
   window.isoView = { init, openWindow, closeWindow, mountDock, unmount, refresh, paint, fit, isMounted, panFromKey,
                      findControl: id => state.controls?.querySelector(`#${id}`),
-                     setGround, hasOwnGround, setGroundFit, groundIsStretched,
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo,
                      viewRotation, turnView, currentRotation,
                      setMapTiles, hasMapTiles, analysisTerrain,

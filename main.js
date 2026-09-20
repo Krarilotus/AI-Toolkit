@@ -1,3 +1,4 @@
+const castleFormat = require('./src/js/castle-format');
 const path = require('path');
 const fs = require('fs');
 const { app, BrowserWindow, Menu, ipcMain, dialog, globalShortcut, shell, nativeImage, screen } = require('electron');
@@ -174,6 +175,12 @@ async function writeAivDocument(document, destination, { sourcePath = null, sour
     unchanged
   });
   return ergebnis;
+}
+
+async function writeCastleDocument(content, destination, options) {
+  if (!castleFormat.isJsonPath(destination)) return writeAivDocument(content, destination, options);
+  atomicWriteFile(destination, castleFormat.stringify(asCastleDocument(content)), 'utf8');
+  return { path: destination, native: false, sourceBytes: null };
 }
 
 function placeholderPortrait(size) {
@@ -376,7 +383,6 @@ function editMenuForWorkspace(workspace, overviewPreferences = defaultCastleOver
         ]
       },
       { type: 'separator' },
-      { label: 'Load/Replace Background…', click: () => sendToFocused('trigger-load-castle-background') },
       { label: 'Clear Background', click: () => sendToFocused('trigger-clear-castle-background') },
       { label: 'Edit Castle Mapping…', click: () => sendToFocused('trigger-edit-castle-mapping') },
       { type: 'separator' },
@@ -558,7 +564,7 @@ ipcMain.handle('set-dialog-project', (event, root) => {
 });
 ipcMain.handle('open-file', async (_event, kind = 'json') => {
   const filters = kind === 'aiv'
-    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson'] }]
+    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson', 'aijson'] }]
     : [{ name: 'JSON', extensions: ['json'] }];
   const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(_event.sender), { properties: ['openFile'], filters, defaultPath: projectDialogPath(_event) });
   if (result.canceled || result.filePaths.length === 0) return null;
@@ -581,20 +587,21 @@ ipcMain.handle('save-file', async (_event, {
   unchanged = false
 } = {}) => {
   const filters = kind === 'aiv'
-    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv'] }]
+    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv'] }, { name: 'Definitive Edition castle', extensions: ['aivjson'] }]
+    : kind === 'aivjson' ? [{ name: 'Definitive Edition castle', extensions: ['aivjson'] }, { name: 'Stronghold AIV Castle', extensions: ['aiv'] }]
     : [{ name: 'JSON', extensions: ['json'] }];
   const result = await dialog.showSaveDialog(BrowserWindow.fromWebContents(_event.sender), { filters, defaultPath: projectDialogPath(_event, defaultPath) });
   if (result.canceled || !result.filePath) return null;
-  if (kind === 'aiv') {
-    const filePath = result.filePath.toLowerCase().endsWith('.aiv') ? result.filePath : `${result.filePath}.aiv`;
-    return writeAivDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
+  if (kind === 'aiv' || kind === 'aivjson') {
+    const filePath = /\.(aiv|aivjson|aijson)$/i.test(result.filePath) ? result.filePath : `${result.filePath}.${kind}`;
+    return writeCastleDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
   }
   atomicWriteFile(result.filePath, content, 'utf8');
   return result.filePath;
 });
 
 ipcMain.handle('quick-save-file', async (_event, { path: filePath, content, kind = 'json', sourcePath = null, sourceBytes = null, unchanged = false }) => {
-  if (kind === 'aiv') return writeAivDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
+  if (kind === 'aiv' || kind === 'aivjson') return writeCastleDocument(content, filePath, { sourcePath, sourceBytes, unchanged });
   atomicWriteFile(filePath, content, 'utf8');
   return filePath;
 });
@@ -613,6 +620,20 @@ ipcMain.handle('choose-ucp-installation', async event => {
   const gameRoot = normalizeInstallationPath(result.filePaths[0]);
   writeSettings({ ...readSettings(), ucpInstallation: gameRoot });
   return gameRoot;
+});
+
+ipcMain.handle('save-castle-picture', async (event, dataUrl) => {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/png;base64,') || dataUrl.length > 180 * 1024 * 1024) {
+    throw new Error('Invalid PNG image.');
+  }
+  const png = Buffer.from(dataUrl.slice('data:image/png;base64,'.length), 'base64');
+  if (png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Invalid PNG image.');
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const options = { title: 'Save castle as picture', defaultPath: path.join(projectDialogPath(event) || app.getPath('pictures'), 'Castle.png'), filters: [{ name: 'PNG image', extensions: ['png'] }] };
+  const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options);
+  if (result.canceled || !result.filePath) return null;
+  atomicWriteFile(result.filePath, png);
+  return result.filePath;
 });
 
 ipcMain.handle('choose-castle-background', async event => {
@@ -842,7 +863,7 @@ ipcMain.handle('load-config', async (_event, file) => {
 
 ipcMain.handle('load-file-in-new-window', async (_event, kind = 'json') => {
   const filters = kind === 'aiv'
-    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson'] }]
+    ? [{ name: 'Stronghold AIV Castle', extensions: ['aiv', 'aivjson', 'aijson'] }]
     : [{ name: 'JSON', extensions: ['json'] }];
   const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(_event.sender), { filters, properties: ['openFile'], defaultPath: projectDialogPath(_event) });
   if (result.canceled || result.filePaths.length === 0) return null;
@@ -886,7 +907,7 @@ ipcMain.handle('load-aiv-skins', async () => {
   for (const directory of [bundledSkinDir(), skinDir()]) {
     if (!fs.existsSync(directory)) continue;
     for (const file of fs.readdirSync(directory)) {
-      if (!/^\d+\.png$/i.test(file)) continue;
+      if (!(directory === bundledSkinDir() ? /^\d+\.(png|svg)$/i : /^\d+\.png$/i).test(file)) continue;
       const key = path.basename(file, path.extname(file));
       result[key] = imageFileToDataUrl(path.join(directory, file));
       if (directory === skinDir()) customSkinTypes.push(key);
@@ -903,5 +924,5 @@ ipcMain.handle('open-aiv-skins-folder', async () => {
 
 function imageFileToDataUrl(filePath) {
   const data = fs.readFileSync(filePath).toString('base64');
-  return `data:image/png;base64,${data}`;
+  return `data:image/${path.extname(filePath).toLowerCase() === '.svg' ? 'svg+xml' : 'png'};base64,${data}`;
 }

@@ -370,8 +370,21 @@
     return new Set(tiles.flatMap(tile => [...cells.get(tile.y * gridSize + tile.x)]));
   }
 
+  // Placement policy is independent of the palette category and active tool.
+  const MERGEABLE_TYPES = Object.freeze([25, 26, 35, 46, 99, 106]);
+  function placementOverlap(incoming, existing, definitions) {
+    const next = definitions[incoming] || {}, previous = definitions[existing] || {};
+    if (next.kind === 'unit' || next.overlap === 'allow' || previous.kind === 'unit' || previous.overlap === 'allow') return 'allow';
+    if ([99, 106].includes(Number(incoming))) return 'block';
+    if (previous.overlap !== 'replace') return 'block';
+    if (Number(incoming) === Number(existing)) return 'block';
+    return 'replace';
+  }
+
   return {
     KEEP_ITEM_TYPE,
+    MERGEABLE_TYPES,
+    placementOverlap,
     mergeBuildSteps,
     stepMergeGroups,
     mergeStepPlacements,

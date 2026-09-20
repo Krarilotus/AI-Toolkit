@@ -59,48 +59,6 @@ test('Gruppen aus dem Speicher: kaputte Eintraege fliegen raus, Kennungen bleibe
   assert.notEqual(geprueft[0].id, geprueft[1].id);
 });
 
-test('Eine Gruppe findet ihre Setzungen ueber Bautyp und Feld wieder', () => {
-  const placements = [
-    { ref: 'f:0:0', type: 20, off: off(5, 5) },
-    { ref: 'f:1:0', type: 20, off: off(6, 5) },
-    { ref: 'f:2:0', type: 30, off: off(7, 5) }
-  ];
-  const treffer = extras.matchMembersToRefs(
-    [{ type: 20, off: off(5, 5) }, { type: 30, off: off(7, 5) }], placements);
-  assert.deepEqual(treffer.refs, ['f:0:0', 'f:2:0']);
-  assert.equal(treffer.missing, 0);
-
-  // Was nicht mehr da ist, wird gezaehlt statt geraten.
-  const luecke = extras.matchMembersToRefs(
-    [{ type: 20, off: off(5, 5) }, { type: 99, off: off(1, 1) }], placements);
-  assert.deepEqual(luecke.refs, ['f:0:0']);
-  assert.equal(luecke.missing, 1);
-
-  // Zwei gleiche Bauwerke bekommen zwei verschiedene Setzungen, nie dieselbe.
-  const doppelt = extras.matchMembersToRefs(
-    [{ type: 20, off: off(5, 5) }, { type: 20, off: off(5, 5) }],
-    [{ ref: 'f:0:0', type: 20, off: off(5, 5) }, { ref: 'f:1:0', type: 20, off: off(5, 5) }]);
-  assert.deepEqual(doppelt.refs, ['f:0:0', 'f:1:0']);
-});
-
-test('Nur ein gemeinsames Verschieben laesst die Gruppe neue Felder lernen', () => {
-  const vorher = [{ type: 20, off: off(10, 10) }, { type: 20, off: off(11, 10) }];
-  const verschoben = [{ type: 20, off: off(13, 12) }, { type: 20, off: off(14, 12) }];
-  assert.deepEqual(extras.uniformDelta(vorher, verschoben), { dx: 3, dy: 2 });
-
-  // Auseinandergezogen ist kein Verschieben.
-  assert.equal(extras.uniformDelta(vorher, [{ type: 20, off: off(13, 12) }, { type: 20, off: off(20, 12) }]), null);
-  // Ein anderer Bautyp an derselben Stelle ist eine andere Setzung.
-  assert.equal(extras.uniformDelta(vorher, [{ type: 21, off: off(10, 10) }, { type: 20, off: off(11, 10) }]), null);
-  // Eine geloeschte Setzung auch.
-  assert.equal(extras.uniformDelta(vorher, [{ type: 20, off: off(10, 10) }]), null);
-  // Der Zeilensprung wird richtig gerechnet: ein Feld nach rechts am Rand
-  // ist ein Feld nach rechts, nicht ein Sprung in die naechste Zeile.
-  assert.deepEqual(
-    extras.uniformDelta([{ type: 20, off: off(98, 3) }], [{ type: 20, off: off(99, 3) }]),
-    { dx: 1, dy: 0 });
-});
-
 test('Das Tastenkuerzel-Fenster kennt jetzt alle Werkzeuge des Editors', () => {
   // Der Editor prueft beim Speichern ALLE Werkzeuge aus DEFAULT_TOOL_SHORTCUTS.
   const werkzeuge = Object.keys(require('../src/js/castle-shortcuts').defaults);

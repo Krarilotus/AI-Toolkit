@@ -33,8 +33,9 @@ async function createStage(canvas) {
     terrainNodes = [],
     terrainLookup = new Map(),
     documentRevision;
-  function node(command) {
+  function node(command, existing = null) {
     if (!command.imageId) {
+      existing?.destroy();
       return new P.Graphics()
         .poly(command.polygon.flat())
         .fill({ color: 0xd2aa5a, alpha: 0.55 });
@@ -54,7 +55,9 @@ async function createStage(canvas) {
       texture = new P.Texture({ source, frame: new P.Rectangle(...crop) });
       textures.set(key, texture);
     }
-    const sprite = new P.Sprite(texture);
+    const sprite = existing instanceof P.Sprite ? existing : new P.Sprite(texture);
+    if (existing && sprite !== existing) existing.destroy();
+    sprite.texture = texture;
     [sprite.x, sprite.y, sprite.width, sprite.height] = args.slice(-4);
     return sprite;
   }
@@ -65,19 +68,20 @@ async function createStage(canvas) {
 
   return {
     setScene(terrain, ordered, revision) {
-      if (terrainCommands !== terrain) {
+      const terrainChanged = terrainCommands !== terrain;
+      if (terrainChanged) {
+        stage.removeChildren();
         clearBuildings();
-        for (const sprite of terrainNodes) sprite.destroy();
-        for (const texture of textures.values()) texture.destroy();
-        for (const source of sources.values()) source.destroy();
-        textures.clear();
-        sources.clear();
+        // A different start uses the same atlas. Reuse GPU textures and sprite
+        // slots instead of uploading the complete atlas again on every switch.
+        const previous = terrainNodes;
         terrainCommands = terrain;
-        terrainNodes = terrain.map((command) => node(command));
+        terrainNodes = terrain.map((command, i) => node(command, previous[i]));
+        for (let i = terrain.length; i < previous.length; i++) previous[i].destroy();
         terrainLookup = new Map(
           terrain.map((command, i) => [command, terrainNodes[i]]),
         );
-        stage.addChild(...terrainNodes);
+        for (const sprite of terrainNodes) if (sprite.parent !== stage) stage.addChild(sprite);
       }
       if (documentRevision !== revision) {
         clearBuildings();
@@ -85,8 +89,10 @@ async function createStage(canvas) {
       }
       for (const sprite of buildings.values()) sprite.visible = false;
       const occurrences = new Map();
+      const usedImages = terrainChanged ? new Set(terrain.map(command => assets.get(command.imageId))) : null;
       let index = 0;
       for (const command of ordered) {
+        usedImages?.add(assets.get(command.imageId));
         let sprite = terrainLookup.get(command);
         if (!sprite) {
           const occurrence = occurrences.get(command.key) || 0;
@@ -101,6 +107,15 @@ async function createStage(canvas) {
           sprite.visible = true;
         }
         sprite.zIndex = index++;
+      }
+      if (usedImages) {
+        const retired = new Set([...sources].filter(([image]) => !usedImages.has(image)).map(([, source]) => source));
+        for (const [key, texture] of textures) if (retired.has(texture.source)) {
+          texture.destroy(); textures.delete(key);
+        }
+        for (const [image, source] of sources) if (retired.has(source)) {
+          source.destroy(); sources.delete(image);
+        }
       }
     },
 

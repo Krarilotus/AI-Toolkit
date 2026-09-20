@@ -11,7 +11,7 @@ const constants = readJson('config/aiv_constants.json');
 const unitIds = new Set(Object.entries(constants).filter(([, item]) => item.kind === 'unit').map(([id]) => Number(id)));
 
 test('every configured unit is a capped, freely overlapping rallypoint', () => {
-  assert.equal(unitIds.size, 21);
+  assert.equal(unitIds.size, 29);
   for (const type of unitIds) {
     assert.equal(constants[String(type)].overlap, 'allow', `unit ${type} overlap`);
     assert.ok(Number.isInteger(constants[String(type)].maxAmount), `unit ${type} maxAmount integer`);

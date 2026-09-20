@@ -43,6 +43,13 @@ test('every visible AIV item has a picture: its own, or the first piece of its r
     const shown = Array.isArray(info.lineSequence) && info.lineSequence.length
       ? String(info.lineSequence[0])
       : id;
+    const vectorPath = path.join(skinDir, `${shown}.svg`);
+    if (fs.existsSync(vectorPath)) {
+      const svg = fs.readFileSync(vectorPath, 'utf8');
+      assert.match(svg, /<svg[^>]+xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+      assert.doesNotMatch(svg, /<script|<foreignObject|https?:\/\/(?!www.w3.org)/);
+      continue;
+    }
     const filePath = path.join(skinDir, `${shown}.png`);
     assert.ok(fs.existsSync(filePath),
       `missing skin for ${info.name} [${id}]` + (shown === id ? '' : ` - shown as ${shown}`));
