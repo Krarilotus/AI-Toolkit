@@ -9,23 +9,25 @@
     ['openCastle', 'Open castle', 'ctrl+o', 'castleOpenBtn'],
     ['saveCastle', 'Save castle', 'ctrl+s', 'castleSaveBtn'],
     ['newCastle', 'New castle', 'ctrl+n', 'castleNewBtn'],
-    ['map', 'Map', '', 'castleMapBtn'], ['iso', '2.5D view', '', 'castleIsoBtn'],
+    ['map', 'Map', 'alt+m', 'castleMapBtn'], ['iso', '2.5D view', 'alt+i', 'castleIsoBtn'],
     ['single', 'Single', '1'], ['line', 'Line', '6'], ['brush', 'Brush', '2'],
     ['brushSmaller', 'Smaller brush', '[', 'castleBrushMinus'],
     ['brushLarger', 'Larger brush', ']', 'castleBrushPlus'],
     ['bucket', 'Fill', '7'], ['select', 'Select / Move', '3'],
-    ['replace', 'Replace', '8'], ['merge', 'Merge', ''], ['delete', 'Delete', '4'],
-    ['overlays', 'Overlays menu', ''], ['groups', 'Groups', '', 'castleGroupsBtn'],
-    ['paste', 'Clipboard / Paste', 'ctrl+v'], ['clearClipboard', 'Clear clipboard', '', 'castleClipboardClearBtn'],
-    ['names', 'Item names', '', 'castleShowNames'], ['units', 'Unit Order', '', 'castleShowUnitNumbers'],
-    ['guides', 'Guide lines', '', 'castleShowCompatibility'], ['paths', 'Path map', '', 'castleShowRoutes'],
-    ['fire', 'Firespread', '', 'castleShowFire'],
-    ['ground', '2.5D: Ground', '', 'castleIsoGroundBtn'], ['tiled', '2.5D: Tiled', '', 'castleIsoGroundFit'],
-    ['resetGround', '2.5D: Reset ground', '', 'castleIsoGroundReset'],
-    ['gameMap', '2.5D: Game map', '', 'castleIsoMapBtn'], ['resetMap', '2.5D: Remove game map', '', 'castleIsoMapReset'],
+    ['replace', 'Replace', '8'], ['merge', 'Merge', 'm'], ['delete', 'Delete', '4'],
+    ['overlays', 'Overlays menu', 'o'], ['groups', 'Groups', 'g'],
+    ['paste', 'Clipboard / Paste', 'ctrl+v'], ['clearClipboard', 'Clear clipboard', 'ctrl+shift+delete', 'castleClipboardClearBtn'],
+    ['names', 'Item names', 'n', 'castleShowNames'], ['units', 'Unit Order', 'u', 'castleShowUnitNumbers'],
+    ['guides', 'Guide lines', 'h', 'castleShowCompatibility'], ['paths', 'Path map', 'p', 'castleShowRoutes'],
+    ['fire', 'Firespread', 'f', 'castleShowFire'],
+    ['ground', '2.5D: Ground', 'b', 'castleIsoGroundBtn'], ['tiled', '2.5D: Tiled', 't', 'castleIsoGroundFit'],
+    ['resetGround', '2.5D: Reset ground', 'shift+b', 'castleIsoGroundReset'],
+    ['gameMap', '2.5D: Game map', 'ctrl+m', 'castleIsoMapBtn'], ['resetMap', '2.5D: Remove game map', 'ctrl+shift+m', 'castleIsoMapReset'],
     ['rotateLeft', '2.5D: Rotate left', 'c'], ['rotateRight', '2.5D: Rotate right', 'x'],
     ['saveAs', 'Save As', 'ctrl+shift+s'], ['undo', 'Undo', 'ctrl+z'], ['redo', 'Redo', 'ctrl+y'],
     ['copy', 'Copy selection', 'ctrl+c'], ['cut', 'Cut selection', 'ctrl+x'],
+    ['exportDe', 'Export DE', 'ctrl+shift+e', 'castleExportDeBtn'],
+    ['pause', 'Pause step', '0', 'castlePauseBtn'],
     ['deleteSelected', 'Delete selected', 'delete'], ['deselect', 'Deselect', 'escape']
   ];
   const defaults = Object.fromEntries(actions.map(([id, , key]) => [id, [key]]));
@@ -73,10 +75,21 @@
     }
     return validate(result);
   }
+  // Add formerly unassigned defaults without taking a user's existing key.
+  function upgrade(saved, cameraKeys = []) {
+    const result = Object.fromEntries(actions.map(([id]) => [id, saved?.[id] || ['']]));
+    const checked = validate(result);
+    const used = new Set([...Object.values(checked).flat(), ...cameraKeys].filter(Boolean));
+    for (const [id] of actions) {
+      const key = defaults[id][0];
+      if (!checked[id][0] && key && !used.has(key)) { checked[id] = [key]; used.add(key); }
+    }
+    return checked;
+  }
   function actionFor(event, bindings) {
     const key = typeof event === 'string' ? normalize(event) : fromEvent(event);
     return key ? actions.find(([id]) => bindings[id]?.[0] === key)?.[0] || null : null;
   }
   function accelerator(key) { return key ? key.split('+').map(part => part === 'ctrl' ? 'CmdOrCtrl' : part === 'space' ? 'Space' : part === 'plus' ? 'Plus' : part.toUpperCase()).join('+') : undefined; }
-  return { actions, defaults, normalize, fromEvent, validate, migrate, actionFor, accelerator, isReserved: key => reserved.has(key) };
+  return { actions, defaults, normalize, fromEvent, validate, migrate, upgrade, actionFor, accelerator, isReserved: key => reserved.has(key) };
 });

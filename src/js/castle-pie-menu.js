@@ -9,7 +9,7 @@
     return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'replace' : 'groups') : (dy > 0 ? 'cut' : 'merge');
   }
   const bound = new WeakSet();
-  function bind(canvas, run) {
+  function bind(canvas, run, getShortcut = () => '') {
     if (bound.has(canvas)) return;
     bound.add(canvas);
     const doc = canvas.ownerDocument, win = doc.defaultView;
@@ -30,6 +30,12 @@
       const positions = {merge:[70,20], groups:[3,92], replace:[153,92], cut:[70,165], deselect:[80,92]};
       for (const [action,label] of Object.entries(labels)) {
         const button = doc.createElement('button'); button.type = 'button'; button.textContent = label;
+        const shortcut = getShortcut(action);
+        if (shortcut) {
+          const key = doc.createElement('small'); key.textContent = shortcut.toUpperCase();
+          key.style.cssText = 'display:block;font-size:10px;font-weight:400;opacity:.8';
+          button.appendChild(key);
+        }
         button.dataset.action = action; button.setAttribute('role', 'menuitem');
         button.style.cssText = 'position:absolute;width:84px;height:40px;border:0;border-radius:20px;background:transparent;color:inherit;font:inherit;cursor:pointer;';
         if (action === 'groups' || action === 'replace' || action === 'deselect') button.style.width = '68px';

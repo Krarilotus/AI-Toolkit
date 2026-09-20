@@ -21,7 +21,7 @@ test('one binding per action, ordered like the toolbar, with native File/Edit de
   assert.deepEqual(migrated.copy, ['ctrl+c']);
   assert.deepEqual(migrated.saveCastle, ['ctrl+s']);
   assert.equal(shortcuts.actionFor('f1', migrated), null);
-  assert.equal(shortcuts.actionFor('b', migrated), null);
+  assert.equal(shortcuts.actionFor('b', migrated), 'ground');
 });
 
 test('combinations normalize consistently in Electron and DOM events and validate conflicts', () => {
@@ -45,7 +45,7 @@ function renderer(bindings = shortcuts.defaults) {
   const calls = [], controls = new Map();
   for (const [, , , id] of shortcuts.actions) if (id) controls.set(id, {click: () => calls.push(id)});
   const context = {shortcutConfig: shortcuts, state: {toolShortcuts: bindings, camera: camera.defaults}, camera,
-    window: {appWorkspace: {getActive: () => 'castle'}, dispatchEvent: event => calls.push(event.type), isoView: {turnView: delta => calls.push(delta)}},
+    window: {castleEditor:{runContextAction: action => calls.push(action)}, appWorkspace: {getActive: () => 'castle'}, dispatchEvent: event => calls.push(event.type), isoView: {turnView: delta => calls.push(delta)}},
     document: {querySelector: () => null, getElementById: id => controls.get(id)}, Event: class {constructor(type) {this.type = type;}},
     overlayMenu: {open: false}, setTool: action => calls.push(action), runFileShortcut: async action => calls.push(action),
     copySelection: () => calls.push('copy'), cutSelection: () => calls.push('cut'), pasteCopy: () => calls.push('paste'),
@@ -117,4 +117,29 @@ test('palette entries and both mode dropdowns override generic button/select siz
   assert.match(css, /#castleDeleteMode, #castleSelectMode \{ width: auto; min-width: 0/);
   assert.match(html, /value="area">Border<\/option>/);
   assert.match(html, /value="flood">Flood Fill<\/option>/);
+});
+
+
+test('new defaults cover every action and use arrow pan plus wheel zoom', () => {
+  for (const [id] of shortcuts.actions) assert.ok(shortcuts.defaults[id][0], id);
+  assert.deepEqual(camera.defaults, camera.arrows);
+  assert.deepEqual(camera.keyDelta({key:'ArrowRight'}, camera.defaults), {x:-40,y:0});
+  assert.equal(camera.wheelAction({}, camera.defaults), 'zoom');
+  assert.equal(camera.wheelAction({}, camera.legacy), 'panY');
+});
+
+test('upgrading fills free bindings while preserving custom shortcuts and camera keys', () => {
+  const old = {...shortcuts.defaults, groups:[''], merge:[''], brush:['g']};
+  const next = shortcuts.upgrade(old, ['m']);
+  assert.deepEqual(next.groups,['']);
+  assert.deepEqual(next.merge,['']);
+  assert.deepEqual(next.brush,['g']);
+  assert.deepEqual(shortcuts.upgrade({...old,brush:['2']}).groups,['g']);
+  assert.deepEqual(shortcuts.validate({...next,groups:['']}).groups,[''],'explicitly cleared v3 keys remain empty');
+});
+
+test('group and merge keys dispatch the same actions as the pie menu', () => {
+  const h = renderer(); h.key('g'); h.key('m'); h.key('8');
+  assert.deepEqual(h.calls, ['groups','merge','replace']);
+  h.key('g',{repeat:true}); assert.equal(h.calls.length,3);
 });

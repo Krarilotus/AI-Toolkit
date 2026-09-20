@@ -10,7 +10,7 @@
   const FUTURE_OPACITY = 0.50;
   const FUTURE_FILTER = 'grayscale(1) brightness(.42)';
   const FUTURE_TINT = 'rgba(144, 176, 221, .13)';
-  const SHORTCUT_STORAGE_KEY = 'aiv.castleToolShortcuts.v2';
+  const SHORTCUT_STORAGE_KEY = 'aiv.castleToolShortcuts.v3';
   const shortcutConfig = window.castleShortcuts;
   const CAMERA_STORAGE_KEY = 'aiv.castleCamera.v1';
   const ITEM_TOOL_STORAGE_KEY = 'aiv.castleItemTools.v1';
@@ -1880,8 +1880,13 @@
   function loadToolShortcuts() {
     try {
       const saved = JSON.parse(localStorage.getItem(SHORTCUT_STORAGE_KEY) || 'null');
+      const previous = JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v2') || 'null');
+      const savedCamera = JSON.parse(localStorage.getItem(CAMERA_STORAGE_KEY) || 'null');
+      const cameraKeys = camera.directions.flatMap(direction => savedCamera?.[direction] ? [savedCamera[direction], `shift+${savedCamera[direction]}`] : []);
       state.toolShortcuts = saved ? validateToolShortcuts(saved)
+        : previous ? shortcutConfig.upgrade(previous, cameraKeys)
         : shortcutConfig.migrate(JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v1') || 'null'));
+      if (!saved) localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(state.toolShortcuts));
     } catch (error) {
       console.warn('Ignoring invalid saved Castle shortcuts:', error);
       state.toolShortcuts = deepClone(DEFAULT_TOOL_SHORTCUTS);
@@ -3932,7 +3937,7 @@
     });
   }
   els.shortcutDefaults.addEventListener('click', () => populateShortcutDialog(DEFAULT_TOOL_SHORTCUTS, camera.defaults));
-  document.getElementById('castleCameraLegacy').addEventListener('click', () => populateCameraDialog(camera.defaults));
+  document.getElementById('castleCameraLegacy').addEventListener('click', () => populateCameraDialog(camera.legacy));
   document.getElementById('castleCameraArrows').addEventListener('click', () => populateCameraDialog(camera.arrows));
   document.getElementById('castleMergeForm').addEventListener('submit', applyMerge);
   document.getElementById('castleMergeCancel').addEventListener('click', () => document.getElementById('castleMergeDialog').close());
@@ -4003,7 +4008,7 @@
   els.canvas.addEventListener('pointerup', onPointerUp);
   els.canvas.addEventListener('pointercancel', onPointerUp);
   els.canvas.addEventListener('wheel', onWheel, { passive: false });
-  window.castlePieMenu.bind(els.canvas, action => window.castleEditor.runContextAction(action));
+  window.castlePieMenu.bind(els.canvas, action => window.castleEditor.runContextAction(action), action => state.toolShortcuts[action]?.[0]);
   els.canvas.addEventListener('mouseleave', () => {
     const hadPreview = state.hoverTile && (
       (state.currentItemType != null && isPlacementTool(state.tool)) ||
@@ -4022,7 +4027,11 @@
       if (!event.repeat) void runFileShortcut(action);
       return;
     }
-    if (['single', 'line', 'brush', 'bucket', 'select', 'replace', 'merge', 'delete'].includes(action)) {
+    if (['groups', 'replace', 'merge'].includes(action)) {
+      if (!event.repeat) window.castleEditor.runContextAction(action);
+      return;
+    }
+    if (['single', 'line', 'brush', 'bucket', 'select', 'delete'].includes(action)) {
       setTool(action); return;
     }
     if (action === 'brushSmaller' || action === 'brushLarger') {
@@ -4161,6 +4170,7 @@
     handleKey: handleCastleKey,
     addChangeListener,
     getTool: () => state.tool,
+    getShortcut: action => state.toolShortcuts[action]?.[0] || '',
     getCurrentItemType: () => state.currentItemType,
     // Fuer die 2.5D-Ansicht: was ausgewaehlt ist, und welcher Kasten gerade
     // gezogen wird. Beides als Kopie und in KACHELN - die Ansicht rechnet in

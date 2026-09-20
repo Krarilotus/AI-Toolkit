@@ -69,20 +69,20 @@ test('camera preferences round-trip, reject conflicts and leave modified shortcu
   assert.deepEqual(camera.keyDelta({ key: 'ArrowRight' }, preferences), { x: -40, y: 0 });
   assert.deepEqual(camera.keyDelta({ key: 'ArrowUp', shiftKey: true }, preferences), { x: 0, y: 120 });
   assert.equal(camera.keyDelta({ key: 'ArrowRight', ctrlKey: true }, preferences), null);
-  assert.equal(camera.keyDelta({ key: 'ArrowRight' }, camera.defaults), null);
+  assert.equal(camera.keyDelta({ key: 'ArrowRight' }, camera.legacy), null);
   assert.throws(() => camera.validate({ ...camera.arrows, left: 's' }, { single: ['s'] }), /already assigned/);
   assert.throws(() => camera.validate({ ...camera.arrows, left: 'c' }, { rotateLeft: ['c'] }), /already assigned/);
   assert.equal(camera.validate({ ...camera.arrows, left: 'c' }, { rotateLeft: ['alt+c'] }).left, 'c');
   assert.throws(() => camera.validate({ ...camera.arrows, left: 'ArrowUp' }), /already assigned/);
   assert.throws(() => camera.validate({ ...camera.arrows, panSpeed: 0 }), /speed/);
-  assert.equal(camera.validate({ ...camera.defaults, left: 'A' }).left, 'a');
+  assert.equal(camera.validate({ ...camera.legacy, left: 'A' }).left, 'a');
 });
 
 test('camera wheel presets are shared by both views and support modifier panning', () => {
-  assert.equal(camera.wheelAction({}, camera.defaults), 'panY');
-  assert.equal(camera.wheelAction({ altKey: true }, camera.defaults), 'zoom');
-  assert.equal(camera.wheelAction({ ctrlKey: true }, camera.defaults), 'panX');
-  assert.equal(camera.wheelAction({}, camera.defaults, true), 'panY');
+  assert.equal(camera.wheelAction({}, camera.legacy), 'panY');
+  assert.equal(camera.wheelAction({ altKey: true }, camera.legacy), 'zoom');
+  assert.equal(camera.wheelAction({ ctrlKey: true }, camera.legacy), 'panX');
+  assert.equal(camera.wheelAction({}, camera.legacy, true), 'panY');
   for (const iso of [false, true]) {
     assert.equal(camera.wheelAction({}, camera.arrows, iso), 'zoom');
     assert.equal(camera.wheelAction({ shiftKey: true }, camera.arrows, iso), 'panY');

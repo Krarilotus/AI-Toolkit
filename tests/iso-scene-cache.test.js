@@ -134,7 +134,7 @@ test('2.5D right-click deselects without panning or placing; middle-drag pans', 
 
 test('2.5D wheel uses Map modifiers in both presets and zoom stays anchored at the pointer', () => {
   const r = interactiveRenderer(), camera = r.context.window.castleCamera;
-  for (const preferences of [camera.defaults, camera.arrows]) {
+  for (const preferences of [camera.legacy, camera.defaults]) {
     r.context.window.castleEditor.getCameraPreferences = () => preferences;
     for (const modifiers of [{}, {ctrlKey: true}, {altKey: true}, {shiftKey: true}]) {
       r.state.view = {zoom: 1, panX: 100, panY: 50};
