@@ -537,6 +537,8 @@
       const selected = await window.electronAPI.chooseUcpInstallation();
       if (!selected) return;
       state.gameRoot = selected;
+      window.isoView?.setGameMap(null);
+      await window.isoView?.reloadGameAssets?.();
       state.selectedKey = null;
       state.loadedProject = null;
     window.electronAPI.setDialogProject?.(null);

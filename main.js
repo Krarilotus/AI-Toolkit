@@ -673,6 +673,8 @@ ipcMain.handle('choose-castle-background', async event => {
 // einzelne Karte als fertige data:-Adresse samt ihren Startplaetzen. Gelesen
 // wird nur, was in der Liste steht - das Fenster kann darueber keine beliebige
 // Datei holen.
+ipcMain.handle('load-game-building-assets', () => require('./src/node/game-building-assets').loadGameBuildingAssets(savedUcpInstallation(), path.join(app.getPath('userData'), 'game-building-assets')));
+
 ipcMain.handle('list-game-maps', () => listGameMaps(savedUcpInstallation()));
 
 ipcMain.handle('load-game-map', (_event, filePath) =>

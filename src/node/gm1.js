@@ -108,4 +108,41 @@ function upperTilePicture(entry, raw) {
 }
 
 
-module.exports = { colourOf, readGm1, tgxToRgba, diamondToRgba, upperTilePicture };
+// Crusader BlitMapImageWithVerticalClip (0x453b00): each pair of pixels
+// follows the diamond's lower edge, at y offsets 0..7..0. GM1 type 5
+// stores straight rows; they are not a rectangular screen-space bitmap.
+function pillarPicture(file, index, lift) {
+  const entry = file.pictures[index];
+  const rows = (entry?.height || 0) - 7;
+  if (!entry || file.buffer.readUInt32LE(20) !== 5 || entry.width !== 30 || rows < 1 || entry.size < rows * 60) return null;
+  const height = lift + 7, rgba = Buffer.alloc(30 * height * 4);
+  const raw = file.buffer.subarray(file.picturesAt + entry.offset, file.picturesAt + entry.offset + entry.size);
+  for (let y = 0; y < lift; y++) for (let x = 0; x < 30; x++) {
+    const rgb = colourOf(raw.readUInt16LE(((y % rows) * 30 + x) * 2));
+    const skew = Math.min(x >> 1, (29 - x) >> 1);
+    const at = ((y + skew) * 30 + x) * 4;
+    rgba[at] = rgb[0]; rgba[at+1] = rgb[1]; rgba[at+2] = rgb[2]; rgba[at+3] = 255;
+  }
+  return {width: 30, height, dx: 0, dy: 9, rgba};
+}
+
+function composite(target, width, height, source, sw, sh, dx, dy) {
+  for (let y=0;y<sh;y++) for(let x=0;x<sw;x++) {
+    const at=(y*sw+x)*4,tx=x+dx,ty=y+dy;
+    if(source[at+3] && tx>=0 && ty>=0 && tx<width && ty<height)source.copy(target,(ty*width+tx)*4,at,at+4);
+  }
+}
+function decodePart(file, index, palette=null) {
+  const entry=file.pictures[index];
+  if(!entry)throw Error(`Missing picture ${index}`);
+  const raw=file.buffer.subarray(file.picturesAt+entry.offset,file.picturesAt+entry.offset+entry.size);
+  if(palette!==null)return {width:entry.width,height:entry.height,dx:-1-file.buffer.readInt32LE(0x48),dy:6-file.buffer.readInt32LE(0x4c),rgba:tgxToRgba(raw,entry.width,entry.height,file.palettes[palette])};
+  const upper=upperTilePicture(entry,raw),top=Math.min(0,upper?.dy||0);
+  const width=Math.max(30,upper?upper.dx+upper.width:0),height=Math.max(16,upper?upper.dy+upper.height:0)-top;
+  const rgba=Buffer.alloc(width*height*4);
+  composite(rgba,width,height,diamondToRgba(raw.subarray(0,512)),30,16,0,-top);
+  if(upper)composite(rgba,width,height,upper.rgba,upper.width,upper.height,upper.dx,upper.dy-top);
+  return {width,height,dx:-15,dy:top,rgba};
+}
+
+module.exports = { colourOf, readGm1, tgxToRgba, diamondToRgba, upperTilePicture, decodePart, composite, pillarPicture };

@@ -67,10 +67,10 @@ Concrete code paths:
   synchronous PNG encoder. Four native cameras repeat this work. `readMapTiles()`
   also exposes camera zero at the top level alongside the camera array; inspect
   actual IPC allocation before assuming its shared values are free to transfer.
-- `src/node/native-map-renderer.js: render()` calls `prepare()` before checking
-  its completed request. That preparation reads/hashes helper inputs, enumerates
-  GM files and writes helper files. Measure this separately; it was excluded
-  from the raw-layer timing above.
+- Native capture startup has since been removed: the map reader only validates
+  existing captures and otherwise uses saved terrain. It never prepares a helper
+  installation or launches Crusader. Fingerprint reads still occur for existing
+  captures; no-cache startup skips them entirely.
 - `src/js/iso-view.js: setMapTiles()` initializes all four camera images and
   decodes all their base64 grids immediately. Each image completion can request
   another refresh. `loadCatalogue()` caches the result but not an in-flight

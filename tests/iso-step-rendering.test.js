@@ -22,7 +22,7 @@ function raster(size) {
   return ctx;
 }
 
-function scene(fire = false) {
+function scene(fire = false, clearable = false) {
   const size = 100, ctx = raster(size), terrainImage = {color: 1}, frontImage = {color: 9};
   const images = [{color: 2}, {color: 3}];
   let items = [], terrainBuilds = 0;
@@ -40,7 +40,7 @@ function scene(fire = false) {
       for (let gy = 0; gy < size; gy++) for (let gx = 0; gx < size; gx++)
         state.mapScenery.push({gx, gy, layer: 0, draw: target => target.drawImage(terrainImage, gx, gy, 1, 1)});
       // Foreground scenery must stay interleaved, not become a flat backdrop.
-      state.mapScenery.push({gx: 53, gy: 53, layer: 3, draw: target => target.drawImage(frontImage, 49, 48, 6, 6)});
+      state.mapScenery.push({gx: 53, gy: 53, layer: 3, clearable, draw: target => target.drawImage(frontImage, 49, 48, 6, 6)});
       context.cacheTerrainCommands();
       return true;
     },
@@ -220,4 +220,24 @@ test('enabled fire overlays do not force Canvas scene rendering during slider mo
   const settled=s.render([{itemType:54,gx:50,gy:50,entry:{},tiles:4}]);
   assert.equal(settled.gpu,true,'fire never switches the scene back to Canvas');
   assert.deepEqual(Array.from(maskRequest),[100,100],'settled fire requests a worker mask');
+});
+
+
+test('construction clears overlapping scenery and stepping backward restores the same cached objects', () => {
+  const s = scene(false, true);
+  let frame = s.render([]);
+  const objects = s.state.mapObjectCommands;
+  assert.equal(objects.length, 1);
+  assert.equal(s.ctx.pixels[48 * 100 + 49], 9);
+  const building = {gx: 50, gy: 50, entry: {}, tiles: 4};
+  for (const items of [[building], [], [building], []]) {
+    frame = s.render(items, frame.commands, true);
+    const full = scene(false, true); full.render(items);
+    assert.deepEqual(s.ctx.pixels, full.ctx.pixels);
+    assert.equal(s.state.mapObjectCommands, objects);
+    assert.equal(s.context.visibleMapObjects(items, []).length, items.length ? 0 : 1);
+  }
+  assert.equal(s.context.visibleMapObjects([], [{gx:53, gy:53, tiles:1}]).length, 0, 'attached ground plates clear scenery too');
+  assert.equal(s.context.visibleMapObjects([{gx:54, gy:53, tiles:1}], []).length, 1, 'adjacent scenery is retained');
+  assert.equal(s.terrainBuilds, 1);
 });

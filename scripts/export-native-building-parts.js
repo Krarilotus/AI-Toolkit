@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const gm = require('../src/node/gm1');
+const {decodePart, composite} = gm;
 const { virtualToFile } = require('../src/node/pe-addresses');
 const { encodeRgbaPng } = require('../src/node/pixel-image');
 const { packMapPictures } = require('../src/node/pixel-atlas');
@@ -28,38 +29,13 @@ function stock(name) {
   if (!stocks.has(name)) stocks.set(name, gm.readGm1(fs.readFileSync(path.join(game, 'gm', `${name}.gm1`))));
   return stocks.get(name);
 }
-function composite(target, width, height, source, sw, sh, dx, dy) {
-  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
-    const at = (y * sw + x) * 4, tx = x + dx, ty = y + dy;
-    if (source[at + 3] && tx >= 0 && ty >= 0 && tx < width && ty < height)
-      source.copy(target, (ty * width + tx) * 4, at, at + 4);
-  }
-}
 function picture(name, index, palette = null) {
   const key = `${name}-${index}-${palette ?? 'tile'}`;
   if (pictures.has(key)) return pictures.get(key).part;
-  const file = stock(name), entry = file.pictures[index];
-  if (!entry) throw new Error(`Missing game picture ${name} #${index}`);
-  const raw = file.buffer.subarray(file.picturesAt + entry.offset, file.picturesAt + entry.offset + entry.size);
-  let rgba, width, height, dx, dy;
-  if (palette !== null) {
-    width = entry.width; height = entry.height;
-    rgba = gm.tgxToRgba(raw, width, height, file.palettes[palette]);
-    dx = -1 - file.buffer.readInt32LE(0x48);
-    dy = 6 - file.buffer.readInt32LE(0x4c);
-  } else {
-    const upper = gm.upperTilePicture(entry, raw);
-    const top = Math.min(0, upper?.dy || 0);
-    width = Math.max(30, upper ? upper.dx + upper.width : 0);
-    height = Math.max(16, upper ? upper.dy + upper.height : 0) - top;
-    dx = -15; dy = top;
-    rgba = Buffer.alloc(width * height * 4);
-    composite(rgba, width, height, gm.diamondToRgba(raw.subarray(0, 512)), 30, 16, 0, -top);
-    if (upper) composite(rgba, width, height, upper.rgba, upper.width, upper.height, upper.dx, upper.dy - top);
-  }
+  const {rgba,width,height,dx,dy} = decodePart(stock(name), index, palette);
   const bild = `parts/${key}.png`;
   const part = { bild, breite: width, hoehe: height, dx, dy };
-  pictures.set(key, { part, rgba });
+  pictures.set(key, { part, rgba, source: {file: name, index, palette} });
   return part;
 }
 function offsets(va, count, stride = 8) {
@@ -99,7 +75,7 @@ function fallback(entry, parts) {
     composite(rgba, width, height, source.rgba, part.breite, part.hoehe,
       half + (part.gx - part.gy) * 16 + part.dx, (part.gx + part.gy) * 8 + part.dy - top);
   }
-  fs.writeFileSync(path.join(output, entry.bild), encodeRgbaPng(width, height, rgba));
+  if (!process.argv.includes('--sources-only')) fs.writeFileSync(path.join(output, entry.bild), encodeRgbaPng(width, height, rgba));
   entry.breite = width; entry.hoehe = height;
 }
 // Existing catalogue filenames identify the original GM1 group, including
@@ -177,7 +153,9 @@ const atlas = packMapPictures(values.map(({ part, rgba }) => ({
   width: part.breite, height: part.hoehe, dx: part.dx, dy: part.dy, rgba
 })));
 const locations = new Map(values.map(({ part }, i) => [part.bild, atlas.entries[i]]));
-fs.writeFileSync(path.join(output, 'building-parts.png'), Buffer.from(atlas.dataUrl.split(',')[1], 'base64'));
+const sourceParts = Object.fromEntries(values.map(({source}, i) => [`${atlas.entries[i].x},${atlas.entries[i].y}`, source]));
+fs.writeFileSync(path.join(__dirname, '../config/iso-source-parts.json'), JSON.stringify(sourceParts) + '\n');
+if (!process.argv.includes('--sources-only')) fs.writeFileSync(path.join(output, 'building-parts.png'), Buffer.from(atlas.dataUrl.split(',')[1], 'base64'));
 for (const entry of Object.values(catalogue.gegenstaende).flatMap(e => [e, ...(e.platten || []), ...(e.directions || [])])) {
   for (const layout of [...(entry.partsLayouts || []), ...(entry.cameraPartsLayouts || []).flat()]) for (const part of layout) {
     const location = locations.get(part.bild);
@@ -185,5 +163,5 @@ for (const entry of Object.values(catalogue.gegenstaende).flatMap(e => [e, ...(e
     part.sx = location.x; part.sy = location.y;
   }
 }
-fs.writeFileSync(catalogueFile, JSON.stringify(catalogue, null, 1) + '\n');
+if (!process.argv.includes('--sources-only')) fs.writeFileSync(catalogueFile, JSON.stringify(catalogue, null, 1) + '\n');
 process.stdout.write(`Exported ${pictures.size} original building and farm components.\n`);

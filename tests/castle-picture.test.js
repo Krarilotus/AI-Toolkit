@@ -6,7 +6,7 @@ const source = fs.readFileSync(require.resolve('../src/js/castle-editor.js'), 'u
 const start = source.indexOf('  function renderCastlePicture()');
 const end = source.indexOf('\n  els.showBlueprint.addEventListener', start);
 function setup(fail = false) {
-  const state = {cell: 4, panX: -500, panY: 37, canvasWidth: 800, canvasHeight: 600, gesture: 'move', staticCacheDirty: true,
+  const state = {cell: 4, panX: -500, panY: 37, canvasWidth: 800, canvasHeight: 600, gesture: 'move', staticCacheDirty: true, snapshotLabels: false,
     skinImages: {25: {complete: true, naturalWidth: 40, naturalHeight: 40}}};
   const rendered = [];
   const original = {...state};
@@ -34,4 +34,23 @@ test('failed snapshot encoding restores the live viewport and rendering context'
   assert.throws(()=>r.context.renderCastlePicture(),/encoding failed/);
   assert.deepEqual(r.state,r.original);
   assert.equal(r.context.ctx,'screen');
+});
+
+function labelFont(snapshotLabels, rect) {
+  const fonts=[];
+  const ctx={font:'',save(){},restore(){},measureText(text){return {width:text.length*parseFloat(this.font.slice(5))*.55};},strokeText(){},fillText(){fonts.push(parseFloat(this.font.slice(5)));}};
+  const context=vm.createContext({ctx,state:{cell:32,snapshotLabels},els:{showNames:{checked:true}},isUnitType:()=>false,itemSize:()=>[7,7],itemName:()=> 'Mercenary Post'});
+  const first=source.indexOf('  function drawItemName('),last=source.indexOf('  function drawUnitMarkers(',first);
+  vm.runInContext(source.slice(first,last),context);
+  context.drawItemName(87,rect);
+  return fonts[0];
+}
+test('snapshot building names fill their footprint instead of retaining the viewport font cap',()=>{
+  const rect={x:0,y:0,w:224,h:224};
+  const normal=labelFont(false,rect),snapshot=labelFont(true,rect);
+  assert.equal(normal,16);
+  assert.ok(snapshot>normal*2);
+  assert.ok(snapshot*'Mercenary'.length*.55<=216);
+  assert.ok(2*snapshot*1.15<=216);
+  assert.ok(labelFont(true,{...rect,w:448,h:448})>=snapshot*2);
 });
