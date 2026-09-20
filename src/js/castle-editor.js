@@ -2318,8 +2318,21 @@
     row.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }
 
+  function deferAnalysisOverlay() {
+    state.scrubbing = true;
+    clearTimeout(state.overlaySettleTimer);
+    clearTimeout(analysisTimer);
+    ++analysisSerial; // Ignore results from a position we have already left.
+    analysisCache = { key: null, heat: null, routes: [], pending: false };
+    state.overlaySettleTimer = setTimeout(() => {
+      state.scrubbing = false;
+      scheduleDraw();
+    }, 180);
+  }
+
   function selectBuildStepFromSlider() {
     if (els.buildSlider.disabled || frames().length === 0) return;
+    deferAnalysisOverlay();
     state.pendingScrubIndex = Number(els.buildSlider.value) - 1;
     if (state.scrubPending) return;
     state.scrubPending = true;
@@ -2673,6 +2686,7 @@
     scheduleDraw();
   });
   function getAnalysisOverlay(update = true) {
+    if (state.scrubbing) return { heat: null, routes: [] };
     const showFire = !!document.getElementById('castleShowFire')?.checked;
     const showRoutes = !!document.getElementById('castleShowRoutes')?.checked;
     if (!showFire && !showRoutes) return { heat: null, routes: [] };
@@ -2773,28 +2787,37 @@
     });
     const inputs=[state.documentRevision,state.document,state.constants,state.skinImages,state.canvasAssetRevision,
       els.canvas.width,els.canvas.height,state.panX,state.panY,state.cell,state.renderDpr,els.showNames.checked,
-      els.showCompatibility.checked,state.blueprintImage,state.blueprintVisible,state.blueprintOpacity,document.documentElement.lang];
+      els.showCompatibility.checked,state.blueprintImage,state.blueprintVisible,state.blueprintOpacity,document.documentElement.lang,els.showUnitNumbers.checked];
+    // Camera motion must not put main-thread analysis on top of an older worker frame.
+    if (state.preparedCanvasInputs && [5,6,7,8,9,10].some(index => inputs[index] !== state.preparedCanvasInputs[index]))
+      deferAnalysisOverlay();
     if(!state.preparedCanvasInputs||inputs.some((value,index)=>value!==state.preparedCanvasInputs[index])){
       state.preparedCanvasInputs=inputs;
       paintCanvasBackground();ctx=displayCtx;
-      state.canvasWorker.setScene(staticCacheCanvas,placementRefs().filter(p=>p.kind!=='unit'),(target,p,selected)=>{
+      state.canvasWorker.setScene(staticCacheCanvas,placementRefs(),(target,p,selected)=>{
         const previous=ctx;ctx=target;
         try { if(selected==='outline')drawPlacementOutline(p.type,p.off);else drawPlacement(p.type,p.off,selected); }finally{ctx=previous;}
-      },staticCacheCtx,{width:els.canvas.width,height:els.canvas.height,dpr:state.renderDpr||1,tint:FUTURE_TINT,filter:FUTURE_FILTER,opacity:FUTURE_OPACITY})
+      },staticCacheCtx,{width:els.canvas.width,height:els.canvas.height,dpr:state.renderDpr||1,tint:FUTURE_TINT,filter:FUTURE_FILTER,opacity:FUTURE_OPACITY}, target => {
+        const previous=ctx;ctx=target;try { drawUnitMarkers(); } finally { ctx=previous; }
+      })
         .catch(error=>{console.warn('Canvas scene preparation failed:',error);state.canvasWorkerFailed=true;state.canvasWorker?.destroy();state.canvasWorker=null;scheduleDraw();});
     }
-    state.canvasWorker.render({step:Number.isInteger(state.insertionFrameIndex)?state.insertionFrameIndex:null,
+    const overlay=getAnalysisOverlay(false);
+    const foreground=!!(overlay.image || overlay.routes.length);
+    state.canvasWorker.render({foreground,step:Number.isInteger(state.insertionFrameIndex)?state.insertionFrameIndex:null,
       selected:[...state.selected],moving:state.gesture==='move'?[...state.moveStartOffsets.keys()]:[]});
     ctx=displayCtx;displayCtx.clearRect(0,0,state.canvasWidth,state.canvasHeight);
     drawAnalysisOverlay();
-    for(const p of placementRefs())if(p.kind==='unit')drawPlacement(p.type,p.off,state.selected.has(p.ref));
+    if(foreground)
+      for(const p of placementRefs())if(p.kind==='unit' && !(state.gesture==='move' && state.moveStartOffsets.has(p.ref)))drawPlacement(p.type,p.off,state.selected.has(p.ref));
     return true;
   }
 
   function draw() {
     if (!state.canvasWidth || !state.canvasHeight) return;
     if (els.canvas.getClientRects && !els.canvas.getClientRects().length) return;
-    if (!renderCanvasScene()) {
+    const workerScene = renderCanvasScene();
+    if (!workerScene) {
     if (state.staticCacheDirty) rebuildStaticCache();
 
     ctx = displayCtx;
@@ -2843,7 +2866,7 @@
     }
 
     // Draw markers last so stacked sprites cannot cover their numbers or counts.
-    drawUnitMarkers(proposed);
+    if (!workerScene || proposed || getAnalysisOverlay(false).image || getAnalysisOverlay(false).routes.length) drawUnitMarkers(proposed);
 
     if ((state.gesture === 'select-marquee' || state.gesture === 'copy-marquee' || state.gesture === 'replace-marquee' || state.gesture === 'merge-marquee' || state.gesture === 'delete-marquee') && state.dragStartScreen && state.marqueeEnd) {
       const x = Math.min(state.dragStartScreen.x, state.marqueeEnd.x);
@@ -4093,6 +4116,7 @@
     // gehoert der Waehler nachgezogen.
     updateMapControls,
     getAnalysisOverlay,
+    isScrubbing: () => !!state.scrubbing,
     chooseBlueprint,
     clearBlueprint,
     showShortcutDialog,

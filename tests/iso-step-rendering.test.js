@@ -209,3 +209,14 @@ test('distant step changes keep separate damage regions rather than repainting t
  assert.equal(damage.regions.length,2);
  assert.ok(damage.regions.reduce((n,r)=>n+r.w*r.h,0)<damage.w*damage.h/3);
 });
+
+test('enabled fire overlays do not force Canvas scene rendering during slider motion', () => {
+  const s=scene(true);let scrubbing=true,submitted=0;
+  s.state.gpu={setScene(){submitted++;}};
+  s.context.window.castleEditor.isScrubbing=()=>scrubbing;
+  const moving=s.render([{itemType:54,gx:50,gy:50,entry:{},tiles:4}]);
+  assert.equal(moving.gpu,true);assert.equal(moving.fireMask,null);assert.equal(submitted,1);
+  scrubbing=false;
+  const settled=s.render([{itemType:54,gx:50,gy:50,entry:{},tiles:4}]);
+  assert.ok(settled.fireMask,'fire mask is built after motion settles');
+});

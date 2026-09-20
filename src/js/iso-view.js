@@ -747,7 +747,7 @@
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
     const key = [currentRotation(), kartenSchluessel(), groundFit()].join('/');
     const cache = state.sceneCache;
-    const fireEnabled = !!document.getElementById?.('castleShowFire')?.checked;
+    const fireEnabled = fireOverlayVisible();
     if (!cache || state.sceneDirty || cache.fireEnabled !== fireEnabled || cache.key !== key || cache.stock !== state.kachelVorrat
         || cache.ground !== groundSource()) {
       const sameEnvironment = cache?.key === key && cache.stock === state.kachelVorrat
@@ -950,6 +950,10 @@
     return geo.attachDrawbridges(items);
   }
 
+  function fireOverlayVisible() {
+    return !!document.getElementById?.('castleShowFire')?.checked && !window.castleEditor?.isScrubbing?.();
+  }
+
   function paintScene(ctx, width, height, options = {}) {
     // Terrain geometry and its drawing commands do not depend on the build step.
     if (!options.reuseTerrain) state.nativeTerrain = paintMapTiles(ctx, width, height);
@@ -1013,7 +1017,7 @@
     }
     const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
       buildingCommands.filter(command => intersectsSceneRect(command, rect)));
-    if (state.nativeTerrain && state.gpu && !document.getElementById('castleShowFire')?.checked) {
+    if (state.nativeTerrain && state.gpu && !fireOverlayVisible()) {
       state.gpu.setScene(state.mapSceneryCommands,buildingCommands,window.castleEditor?.getDocumentRevision?.());
       return {items,missing,commands:buildingCommands,fireMask:null,gpu:true};
     }
@@ -1036,7 +1040,7 @@
     }
     // Reuse the same depth-ordered commands and damage bounds for the fire mask.
     // Burnable sprites mask the halo; foreground nonburnable scenery erases that mask.
-    const fireMask = typeof document !== 'undefined' && document.getElementById?.('castleShowFire')?.checked
+    const fireMask = typeof document !== 'undefined' && fireOverlayVisible()
       ? options.previousFireMask || document.createElement('canvas') : null;
     if (fireMask) {
       const resized = fireMask.width !== width || fireMask.height !== height;

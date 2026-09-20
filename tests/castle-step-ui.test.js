@@ -48,7 +48,7 @@ function setup() {
   const els = Object.fromEntries(['buildList', 'buildSlider', 'buildSliderValue', 'buildCount'].map(key => [key, make()]));
   els.buildList.querySelector = () => els.buildList.children[state.insertionFrameIndex];
   const callbacks = [], selections = [];
-  const context = vm.createContext({state, els, geometry,
+  const context = vm.createContext({state, els, geometry, analysisTimer:null, analysisSerial:0, analysisCache:{},
     document: {createElement: make, getElementById: get}, window: {innerWidth: 800, innerHeight: 600},
     frames: () => doc.frames, frameRefKey: (fi, oi) => `f:${fi}:${oi}`, itemName: () => 'Wall', isUnitType: () => false,
     updatePopulationPanel() {}, updateCostPanel() {}, scheduleDraw() {}, setStatus() {},
@@ -185,4 +185,18 @@ test('right-click preserves a multi-step selection and locks/unlocks all selecte
   h.context.openBuildContextMenu(event, 4);
   assert.deepEqual([...h.state.selected], ['f:4:0'], 'right-click outside selection targets only that step');
   assert.equal(h.get('castleContextMerge').disabled, true);
+});
+
+test('scrubbing defers analysis until the latest position settles and rejects earlier results', () => {
+  const timers=new Map();let serial=0,draws=0;
+  const h={state:{},analysisTimer:7,analysisSerial:4,analysisCache:{image:'old'},
+    clearTimeout:id=>timers.delete(id),setTimeout:fn=>{timers.set(++serial,fn);return serial;},scheduleDraw:()=>draws++};
+  vm.createContext(h);
+  vm.runInContext(section('  function deferAnalysisOverlay()', '  function selectBuildStepFromSlider()'),h);
+  h.deferAnalysisOverlay();h.deferAnalysisOverlay();
+  assert.equal(h.state.scrubbing,true);assert.equal(h.analysisSerial,6);
+  assert.equal(h.analysisCache.image,undefined);assert.equal(timers.size,1);
+  vm.runInContext(section('  function getAnalysisOverlay(', '  function drawAnalysisOverlay('),h);
+  assert.equal(h.getAnalysisOverlay().routes.length,0,'no DOM, terrain or worker work while scrubbing');
+  [...timers.values()][0]();assert.equal(h.state.scrubbing,false);assert.equal(draws,1);
 });

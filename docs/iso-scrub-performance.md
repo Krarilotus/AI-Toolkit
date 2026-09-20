@@ -157,3 +157,21 @@ calling the performance work complete.
 Packaging includes only the Pixi browser bundles and license, not its development
 package tree. Electron locales retain the nine UCP languages. Window normal bounds
 and maximized state are now persisted for subsequent launches.
+
+## Interaction follow-up: units and deferred analysis
+
+Unit sprites and number/stack markers now share the 2D worker scene with the
+castle, avoiding independent main-thread camera updates. When settled analysis
+must sit behind units, foreground ownership moves to the overlay canvas instead
+of painting duplicate units in both layers. Moving-unit previews stay interactive.
+
+Slider input and 2D camera changes suppress analysis until 180 ms of inactivity.
+Pending results are invalidated immediately; the selected position is then
+recomputed using the existing analysis worker. The 2.5D scene uses its WebGL path
+while scrubbing even with fire checked, and builds the fire mask only after
+settling. This deliberately prioritizes input over live analysis visualization.
+
+Validation: 445 tests passed, 10 skipped. A maximized real Electron comparison
+at steps 1, 101, 400, 901 and 998 matched the original 2D output pixel-for-pixel.
+Focused tests cover unit/marker order, foreground ownership, deferred analysis,
+stale-request rejection and the GPU fire-disabled path during scrubbing.

@@ -40,7 +40,7 @@ onmessage = ({ data }) => {
     futureCtx.setTransform(scene.dpr, 0, 0, scene.dpr, 0, 0);
     let hasFuture = false;
     for (const row of scene.rows) {
-      if (excluded.has(row.ref)) continue;
+      if (row.unit || excluded.has(row.ref)) continue;
       if (step != null && row.fi > step) {
         replay(futureCtx, row.normal);
         hasFuture = true;
@@ -66,8 +66,11 @@ onmessage = ({ data }) => {
     }
     if (hasFuture)
       for (const row of scene.rows)
-        if (row.fi > step && selection.has(row.ref) && !excluded.has(row.ref))
+        if (!row.unit && row.fi > step && selection.has(row.ref) && !excluded.has(row.ref))
           replay(ctx, row.outline);
+    for (const row of scene.rows)
+      if (!data.frame.foreground && row.unit && !excluded.has(row.ref)) replay(ctx, selection.has(row.ref) ? row.selected : row.normal);
+    if (!data.frame.foreground && !moving.length) replay(ctx, scene.markers || []);
     postMessage({ done: true });
   } catch (error) {
     postMessage({ error: String(error.stack || error) });

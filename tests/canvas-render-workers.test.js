@@ -180,3 +180,22 @@ test("discarded 2D scene preparations release their bitmaps", async () => {
     "unsent scene is released on disposal",
   );
 });
+
+test('2D worker paints units and labels with the same scene as buildings, above future tint', () => {
+  const draws=[];const ctx=new Proxy({}, {get:(_t,k)=> k==='drawImage'?()=>draws.push('image'):k==='fillText'?(x)=>draws.push(x):()=>{}});
+  const context=vm.createContext({onmessage:null,postMessage(){},OffscreenCanvas:class{getContext(){return ctx;}}});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../src/js/castle-canvas-worker.js'),'utf8'),context);
+  context.onmessage({data:{canvas:{getContext:()=>ctx}}});
+  const normal=x=>[[1,'fillText',x,0,0]];
+  const scene={images:[[0,{close(){}}]],width:100,height:100,dpr:1,
+    rows:[{ref:'unit',unit:true,normal:normal('unit'),selected:normal('selected unit')},
+      {ref:'future',fi:5,normal:normal('future'),outline:normal('outline')}],markers:normal('markers')};
+  context.onmessage({data:{scene,frame:{step:0,selected:['unit'],moving:[]}}});
+  assert.deepEqual(draws,['image','future','image','selected unit','markers']);
+  draws.length=0;
+  context.onmessage({data:{frame:{step:10,selected:[],moving:['unit']}}});
+  assert.deepEqual(draws,['image','future'],'moving units and their old labels are excluded');
+  draws.length=0;
+  context.onmessage({data:{frame:{step:10,selected:[],moving:[],foreground:true}}});
+  assert.deepEqual(draws,['image','future'],'analysis foreground owns units without duplicate drawing');
+});

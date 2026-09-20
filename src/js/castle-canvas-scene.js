@@ -39,7 +39,7 @@ window.castleCanvasScene = {
     };
     worker.onerror = (event) => onError(new Error(event.message));
     return {
-      async setScene(background, placements, draw, measure, options) {
+      async setScene(background, placements, draw, measure, options, drawMarkers) {
         const token = ++generation,
           resources = new Map([[background, 0]]),
           images = [];
@@ -81,6 +81,7 @@ window.castleCanvasScene = {
           rows.push({
             ref: p.ref,
             fi: p.fi,
+            unit: p.kind === "unit",
             normal: record((c) => draw(c, p, false)),
             selected: record((c) => draw(c, p, true)),
             outline: record((c) => draw(c, p, "outline")),
@@ -90,6 +91,7 @@ window.castleCanvasScene = {
             if (token !== generation || closed) break;
           }
         }
+        const markers = drawMarkers ? record(drawMarkers) : [];
         for (const [image, id] of resources) {
           if (token !== generation || closed) break;
           if (id) images.push([id, await createImageBitmap(image)]);
@@ -100,7 +102,7 @@ window.castleCanvasScene = {
         }
         if (scene && scene !== sentScene)
           for (const [, image] of scene.images) image.close();
-        scene = { rows, images, ...options };
+        scene = { rows, images, markers, ...options };
         pending = lastFrame;
         pump();
       },
@@ -111,7 +113,7 @@ window.castleCanvasScene = {
           canvas.parentNode.style.position = "relative";
         }
         layer.hidden = false;
-        const key = [frame.step, frame.selected.join(','), frame.moving.join(',')].join('/');
+        const key = [frame.step, frame.selected.join(','), frame.moving.join(','),!!frame.foreground].join('/');
         lastFrame = frame;
         if (key === lastFrameKey) return;
         lastFrameKey = key;
