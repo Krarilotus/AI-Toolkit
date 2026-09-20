@@ -23,3 +23,8 @@
 .castleGroupsList button { text-align: left; overflow: hidden; text-overflow: ellipsis; }
 .castleGroupsNew[hidden], .castleGroupsList[hidden] { display: none; }
 .castleGroupsEmpty { margin: 4px; font-weight: 400; color: var(--text-muted, #aab8bd); }
+
+.castleGroupEntry { display: grid; grid-template-columns: minmax(0, 1fr) 30px; gap: 4px; }
+.castleGroupsList .castleGroupRemove { padding: 4px; text-align: center; }
+.castleGroupRemove svg { display: block; width: 16px; height: 18px; margin: auto; }
+.castleGroupsList .castleGroupRemove:hover { color: #ff9c95; }

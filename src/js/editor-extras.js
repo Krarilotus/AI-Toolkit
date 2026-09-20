@@ -206,7 +206,8 @@
       return;
     }
     for (const group of groups) {
-      els.list.appendChild(rowButton(group.name, 'Copy this group for placement', () => {
+      const row = doc.createElement('div'); row.className = 'castleGroupEntry';
+      row.appendChild(rowButton(group.name, 'Copy this group for placement', () => {
         const buffer = clipboardFromMembers(group.members, ed.getItemDefinitions());
         if (!buffer) return setGroupError('This group has no copyable items.');
         ex.state.copyBuffer = buffer;
@@ -215,6 +216,20 @@
         els.dialog.close();
         ex.setStatus('Move the group into place; click to paste, Esc to cancel.');
       }));
+      const remove = rowButton('', `Delete group "${group.name}"`, () => {
+        groups = groups.filter(saved => saved.id !== group.id);
+        saveGroups(); renderGroups();
+      });
+      remove.className = 'castleGroupRemove';
+      remove.setAttribute('aria-label', `Delete group "${group.name}"`);
+      const icon = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('viewBox', '0 0 18 20'); icon.setAttribute('aria-hidden', 'true');
+      const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M3 5h12M6 5V3h6v2M5 5l1 12h6l1-12M8 8v6M10 8v6');
+      path.setAttribute('fill', 'none'); path.setAttribute('stroke', 'currentColor');
+      path.setAttribute('stroke-width', '1.5');
+      icon.appendChild(path); remove.appendChild(icon); row.appendChild(remove);
+      els.list.appendChild(row);
     }
   }
 
