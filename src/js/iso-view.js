@@ -61,12 +61,14 @@
     return state.catalogue;
   }
 
-  function image(filename) {
+  function image(filename, terrainAsset = false) {
     if (!filename) return null;
     let img = state.images.get(filename);
-    if (img) return img;
+    if (img) { img.terrainAsset ||= terrainAsset; return img; }
     img = new Image();
-    img.onload = () => refresh();
+    img.terrainAsset = terrainAsset;
+    img.decoding = 'async';
+    img.onload = () => refresh(false, !img.terrainAsset);
     img.onerror = () => onImageFailed(filename);
     // A ground the user picked arrives as a whole data: URL, not as the name
     // of a file next to the sprites. Prefixing the sprite path to it would
@@ -402,7 +404,7 @@
   function groundPicture() {
     const map = gameMap();
     if (!map) return null;
-    const img = image(map.dataUrl);
+    const img = image(map.dataUrl, true);
     if (!img || !img.complete || !img.naturalWidth) return null;
     return { img, px0: 0, py0: 0, cells: geo.MAP_PREVIEW_EDGE, top: 0, floor: 0, hoehen: null, smooth: false };
   }
@@ -474,7 +476,7 @@
       const bild = new Image();
       bild.onload = () => refresh();
       bild.src = daten.atlas;
-      const upperImage = daten.upper?.dataUrl ? image(daten.upper.dataUrl) : null;
+      const upperImage = daten.upper?.dataUrl ? image(daten.upper.dataUrl, true) : null;
       return {
         path: daten.path,
         bild,
@@ -612,7 +614,7 @@
       return;
     }
     state.hoehenFeld = null;
-    const img = image(groundSource());
+    const img = image(groundSource(), true);
     let pattern = null;
     if (img && img.complete && img.naturalWidth) {
       try { pattern = ctx.createPattern(img, 'repeat'); } catch { pattern = null; }
@@ -907,6 +909,28 @@
     while (b < buildings.length) yield buildings[b++];
   }
 
+  function visibleSceneItems() {
+    const doc = currentDocument(), step = window.castleEditor?.getActiveBuildStep?.();
+    if (!doc) return geo.attachDrawbridges(turnedTiles(geo.collectItems(doc, state.catalogue, step)));
+    const rotation = currentRotation(), camera = viewRotation(), cache = state.geometryCache;
+    if (!cache || cache.doc !== doc || cache.catalogue !== state.catalogue || cache.rotation !== rotation || cache.camera !== camera) {
+      const items = turnedTiles(geo.collectItems(doc, state.catalogue));
+      state.geometryCache = {doc, catalogue:state.catalogue, rotation, camera, items};
+      // Decode every variant used by this document before scrubbing discovers it.
+      const seen = new Set();
+      const preload = entry => {
+        if (!entry || typeof entry !== 'object' || seen.has(entry)) return;
+        seen.add(entry);
+        if (typeof entry.bild === 'string') image(entry.bild);
+        for (const value of Object.values(entry)) if (value && typeof value === 'object') preload(value);
+      };
+      for (const item of items) preload(item.entry);
+    }
+    const items = Number.isInteger(step) ? state.geometryCache.items.filter(item => item.frameIndex <= step) : state.geometryCache.items;
+    // Gates, wall/stair variants and bridges depend on visible neighbours only.
+    return geo.attachDrawbridges(items);
+  }
+
   function paintScene(ctx, width, height, options = {}) {
     // Terrain geometry and its drawing commands do not depend on the build step.
     if (!options.reuseTerrain) state.nativeTerrain = paintMapTiles(ctx, width, height);
@@ -921,9 +945,7 @@
     // gleichermassen. Der Startaufbau auf der Karte dreht sich also nicht mit;
     // das Spiel setzt ihn immer gleich hin. Genau diese 7/2 stehen auch im
     // Katalog. Wer die Platten mitdreht, schiebt den Lagerplatz von der Karte.
-    const gerade = geo.collectItems(currentDocument(), state.catalogue,
-      window.castleEditor?.getActiveBuildStep?.());
-    const items = geo.attachDrawbridges(turnedTiles(gerade));
+    const items = visibleSceneItems();
     state.renderItems = items;
     const plates = geo.collectPlates(items);
 
@@ -971,8 +993,8 @@
     const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
       buildingCommands.filter(command => intersectsSceneRect(command, rect)));
     const dirty = sceneDamage(options.previousCommands, buildingCommands, width, height);
-    const damagedCommands = dirty ? [...commandsIn(dirty)] : [];
-    if (dirty) {
+    const damagedRegions = dirty ? (dirty.regions || [dirty]).map(rect => ({rect, commands:[...commandsIn(rect)]})) : [];
+    for (const {rect: dirty, commands: damagedCommands} of damagedRegions) {
       ctx.save();
       try {
         ctx.beginPath(); ctx.rect(dirty.x, dirty.y, dirty.w, dirty.h); ctx.clip();
@@ -995,12 +1017,13 @@
       const resized = fireMask.width !== width || fireMask.height !== height;
       if (resized) { fireMask.width = width; fireMask.height = height; }
       const damage = options.previousFireMask && !resized ? dirty : {x: 0, y: 0, w: width, h: height};
-      if (damage) {
+      const regions = damage === dirty ? damagedRegions : damage ? [{rect:damage, commands:[...commandsIn(damage)]}] : [];
+      for (const {rect:damage, commands:damagedCommands} of regions) {
         const mask = fireMask.getContext('2d'); mask.save();
         try {
           mask.beginPath(); mask.rect(damage.x, damage.y, damage.w, damage.h); mask.clip();
           mask.clearRect(damage.x, damage.y, damage.w, damage.h);
-          for (const command of damage === dirty ? damagedCommands : commandsIn(damage)) {
+          for (const command of damagedCommands) {
             mask.globalCompositeOperation = command.flammable ? 'source-over' : 'destination-out';
             command.draw(mask);
           }
@@ -1030,7 +1053,23 @@
       right = Math.max(right, command.x + command.w + 2); bottom = Math.max(bottom, command.y + command.h + 2);
     }
     left = Math.max(0, Math.floor(left)); top = Math.max(0, Math.floor(top));
-    return {x: left, y: top, w: Math.max(0, Math.min(width, Math.ceil(right)) - left), h: Math.max(0, Math.min(height, Math.ceil(bottom)) - top)};
+    const regions = [];
+    for (const command of changed) {
+      let r = {x:Math.max(0,Math.floor(command.x-2)), y:Math.max(0,Math.floor(command.y-2)),
+        right:Math.min(width,Math.ceil(command.x+command.w+2)), bottom:Math.min(height,Math.ceil(command.y+command.h+2))};
+      if (r.right<=r.x || r.bottom<=r.y) continue;
+      // Join overlapping damage, never the empty space between distant edits.
+      for (let i=0;i<regions.length;) {
+        const b=regions[i];
+        if (r.x<=b.right && r.right>=b.x && r.y<=b.bottom && r.bottom>=b.y) {
+          r={x:Math.min(r.x,b.x),y:Math.min(r.y,b.y),right:Math.max(r.right,b.right),bottom:Math.max(r.bottom,b.bottom)};
+          regions.splice(i,1); i=0;
+        } else i++;
+      }
+      regions.push(r);
+    }
+    return {x: left, y: top, w: Math.max(0, Math.min(width, Math.ceil(right)) - left), h: Math.max(0, Math.min(height, Math.ceil(bottom)) - top),
+      regions:regions.map(r=>({x:r.x,y:r.y,w:r.right-r.x,h:r.bottom-r.y}))};
   }
 
   // Die anderen Startplaetze der Karte. Gezeichnet wird nur das Dorffenster,
@@ -1300,13 +1339,15 @@
 
   // One repaint per frame at most. The editor now tells the view about every
   // change it makes, and a build step can be a hundred of them in a row.
-  function refresh(reuseScene = false, contentOnly = false) {
+  function refresh(reuseScene = false, contentOnly = false, immediate = false) {
     if (reuseScene !== true && !contentOnly) state.assetRevision = (state.assetRevision || 0) + 1;
     // A document/image update must win over a camera update queued this frame.
     if (reuseScene !== true) state.sceneDirty = true;
-    if (state.paintPending || hostIsGone()) return;
+    if (hostIsGone()) return;
+    if (immediate) { paint(); return; }
+    if (state.paintPending) return;
     state.paintPending = true;
-    requestAnimationFrame(paint);
+    requestAnimationFrame(() => { if (state.paintPending) paint(); });
   }
 
   function setStatus(text) {
@@ -1613,7 +1654,7 @@
       : `${revision}:${window.castleEditor?.getActiveBuildStep?.()}`;
     const changed = key !== state.editorSceneKey;
     state.editorSceneKey = key;
-    refresh(!changed, true);
+    refresh(!changed, true, true);
   }
 
   function init() {

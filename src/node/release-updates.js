@@ -2,6 +2,8 @@
 const OFFICIAL = 'Schlossgespensty/AI-Toolkit';
 const API = 'https://api.github.com/repos/';
 const fs = require('node:fs');
+// Electron virtualizes .asar paths; receipts hash the physical archive bytes.
+const archiveFs = process.versions.electron ? require('original-fs') : fs;
 const path = require('node:path');
 const crypto = require('node:crypto');
 /** @typedef {{repo:string, key:string, tag:string, asarSha256:string}} InstalledBuild */
@@ -24,7 +26,7 @@ function readInstalledBuild(root) {
     const receipt = JSON.parse(fs.readFileSync(path.join(root, '.toolkit-release.json'), 'utf8').replace(/^\uFEFF/, ''));
     repository(receipt.repo);
     if (typeof receipt.key !== 'string' || typeof receipt.tag !== 'string' || !/^[a-f0-9]{64}$/i.test(receipt.asarSha256)) return null;
-    const actual = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'resources', 'app.asar'))).digest('hex');
+    const actual = crypto.createHash('sha256').update(archiveFs.readFileSync(path.join(root, 'resources', 'app.asar'))).digest('hex');
     return actual === receipt.asarSha256.toLowerCase() ? receipt : null;
   } catch { return null; }
 }

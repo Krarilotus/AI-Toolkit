@@ -6,17 +6,18 @@ const source = fs.readFileSync(require.resolve('../src/js/iso-view.js'), 'utf8')
 
 function raster(size) {
   const pixels = new Uint8Array(size * size), stack = [];
-  let clip = {x: 0, y: 0, w: size, h: size}, path;
+  let clip = [{x: 0, y: 0, w: size, h: size}], path;
   const ctx = {pixels, draws: 0, cleared: 0,
-    save() { stack.push({...clip}); }, restore() { clip = stack.pop(); },
-    beginPath() {}, moveTo() {}, lineTo() {}, closePath() {},
-    rect(x, y, w, h) { path = {x, y, w, h}; }, clip() { clip = path; },
+    save() { stack.push(clip); }, restore() { clip = stack.pop(); },
+    beginPath() {path=[];}, moveTo() {}, lineTo() {}, closePath() {},
+    rect(x, y, w, h) { path.push({x, y, w, h}); }, clip() { clip = path; },
     clearRect(x, y, w, h) { this.cleared += w * h; fill(0, x, y, w, h); },
     drawImage(image, ...args) { this.draws++; fill(this.globalCompositeOperation === 'destination-out' ? 0 : image.color, ...args.slice(-4)); }
   };
   function fill(color, x, y, w, h) {
-    for (let py = Math.max(0, clip.y, y); py < Math.min(size, clip.y + clip.h, y + h); py++)
-      for (let px = Math.max(0, clip.x, x); px < Math.min(size, clip.x + clip.w, x + w); px++) pixels[py * size + px] = color;
+    for (let py = Math.max(0, y); py < Math.min(size, y + h); py++)
+      for (let px = Math.max(0, x); px < Math.min(size, x + w); px++)
+        if (clip.some(r=>px>=r.x && px<r.x+r.w && py>=r.y && py<r.y+r.h)) pixels[py * size + px] = color;
   }
   return ctx;
 }
@@ -183,4 +184,28 @@ test('terrain cache is replaced when terrain is rebuilt or becomes unavailable',
   assert.equal(s.context.paintMapTiles(s.ctx,100,100),false);
   assert.equal(s.state.mapSceneryCommands.length,0);
   assert.equal(s.state.mapSceneryBuckets.size,0);
+});
+
+test('cached geometry filters the visible prefix before resolving neighbouring buildings',()=>{
+ let doc={frames:[{}, {}, {}]},step=0,rotation=0,collections=0;
+ const state={catalogue:{}},seen=[];
+ const context=vm.createContext({state,window:{castleEditor:{getActiveBuildStep:()=>step}},
+  currentDocument:()=>doc,currentRotation:()=>rotation,viewRotation:()=>rotation,image(){},
+  turnedTiles:items=>items.map(item=>({...item,rotation})),
+  geo:{collectItems:()=>{collections++;return doc.frames.map((_,frameIndex)=>({frameIndex,entry:null}));},
+   attachDrawbridges:items=>{seen.push(items.map(i=>i.frameIndex));return items;}}});
+ vm.runInContext(source.slice(source.indexOf('  function visibleSceneItems('),source.indexOf('  function paintScene(')),context);
+ assert.equal(context.visibleSceneItems().length,1);
+ step=2;assert.equal(context.visibleSceneItems().length,3);
+ step=0;assert.equal(context.visibleSceneItems().length,1);
+ assert.equal(collections,1);
+ assert.deepEqual(seen,[[0],[0,1,2],[0]]);
+ rotation=2;assert.equal(context.visibleSceneItems()[0].rotation,2);assert.equal(collections,2);
+ doc={frames:[{}]};context.visibleSceneItems();assert.equal(collections,3);
+});
+test('distant step changes keep separate damage regions rather than repainting the gap',()=>{
+ const {context}=scene(),command=(key,x)=>({key,x,y:10,w:4,h:4});
+ const damage=context.sceneDamage([], [command('left',5),command('right',85)],100,100);
+ assert.equal(damage.regions.length,2);
+ assert.ok(damage.regions.reduce((n,r)=>n+r.w*r.h,0)<damage.w*damage.h/3);
 });

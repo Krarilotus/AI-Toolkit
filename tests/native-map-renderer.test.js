@@ -91,3 +91,10 @@ test('native Lua loads once, regenerates every direction and exits after closing
     assert.equal(result, lua.LUA_OK, result === lua.LUA_OK ? '' : to_jsstring(lua.lua_tostring(L, -1)));
   } finally { lua.lua_close(L); }
 });
+
+test('native renderer configuration disables cursor capture and edge scrolling',()=>{
+ const config=require('js-yaml').load(native.RENDER_CONFIG)['config-full'].modules.graphicsApiReplacer.config;
+ assert.equal(config.control.clipCursor.contents.value,false);
+ assert.equal(config.control.scrollActive.contents.value,false);
+ assert.equal(config.window.continueOutOfFocus.contents.value,'render');
+});

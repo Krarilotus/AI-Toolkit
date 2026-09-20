@@ -6,6 +6,28 @@ const geometry = require('../src/js/castle-geometry');
 const source = fs.readFileSync(require.resolve('../src/js/castle-editor.js'), 'utf8');
 const section = (start, end) => source.slice(source.indexOf(start), source.indexOf(end));
 
+test('holding slider arrows accelerates after one and two seconds and resets on release', () => {
+  let now = 0, updates = 0;
+  const handlers = {};
+  const slider = {value:'50', addEventListener(name, callback) {handlers[name]=callback;}};
+  const context = vm.createContext({els:{buildSlider:slider}, performance:{now:()=>now},
+    frames:()=>Array(100), selectBuildStepFromSlider:()=>updates++});
+  vm.runInContext(section('  let scrubKey = null;', "  window.addEventListener('character-population-changed'"), context);
+  const key = (name, repeat=false, extras={}) => handlers.keydown({key:name,repeat,preventDefault(){},stopPropagation(){},...extras});
+  key('ArrowRight'); assert.equal(slider.value,'51');
+  now=999; key('ArrowRight',true); assert.equal(slider.value,'52');
+  now=1000; key('ArrowRight',true); assert.equal(slider.value,'55');
+  now=2000; key('ArrowRight',true); assert.equal(slider.value,'60');
+  key('ArrowLeft',true); assert.equal(slider.value,'59','changing direction restarts acceleration');
+  now=4000; key('ArrowLeft',true); assert.equal(slider.value,'54');
+  for (const reset of ['keyup','blur','pointerdown']) {
+    handlers[reset](); key('ArrowLeft',true); assert.equal(slider.value,String(53-['keyup','blur','pointerdown'].indexOf(reset)));
+  }
+  slider.value='100'; key('ArrowRight'); assert.equal(slider.value,'100');
+  slider.value='1'; key('ArrowLeft'); assert.equal(slider.value,'1');
+  const before=updates; key('ArrowRight',false,{ctrlKey:true}); key('a'); assert.equal(updates,before);
+});
+
 function setup() {
   let created = 0;
   const scrolled = [];
@@ -30,7 +52,7 @@ function setup() {
     document: {createElement: make, getElementById: get}, window: {innerWidth: 800, innerHeight: 600},
     frames: () => doc.frames, frameRefKey: (fi, oi) => `f:${fi}:${oi}`, itemName: () => 'Wall', isUnitType: () => false,
     updatePopulationPanel() {}, updateCostPanel() {}, scheduleDraw() {}, setStatus() {},
-    requestAnimationFrame: fn => callbacks.push(fn),
+    requestAnimationFrame: fn => callbacks.push(fn), clearTimeout() {}, setTimeout() {},
     selectBuildFrame: fi => { state.insertionFrameIndex = fi; state.selected = new Set([`f:${fi}:0`]); selections.push(fi); },
     selectedBuildFrameIndexes: () => [...state.selected].map(ref => Number(ref.split(':')[1])),
     frameIsLocked: fi => Boolean(doc.frames[fi].locked), mergeableTypes: () => [25], mergeSelectedSteps() {}
@@ -123,6 +145,8 @@ test('rapid slider input performs one update at the latest selected step', () =>
   h.callbacks.shift()();
   assert.deepEqual(h.selections, [99]);
   assert.equal(h.state.scrubPending, false);
+  h.context.selectBuildStepFromSlider(); h.callbacks.shift()();
+  assert.deepEqual(h.selections, [99], 'repeated input at the same step does not schedule another render');
 });
 
 test('right-click preserves a multi-step selection and locks/unlocks all selected positions', () => {

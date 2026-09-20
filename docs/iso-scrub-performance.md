@@ -88,3 +88,39 @@ unfiltered suite therefore cannot honestly be described as green on this host.
 
 No PR was opened, no branch was merged, and the installed application was not
 changed. The earlier UI-polish edits remain preserved in the named Git stash.
+
+## Follow-up: live drag checks, 20 September 2026
+
+The follow-up keeps the terrain command index and visible-neighbour rules. It
+caches document geometry before prefix filtering, keeps loaded building sprites
+from invalidating terrain, separates distant dirty regions, consumes queued
+repaints when a scrub paints immediately, and ignores repeated inputs at the
+same step. Population/cost summaries settle after 150 ms instead of competing
+with every slider update. Production cycle settings are computed once per worker
+per estimate. Redundant 2D clears and explicit isometric refresh requests were
+removed. Held arrows advance 1 step, then 3 after one second and 5 after two.
+
+On GreekSea / Kratoloros, the measured scenery count is **21,717** and the 2D
+canvas has one client rectangle. With both views docked, a 90-input drag advancing
+8 steps per animation frame measured **39.63 ms mean / 102.70 ms p95 / 269.40 ms
+maximum** between callbacks. The same earlier workload before this follow-up
+measured 124.38 / 306.20 / 438.80 ms. These are diagnostic frame intervals, not a
+claim of end-to-end input latency below 10 ms. Large jumps still need more work.
+
+A real Electron check compared incremental and complete rendering at steps
+1, 150, 400, 402, 800, 200 and 998. Six comparisons were identical; the first
+had only one-channel-unit rounding differences (18 channel values). The held-key
+check advanced from 100 to 109 through 1, 3 and 5 step increments.
+`npm run check`: **431 passed, 0 failed, 10 skipped** on this host.
+
+Two experiments were rejected: worker bitmap transfers and a multi-rectangle
+union clip. Both added overhead in the actual drag workload. Neither ships.
+Per-region redraws can replay a sprite crossing separate clipped areas; these
+are distinct pixel regions, not duplicate full-scene paints. Consolidating those
+calls without measuring made the renderer slower.
+
+The same follow-up fixes physical ASAR receipt hashing under Electron and turns
+off native helper cursor clipping/edge scrolling. The intermittent cursor issue
+was not reproduced under instrumentation, so that configuration change is a
+mitigation, not proof of complete resolution. No native helper is launched by
+the local performance harness; it uses the previously captured map data.

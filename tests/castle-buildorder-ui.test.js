@@ -34,7 +34,7 @@ test('Castle build-order slider and future-step styling are wired together', () 
   assert.match(script, /const FUTURE_OPACITY\s*=\s*0\.50/);
   assert.match(script, /const FUTURE_FILTER\s*=\s*'grayscale\(1\) brightness\(\.42\)'/);
   assert.match(script, /buildSlider\.addEventListener\('input',\s*selectBuildStepFromSlider\)/);
-  assert.match(script, /scrollIntoView\(\{\s*block:\s*'nearest'\s*\}\)/);
+  assert.match(script, /scrollIntoView\(\{\s*block:\s*'nearest',\s*behavior:\s*'instant'\s*\}\)/);
 });
 
 test('Castle canvas caches static rendering and avoids per-item compositor filters', () => {

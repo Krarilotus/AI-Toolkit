@@ -30,3 +30,19 @@ test('startup failure rejects before the editor is allowed to close', {skip:proc
  const script=path.join(stage,'broken.ps1');fs.writeFileSync(script,'exit 1');
  await assert.rejects(require('../src/node/release-download').launchInstaller({stage,root:stage,script}),/Installer exited before starting/);
 });
+
+test('Electron recognizes the physical installed ASAR and does not offer it again', async t=>{
+ const fs=require('node:fs'),os=require('node:os'),crypto=require('node:crypto');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'toolkit-electron-receipt-'));
+ t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ fs.mkdirSync(path.join(root,'input'));fs.mkdirSync(path.join(root,'resources'));
+ fs.writeFileSync(path.join(root,'input','main.js'),'// fixture');
+ await require('@electron/asar').createPackage(path.join(root,'input'),path.join(root,'resources/app.asar'));
+ const receipt={repo:'Krarilotus/AI-Toolkit',tag:'snapshot-test',key:'snapshot-test',asarSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'resources/app.asar'))).digest('hex')};
+ fs.writeFileSync(path.join(root,'.toolkit-release.json'),JSON.stringify(receipt));
+ const runner=path.join(root,'runner.cjs');
+ fs.writeFileSync(runner,`const {app}=require('electron');try { const u=require(${JSON.stringify(path.resolve(__dirname,'../src/node/release-updates.js'))});require('node:assert/strict').deepEqual(u.readInstalledBuild(${JSON.stringify(root)}),${JSON.stringify(receipt)});console.log('PASS: physical ASAR receipt');app.exit(0);}catch(e){console.error(e);app.exit(1);}`);
+ const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+ const output=execFileSync(require('electron'),[runner],{windowsHide:true,encoding:'utf8',env,timeout:25000});
+ assert.match(output,/PASS: physical ASAR receipt/);
+});

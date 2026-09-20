@@ -2177,9 +2177,8 @@
     });
   }
 
-  function renderBuildList() {
-    updatePopulationPanel();
-    updateCostPanel();
+  function renderBuildList(scrubbing = false) {
+    if (!scrubbing) { updatePopulationPanel(); updateCostPanel(); }
     const activeStep = Number.isInteger(state.insertionFrameIndex) && state.insertionFrameIndex >= 0 && state.insertionFrameIndex < frames().length
       ? state.insertionFrameIndex
       : null;
@@ -2196,6 +2195,9 @@
       for (const row of els.buildList.children) {
         const fi = Number(row.dataset.index), frame = frames()[fi];
         const selected = frame.tilePositionOfsets.length > 0 && frame.tilePositionOfsets.every((_off, oi) => state.selected.has(frameRefKey(fi, oi)));
+        const rowState = `${selected || fi === activeStep}:${activeStep != null && fi > activeStep}:${fi === activeStep}:${!!frame.locked}`;
+        if (row._buildState === rowState) continue;
+        row._buildState = rowState;
         row.classList.toggle('selected', selected || fi === activeStep);
         row.classList.toggle('future', activeStep != null && fi > activeStep);
         row.classList.toggle('current', fi === activeStep);
@@ -2288,7 +2290,11 @@
   function scrollToActiveBuildStep() {
     const frameIndex = state.insertionFrameIndex;
     if (!Number.isInteger(frameIndex) || frameIndex < 0 || frameIndex >= frames().length) return;
-    els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`)?.scrollIntoView({ block: 'nearest' });
+    const row = els.buildList.querySelector(`.buildStep[data-index="${frameIndex}"]`);
+    if (!row) return;
+    const top = row.offsetTop - els.buildList.offsetTop;
+    if (top >= els.buildList.scrollTop && top + row.offsetHeight <= els.buildList.scrollTop + els.buildList.clientHeight) return;
+    row.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }
 
   function selectBuildStepFromSlider() {
@@ -2301,10 +2307,14 @@
       state.scrubPending = false;
       if (els.buildSlider.disabled || frames().length === 0 || revision !== state.documentRevision) return;
       const frameIndex = Math.max(0, Math.min(frames().length - 1, state.pendingScrubIndex));
+      if (frameIndex === state.insertionFrameIndex && state.lastScrubSelection === state.selected) return;
       selectBuildFrame(frameIndex);
-      renderBuildList();
+      state.lastScrubSelection = state.selected;
+      renderBuildList(true);
       scrollToActiveBuildStep();
-      scheduleDraw();
+      scheduleDraw(true, true);
+      clearTimeout(state.scrubSummaryTimer);
+      state.scrubSummaryTimer = setTimeout(() => { updatePopulationPanel(); updateCostPanel(); }, 150);
       setStatus(`Selected build step ${frameIndex + 1} — new buildings will be inserted after it`);
     });
   }
@@ -2463,12 +2473,13 @@
     return () => changeListeners.delete(listener);
   }
 
-  function scheduleDraw(staticChanged = true) {
+  function scheduleDraw(staticChanged = true, immediate = false) {
     if (staticChanged) state.staticCacheDirty = true;
     state.pendingSceneChange = state.pendingSceneChange || staticChanged;
-    if (state.renderPending) return;
+    if (state.renderPending && !immediate) return;
     state.renderPending = true;
-    requestAnimationFrame(() => {
+    const render = () => {
+      if (!state.renderPending) return;
       state.renderPending = false;
       const sceneChanged = state.pendingSceneChange;
       state.pendingSceneChange = false;
@@ -2477,7 +2488,8 @@
       for (const listener of changeListeners) {
         try { listener(sceneChanged); } catch { /* a watcher must not stop the map */ }
       }
-    });
+    };
+    if (immediate) render(); else requestAnimationFrame(render);
   }
 
   function updateBlueprintControls() {
@@ -2553,10 +2565,8 @@
 
   function rebuildStaticCache() {
     clearCacheContext(staticCacheCtx, staticCacheCanvas);
-    clearCacheContext(futureCacheCtx, futureCacheCanvas);
 
     ctx = staticCacheCtx;
-    ctx.clearRect(0, 0, state.canvasWidth, state.canvasHeight);
     ctx.fillStyle = '#101216';
     ctx.fillRect(0, 0, state.canvasWidth, state.canvasHeight);
     const mapSize = GRID * state.cell;
@@ -2590,6 +2600,7 @@
     }
 
     if (futurePlacements.length) {
+      clearCacheContext(futureCacheCtx, futureCacheCanvas);
       ctx = futureCacheCtx;
       for (const placement of futurePlacements) {
         drawPlacement(placement.type, placement.off);
@@ -2624,33 +2635,35 @@
   }
 
   let analysisCache = { key: null, heat: null, routes: [], pending: false };
-  let analysisWorker = null, analysisTimer = null, analysisSerial = 0;
+  let analysisWorker = null, analysisTimer = null, analysisSerial = 0, analysisBalanceRevision = 0;
   window.addEventListener('castle-balance-changed', () => {
-    scheduleDraw(); window.isoView?.refresh?.(true);
+    analysisBalanceRevision++;
+    scheduleDraw();
   });
   function getAnalysisOverlay(update = true) {
     const showFire = !!document.getElementById('castleShowFire')?.checked;
     const showRoutes = !!document.getElementById('castleShowRoutes')?.checked;
     if (!showFire && !showRoutes) return { heat: null, routes: [] };
     if (!update) return analysisCache;
-    const data = window.castleCostData;
-    const placements = placementRefs().filter(p => p.kind !== 'unit'
-      && (!Number.isInteger(state.insertionFrameIndex) || p.fi <= state.insertionFrameIndex)).flatMap(p => {
-      const name = data?.buildings[p.type]?.balance;
-      const rects = footprintRects(p.type, p.off);
-      const item = { ref: p.ref, type: Number(p.type), name, rects, health: window.castleCostPanel?.getActiveBalance?.()?.buildings?.[name]?.health, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
-      // The keep forces an attached stockpile, encoded as a composite footprint.
-      return p.type === geometry.KEEP_ITEM_TYPE && rects.length > 1
-        ? [{ ...item, rects: rects.filter(r => r.part !== 'stockpile') }, { ref: `${p.ref}:stockpile`, name: 'Stockpile', rects: rects.filter(r => r.part === 'stockpile') }]
-        : [item];
-    });
     const terrain = window.isoView?.analysisTerrain?.() || null;
-    const key = JSON.stringify([showFire, showRoutes, placements, terrain?.key]);
+    const key = [showFire, showRoutes, state.documentRevision, state.insertionFrameIndex,
+      analysisBalanceRevision, terrain?.key].join(':');
     if (analysisCache.key !== key) {
       const id = ++analysisSerial;
       clearTimeout(analysisTimer);
       analysisCache = { key, heat: null, routes: [], pending: true };
       analysisTimer = setTimeout(() => {
+        const data = window.castleCostData;
+        const placements = placementRefs().filter(p => p.kind !== 'unit'
+          && (!Number.isInteger(state.insertionFrameIndex) || p.fi <= state.insertionFrameIndex)).flatMap(p => {
+          const name = data?.buildings[p.type]?.balance;
+          const rects = footprintRects(p.type, p.off);
+          const item = { ref: p.ref, type: Number(p.type), name, rects, health: window.castleCostPanel?.getActiveBalance?.()?.buildings?.[name]?.health, workers: Number(state.populationData?.population_effects?.requires?.[p.type] || 0) };
+          // The keep forces an attached stockpile, encoded as a composite footprint.
+          return p.type === geometry.KEEP_ITEM_TYPE && rects.length > 1
+            ? [{ ...item, rects: rects.filter(r => r.part !== 'stockpile') }, { ref: `${p.ref}:stockpile`, name: 'Stockpile', rects: rects.filter(r => r.part === 'stockpile') }]
+            : [item];
+        });
         if (!analysisWorker) {
           analysisWorker = new Worker('js/castle-analysis-worker.js');
           analysisWorker.onmessage = ({data}) => {
@@ -2665,7 +2678,7 @@
               }
               context.putImageData(pixels,0,0); analysisCache.image=canvas;
             }
-            scheduleDraw(); window.isoView?.refresh?.(true);
+            scheduleDraw();
           };
           analysisWorker.onerror = () => {
             analysisWorker.terminate(); analysisWorker = null;
@@ -3870,6 +3883,19 @@
   if (els.brushMinus) els.brushMinus.addEventListener('click', () => setBrushSize(state.brushSize - 1));
   if (els.brushPlus) els.brushPlus.addEventListener('click', () => setBrushSize(state.brushSize + 1));
   els.buildSlider.addEventListener('input', selectBuildStepFromSlider);
+  let scrubKey = null;
+  els.buildSlider.addEventListener('keydown', event => {
+    const direction = {ArrowRight:1, ArrowUp:1, ArrowLeft:-1, ArrowDown:-1}[event.key];
+    if (!direction || event.altKey || event.ctrlKey || event.metaKey) return;
+    event.preventDefault(); event.stopPropagation();
+    const now = performance.now();
+    if (!event.repeat || scrubKey?.key !== event.key) scrubKey = {key:event.key, since:now};
+    const elapsed = now - scrubKey.since, stride = elapsed >= 2000 ? 5 : elapsed >= 1000 ? 3 : 1;
+    els.buildSlider.value = String(Math.max(1, Math.min(frames().length, Number(els.buildSlider.value) + direction*stride)));
+    selectBuildStepFromSlider();
+  });
+  for (const event of ['keyup','blur','pointerdown']) els.buildSlider.addEventListener(event, () => { scrubKey = null; });
+
   window.addEventListener('character-population-changed', () => updatePopulationPanel(false));
 
   els.canvas.addEventListener('pointerdown', onPointerDown);

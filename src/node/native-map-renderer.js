@@ -11,6 +11,7 @@ const ENGINES = new Set([
   '0d3d0d0be90a41d0c07d02cb41e6edc3e399288d16039db5b666392660fbda34'
 ]);
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+const RENDER_CONFIG = `meta:\n  version: 1.0.0\nactive: true\nconfig-full: &config\n  modules:\n    winProcHandler:\n      config: {}\n    graphicsApiReplacer:\n      config:\n        control:\n          clipCursor:\n            contents:\n              value: false\n          scrollActive:\n            contents:\n              value: false\n        window:\n          continueOutOfFocus:\n            contents:\n              value: render\n          type:\n            contents:\n              value: window\n          width:\n            contents:\n              value: 800\n          height:\n            contents:\n              value: 600\n    ai-toolkit-native-map-renderer:\n      config: {}\n  plugins: {}\n  load-order:\n    - extension: winProcHandler\n      version: 1.0.0\n    - extension: graphicsApiReplacer\n      version: 1.3.0\n    - extension: ai-toolkit-native-map-renderer\n      version: 0.1.0\nconfig-sparse: *config\n`;
 let pending = Promise.resolve();
 
 function isolatedExecutable(bytes) {
@@ -103,7 +104,7 @@ function prepare(root, gameRoot) {
   for (const name of ['gm', 'gfx', 'fx', 'binks', 'aiv']) assetLink(root, name, path.join(gameRoot, name));
   for (const name of ['maps', 'userdata', 'ucp/plugins']) fs.mkdirSync(path.join(root, name), { recursive: true });
   writeOwned(root, 'configpath.txt', Buffer.from(path.join(root, 'userdata') + '\r\n'));
-  writeOwned(root, 'ucp-config.yml', Buffer.from(`meta:\n  version: 1.0.0\nactive: true\nconfig-full: &config\n  modules:\n    winProcHandler:\n      config: {}\n    graphicsApiReplacer:\n      config:\n        window:\n          type:\n            contents:\n              value: window\n          width:\n            contents:\n              value: 800\n          height:\n            contents:\n              value: 600\n    ai-toolkit-native-map-renderer:\n      config: {}\n  plugins: {}\n  load-order:\n    - extension: winProcHandler\n      version: 1.0.0\n    - extension: graphicsApiReplacer\n      version: 1.3.0\n    - extension: ai-toolkit-native-map-renderer\n      version: 0.1.0\nconfig-sparse: *config\n`));
+  writeOwned(root, 'ucp-config.yml', Buffer.from(RENDER_CONFIG));
   return { engineHash: game.engineHash, sourceHash: sha(hashes.join('\n')) };
 }
 
@@ -166,4 +167,4 @@ function renderNativeMap(options) {
   pending = result.catch(() => {});
   return result;
 }
-module.exports = { renderNativeMap, internals: { FORMAT, sha, isolatedExecutable, ownedDirectory, readResult } };
+module.exports = { renderNativeMap, internals: { FORMAT, RENDER_CONFIG, sha, isolatedExecutable, ownedDirectory, readResult } };
