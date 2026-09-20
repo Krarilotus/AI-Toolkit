@@ -95,3 +95,23 @@ test('only an idle canvas uses direct groups; selections and placement previews 
   state.currentItemType=null;state.tool='copy';state.copyBuffer={count:1};assert.equal(api.neutralContextAction(),'deselect');
   state.copyBuffer=null;assert.equal(api.neutralContextAction(),'groups');
 });
+
+
+test('Replace and Merge are selection commands, never persistent tools', () => {
+  const source=fs.readFileSync(require.resolve('../src/js/castle-editor'),'utf8');
+  const start=source.indexOf('    runContextAction(action, position)');
+  const code='({' + source.slice(start,source.indexOf('    openFile,',start)) + '})';
+  const state={tool:'brush',selected:new Set()};
+  const opened=[];
+  const api=vm.runInNewContext(code,{state,setTool:tool=>{state.tool=tool;},setStatus(){},
+    openReplacementDialog:()=>opened.push('replace'),mergeArea:()=>opened.push('merge')});
+  for (const action of ['replace','merge']) {
+    state.tool='brush';api.runContextAction(action);
+    assert.equal(state.tool,'select');assert.equal(opened.length,0);
+  }
+  state.selected.add('f:1:0');
+  for (const action of ['replace','merge']) {
+    state.tool='brush';api.runContextAction(action);assert.equal(state.tool,'select');
+  }
+  assert.deepEqual(opened,['replace','merge']);
+});

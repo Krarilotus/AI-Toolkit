@@ -4123,10 +4123,16 @@
     neutralContextAction: () => !state.selected.size && !(isPlacementTool(state.tool) && state.currentItemType != null) && !(state.tool === 'copy' && state.copyBuffer) ? 'groups' : 'deselect',
     runContextAction(action, position) {
       if (action === 'deselect') return clearSelectionAndItem();
-      if (action === 'groups') return window.dispatchEvent(new CustomEvent('castle-open-groups', {detail:position}));
+      if (action === 'groups') {
+        setTool('select');
+        return window.dispatchEvent(new CustomEvent('castle-open-groups', {detail:position}));
+      }
       if (action === 'cut') { cutSelection(); window.dispatchEvent(new Event('castle-clipboard-changed')); return; }
-      if (action === 'replace') return state.selected.size ? openReplacementDialog(state.selected) : setTool('replace');
-      if (action === 'merge') return state.selected.size ? mergeArea(state.selected) : setTool('merge');
+      if (action === 'replace' || action === 'merge') {
+        setTool('select');
+        if (!state.selected.size) return setStatus(`Select items first to ${action}.`);
+        return action === 'replace' ? openReplacementDialog(state.selected) : mergeArea(state.selected);
+      }
     },
     openFile,
     saveFile,
