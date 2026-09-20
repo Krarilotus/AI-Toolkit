@@ -111,6 +111,7 @@
     undo: [],
     redo: [],
     cell: DEFAULT_CELL,
+    snapshotLabels: false,
     panX: 0,
     panY: 0,
     canvasWidth: 0,
@@ -3045,13 +3046,13 @@
     if (!els.showNames.checked || isUnitType(type)) return;
     const [width, height] = itemSize(type);
     if (width < 2 || height < 2) return;
-    drawSkinLabel(itemName(type), rect, 10, 4);
+    drawSkinLabel(itemName(type), rect, 10, 4, state.snapshotLabels ? Math.floor((rect.h - 8) / 1.15) : null);
   }
 
-  function drawSkinLabel(label, rect, minReadableFontSize = 0, padding = 2) {
+  function drawSkinLabel(label, rect, minReadableFontSize = 0, padding = 2, maximumFontSize = null) {
     const maxWidth = Math.max(1, rect.w - padding * 2);
     const maxHeight = Math.max(1, rect.h - padding * 2);
-    let fontSize = Math.max(6, Math.min(16, state.cell * 1.4));
+    let fontSize = Math.max(6, maximumFontSize ?? Math.min(16, state.cell * 1.4));
     let lines;
     let widest;
 
@@ -3881,10 +3882,10 @@
     const picture = document.createElement('canvas');
     const future = document.createElement('canvas');
     picture.width = picture.height = future.width = future.height = GRID * cell;
-    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty'].map(key => [key, state[key]]));
+    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty', 'snapshotLabels'].map(key => [key, state[key]]));
     const savedContext = ctx;
     try {
-      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null});
+      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null, snapshotLabels: true});
       rebuildStaticCache(picture, future);
       ctx = picture.getContext('2d');
       drawUnitMarkers();
