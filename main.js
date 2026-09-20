@@ -39,7 +39,7 @@ ipcMain.handle('list-update-sources', async () => ({selected:updateSource(), rep
 let preparedRelease = null, preparingRelease = false;
 ipcMain.handle('set-update-source', async (_event, repo) => {
   if (preparingRelease) throw new Error('Wait for the current download before switching sources.');
-  const selected = await updateChecker().validate(repo);
+  const selected = await updateChecker().select(repo);
   fs.writeFileSync(path.join(app.getPath('userData'), 'update-source.json'), JSON.stringify({repo:selected}));
   preparedRelease = null;
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send('update-source-changed', selected);

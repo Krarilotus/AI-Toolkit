@@ -24,6 +24,12 @@
     try {
       const result = await api.checkReleaseUpdate(force);
       if (request !== serial) return;
+      if (result.experimental && result.status === 'empty') {
+        const old = result.repo;
+        await choose(OFFICIAL);
+        source?.querySelectorAll('option').forEach(option => { if (option.value === old) option.remove(); });
+        return;
+      }
       showSource(result.repo || selected); build = result;
       const available = result.status === 'available';
       button.classList.toggle('releaseAvailable', available);
@@ -79,12 +85,14 @@
   async function initialize() {
     try {
       const {selected:repo, repos} = await api.listUpdateSources();
+      if (source) source.replaceChildren();
       for (const entry of repos) showSource(entry);
-      showSource(repo);
+      if (repos.includes(repo)) showSource(repo);
+      else await choose(OFFICIAL);
     } catch { /* Official checks still work if fork discovery is unavailable. */ }
-    if (source) { const option = document.createElement('option'); option.value = 'other'; option.textContent = 'Other fork...'; source.add(option); source.value = selected; }
+    if (source && !source.querySelector('[value="other"]')) { const option = document.createElement('option'); option.value = 'other'; option.textContent = 'Other fork...'; source.add(option); source.value = selected; }
     check();
   }
-  function hourly() { setTimeout(() => { check(); hourly(); }, 3600000 - Date.now() % 3600000 + 100); }
+  function hourly() { setTimeout(() => { if (!busy) initialize(); hourly(); }, 3600000 - Date.now() % 3600000 + 100); }
   initialize(); hourly();
 })();

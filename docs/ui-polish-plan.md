@@ -30,5 +30,6 @@ Base: upstream `c9c345b` (19 September 2026), after PR #3 merged.
    what Definitive Edition support requires, supported by actual format evidence.
 
 Remote validation uses SSH to GamerGrill. Its old DESKTOP-OFSPMEO hostname was stale; the SSH alias now uses GamerGrill, verified against the existing pinned host key.
-Do not substitute local UI automation/game launches. A scrubbing profiler is
+The user authorized isolated local editor testing on 20 September. Preserve the
+live profile and never overwrite a running installation. A scrubbing profiler is
 prepared at ai-toolkit-setup/profile-scrub.cjs, outside the repository.

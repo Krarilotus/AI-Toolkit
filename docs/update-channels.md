@@ -7,7 +7,11 @@ and verifies that the repository belongs to the upstream fork network.
 Checks run on startup and hourly for the selected source. Clicking a non-install
 status forces a refresh. Releases are paginated and ordered by publication time,
 not package version. Official releases exclude drafts and prereleases; fork
-channels include prereleases and always display Experimental. A release must
+channels include prereleases and always display Experimental. Only compatible
+fork packages published strictly after the newest official stable release are
+offered. Forks without such a package are hidden, and manual selection rejects
+them. The list refreshes hourly; an expired selected fork falls back to official.
+If the official release cannot be verified, experimental installation is refused. A release must
 contain one supported Windows x64 ZIP with a GitHub SHA-256 digest and size.
 Missing/unsupported releases and network failures never display Up to date.
 

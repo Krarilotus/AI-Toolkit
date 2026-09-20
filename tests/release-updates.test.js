@@ -10,7 +10,7 @@ const fork='Krarilotus/AI-Toolkit';
 const release=(id,tag,date,prerelease=false)=>({id,tag_name:tag,published_at:date,prerelease,assets:[{id:id*10,name:`AI.toolkit.${tag}.zip`,size:100,digest:'sha256:'+'a'.repeat(64)}]});
 const stable=release(1,'0.7.2','2026-09-19T12:00:00Z');
 const snapshot=release(2,'snapshot-abc123','2026-09-20T12:00:00Z',true);
-function api(releases, seen=[]) { return async url=> {seen.push(url);return {ok:true,json:async()=>url.includes('/releases?')?releases:{fork:true,full_name:fork,source:{full_name:OFFICIAL}}};}; }
+function api(releases, seen=[]) { return async url=> {seen.push(url);return {ok:true,json:async()=>url.includes('/releases?')?(url.includes('/'+OFFICIAL+'/') ? (releases.includes(stable) || !releases.some(r=>r.prerelease) ? releases : [stable]) : releases):{fork:true,full_name:fork,source:{full_name:OFFICIAL}}};}; }
 test('published official build is offered despite an inflated local package version',async()=>{
  const result=await createReleaseChecker('0.10.0',api([snapshot,stable]))();
  assert.equal(result.status,'available');assert.equal(result.latest,'0.7.2');assert.equal(result.experimental,false);
@@ -56,9 +56,25 @@ test('hourly cache is per source; forced refresh and network backoff work',async
  assert.equal((await offline()).status,'error');await offline();assert.equal(failures,1);
  time+=61000;await offline();assert.equal(failures,2);
 });
-test('fork discovery is dynamic, cached and includes the official channel first',async()=>{
- let calls=0;const check=createReleaseChecker(null,async()=>{calls++;return {ok:true,json:async()=>[{full_name:fork},{full_name:'Another/AI-Toolkit'}]};});
- assert.deepEqual(await check.listSources(),[OFFICIAL,fork,'Another/AI-Toolkit']);await check.listSources();assert.equal(calls,1);
+test('fork discovery hides snapshots at or before the latest stable release',async()=>{
+ const oldFork='Older/AI-Toolkit'; let time=1000;
+ let latest=stable;
+ const request=async url=>({ok:true,json:async()=>{
+   if(url.includes('/forks?'))return [{full_name:fork},{full_name:oldFork}];
+   if(url.includes('/releases?'))return url.includes(OFFICIAL)?[latest]:url.includes(oldFork)?[{...snapshot,published_at:stable.published_at}]:[snapshot];
+   return {fork:true,full_name:url.includes(oldFork)?oldFork:fork,source:{full_name:OFFICIAL}};
+ }});
+ const check=createReleaseChecker(null,request,()=>time);
+ assert.deepEqual(await check.listSources(),[OFFICIAL,fork]);
+ await assert.rejects(check.select(oldFork),/newer than/);
+ assert.equal(await check.select(fork),fork);
+ latest={...stable,published_at:'2026-09-21T00:00:00Z'};time=3600000;
+ assert.deepEqual(await check.listSources(),[OFFICIAL]);
+ assert.equal((await check({repo:fork})).status,'empty');
+});
+test('experimental checks fail closed when the official release cannot be checked',async()=>{
+ const request=async url=>{if(url.includes(OFFICIAL+'/releases'))throw Error('offline');return api([snapshot])(url);};
+ assert.equal((await createReleaseChecker(null,request)({repo:fork})).status,'error');
 });
 test('installed receipt is used only while its application hash still matches',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'toolkit-receipt-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));

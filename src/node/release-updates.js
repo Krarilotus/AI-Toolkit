@@ -59,7 +59,11 @@ function createReleaseChecker(installed, request = fetch, now = Date.now) {
     const hour = Math.floor(now()/3600000);
     if (sources?.hour === hour) return sources.items;
     const forks = await pages(OFFICIAL, 'forks');
-    const items = [OFFICIAL, ...forks.map(f => repository(f.full_name))];
+    const candidates = await Promise.all(forks.map(async f => {
+      const repo = repository(f.full_name), build = await check({repo});
+      return ['available', 'current'].includes(build.status) ? repo : null;
+    }));
+    const items = [OFFICIAL, ...candidates.filter(Boolean)];
     sources = {hour, items:[...new Set(items)]};
     return sources.items;
   }
@@ -73,11 +77,15 @@ function createReleaseChecker(installed, request = fetch, now = Date.now) {
       try {
         repo = await validate(repo);
         const experimental = !isOfficial(repo);
+        const stable = experimental ? await check({force}) : null;
+        if (experimental && !stable?.publishedAt) throw new Error(stable?.message || 'Cannot determine the latest official release.');
         const releases = (await pages(repo, 'releases'))
           .filter(r => !r.draft && (experimental || !r.prerelease) && typeof r.tag_name === 'string' && Number.isSafeInteger(r.id) && Number.isFinite(Date.parse(r.published_at)))
           .sort((a,b) => Date.parse(b.published_at)-Date.parse(a.published_at) || b.id-a.id);
-        const release = releases[0];
-        if (!release) return {status:'empty', repo, experimental};
+        const release = experimental
+          ? releases.find(r => Date.parse(r.published_at) > Date.parse(stable.publishedAt) && releaseAsset(r, repo))
+          : releases[0];
+        if (!release) return {status:'empty', repo, experimental, message: experimental ? 'No compatible snapshot newer than the latest official release.' : 'No published releases.'};
         const asset = releaseAsset(release, repo);
         const key = asset ? `${repo.toLowerCase()}:${release.id}:${asset.id}:${asset.sha256}` : null;
         return {status: !asset ? 'unsupported' : installed?.key === key ? 'current' : 'available',
@@ -91,6 +99,14 @@ function createReleaseChecker(installed, request = fetch, now = Date.now) {
       const result = await job; cache.set(cacheKey,{result,hour,retryAt:now()+60000}); return result;
     } finally { pending.delete(cacheKey); }
   }
-  return Object.assign(check,{listSources,validate});
+  async function select(repo) {
+    repo = await validate(repo);
+    if (!isOfficial(repo)) {
+      const build = await check({repo, force:true});
+      if (!['available', 'current'].includes(build.status)) throw new Error(build.message || 'No eligible experimental snapshot.');
+    }
+    return repo;
+  }
+  return Object.assign(check,{listSources,validate,select});
 }
 module.exports = { OFFICIAL, repository, releaseAsset, readInstalledBuild, createReleaseChecker };
