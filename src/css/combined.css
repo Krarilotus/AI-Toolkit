@@ -1143,8 +1143,8 @@ button:disabled { cursor: default; }
   width: 100%;
   min-height: 34px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.15;
   background: var(--category-color, #505050);
   border-color: var(--category-color, #505050);
   color: var(--category-text, #ffffff);

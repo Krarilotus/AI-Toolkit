@@ -924,8 +924,8 @@ button:disabled { cursor: default; }
   width: 100%;
   min-height: 34px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.15;
   color: #ffffff;
   font-size: 14px;
   font-weight: 650;
