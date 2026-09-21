@@ -58,3 +58,15 @@ test('building fill aligns with local room edges regardless of clicked grid phas
  assert.deepEqual(first,second,'local boundaries determine anchors, not the clicked grid phase');
  assert.equal(first.length,4,'four 3x3 buildings fit the enclosed 6x6 room');
 });
+
+
+test('completed fills do not remain as a duplicate live placement preview',()=>{
+ const fs=require('node:fs'),vm=require('node:vm'),source=fs.readFileSync(editor,'utf8');
+ const begin=source.indexOf('    getPlacementPreview() {'),end=source.indexOf('    getMarquee()',begin);
+ const state={tool:'bucket',currentItemType:106,gesture:null,brushOffsets:[1,2,3],brushTypes:[],hoverTile:null};
+ const context=vm.createContext({state,isPlacementTool:()=>true,lineSequence:()=>[],offsetToXY:off=>({x:off,y:0})});
+ const api=vm.runInContext('({'+source.slice(begin,end)+'})',context);
+ assert.equal(api.getPlacementPreview(),null);
+ state.tool='brush';state.gesture='brush';assert.equal(api.getPlacementPreview().tiles.length,3);
+ state.gesture=null;assert.equal(api.getPlacementPreview(),null);
+});

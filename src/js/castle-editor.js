@@ -4211,7 +4211,7 @@
       // mit dem Bauwerk, das dort hinkaeme. Vorher zeigte die schraege Ansicht
       // nur das Feld unter dem Zeiger, und man sah beim Ziehen einer Mauer
       // nicht, was entsteht.
-      if (state.brushOffsets && state.brushOffsets.length) {
+      if ((state.gesture === 'brush' || state.gesture === 'line') && state.brushOffsets?.length) {
         return {
           itemType: erster,
           tiles: state.brushOffsets.map((off, i) => {

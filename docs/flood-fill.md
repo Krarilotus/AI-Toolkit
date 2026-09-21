@@ -53,3 +53,12 @@ Real Electron, both views mounted, full empty-map moat fill: 10,000 placements i
 selection took 19.3 ms, deletion 34.1 ms; zero placements remained and no renderer
 errors were reported. These whole-tool times include document/UI bookkeeping;
 they are not timings of only the flood traversal.
+
+Profiling the post-fill update revealed that completed bucket offsets were still
+returned as a live placement preview. The 2.5D view drew all 10,000 preview tiles
+over the committed scene. Preview output now requires an active brush/line gesture.
+Removing that duplicate reduced the same measured two-frame interval from about
+244 ms to 216 ms (single profiled runs). The interval is not a GPU completion
+measurement. Remaining sampled work includes 2.5D scene/selection preparation,
+2D command recording and worker transfer, and garbage collection; it is not
+flood traversal time.
