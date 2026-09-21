@@ -236,14 +236,12 @@
     for (const fn of listeners) { try { fn(current); } catch { /* a listener must not stop the layout */ } }
   }
 
-  // `how` says what a change is worth: a splitter being dragged only redraws
-  // - writing the store and remounting a canvas per frame of a drag is work
-  // nobody sees. Everything else is a finished action and is kept.
-  function setState(next, how) {
+  // Structural layout changes rebuild the tree. Split resizing only changes flex.
+  function setState(next) {
     current = next;
     render();
-    if (!how || how.store !== false) store();
-    if (!how || how.sync !== false) syncWindows();
+    store();
+    syncWindows();
     announce();
   }
 
@@ -356,7 +354,7 @@
     if (!bar || event.button !== 0) return;
     event.preventDefault();
     try { bar.setPointerCapture(event.pointerId); } catch { /* no real pointer */ }
-    sizing = { pointerId: event.pointerId, path: bar.dataset.path, dir: bar.dataset.dir,
+    sizing = { pointerId: event.pointerId, path: bar.dataset.path, dir: bar.dataset.dir, box: bar.parentElement,
                rect: rectOf(bar.parentElement) };
     document.documentElement.classList.add('dockResizing');
   }
@@ -366,7 +364,13 @@
     const share = G.shareFromPoint(sizing.rect, sizing.dir,
                                    { x: event.clientX, y: event.clientY }, AREA_MIN);
     if (share === null) return;
-    setState(M.resize(current, sizing.path, share), { store: false, sync: false });
+    current = M.resize(current, sizing.path, share);
+    let node = current.root;
+    for (const side of sizing.path) node = node[side];
+    // Keep canvases and the captured splitter mounted throughout the drag.
+    sizing.box.children[0].style.flex = node.share + ' 1 0';
+    sizing.box.children[2].style.flex = (1 - node.share) + ' 1 0';
+    announce();
   }
 
   function endSize(event) {

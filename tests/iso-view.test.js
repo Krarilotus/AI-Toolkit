@@ -478,7 +478,7 @@ test('dragging a wall shows the whole run at half opacity, not just one tile', (
   const vorschau = editor.slice(editor.indexOf('getPlacementPreview()'),
                                 editor.indexOf('getContent: outputContent'));
   // Laeuft ein Zug, ist er selbst die Vorschau - nicht das Feld unter dem Zeiger.
-  assert.match(vorschau, /if \(state\.brushOffsets && state\.brushOffsets\.length\)/);
+  assert.match(vorschau, /state\.gesture === 'brush' \|\| state\.gesture === 'line'/);
   assert.match(vorschau, /itemType: state\.brushTypes\[i\] \?\? erster/,
     'jedes Feld nennt sein eigenes Bauwerk - eine Treppe legt mehrere');
 

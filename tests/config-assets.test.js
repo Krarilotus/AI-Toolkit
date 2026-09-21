@@ -23,7 +23,7 @@ test('every AIV item has valid dimensions and a category or build-order control'
     assert.equal(Array.isArray(info.size), true, `item ${id} size`);
     assert.equal(info.size.length, 2, `item ${id} size dimensions`);
     assert.ok(info.size.every(value => Number(value) > 0), `item ${id} positive size`);
-    assert.equal(assignments.get(id)?.length || 0, info.kind === 'buildOrder' ? 0 : 1, `item ${id} category assignments`);
+    assert.equal(assignments.get(id)?.length || 0, 1, `item ${id} category assignments`);
     if (info.kind === 'buildOrder') assert.equal(id, '200', 'Dummy Step remains available through the Pause control');
   }
 });

@@ -222,9 +222,9 @@ test('a click on something solid fills nothing', () => {
   assert.deepEqual(geometry.floodTiles({ x: 5, y: 5 }, () => true, 100), []);
 });
 
-test('the bucket has a brake, so a slip does not build half the map', () => {
+test('the flood core supports explicit limits, with a complete region by default', () => {
   const frei = geometry.floodTiles({ x: 50, y: 50 }, () => false, 100, 250);
   assert.equal(frei.length, 250, 'bei der Grenze ist Schluss');
-  const ganz = geometry.floodTiles({ x: 50, y: 50 }, () => false, 100, 100000);
+  const ganz = geometry.floodTiles({ x: 50, y: 50 }, () => false, 100);
   assert.equal(ganz.length, 10000, 'ohne Hindernis ist die ganze Karte erreichbar');
 });

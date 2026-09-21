@@ -369,12 +369,16 @@ test('a finished move is stored, a splitter being dragged is not', () => {
   const splitter = app.els.castleViewRoot.querySelector('.viewSplitter');
   assert.ok(splitter, 'there is a splitter between the two boxes');
   const parent = splitter.parentElement;
+  const children = [...parent.children];
   parent.rect = { left: BOX.x, top: BOX.y, width: BOX.w, height: BOX.h };
   const before = app.writes();
   splitter.fire('pointerdown', { button: 0, pointerId: 3, clientX: 600, clientY: 300 });
   let last = 600;
   for (let x = 580; x >= 400; x -= 20) {
     app.fireWindow('pointermove', { pointerId: 3, clientX: x, clientY: 300 });
+    assert.equal(app.els.castleViewRoot.querySelector('.viewSplitter'), splitter, 'splitter stays mounted during resize');
+    assert.equal(splitter.parentElement, parent, 'split container is not replaced');
+    assert.deepEqual(parent.children, children, 'view elements stay in the same tree');
     last = x;
   }
   assert.equal(last, 400);
@@ -383,6 +387,8 @@ test('a finished move is stored, a splitter being dragged is not', () => {
   assert.equal(app.writes(), before + 1, 'exactly one when it is let go');
   // 400 is 300 px into a box 1000 wide that starts at 100
   assert.equal(app.view.getState().root.share, 0.3, 'the share is where the hand left it');
+  assert.equal(children[0].style.flex, '0.3 1 0');
+  assert.equal(children[2].style.flex, '0.7 1 0');
 });
 
 test('a layout out of the store is used, and rubbish in it is not fatal', () => {

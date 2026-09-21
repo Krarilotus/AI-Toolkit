@@ -60,19 +60,19 @@ test('regrouping all items leaves placement defaults and unit storage unchanged'
   assert.equal(h.context.isUnitType(54), false);
 });
 
-test('palette retains classic semantic groups plus Bedouins and a separate Dummy Step control', () => {
+test('palette restores the original single Pause step beside Bedouins', () => {
   const state = { constants, categories: require('../config/aiv_categories.json').categories };
   const context = vm.createContext({ state, itemInfo: type => constants[String(type)] || {} });
   vm.runInContext(section('  function getPaletteGroups(', '  function renderPalette('), context);
   const groups = Array.from(context.getPaletteGroups(), ([name, ids]) => [name, Array.from(ids)]);
   assert.deepEqual(groups.map(([name]) => name), ['Castle', 'Gatehouses', 'Military', 'Walls, Moat & Pitch',
-    'Town', 'Stairs', 'Industry', 'Food', 'Good Things', 'Bad Things', 'Arabians', 'Europeans', 'Bedouins']);
+    'Town', 'Stairs', 'Industry', 'Food', 'Good Things', 'Bad Things', 'Arabians', 'Europeans', 'Bedouins', 'Pause']);
   assert.deepEqual(state.categories.Arabians, ['16','13','14','15','17','18','19','20','21','5']);
   assert.deepEqual(state.categories.Europeans, ['6','7','8','9','10','11','12','1','2','3','4']);
-  const available = groups.flatMap(([, ids]) => ids).concat('200').sort();
+  assert.deepEqual(state.categories.Pause, ['200']);
+  const available = groups.flatMap(([, ids]) => ids).sort();
   assert.deepEqual(available, Object.keys(constants).sort(), 'every item remains available exactly once');
-  assert.match(html, /id="castlePauseBtn"/);
-  assert.match(source, /getElementById\('castlePauseBtn'\)\.addEventListener\('click', \(\) => selectItem\(200\)\)/);
+  assert.doesNotMatch(html, /id="castlePauseBtn"/);
   const h = editor(); h.context.selectItem(200);
   assert.equal(h.state.currentItemType, 200);
   assert.equal(h.state.tool, 'single');

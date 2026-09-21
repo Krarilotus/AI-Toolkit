@@ -4,7 +4,7 @@ window.castleCanvasScene = {
   create(canvas, onError) {
     const layer = document.createElement("canvas");
     layer.style.cssText =
-      "position:absolute;inset:0;width:100%;height:100%;pointer-events:none";
+      "position:absolute;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;pointer-events:none";
     const worker = new Worker(
       new URL("js/castle-canvas-worker.js", location.href),
     );
@@ -24,9 +24,12 @@ window.castleCanvasScene = {
       busy = true;
       const model = sentScene !== scene ? scene : null;
       sentScene = scene;
+      // Let the placeholder follow the worker's intrinsic buffer size. Stretching
+      // it to the host would distort the old frame while a resize is pending.
+      if (model) layer.style.transform = `scale(${1 / (model.dpr || 1)})`;
       worker.postMessage(
         { frame, scene: model },
-        model ? model.images.map(([, image]) => image) : [],
+        model ? [model.commands.buffer, ...model.images.map(([, image]) => image)] : [],
       );
     }
     worker.onmessage = ({ data }) => {
@@ -43,35 +46,73 @@ window.castleCanvasScene = {
         const token = ++generation,
           resources = new Map([[background, 0]]),
           images = [];
-        const state = { font: "10px sans-serif" };
-        const record = (action) => {
-          const commands = [];
-          const context = new Proxy(
-            {},
-            {
-              set(_target, name, value) {
-                state[name] = value;
-                commands.push([0, name, value]);
-                return true;
-              },
-              get(_target, name) {
-                if (name === "measureText")
-                  return (text) => {
-                    measure.font = state.font;
-                    return measure.measureText(text);
-                  };
-                if (name === "drawImage")
-                  return (image, ...args) => {
-                    if (!resources.has(image))
-                      resources.set(image, resources.size);
-                    commands.push([1, name, resources.get(image), ...args]);
-                  };
-                return (...args) => commands.push([1, name, ...args]);
-              },
-            },
-          );
+        const state = { font: "10px sans-serif" },
+          values = [], valueIds = new Map(),
+          operations = [], operationIds = new Map(),
+          methods = new Map();
+        // Float64 preserves Canvas coordinates exactly. NaN escapes non-numeric
+        // arguments into the shared values table; each row stores tape ranges.
+        let tape = new Float64Array(4096), used = 0;
+        const push = value => {
+          if (used === tape.length) {
+            const next = new Float64Array(tape.length * 2);
+            next.set(tape);
+            tape = next;
+          }
+          tape[used++] = value;
+        };
+        const argument = value => {
+          if (typeof value === 'number' && !Number.isNaN(value)) {
+            push(value);
+            return;
+          }
+          if (!valueIds.has(value)) {
+            valueIds.set(value, values.length);
+            values.push(value);
+          }
+          push(NaN);
+          push(valueIds.get(value));
+        };
+        const operation = (kind, name) => {
+          const key = kind + ':' + name;
+          if (!operationIds.has(key)) {
+            operationIds.set(key, operations.length);
+            operations.push([kind, name]);
+          }
+          return operationIds.get(key);
+        };
+        const context = new Proxy({}, {
+          set(_target, name, value) {
+            state[name] = value;
+            push(operation(0, name));
+            push(1);
+            argument(value);
+            return true;
+          },
+          get(_target, name) {
+            if (!methods.has(name)) {
+              const opcode = operation(1, name);
+              methods.set(name, name === 'measureText' ? text => {
+                measure.font = state.font;
+                return measure.measureText(text);
+              } : (...args) => {
+                if (name === 'drawImage') {
+                  const image = args[0];
+                  if (!resources.has(image)) resources.set(image, resources.size);
+                  args[0] = resources.get(image);
+                }
+                push(opcode);
+                push(args.length);
+                for (const arg of args) argument(arg);
+              });
+            }
+            return methods.get(name);
+          }
+        });
+        const record = action => {
+          const start = used;
           action(context);
-          return commands;
+          return [start, used];
         };
         const rows = [];
         // Snapshot the background before its scratch canvas is reused.
@@ -102,7 +143,7 @@ window.castleCanvasScene = {
         }
         if (scene && scene !== sentScene)
           for (const [, image] of scene.images) image.close();
-        scene = { rows, images, markers, ...options };
+        scene = { rows, images, markers, commands: tape.slice(0, used), operations, values, ...options };
         pending = lastFrame;
         pump();
       },

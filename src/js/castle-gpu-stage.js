@@ -11,7 +11,7 @@ window.castleGpuStage = {
     );
     const canvas = document.createElement("canvas");
     canvas.style.cssText =
-      "position:absolute;inset:0;width:100%;height:100%;pointer-events:none";
+      "position:absolute;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;pointer-events:none";
     let fireMask = null, sceneVersion = 0;
     let latest,
       scene,
@@ -153,12 +153,13 @@ window.castleGpuStage = {
         fireMask?.close(); fireMask = null;
         scene = { terrain, buildings, revision, mask, version: ++sceneVersion };
       },
-      presentBehind(target) {
+      presentBehind(target, dpr = 1) {
         if (canvas.parentNode !== target.parentNode) {
           target.before(canvas);
           target.style.position = "relative";
           target.parentNode.style.position = "relative";
         }
+        canvas.style.transform = `scale(${1 / dpr})`;
         canvas.hidden = false;
       },
       hide() {

@@ -512,7 +512,7 @@
 
     const proposedFootprint = footprintRects(type, offset);
     const replacements = new Set();
-    for (const p of placementRefs()) {
+    for (const p of options.candidates || placementRefs()) {
       if (ignore.has(p.ref)) continue;
       if (!geometry.footprintsIntersect(proposedFootprint, footprintRects(p.type, p.off))) continue;
       const existingMode = geometry.placementOverlap(type, p.type, state.constants);
@@ -1299,7 +1299,7 @@
       ? geometry.brushTiles(tile, state.brushSize) : [tile];
   }
 
-  function brushAddOne(tile) {
+  function brushAddOne(tile, batch = null) {
     if (state.currentItemType == null) return;
     const type = state.currentItemType;
     if (isLineSequence(type)) return;
@@ -1307,22 +1307,24 @@
     if (state.brushSeen.has(off)) return;
     state.brushSeen.add(off);
 
-    const pending = state.brushOffsets.map(p => ({ type, off: p }));
+    const rects = batch ? footprintRects(type, off) : null;
+    const pending = batch ? batch.pending.query(rects) : state.brushOffsets.map(p => ({ type, off: p }));
     const result = validatePlacement(type, off, {
       ignoreRefs: state.brushReplacements,
       extraNew: pending,
+      candidates: batch?.existing.query(rects),
       checkMax: false
     });
     if (!result.ok) {
-      setStatus(result.reason);
+      if (!batch) setStatus(result.reason);
       return;
     }
 
     const maximum = maxAmount(type);
     if (maximum != null) {
-      const current = countType(type, state.brushReplacements);
+      const current = batch ? batch.count : countType(type, state.brushReplacements);
       if (current + state.brushOffsets.length + 1 > Number(maximum)) {
-        setStatus(`Maximum amount for ${itemName(type)} is ${maximum}.`);
+        if (!batch) setStatus(`Maximum amount for ${itemName(type)} is ${maximum}.`);
         return;
       }
     }
@@ -1330,7 +1332,8 @@
     state.brushOffsets.push(off);
     state.brushTypes.push(type);
     for (const ref of result.replacements) state.brushReplacements.add(ref);
-    scheduleDraw(false);
+    if (batch) batch.pending.add({type,off});
+    else scheduleDraw(false);
   }
 
   function updateLineSequencePreview(start, end) {
@@ -1668,16 +1671,20 @@
     if (state.currentItemType == null) return setStatus('Choose an item first.');
     const type = state.currentItemType;
     if (isLineSequence(type)) return setStatus('This item is drawn as a line, not poured.');
-    const besetzt = (x, y) => Boolean(topmostRefAtTile({ x, y }));
-    const felder = geometry.floodTiles(tile, besetzt);
-    if (!felder.length) return setStatus('Nothing to fill here - that tile is taken.');
+    const placements = placementRefs();
+    const rectsFor = p => footprintRects(p.type,p.off);
+    const batch = {existing:geometry.footprintIndex(placements,rectsFor,GRID),
+      pending:geometry.footprintIndex([],rectsFor,GRID),count:countType(type)};
+    if (batch.existing.has(tile.x,tile.y)) return setStatus('Nothing to fill here - that tile is taken.');
 
     state.brushOffsets = [];
     state.brushTypes = [];
     state.brushError = '';
     state.brushSeen = new Set();
     state.brushReplacements = new Set();
-    for (const feld of felder) brushAddOne(feld);
+    const region = geometry.floodTiles(tile,batch.existing.has,GRID);
+    const ordered = geometry.orderFillTiles(region,footprintRectsAtXY(type,0,0),batch.existing.has,GRID);
+    for (const field of ordered) brushAddOne(field,batch);
     if (!state.brushOffsets.length) return setStatus('Nothing could be placed there.');
     const gesetzt = state.brushOffsets.length;
     commitBrush();
@@ -2492,7 +2499,7 @@
       state.centeredOnce = true;
       centerMap();
     } else {
-      clampPan();
+      // Resizing reveals/clips the map; only explicit navigation changes pan.
       scheduleDraw();
     }
   }
@@ -2818,9 +2825,10 @@
     if(!state.preparedCanvasInputs||inputs.some((value,index)=>value!==state.preparedCanvasInputs[index])){
       state.preparedCanvasInputs=inputs;
       paintCanvasBackground();ctx=displayCtx;
+      const styles=new Map();
       state.canvasWorker.setScene(staticCacheCanvas,placementRefs(),(target,p,selected)=>{
-        const previous=ctx;ctx=target;
-        try { if(selected==='outline')drawPlacementOutline(p.type,p.off);else drawPlacement(p.type,p.off,selected); }finally{ctx=previous;}
+        const previous=ctx,previousStyles=drawStyleCache;ctx=target;drawStyleCache=styles;
+        try { if(selected==='outline')drawPlacementOutline(p.type,p.off);else drawPlacement(p.type,p.off,selected); }finally{ctx=previous;drawStyleCache=previousStyles;}
       },staticCacheCtx,{width:els.canvas.width,height:els.canvas.height,dpr:state.renderDpr||1,tint:FUTURE_TINT,filter:FUTURE_FILTER,opacity:FUTURE_OPACITY}, target => {
         const previous=ctx;ctx=target;try { drawUnitMarkers(); } finally { ctx=previous; }
       })
@@ -3218,8 +3226,12 @@
     ctx.restore();
   }
 
+  let drawStyleCache = null;
   function css(name, fallback) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    if(drawStyleCache?.has(name))return drawStyleCache.get(name)||fallback;
+    const value=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    drawStyleCache?.set(name,value);
+    return value||fallback;
   }
 
   function pointerPosition(event) {
@@ -3991,7 +4003,6 @@
   if (els.brushMinus) els.brushMinus.addEventListener('click', () => setBrushSize(state.brushSize - 1));
   if (els.brushPlus) els.brushPlus.addEventListener('click', () => setBrushSize(state.brushSize + 1));
   els.buildSlider.addEventListener('input', selectBuildStepFromSlider);
-  document.getElementById('castlePauseBtn').addEventListener('click', () => selectItem(200));
   let scrubKey = null;
   els.buildSlider.addEventListener('keydown', event => {
     const direction = {ArrowRight:1, ArrowUp:1, ArrowLeft:-1, ArrowDown:-1}[event.key];
@@ -4204,7 +4215,7 @@
       // mit dem Bauwerk, das dort hinkaeme. Vorher zeigte die schraege Ansicht
       // nur das Feld unter dem Zeiger, und man sah beim Ziehen einer Mauer
       // nicht, was entsteht.
-      if (state.brushOffsets && state.brushOffsets.length) {
+      if ((state.gesture === 'brush' || state.gesture === 'line') && state.brushOffsets?.length) {
         return {
           itemType: erster,
           tiles: state.brushOffsets.map((off, i) => {

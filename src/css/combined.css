@@ -1086,7 +1086,6 @@ button:disabled { cursor: default; }
   font: inherit;
 }
 .buildHeader { grid-template-columns: 1fr auto; align-items: center; }
-#castlePauseBtn { margin-left: 6px; padding: 2px 6px; font-size: 11px; }
 .buildHeader span { color: var(--text-muted); font: 11px var(--font-data); }
 .buildScrubber {
   display: grid;

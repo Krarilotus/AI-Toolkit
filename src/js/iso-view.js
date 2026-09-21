@@ -624,10 +624,12 @@
       canvas.width = bufferWidth;
       canvas.height = bufferHeight;
     }
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     const ctx = canvas.getContext('2d');
     // setting width resets the transform, so this is redone every time
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { width, height, ctx };
+    return { width, height, ctx, dpr };
   }
 
   // Compose at native scale once. Pan and zoom transform this world image;
@@ -637,7 +639,7 @@
     if (!geo || hostIsGone()) return;
     const target = surface();
     if (!target) return;
-    const { width, height, ctx } = target;
+    const { width, height, ctx, dpr } = target;
     if (gameMap() && !hasMapTiles()) {
       state.gpu?.hide();
       ctx.clearRect(0, 0, width, height);
@@ -698,8 +700,7 @@
     const z = state.view.zoom;
     if (scene.gpu && state.gpu) {
       try {
-        const dpr=ctx.canvas.width/width;
-        state.gpu.presentBehind(ctx.canvas);
+        state.gpu.presentBehind(ctx.canvas, dpr);
         state.gpu.render(ctx.canvas.width,ctx.canvas.height,z*dpr,
           (state.view.panX-scene.view.panX*z)*dpr,(state.view.panY-scene.view.panY*z)*dpr);
 
