@@ -334,10 +334,10 @@ test('a wide brush goes through the same check as a single tile', () => {
 test('the bucket fills through the brush, so it obeys the same rules', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const eimer = functionBody(script, 'bucketFill');
-  assert.match(eimer, /geometry\.floodTiles\(tile, besetzt\)/);
-  assert.match(eimer, /brushAddOne\(feld\)/, 'gefuellt wird ueber denselben Weg wie ein Pinselzug');
+  assert.match(eimer, /geometry\.floodTiles\(tile,batch\.existing\.has/);
+  assert.match(eimer, /brushAddOne\(field,batch\)/, 'gefuellt wird ueber denselben Weg wie ein Pinselzug');
   assert.match(eimer, /commitBrush\(\)/, 'und alles landet als EIN Bauschritt');
-  assert.match(eimer, /topmostRefAtTile/, 'begrenzt von dem, was schon steht');
+  assert.match(eimer, /geometry\.footprintIndex\(placements/, 'existing footprints are indexed once');
   assert.doesNotMatch(eimer, /state\.document\.frames\.push/,
     'der Eimer schreibt nicht selbst in die Burg');
 });

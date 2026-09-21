@@ -512,7 +512,7 @@
 
     const proposedFootprint = footprintRects(type, offset);
     const replacements = new Set();
-    for (const p of placementRefs()) {
+    for (const p of options.candidates || placementRefs()) {
       if (ignore.has(p.ref)) continue;
       if (!geometry.footprintsIntersect(proposedFootprint, footprintRects(p.type, p.off))) continue;
       const existingMode = geometry.placementOverlap(type, p.type, state.constants);
@@ -1299,7 +1299,7 @@
       ? geometry.brushTiles(tile, state.brushSize) : [tile];
   }
 
-  function brushAddOne(tile) {
+  function brushAddOne(tile, batch = null) {
     if (state.currentItemType == null) return;
     const type = state.currentItemType;
     if (isLineSequence(type)) return;
@@ -1307,22 +1307,24 @@
     if (state.brushSeen.has(off)) return;
     state.brushSeen.add(off);
 
-    const pending = state.brushOffsets.map(p => ({ type, off: p }));
+    const rects = batch ? footprintRects(type, off) : null;
+    const pending = batch ? batch.pending.query(rects) : state.brushOffsets.map(p => ({ type, off: p }));
     const result = validatePlacement(type, off, {
       ignoreRefs: state.brushReplacements,
       extraNew: pending,
+      candidates: batch?.existing.query(rects),
       checkMax: false
     });
     if (!result.ok) {
-      setStatus(result.reason);
+      if (!batch) setStatus(result.reason);
       return;
     }
 
     const maximum = maxAmount(type);
     if (maximum != null) {
-      const current = countType(type, state.brushReplacements);
+      const current = batch ? batch.count : countType(type, state.brushReplacements);
       if (current + state.brushOffsets.length + 1 > Number(maximum)) {
-        setStatus(`Maximum amount for ${itemName(type)} is ${maximum}.`);
+        if (!batch) setStatus(`Maximum amount for ${itemName(type)} is ${maximum}.`);
         return;
       }
     }
@@ -1330,7 +1332,8 @@
     state.brushOffsets.push(off);
     state.brushTypes.push(type);
     for (const ref of result.replacements) state.brushReplacements.add(ref);
-    scheduleDraw(false);
+    if (batch) batch.pending.add({type,off});
+    else scheduleDraw(false);
   }
 
   function updateLineSequencePreview(start, end) {
@@ -1668,16 +1671,20 @@
     if (state.currentItemType == null) return setStatus('Choose an item first.');
     const type = state.currentItemType;
     if (isLineSequence(type)) return setStatus('This item is drawn as a line, not poured.');
-    const besetzt = (x, y) => Boolean(topmostRefAtTile({ x, y }));
-    const felder = geometry.floodTiles(tile, besetzt);
-    if (!felder.length) return setStatus('Nothing to fill here - that tile is taken.');
+    const placements = placementRefs();
+    const rectsFor = p => footprintRects(p.type,p.off);
+    const batch = {existing:geometry.footprintIndex(placements,rectsFor,GRID),
+      pending:geometry.footprintIndex([],rectsFor,GRID),count:countType(type)};
+    if (batch.existing.has(tile.x,tile.y)) return setStatus('Nothing to fill here - that tile is taken.');
 
     state.brushOffsets = [];
     state.brushTypes = [];
     state.brushError = '';
     state.brushSeen = new Set();
     state.brushReplacements = new Set();
-    for (const feld of felder) brushAddOne(feld);
+    const region = geometry.floodTiles(tile,batch.existing.has,GRID);
+    const ordered = geometry.orderFillTiles(region,footprintRectsAtXY(type,0,0),batch.existing.has,GRID);
+    for (const field of ordered) brushAddOne(field,batch);
     if (!state.brushOffsets.length) return setStatus('Nothing could be placed there.');
     const gesetzt = state.brushOffsets.length;
     commitBrush();

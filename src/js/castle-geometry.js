@@ -249,28 +249,85 @@
   // Mauer. Wie im alten Village Editor zaehlen auch direkte diagonale
   // Nachbarn als verbunden. Dies ist die Fuellregel, nicht die Wegfindung.
   //
-  // `limit` ist eine Notbremse, keine Regel: eine Karte hat 10000 Felder, und
-  // ein Fehlgriff auf freies Gelaende soll nicht die halbe Karte zubauen.
-  function floodTiles(start, isBlocked, gridSize = 100, limit = 4000) {
-    if (!start || isBlocked(start.x, start.y)) return [];
-    const gesehen = new Set([start.y * gridSize + start.x]);
-    const out = [];
-    const rand = [start];
-    const neighbours = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-    while (rand.length) {
-      const feld = rand.pop();
-      out.push(feld);
-      if (out.length >= limit) break;
-      for (const [dx, dy] of neighbours) {
-        const x = feld.x + dx, y = feld.y + dy;
-        if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) continue;
-        const key = y * gridSize + x;
-        if (gesehen.has(key) || isBlocked(x, y)) continue;
-        gesehen.add(key);
-        rand.push({ x, y });
+  /** Iterative region traversal. The predicate is evaluated at most once per cell.
+   * Stable DFS order preserves capped fills and multi-tile placement order.
+   * @param {{x:number,y:number}} start
+   * @param {(x:number,y:number)=>boolean} isBlocked
+   * @param {{width?:number,height?:number,limit?:number,diagonal?:boolean,visit?:(x:number,y:number,index:number)=>void}} options
+   * @returns {number} Visited cell count.
+   */
+  function floodRegion(start, isBlocked, {width=100,height=width,limit=width*height,diagonal=true,visit=()=>{}} = {}) {
+    if (!start || !Number.isInteger(width) || !Number.isInteger(height) || width<1 || height<1
+      || !Number.isInteger(start.x) || !Number.isInteger(start.y)
+      || start.x<0 || start.y<0 || start.x>=width || start.y>=height || !(limit>0)) return 0;
+    const seen=new Uint8Array(width*height), stack=new Uint32Array(width*height);
+    let length=0, count=0;
+    const enqueue=(x,y)=>{
+      if(x<0||y<0||x>=width||y>=height)return;
+      const index=y*width+x;
+      if(seen[index])return;
+      seen[index]=1;
+      if(!isBlocked(x,y))stack[length++]=index;
+    };
+    enqueue(start.x,start.y);
+    while(length) {
+      const index=stack[--length],x=index%width,y=Math.floor(index/width);
+      visit(x,y,index);
+      if(++count>=limit)break;
+      enqueue(x+1,y);enqueue(x-1,y);enqueue(x,y+1);enqueue(x,y-1);
+      if(diagonal){enqueue(x+1,y+1);enqueue(x+1,y-1);enqueue(x-1,y+1);enqueue(x-1,y-1);}
+    }
+    return count;
+  }
+
+  function floodTiles(start, isBlocked, gridSize = 100, limit = gridSize * gridSize) {
+    const out=[];
+    floodRegion(start,isBlocked,{width:gridSize,limit,visit:(x,y)=>out.push({x,y})});
+    return out;
+  }
+
+  /** Greedy building fill: prefer contact with existing boundaries, then sweep rows.
+   * Every tile remains an eligible anchor; no global grid phase or packing search.
+   * Footprints and placement policy are validated by the caller after ordering.
+   */
+  function orderFillTiles(tiles, footprint, isBlocked, gridSize=100) {
+    const inside=new Set(),key=(x,y)=>`${x},${y}`;
+    for(const r of footprint)for(let y=r.bottom;y<=r.top;y++)for(let x=r.left;x<=r.right;x++)inside.add(key(x,y));
+    if(inside.size<=1)return tiles;
+    const perimeter=new Map();
+    for(const cell of inside){const [x,y]=cell.split(',').map(Number);
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const at=key(x+dx,y+dy);if(!inside.has(at))perimeter.set(at,[x+dx,y+dy]);
       }
     }
-    return out;
+    const edges=[...perimeter.values()];
+    // Integer contact scores permit linear bucket ordering, not comparison sorting.
+    const at=Array(gridSize*gridSize), buckets=Array.from({length:edges.length+1},()=>[]);
+    for(const tile of tiles)at[tile.y*gridSize+tile.x]=tile;
+    for(const tile of at)if(tile){
+      let contact=0;
+      for(const [dx,dy] of edges){const x=tile.x+dx,y=tile.y+dy;
+        if(x<0||y<0||x>=gridSize||y>=gridSize||isBlocked(x,y))contact++;
+      }
+      buckets[contact].push(tile);
+    }
+    const ordered=[];
+    for(let score=buckets.length-1;score>=0;score--)for(const tile of buckets[score])ordered.push(tile);
+    return ordered;
+  }
+
+  // Operation-local broad-phase index. Exact collision policy stays in the validator.
+  function footprintIndex(placements, rectsFor, gridSize=100) {
+    const cells=Array(gridSize*gridSize);
+    function eachCell(rects, visit) {
+      for(const r of rects) for(let y=Math.max(0,r.bottom);y<=Math.min(gridSize-1,r.top);y++)
+        for(let x=Math.max(0,r.left);x<=Math.min(gridSize-1,r.right);x++)visit(y*gridSize+x);
+    }
+    const add=placement=>eachCell(rectsFor(placement),index=>{(cells[index] ||= []).push(placement);});
+    for(const placement of placements)add(placement);
+    return {add,has:(x,y)=>!!cells[y*gridSize+x],query(rects){
+      const found=new Set();eachCell(rects,index=>{for(const p of cells[index] || [])found.add(p);});return found;
+    }};
   }
 
   // Return a proposal, leaving the document untouched until the caller has
@@ -345,8 +402,8 @@
   // and the Keep are barriers. Other item types never join the deletion.
   function floodPlacementRefs(start, placements, rectsFor, isLocked, gridSize = 100, protectKeep = true) {
     if (!start || isLocked(start.ref) || (protectKeep && Number(start.type) === KEEP_ITEM_TYPE)) return new Set();
-    const cells = new Map();
-    const barriers = new Set();
+    const cells = Array(gridSize*gridSize);
+    const barriers = new Uint8Array(gridSize*gridSize);
     for (const placement of placements) {
       const blocked = isLocked(placement.ref) || (protectKeep && Number(placement.type) === KEEP_ITEM_TYPE);
       if (!blocked && Number(placement.type) !== Number(start.type)) continue;
@@ -354,20 +411,22 @@
         for (let y = Math.max(0, rect.bottom); y <= Math.min(gridSize - 1, rect.top); y++) {
           for (let x = Math.max(0, rect.left); x <= Math.min(gridSize - 1, rect.right); x++) {
             const key = y * gridSize + x;
-            if (blocked) barriers.add(key);
+            if (blocked) barriers[key] = 1;
             else {
-              if (!cells.has(key)) cells.set(key, new Set());
-              cells.get(key).add(placement.ref);
+              (cells[key] ||= []).push(placement.ref);
             }
           }
         }
       }
     }
-    const startCell = [...cells].find(([key, refs]) => !barriers.has(key) && refs.has(start.ref));
-    if (!startCell) return new Set();
-    const tiles = floodTiles({ x: startCell[0] % gridSize, y: Math.floor(startCell[0] / gridSize) },
-      (x, y) => !cells.has(y * gridSize + x) || barriers.has(y * gridSize + x), gridSize, gridSize * gridSize);
-    return new Set(tiles.flatMap(tile => [...cells.get(tile.y * gridSize + tile.x)]));
+    let seed;
+    for(const [key,refs] of cells.entries()) if(!barriers[key]&&refs?.includes(start.ref)){seed=key;break;}
+    const result=new Set();
+    if(seed===undefined)return result;
+    floodRegion({x:seed%gridSize,y:Math.floor(seed/gridSize)},
+      (x,y)=>!cells[y*gridSize+x]||!!barriers[y*gridSize+x],
+      {width:gridSize,visit:(_x,_y,key)=>{for(const ref of cells[key])result.add(ref);}});
+    return result;
   }
 
   // Placement policy is independent of the palette category and active tool.
@@ -394,6 +453,9 @@
     GRID_SIZE: 100,
     brushTiles,
     floodTiles,
+    floodRegion,
+    orderFillTiles,
+    footprintIndex,
     FORCED_STOCKPILE_ITEM_TYPE,
     footprintRectsAtXY,
     rectsIntersect,
