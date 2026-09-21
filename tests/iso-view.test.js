@@ -522,7 +522,7 @@ test('the ground is tiled at the same scale as the map, not stretched', () => {
   assert.ok(fs.existsSync(path.join(root, 'assets', 'aiv', 'iso', 'grund.png')));
 });
 
-test('game map preview URLs are loaded without the sprite path', () => {
+test('absolute sprite atlas URLs are loaded without the bundled sprite path', () => {
   const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
   const laden = iso.slice(iso.indexOf('function image('), iso.indexOf('function drawDiamond'));
   // Eine data:-Adresse ist schon vollstaendig. Wer ihr den Sprite-Pfad
@@ -605,20 +605,9 @@ test('ohne Startplatz steht das Dorf in der Kartenmitte', () => {
 
 test('die Ansicht legt die Karte mit der Rechnung hin, nicht nach Augenmass', () => {
   const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
-  const malen = iso.slice(iso.indexOf('function paintGameMap'), iso.indexOf('function paintGround'));
-  assert.match(malen, /geo\.mapImageRect\(currentKeep\(\), state\.view, picture\.px0, picture\.py0, picture\.cells, picture\.top\)/);
-  assert.match(malen, /ctx\.drawImage\(picture\.img, rect\.x, rect\.y, rect\.w, rect\.h\)/);
-  assert.match(malen, /ctx\.clip\(\)/, 'fallback terrain ends at the AIV footprint and margin');
-  assert.match(malen, /ctx\.imageSmoothingEnabled = picture\.smooth/);
-  // Die Vorschau bleibt hart: ein Vorschaupunkt ist ein ganzes Feld und darf
-  // nicht ins Nachbarfeld verlaufen. Nur das echte Gelaende wird geglaettet.
-  const waehlen = iso.slice(iso.indexOf('function groundPicture'), iso.indexOf('function paintGameMap'));
-  assert.match(waehlen, /cells: geo\.MAP_PREVIEW_EDGE, top: 0, floor: 0, hoehen: null, smooth: false/);
-  // Der Zweig fuer das alte Gelaendebild ist am 17.09.2026 entfallen: gezeichnet
-  // wird aus dem Kachelvorrat, und faellt der aus, liegt die Vorschau darunter.
-  assert.doesNotMatch(waehlen, /terrain\.dataUrl/, 'kein zweiter Weg fuer den Grund');
+  assert.doesNotMatch(iso, /function (paintGameMap|groundPicture)\(/, 'no low-resolution preview rendering path');
   // Ohne Startplatz die Kartenmitte - und nicht etwa gar nichts.
-  const platz = iso.slice(iso.indexOf('function currentKeep'), iso.indexOf('function paintGameMap'));
+  const platz = iso.slice(iso.indexOf('function currentKeep'), iso.indexOf('function lastHoverTile'));
   assert.match(platz, /map\.keeps\[map\.keepIndex\] \|\| geo\.centreKeep\(\)/);
   assert.match(iso, /setGameMap, setGameMapKeep, hasGameMap, gameMapInfo/, 'von aussen erreichbar');
   assert.match(iso, /const MAP_KEY = 'castleIsoGameMap'/, 'die Wahl ueberlebt das Schliessen');
@@ -927,12 +916,7 @@ test('das Gelaendebild macht oben Platz fuer den Berg und die Ansicht setzt es d
 
 test('die Hoehe kommt aus derselben Quelle wie der Boden', () => {
   const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
-  // Ohne echtes Gelaende bleibt alles flach: die Vorschau ist ein flaches Bild.
-  const waehlen = iso.slice(iso.indexOf('function groundPicture'), iso.indexOf('function paintGameMap'));
-  assert.match(waehlen, /hoehen: null, smooth: false/, 'die Vorschau bringt keine Hoehen mit');
-  const grund = iso.slice(iso.indexOf('function paintGround'), iso.indexOf('function bauHoehe'));
-  assert.match(grund, /state\.hoehenFeld = picture \? picture\.hoehen : null/);
-  assert.match(grund, /state\.hoehenFeld = null/, 'ohne Karte gibt es keine Hoehen');
+  assert.match(iso, /geo\.mapTileHeight\(gx, gy, currentKeep\(\), atlas\.hoehen, viewRotation\(\)\)/);
   // Ein Bauwerk haengt an seiner vorderen Ecke - dieselbe Ecke, auf der auch
   // sein Bild sitzt (spriteRect).
   const bau = iso.slice(iso.indexOf('function bauHoehe'), iso.indexOf('function drawDiamond'));

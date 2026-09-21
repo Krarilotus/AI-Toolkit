@@ -82,7 +82,7 @@
     img.decoding = 'async';
     img.onload = () => refresh(false, !img.terrainAsset);
     img.onerror = () => onImageFailed(filename);
-    // Game map previews use data URLs; bundled sprites use relative paths.
+    // Runtime atlases use absolute URLs; bundled sprites use relative paths.
     img.src = /^(data:|blob:|https?:|file:)/.test(filename) ? filename : SPRITE_PATH + filename;
     state.images.set(filename, img);
     return img;
@@ -114,22 +114,12 @@
   // view must never depend on a decoration.
   const GAME_TILE_WIDTH = 30;
   function onImageFailed(filename) {
-    const map = state.gameMap;
-    if (map && filename === map.dataUrl) {
-      setGameMap(null);
-      return;
-    }
     refresh();
   }
 
   // ------------------------------------------------- a map of the game
   //
-  // A .map brings its own 200x200 preview. Laid under the view it is not a
-  // decoration but a measure: one field of the map is one field of the editor.
-  // Where it goes is geo.mapPreviewRect's business - it needs the starting
-  // place, because that is the only thing that says WHERE on the map the
-  // village of 100x100 stands.
-  //
+  // The map atlas supplies terrain at native resolution after all images decode.
 
   const MAP_KEY = 'castleIsoGameMap';
   const MAP_POSITION_KEY = 'castleIsoGameMapPosition';
@@ -143,10 +133,7 @@
     return keep ? `${map.path}#${keep.x},${keep.y}` : null;
   }
 
-  // Wie hoch der Boden unter einem Dorffeld liegt, in Bildpunkten. Null,
-  // solange kein Kachelvorrat da ist: die Vorschau ist ein flaches Bild, und
-  // eine Burg ueber einem flachen Boden schweben zu lassen waere schlimmer
-  // als sie flach zu lassen.
+  // Terrain height in native image pixels, shared by sprites and picking.
   function bodenHoehe(gx, gy) {
     // The full-map atlas takes precedence over paintGround. It already lifts
     // terrain tiles; sprites and picking must use those same heights.
@@ -185,16 +172,18 @@
     } catch { /* a view must not fall over because storage is off */ }
   }
 
+  let mapTilesRequest = 0;
   function setGameMap(map) {
+    mapTilesRequest++;
+    state.mapLoadError = null;
     const previous = gameMap();
-    if (previous) state.images.delete(previous.dataUrl);
     state.gameMap = map
-      ? { name: map.name, path: map.path || null, dataUrl: map.dataUrl,
+      ? { name: map.name, path: map.path || null,
           keeps: Array.isArray(map.keeps) ? map.keeps : [], keepIndex: 0, pathTerrain: map.pathTerrain || null }
       : null;
     // Das Gelaende der alten Karte zeigt die alte Karte. Es jetzt stehen zu
     // lassen hiesse, die neue Karte mit fremdem Boden zu zeigen.
-    if (state.kachelVorrat && state.kachelVorrat.path !== state.gameMap?.path) {
+    if (state.kachelVorrat) {
       releaseMapImages();
       state.kachelVorrat = null;
     }
@@ -202,7 +191,7 @@
     window.castleEditor?.extras?.scheduleDraw?.();
     rememberGameMap();
     try { window.localStorage.removeItem(MAP_POSITION_KEY); } catch {}
-    paint();
+    refresh();
   }
 
   function setGameMapKeep(index) {
@@ -361,44 +350,6 @@
     return { x: back.gx, y: geo.GRID - 1 - back.gy };
   }
 
-  // Was gerade unter der Burg liegt. Das echte Gelaende nur, wenn es gewaehlt
-  // UND fertig geladen ist - sonst die Vorschau. So bleibt der Grund nie leer:
-  // das Gelaende braucht eine halbe Sekunde, die Vorschau ist sofort da.
-  function groundPicture() {
-    const map = gameMap();
-    if (!map) return null;
-    const img = image(map.dataUrl, true);
-    if (!img || !img.complete || !img.naturalWidth) return null;
-    return { img, px0: 0, py0: 0, cells: geo.MAP_PREVIEW_EDGE, top: 0, floor: 0, hoehen: null, smooth: false };
-  }
-
-  function paintGameMap(ctx, picture) {
-    if (!picture) return;
-    // Beide Bilder sind Ausschnitte desselben Rasters, nur verschieden fein
-    // gemalt - dieselbe Rechnung legt sie an dieselbe Stelle.
-    const rect = geo.mapImageRect(currentKeep(), state.view, picture.px0, picture.py0, picture.cells, picture.top);
-    ctx.save();
-    if (viewRotation()) ctx.transform(...geo.cameraCanvasTransform(state.view, viewRotation()));
-    // Bound the fallback preview to the same AIV footprint as native tiles.
-    // Native terrain is bounded by tile origin instead, preserving raised tops.
-    ctx.beginPath();
-    [[-MAP_MARGIN, -MAP_MARGIN], [geo.GRID + MAP_MARGIN, -MAP_MARGIN],
-      [geo.GRID + MAP_MARGIN, geo.GRID + MAP_MARGIN], [-MAP_MARGIN, geo.GRID + MAP_MARGIN]]
-      .forEach(([gx, gy], index) => {
-        const [x, y] = geo.isoPoint(gx, gy, state.view);
-        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      });
-    ctx.closePath();
-    ctx.clip();
-    // Ein Vorschaupunkt ist ein ganzes Feld und muss ein hartes Quadrat bleiben
-    // - geglaettet schmierte der Rand eines Feldes ueber seinen Nachbarn. Das
-    // Gelaende ist ein echtes Bild aus Kacheln des Spiels und wird geglaettet,
-    // sonst franst es beim Verkleinern aus.
-    ctx.imageSmoothingEnabled = picture.smooth;
-    ctx.drawImage(picture.img, rect.x, rect.y, rect.w, rect.h);
-    ctx.restore();
-  }
-
   // ------------------------------------- die ganze Karte aus dem Kachelvorrat
   //
   // Statt eines fertigen Bildes vom Dorffenster bekommt die Ansicht das, was
@@ -431,19 +382,23 @@
     return new Art(bytes.buffer);
   }
 
-  function setMapTiles(daten) {
-    if (daten?.path && daten.path !== gameMap()?.path) return;
-    releaseMapImages();
-    if (!daten) { state.kachelVorrat = null; state.startMarks = null; paint(); return; }
+  async function setMapTiles(daten) {
+    const selected = gameMap();
+    if (daten?.path && daten.path !== selected?.path) return false;
+    const request = ++mapTilesRequest;
+    if (!daten) { releaseMapImages(); state.kachelVorrat = null; state.startMarks = null; refresh(); return false; }
+    const pending = [];
     function cameraStock(daten) {
       const bild = new Image();
-      bild.onload = () => refresh();
       bild.src = daten.atlas;
-      const upperImage = daten.upper?.dataUrl ? image(daten.upper.dataUrl, true) : null;
+      pending.push(bild.decode());
+      const upperImages = (daten.upper?.pages || (daten.upper?.dataUrl ? [daten.upper.dataUrl] : [])).map(url => {
+        const img = new Image(); img.src = url; pending.push(img.decode()); return img;
+      });
       return {
         path: daten.path,
         bild,
-        upperImage, upperEntries: daten.upper?.entries || [],
+        upperImages, upperEntries: daten.upper?.entries || [],
         treeSprites: new Map((daten.treeSprites || []).map(tree => [tree[1] * KARTE_FELDER + tree[0], tree])),
         cliffSprites: ausBase64(daten.cliffSprites, Uint16Array),
         plaetze: ausBase64(daten.plaetze, Uint16Array),
@@ -455,10 +410,18 @@
       };
     }
     const cameras = daten.cameras?.length === 4 ? daten.cameras.map(cameraStock) : null;
-    state.kachelVorrat = { ...(cameras?.[0] || cameraStock(daten)), path: daten.path, cameras, nativeError: daten.nativeError };
+    const stock = { ...(cameras?.[0] || cameraStock(daten)), path: daten.path, cameras, nativeError: daten.nativeError };
+    await Promise.all(pending);
+    if (request !== mapTilesRequest || selected !== gameMap()) return false;
+    releaseMapImages();
+    state.kachelVorrat = stock;
+    state.mapLoadError = null;
     if (!cameras) handDrehung = 0;
-    paint();
+    refresh();
+    return true;
   }
+
+  function setMapLoadError(message) { state.mapLoadError = message; refresh(); }
 
   function hasMapTiles() { return Boolean(vorrat() && vorrat().plaetze); }
 
@@ -521,9 +484,10 @@
         const tileWidth = kw * state.view.zoom;
         const tileLeft = px - tileWidth / 2;
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
+        const cliffImage = v.upperImages?.[cliff?.page || 0] || v.upperImage;
         state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
-        if (cliff && v.upperImage?.complete && v.upperImage.naturalWidth) {
-          target.drawImage(v.upperImage, cliff.x, cliff.y, cliff.width, cliff.height,
+        if (cliff && cliffImage?.complete && cliffImage.naturalWidth) {
+          target.drawImage(cliffImage, cliff.x, cliff.y, cliff.width, cliff.height,
             tileLeft, py - hebung + cliff.dy * state.view.zoom,
             tileWidth, cliff.height * state.view.zoom);
         }
@@ -532,20 +496,22 @@
           tileLeft, py - hebung, tileWidth, kh * state.view.zoom);
         }});
         const upper = v.upperEntries[platz];
-        if (upper && v.upperImage?.complete && v.upperImage.naturalWidth) {
+        const upperImage = v.upperImages?.[upper?.page || 0] || v.upperImage;
+        if (upper && upperImage?.complete && upperImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
-            target.drawImage(v.upperImage, upper.x, upper.y, upper.width, upper.height,
+            target.drawImage(upperImage, upper.x, upper.y, upper.width, upper.height,
               tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
               upper.width * scaleX, upper.height * scaleY);
           }});
         }
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
-        if (treePicture && v.upperImage?.complete && v.upperImage.naturalWidth) {
+        const treeImage = v.upperImages?.[treePicture?.page || 0] || v.upperImage;
+        if (treePicture && treeImage?.complete && treeImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
-            target.drawImage(v.upperImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
+            target.drawImage(treeImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
               tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
               treePicture.width * scaleX, treePicture.height * scaleY);
           }});
@@ -559,19 +525,6 @@
   }
 
   function paintGround(ctx, width, height) {
-    if (gameMap()) {
-      ctx.save();
-      ctx.fillStyle = '#232a1c';
-      ctx.fill();
-      ctx.restore();
-      // Was jetzt unter der Burg liegt, bestimmt auch, wie hoch sie steht:
-      // beide holen ihre Zahl aus derselben Quelle, also koennen sie nicht
-      // auseinanderlaufen.
-      const picture = groundPicture();
-      state.hoehenFeld = picture ? picture.hoehen : null;
-      paintGameMap(ctx, picture);
-      return;
-    }
     state.hoehenFeld = null;
     const img = image('grund.png', true);
     let pattern = null;
@@ -685,6 +638,16 @@
     const target = surface();
     if (!target) return;
     const { width, height, ctx } = target;
+    if (gameMap() && !hasMapTiles()) {
+      state.gpu?.hide();
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#232a1c'; ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#cbd2d2'; ctx.font = '14px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(state.mapLoadError || 'Loading map...', width / 2, height / 2, width - 24);
+      ctx.textAlign = 'start';
+      return;
+    }
     if (window.castleGpuStage && !state.gpuRequested) {
       state.gpuRequested=true;
       window.castleGpuStage.create(()=>refresh(true)).then(gpu=>{state.gpu=gpu;refresh(false,true);})
@@ -896,6 +859,7 @@
     if (!cache || cache.doc !== doc || cache.catalogue !== state.catalogue || cache.rotation !== rotation || cache.camera !== camera) {
       const items = turnedTiles(geo.collectItems(doc, state.catalogue, null, window.castleEditor?.getItemDefinitions?.()));
       state.geometryCache = {doc, catalogue:state.catalogue, rotation, camera, items};
+      state.moatCache = items.some(item=>item.entry?.moatVariants) ? {} : null;
       // Decode every variant used by this document before scrubbing discovers it.
       const seen = new Set();
       const preload = entry => {
@@ -908,7 +872,8 @@
     }
     const items = Number.isInteger(step) ? state.geometryCache.items.filter(item => item.frameIndex <= step) : state.geometryCache.items;
     // Gates, wall/stair variants and bridges depend on visible neighbours only.
-    return geo.attachDrawbridges(items);
+    const connected = geo.attachDrawbridges(items);
+    return state.moatCache ? geo.resolveMoats(connected, state.moatCache) : connected;
   }
 
   function fireOverlayVisible() {
@@ -918,7 +883,7 @@
   function paintScene(ctx, width, height, options = {}) {
     // Terrain geometry and its drawing commands do not depend on the build step.
     if (!options.reuseTerrain) state.nativeTerrain = paintMapTiles(ctx, width, height);
-    if (!state.nativeTerrain) state.hoehenFeld = gameMap() ? groundPicture()?.hoehen || null : null;
+    if (!state.nativeTerrain) state.hoehenFeld = null;
 
     // Die Bodenplatten haengen an der GEDREHTEN Ecke ihres Gebaeudes, und ihr
     // eigener Versatz wird NICHT mitgedreht.
@@ -1231,7 +1196,7 @@
       : (map.keeps.length ? ' · not turned (game value 0)' : '');
     // Und ob der Boden Hoehen hat. Ohne diese Zeile sieht man dem Bild nur an,
     // DASS etwas anders liegt, aber nicht warum - und ob es an dieser Karte
-    // liegt oder daran, dass gerade die flache Vorschau darunterliegt.
+    // liegt.
     const spanne = dorfHoehen();
     let hoehe = '';
     if (spanne) {
@@ -1268,7 +1233,9 @@
       counts.set(itemType, layoutIndex + 1);
       return { gx: feld.x, gy: geo.GRID - 1 - feld.y, itemType, entry, layoutIndex, tiles: entry ? entry.kacheln : 1 };
     }));
-    const kuenftig = geo.attachDrawbridges([...existing, ...pending]).slice(existing.length);
+    const combined = geo.attachDrawbridges([...existing, ...pending]);
+    const kuenftig = (pending.some(item=>item.entry?.moatVariants)
+      ? geo.resolveMoats(combined, {}) : combined).slice(existing.length);
     const neueMauern = geo.wallLookup(kuenftig);
     const mauerAn = (gx, gy) =>
       neueMauern(gx, gy) || (state.mauerAn ? state.mauerAn(gx, gy) : null);
@@ -1657,7 +1624,7 @@
                      findControl: id => state.controls?.querySelector(`#${id}`),
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo, reloadGameAssets,
                      viewRotation, turnView, currentRotation,
-                     setMapTiles, hasMapTiles, analysisTerrain,
+                     setMapTiles, hasMapTiles, analysisTerrain, setMapLoadError,
                      // Fuer das Pruefgeruest: wo die Kamera steht und welche Marken liegen.
                      viewInfo: () => ({ ...state.view, rotation: currentRotation(), hand: viewRotation() }),
                      startPlaceMarks };

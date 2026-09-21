@@ -10,7 +10,7 @@ function renderer() {
   const context = vm.createContext({
     state, MAP_MARGIN: 5, geo: { GRID: 100 }, window: {},
     document: { createElement: () => ({ width: 0, height: 0, getContext: () => ({}) }) },
-    hostIsGone: () => false,
+    hostIsGone: () => false, gameMap:()=>null,
     surface: () => ({width: 800, height: 600, ctx: {clearRect() {}, drawImage(...args) { draws.push(args); }}}),
     currentRotation: () => state.rotation || 0, kartenSchluessel: () => state.mapKey || '',
     vorrat: () => null, paintInteraction() {}, setStatus() {}, mapStatus: () => '',
@@ -150,4 +150,15 @@ test('2.5D wheel uses Map modifiers in both presets and zoom stays anchored at t
       }
     }
   }
+});
+
+
+test('a selected map waits for its atlas and reports errors without painting fallback scenery',()=>{
+ const r=renderer(),messages=[];let hidden=0;
+ r.context.gameMap=()=>({path:'map'});r.context.hasMapTiles=()=>false;
+ r.state.gpu={hide(){hidden++;}};
+ r.context.surface=()=>({width:800,height:600,ctx:{clearRect(){},fillRect(){},fillText(text){messages.push(text);}}});
+ r.context.paint();assert.equal(r.scenes.length,0);assert.equal(messages.at(-1),'Loading map...');
+ r.state.mapLoadError='Could not load map';r.context.paint();
+ assert.equal(messages.at(-1),r.state.mapLoadError);assert.equal(hidden,2);
 });

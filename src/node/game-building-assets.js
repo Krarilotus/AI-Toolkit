@@ -13,7 +13,7 @@ function gameBuildingAssets(root, cacheRoot) {
   if(!root)return null;
   const graphics=resolveGameGraphics(root);
   const catalogue=JSON.parse(fs.readFileSync(cataloguePath,'utf8'));
-  const revision=require('node:crypto').createHash('sha256').update('3:'+graphics.revision+JSON.stringify(sourceParts)+JSON.stringify(wallSources)+JSON.stringify(catalogue)).digest('hex');
+  const revision=require('node:crypto').createHash('sha256').update('5:'+graphics.revision+JSON.stringify(sourceParts)+JSON.stringify(wallSources)+JSON.stringify(catalogue)).digest('hex');
   fs.mkdirSync(cacheRoot,{recursive:true});
   const cache=path.join(cacheRoot,`${revision}.json`),png=path.join(cacheRoot,`${revision}.png`);
   if(fs.existsSync(cache)&&fs.existsSync(png))return JSON.parse(fs.readFileSync(cache,'utf8'));
@@ -43,9 +43,10 @@ function gameBuildingAssets(root, cacheRoot) {
   }
   function visit(value) {
     if (!value || typeof value !== 'object') return;
-    const key = value.bild === 'building-parts.png' ? `${value.sx},${value.sy}` : value.bild;
+    const key = Number.isInteger(value.nativeMoat) ? `moat:${value.nativeMoat}` : value.bild === 'building-parts.png' ? `${value.sx},${value.sy}` : value.bild;
     let source = value.bild === 'building-parts.png' ? sourceParts[key] : wallSources[key];
     const single = /^(killing_pits|pitch_ditches)_(\d+)\.png$/.exec(value.bild || '');
+    if (Number.isInteger(value.nativeMoat)) source = {file:'tile_sea8', index:value.nativeMoat};
     if (single) source = {file: single[1], index: Number(single[2])};
     if (source) {
       let record = parts.get(key);

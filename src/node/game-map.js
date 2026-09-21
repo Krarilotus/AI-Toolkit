@@ -747,7 +747,7 @@ function buildTileAtlas(gfx, gameRoot, layers = {}) {
     kachelHoehe: TILE_H,
     kacheln: reihe.length,
     fehlend,
-    upper: packMapPictures(upperPictures),
+    upper: packMapPictures(upperPictures, {paged:true}),
     treeSprites,
     cliffSprites: Buffer.from(cliffSprites.buffer).toString('base64'),
     plaetze: Buffer.from(plaetze.buffer).toString('base64')

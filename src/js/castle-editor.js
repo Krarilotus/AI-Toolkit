@@ -3685,11 +3685,6 @@
     karteBergfried.value = String(info.keepIndex);
   }
 
-  // Das echte Gelaende holen, wenn es gebraucht wird und noch nicht daliegt.
-  // Es wird NICHT gemerkt (rund 3 MB), also faellt es bei jedem Neustart und
-  // bei jedem Wechsel von Karte oder Startplatz an - und bis es da ist, liegt
-  // die Vorschau darunter, damit der Grund nie leer aussieht.
-
   // Der Kachelvorrat der ganzen Karte. Er haengt nur an der Karte, nicht am
   // Startplatz - einmal geholt, gilt er fuer alle Burgen darauf.
   let kachelnLaufen = null;
@@ -3704,7 +3699,8 @@
     try {
       const vorrat = await window.electronAPI.loadMapTiles(info.path);
       if (kachelnLaufen !== request) return;      // inzwischen andere Karte oder neuer Ladevorgang
-      window.isoView.setMapTiles(vorrat);
+      if (await window.isoView.setMapTiles(vorrat) === false) return;
+      if (kachelnLaufen !== request) return;
       if (vorrat.nativeError) {
         kachelnLaufen = null;
         setStatus(`Map loaded; rotation unavailable: ${vorrat.nativeError}`);
@@ -3715,6 +3711,7 @@
     } catch (error) {
       if (kachelnLaufen !== request) return;
       kachelnLaufen = null;
+      window.isoView.setMapLoadError?.(`Could not load map: ${error.message}. Select Game map to retry.`);
       setStatus(`Could not read the map tiles: ${error.message}`);
     }
   }
@@ -3723,8 +3720,8 @@
   // Kanal) ist am 17.09.2026 entfallen, samt Umschalter. Er holte je
   // Kartenwechsel rund vier Megabyte ueber die Bruecke und zeigte nur den
   // Ausschnitt um die Burg. Gezeichnet wird aus dem Kachelvorrat
-  // (setMapTiles/paintMapTiles): rund 1 MB, die ganze Karte. Faellt der aus,
-  // liegt die Vorschau darunter - eine Wahl gibt es nicht mehr zu treffen.
+  // (setMapTiles/paintMapTiles). Images decode before committing the map;
+  // failures show a retry message instead of silently falling back to a preview.
 
   function renderMapList(filter) {
     if (!karteListe) return;
@@ -3753,24 +3750,28 @@
     }));
   }
 
+  let mapSelectionRequest = 0;
   async function chooseMap(entry) {
+    const selection = ++mapSelectionRequest;
     if (!window.isoView || !karteFehler) return;
     karteFehler.textContent = 'Reading the map…';
     try {
       const map = await window.electronAPI.loadGameMap(entry.path);
-      window.isoView.setGameMap(map);
+      if (selection !== mapSelectionRequest) return;
       kachelnLaufen = null;
-      ensureMapTiles();
+      window.isoView.setGameMap(map);
+      await window.isoView.reloadGameAssets?.();
+      if (selection !== mapSelectionRequest) return;
       updateMapControls();
         if (karteDialog && karteDialog.open) karteDialog.close();
       // Der Fokus bleibt sonst im Suchfeld des Dialogs, und weil Tasten in
       // Eingabefeldern zu Recht ignoriert werden, ginge danach kein einziges
       // Kuerzel mehr - auch das Drehen mit C und X nicht.
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-      setStatus(map.keeps.length
-        ? `Map "${map.name}" laid under the slanted view · ${map.keeps.length} starting place${map.keeps.length === 1 ? '' : 's'}`
-        : `Map "${map.name}" laid under the slanted view · no starting place found, the castle sits in the middle of the map`);
+      await ensureMapTiles();
     } catch (error) {
+      if (selection !== mapSelectionRequest) return;
+      window.isoView.setMapLoadError?.(`Could not load map: ${error.message}. Select Game map to retry.`);
       karteFehler.textContent = `Could not read that map: ${error.message}`;
     }
   }
@@ -3808,6 +3809,7 @@
   });
   if (karteZurueck) karteZurueck.addEventListener('click', () => {
     if (!window.isoView) return;
+    mapSelectionRequest++;
     window.isoView.setGameMap(null);
     kachelnLaufen = null;
     window.isoView.setMapTiles(null);

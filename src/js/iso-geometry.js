@@ -406,9 +406,49 @@
     return parts.map(part => ({ ...part, gx: item.gx + part.gx, gy: item.gy + part.gy, tiles: 1 }));
   }
 
-  // Ground plates that belong next to an item (keep courtyard, training
-  // grounds, guild yards). Their offsets are counted from the item's
-  // top-left tile, in the sprite coordinate system.
+  // updateGfxLayer 0x509180, TerrainDefinedData+0x1d64 (7 byte pairs).
+  // Coordinates are already camera-rotated. Use the unshadowed bank (light=0).
+  const MOAT_DIRECTIONS = [[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]];
+  const moatKey = (x,y) => (x + 256) * 1024 + y + 256;
+  function moatPicture(x, y, connected) {
+    let mask = 0;
+    for (let d=0;d<8;d+=2) if (!connected(x+MOAT_DIRECTIONS[d][0], y+MOAT_DIRECTIONS[d][1])) mask |= 0x80 >> d;
+    if (!mask) for (let d=1;d<8;d+=2) if (!connected(x+MOAT_DIRECTIONS[d][0],y+MOAT_DIRECTIONS[d][1])) mask |= 0x80 >> d;
+    const random = (x * 13 + y * 7) & 3;
+    return ({160:236,40:237,10:238,130:239,128:268+random,2:300+random,1:332})[mask] ?? 204+random;
+  }
+
+  function resolveMoats(items, cache) {
+    const occupied = new Set();
+    for (const item of items) {
+      if (item.itemType !== 106 && !(item.itemType === 105 && !item.unattachedBridge)) continue;
+      for (let y=0;y<item.tiles;y++) for (let x=0;x<item.tiles;x++) occupied.add(moatKey(item.gx+x,item.gy+y));
+    }
+    const dirty = new Set();
+    const invalidate = key => {
+      dirty.add(key);
+      for (const [dx,dy] of MOAT_DIRECTIONS) dirty.add(key+dx*1024+dy);
+    };
+    for (const key of occupied) if (!cache.occupied?.has(key)) invalidate(key);
+    for (const key of cache.occupied || []) if (!occupied.has(key)) invalidate(key);
+    cache.occupied = occupied;
+    cache.variants ||= new Map();
+    for (const key of dirty) cache.variants.delete(key);
+    cache.evaluated = 0;
+    return items.map(item => {
+      if (!item.entry?.moatVariants) return item;
+      const key = moatKey(item.gx,item.gy);
+      let result = cache.variants.get(key);
+      if (!result || result.original !== item) {
+        const index = moatPicture(item.gx,item.gy,(x,y)=>occupied.has(moatKey(x,y)));
+        result = {original:item, item:{...item,entry:item.entry.moatVariants[index]}};
+        cache.variants.set(key,result); cache.evaluated++;
+      }
+      return result.item;
+    });
+  }
+
+  // Ground plates next to keeps and training buildings use local tile offsets.
   function collectPlates(items) {
     const out = [];
     for (const item of items) {
@@ -736,7 +776,7 @@
            gridFromOffset, offsetFromGrid, isoPoint,
            tileFromPoint, editorTileFromPoint,
            depth, byDepth, renderOrder, spriteRect, groundTextureScale, variantFor, wallLookup, hoehenLookup,
-           collectItems, collectPlates, attachDrawbridges, buildingParts, marqueeOutline, fitView,
+           collectItems, collectPlates, attachDrawbridges, buildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
            mapTileForGrid, mapTileForView, viewTileForMap,
            mapTileHeight, keepAnchor, previewPointForMapTile, centreKeep,
