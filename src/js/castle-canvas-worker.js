@@ -5,12 +5,20 @@ let canvas,
   images = new Map(),
   future,
   futureCtx;
-function replay(context, commands) {
-  for (const [kind, name, ...args] of commands) {
+function replay(context, range) {
+  const tape = scene.commands, args = [];
+  for (let at = range[0]; at < range[1];) {
+    const [kind, name] = scene.operations[tape[at++]], count = tape[at++];
+    args.length = 0;
+    for (let i = 0; i < count; i++) {
+      const value = tape[at++];
+      args.push(Number.isNaN(value) ? scene.values[tape[at++]] : value);
+    }
     if (!kind) context[name] = args[0];
-    else if (name === "drawImage")
-      context.drawImage(images.get(args[0]), ...args.slice(1));
-    else context[name](...args);
+    else {
+      if (name === 'drawImage') args[0] = images.get(args[0]);
+      context[name](...args);
+    }
   }
 }
 onmessage = ({ data }) => {

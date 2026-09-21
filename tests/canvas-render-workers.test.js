@@ -186,8 +186,9 @@ test('2D worker paints units and labels with the same scene as buildings, above 
   const context=vm.createContext({onmessage:null,postMessage(){},OffscreenCanvas:class{getContext(){return ctx;}}});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../src/js/castle-canvas-worker.js'),'utf8'),context);
   context.onmessage({data:{canvas:{getContext:()=>ctx}}});
-  const normal=x=>[[1,'fillText',x,0,0]];
-  const scene={images:[[0,{close(){}}]],width:100,height:100,dpr:1,
+  const commands=[],values=[],operations=[[1,'fillText']];
+  const normal=x=>{const start=commands.length;values.push(x);commands.push(0,3,NaN,values.length-1,0,0);return [start,commands.length];};
+  const scene={commands,values,operations,images:[[0,{close(){}}]],width:100,height:100,dpr:1,
     rows:[{ref:'unit',unit:true,normal:normal('unit'),selected:normal('selected unit')},
       {ref:'future',fi:5,normal:normal('future'),outline:normal('outline')}],markers:normal('markers')};
   context.onmessage({data:{scene,frame:{step:0,selected:['unit'],moving:[]}}});
@@ -214,5 +215,50 @@ test('GPU fire masks discard stale results and release bitmaps on toggling off',
   assert.equal(closed,1);assert.equal(stage.fireMask,null);
   worker.finish({mask:{close(){closed++;}},sceneVersion:first.sceneVersion});
   assert.equal(closed,2);assert.equal(frames,1,'obsolete mask does not trigger a repaint');
+  stage.destroy();
+});
+
+
+test('numeric 2D command transport preserves exact calls, strings, floats and images',async()=>{
+ const h=harness('castle-canvas-scene.js'),stage=h.api.castleCanvasScene.create(h.target,assert.fail),sprite={};
+ const draw=(ctx)=>{ctx.save();ctx.font='13px serif';ctx.fillStyle='rgba(1,2,3,0.7)';ctx.globalAlpha=0.123456789012345;
+   ctx.drawImage(sprite,1.23456789012345,2,3,4,5,6,7,8);ctx.fillText('A \u65e5 \u0628',10.125,12.875);ctx.setLineDash([1,2]);ctx.restore();};
+ await stage.setScene({},[{ref:'a',fi:0}],draw,{},{});stage.render({step:0,selected:[],moving:[]});
+ const message=h.workers[0].messages.at(-1),scene=message.data.scene;
+ assert.ok(message.transfer.includes(scene.commands.buffer),'command storage transfers instead of being structured-cloned');
+ const actions=[];const target=new Proxy({}, {set:(_t,k,v)=>{actions.push(['set',k,v]);return true;},get:(_t,k)=>(...args)=>actions.push(['call',k,...args])});
+ draw(target);const expected=actions.splice(0);expected.find(a=>a[1]==='drawImage')[2]=scene.images[1][1];
+ const context=vm.createContext({onmessage:null,postMessage(){},sceneData:scene,Map});
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../src/js/castle-canvas-worker.js'),'utf8'),context);
+ vm.runInContext('scene=sceneData;images=new Map(scene.images);',context);
+ context.replay(target,scene.rows[0].normal);
+ assert.deepEqual(actions,expected);
+ stage.destroy();
+});
+
+test('dense command tape grows without mixing placement or selection ranges', async () => {
+  const h = harness('castle-canvas-scene.js');
+  const stage = h.api.castleCanvasScene.create(h.target, assert.fail);
+  const placements = Array.from({length: 1000}, (_, fi) => ({ref: String(fi), fi}));
+  await stage.setScene({}, placements, (ctx, p, selected) => {
+    ctx.fillStyle = selected === 'outline' ? 'red' : selected ? 'blue' : 'green';
+    ctx.fillRect(p.fi + 0.125, -0, 1, 2);
+  }, {}, {});
+  stage.render({step: 999, selected: [], moving: []});
+  const scene = h.workers[0].messages.at(-1).data.scene;
+  const original = scene.commands;
+  scene.commands = structuredClone(original, {transfer: [original.buffer]});
+  assert.equal(original.byteLength, 0);
+  const context = vm.createContext({onmessage: null, postMessage() {}, sceneData: scene});
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/js/castle-canvas-worker.js'), 'utf8'), context);
+  vm.runInContext('scene=sceneData;', context);
+  for (const row of scene.rows) {
+    for (const [variant, color] of [['normal', 'green'], ['selected', 'blue'], ['outline', 'red']]) {
+      const target = {fillRect(x, y, w, h) {
+        assert.deepEqual([this.fillStyle, x, y, w, h], [color, row.fi + 0.125, -0, 1, 2]);
+      }};
+      context.replay(target, row[variant]);
+    }
+  }
   stage.destroy();
 });

@@ -62,3 +62,33 @@ Removing that duplicate reduced the same measured two-frame interval from about
 measurement. Remaining sampled work includes 2.5D scene/selection preparation,
 2D command recording and worker transfer, and garbage collection; it is not
 flood traversal time.
+
+## Lossless 2D scene transport
+
+Scene recording now reuses one command recorder and its method functions. CSS
+colors are resolved once per scene preparation instead of per placement. Each
+preparation owns its color cache; subsequent scene preparations read fresh values.
+
+Commands use a transferable Float64 tape, shared operation/value tables and
+per-placement ranges for normal, selected and outline drawing. The worker retains
+the tape for subsequent step changes. This replaces structured cloning of thousands
+of nested command arrays, preserving Canvas call order, double-precision coordinates,
+styles, image sources and resolution. It does not compress or resize images.
+Tests compare the replay with the original drawing calls and cover tape growth,
+buffer transfer, fractional coordinates, Unicode text, image arguments and all
+three placement variants. Cancellation still releases abandoned scene bitmaps.
+
+Five full 10,000-tile moat fills, both views mounted in an isolated 2048x1152
+hardware-accelerated Electron offscreen window (baseline snapshot-0099d43):
+
+| Measurement | Before, median (range) | After, median (range) |
+|---|---:|---:|
+| Main-thread scene postMessage | 33.7 ms (30.1–42.3) | 7.7 ms (5.4–8.8) |
+| Fill start to 2D worker acknowledgement | 503.5 ms (302.9–1560) | 268.2 ms (229.7–299.9) |
+
+Each run reset the document; both versions ran sequentially on the same machine.
+The acknowledgement includes scene preparation, scheduling and worker execution,
+but is not a GPU presentation fence or visible-window latency measurement. These
+five-run results show reduced transfer work, not a guarantee for all maps or a
+10 ms total-update claim. Dense 2.5D scene composition and selection painting remain
+separate costs; further changes there need their own visual/correctness checks.

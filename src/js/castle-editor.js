@@ -2825,9 +2825,10 @@
     if(!state.preparedCanvasInputs||inputs.some((value,index)=>value!==state.preparedCanvasInputs[index])){
       state.preparedCanvasInputs=inputs;
       paintCanvasBackground();ctx=displayCtx;
+      const styles=new Map();
       state.canvasWorker.setScene(staticCacheCanvas,placementRefs(),(target,p,selected)=>{
-        const previous=ctx;ctx=target;
-        try { if(selected==='outline')drawPlacementOutline(p.type,p.off);else drawPlacement(p.type,p.off,selected); }finally{ctx=previous;}
+        const previous=ctx,previousStyles=drawStyleCache;ctx=target;drawStyleCache=styles;
+        try { if(selected==='outline')drawPlacementOutline(p.type,p.off);else drawPlacement(p.type,p.off,selected); }finally{ctx=previous;drawStyleCache=previousStyles;}
       },staticCacheCtx,{width:els.canvas.width,height:els.canvas.height,dpr:state.renderDpr||1,tint:FUTURE_TINT,filter:FUTURE_FILTER,opacity:FUTURE_OPACITY}, target => {
         const previous=ctx;ctx=target;try { drawUnitMarkers(); } finally { ctx=previous; }
       })
@@ -3225,8 +3226,12 @@
     ctx.restore();
   }
 
+  let drawStyleCache = null;
   function css(name, fallback) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    if(drawStyleCache?.has(name))return drawStyleCache.get(name)||fallback;
+    const value=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    drawStyleCache?.set(name,value);
+    return value||fallback;
   }
 
   function pointerPosition(event) {
