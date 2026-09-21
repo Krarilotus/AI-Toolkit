@@ -2499,7 +2499,7 @@
       state.centeredOnce = true;
       centerMap();
     } else {
-      clampPan();
+      // Resizing reveals/clips the map; only explicit navigation changes pan.
       scheduleDraw();
     }
   }

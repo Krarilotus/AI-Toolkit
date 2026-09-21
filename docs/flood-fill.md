@@ -106,3 +106,19 @@ Kratoloros.aiv completed 12 alternating 25%/75% split resizes plus horizontal pa
 at each of 100% and 200% display scaling. Each run sampled 144 canvas bounds across
 immediate, next-frame and settled states: horizontal/vertical scale ratios matched,
 2D cell size and 2.5D zoom remained unchanged, and no renderer errors occurred.
+
+A follow-up resize-only check found additional motion unrelated to stretching:
+`panel-view` rebuilt and reparented the complete split tree on each pointer move,
+and 2D `resizeCanvas` recentered/clamped the camera. Split drags now update only
+existing flex shares, retaining the canvas and captured splitter elements. The 2D
+camera stays fixed while its viewport reveals/clips more content. Explicit pan,
+zoom and fit controls retain their own navigation rules.
+
+The 2.5D GPU view now receives the actual DPR rather than deriving it from a
+rounded buffer width. At an explicitly emulated/verified DPR of 1.25, the old
+build alternated between two GPU camera transforms during resize; the new build
+keeps exactly one. In the same twelve-resize comparison, replaced splitters fell
+from 36 sampled observations to zero, and 2D pan changed from three distinct
+positions to one. The test records actual runtime DPR, camera transforms and DOM
+identity, in addition to canvas proportions; geometry-only checks cannot establish
+camera stability or detect reparenting flicker.
