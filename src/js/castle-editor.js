@@ -4003,7 +4003,6 @@
   if (els.brushMinus) els.brushMinus.addEventListener('click', () => setBrushSize(state.brushSize - 1));
   if (els.brushPlus) els.brushPlus.addEventListener('click', () => setBrushSize(state.brushSize + 1));
   els.buildSlider.addEventListener('input', selectBuildStepFromSlider);
-  document.getElementById('castlePauseBtn').addEventListener('click', () => selectItem(200));
   let scrubKey = null;
   els.buildSlider.addEventListener('keydown', event => {
     const direction = {ArrowRight:1, ArrowUp:1, ArrowLeft:-1, ArrowDown:-1}[event.key];
