@@ -624,6 +624,8 @@
       canvas.width = bufferWidth;
       canvas.height = bufferHeight;
     }
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     const ctx = canvas.getContext('2d');
     // setting width resets the transform, so this is redone every time
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -699,7 +701,7 @@
     if (scene.gpu && state.gpu) {
       try {
         const dpr=ctx.canvas.width/width;
-        state.gpu.presentBehind(ctx.canvas);
+        state.gpu.presentBehind(ctx.canvas, dpr);
         state.gpu.render(ctx.canvas.width,ctx.canvas.height,z*dpr,
           (state.view.panX-scene.view.panX*z)*dpr,(state.view.panY-scene.view.panY*z)*dpr);
 

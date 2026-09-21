@@ -63,6 +63,7 @@ function harness(file) {
     parentNode: parent,
     before(layer) {
       layer.parentNode = parent;
+      this.layer = layer;
     },
   };
   return { api: context.window, workers, bitmaps, target };
@@ -234,6 +235,31 @@ test('numeric 2D command transport preserves exact calls, strings, floats and im
  context.replay(target,scene.rows[0].normal);
  assert.deepEqual(actions,expected);
  stage.destroy();
+});
+
+test('worker surfaces retain intrinsic aspect ratio while their host resizes', async () => {
+  const h = harness('castle-canvas-scene.js');
+  const stage = h.api.castleCanvasScene.create(h.target, assert.fail);
+  await stage.setScene({}, [], () => {}, {}, {width: 1000, height: 600, dpr: 2});
+  stage.render({step: 0, selected: [], moving: []});
+  assert.match(h.target.layer.style.cssText, /width:auto;height:auto/);
+  assert.equal(h.target.layer.style.transform, 'scale(0.5)');
+  // Resize while the previous worker frame is still in flight.
+  await stage.setScene({}, [], () => {}, {}, {width: 600, height: 1000, dpr: 2});
+  assert.equal(h.target.layer.style.transform, 'scale(0.5)');
+  h.workers[0].finish();
+  assert.equal(h.workers[0].messages.at(-1).data.scene.width, 600);
+  assert.equal(h.target.layer.style.transform, 'scale(0.5)');
+  stage.destroy();
+
+  const gpu = harness('castle-gpu-stage.js');
+  const gpuStage = await gpu.api.castleGpuStage.create(() => {});
+  gpuStage.presentBehind(gpu.target, 2);
+  assert.match(gpu.target.layer.style.cssText, /width:auto;height:auto/);
+  assert.equal(gpu.target.layer.style.transform, 'scale(0.5)');
+  gpuStage.presentBehind(gpu.target, 1);
+  assert.equal(gpu.target.layer.style.transform, 'scale(1)');
+  gpuStage.destroy();
 });
 
 test('dense command tape grows without mixing placement or selection ranges', async () => {

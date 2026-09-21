@@ -92,3 +92,17 @@ but is not a GPU presentation fence or visible-window latency measurement. These
 five-run results show reduced transfer work, not a guarantee for all maps or a
 10 ms total-update claim. Dense 2.5D scene composition and selection painting remain
 separate costs; further changes there need their own visual/correctness checks.
+
+## Split-view resizing
+
+Both worker canvases use their intrinsic buffer dimensions with one uniform DPR
+scale. They no longer stretch the previous image to 100% of a changing host while
+a resized frame is pending. The 2.5D interaction canvas also uses explicit CSS
+pixel dimensions matching its buffer. Panning and panel resizing preserve zoom;
+this changes presentation sizing, not scene quality or terrain cache invalidation.
+
+Verification: 494 tests pass. Real Electron with Reconquista_Trail_1 terrain and
+Kratoloros.aiv completed 12 alternating 25%/75% split resizes plus horizontal pans
+at each of 100% and 200% display scaling. Each run sampled 144 canvas bounds across
+immediate, next-frame and settled states: horizontal/vertical scale ratios matched,
+2D cell size and 2.5D zoom remained unchanged, and no renderer errors occurred.

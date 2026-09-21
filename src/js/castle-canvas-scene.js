@@ -4,7 +4,7 @@ window.castleCanvasScene = {
   create(canvas, onError) {
     const layer = document.createElement("canvas");
     layer.style.cssText =
-      "position:absolute;inset:0;width:100%;height:100%;pointer-events:none";
+      "position:absolute;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;pointer-events:none";
     const worker = new Worker(
       new URL("js/castle-canvas-worker.js", location.href),
     );
@@ -24,6 +24,9 @@ window.castleCanvasScene = {
       busy = true;
       const model = sentScene !== scene ? scene : null;
       sentScene = scene;
+      // Let the placeholder follow the worker's intrinsic buffer size. Stretching
+      // it to the host would distort the old frame while a resize is pending.
+      if (model) layer.style.transform = `scale(${1 / (model.dpr || 1)})`;
       worker.postMessage(
         { frame, scene: model },
         model ? [model.commands.buffer, ...model.images.map(([, image]) => image)] : [],
