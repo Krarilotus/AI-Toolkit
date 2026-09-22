@@ -3,6 +3,32 @@
 Windows x64, 23 September 2026. Native compilation/tests now also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Gate roofs, unit proportions and UCP toolbar polish: 6f18150b
+
+Preview tag: `snapshot-native-6f18150b`; build source:
+`6f18150bd4db4313f125a7d45c28765b3a70c630`.
+
+All four gatehouse variants now use the game's **128-pixel roof height**, rather
+than the 90-pixel wall height. Gatekeeper's slinger markers were already centred;
+the incorrect height drew them 38 pixels too low. A real-sprite comparison
+reproduces the front-edge placement before the fix and the centred roof placement
+after it. Shared routing retains its explicit deck-to-wall/stair links.
+The 2D renderer preserves each unit thumbnail's aspect ratio inside the existing
+marker box, instead of stretching trimmed images into a square.
+
+Focused checks: **51 troop/routing tests** and **10 canvas geometry cases** pass.
+Toolbar/palette visual checks pass, with Default toolbar styling unchanged.
+The standalone theme starter is **1.6.0**, containing all **165 variables** and
+**33 texture roles**. Packaging passed compilation, installer checks, all nine
+complete catalogues (**1,728 messages each**) and the image audit: all **122
+packaged images** remain byte-identical to their originals.
+
+Package: **7,403,128 bytes portable / 6,746,690 bytes Setup**. Portable SHA-256:
+`357cc49d16a92083260b2f4ac771d598d8835e8b0a38c813004c73d3fb10e910`.
+At the user's request, this quick fix did not rerun the full test suite or
+performance benchmark. The sections below retain their historical build results;
+those timings and full-suite counts are not measurements of this preview.
+
 ## Conserved defenders, lords and UCP numeric controls: a972e2eb
 
 Defensive preview quotas follow the active recruitment cycle, aggregate repeated
