@@ -58,6 +58,7 @@
       .then(assets => {
         if (unitRequest !== request) return;
         state.unitAssets = assets || {};
+        state.troopDocument = state.troopPlan = null;
         state.unitCommands = new Map();
         for (const pose of Object.values(assets?.idleSprites || {})) image(pose.path);
         refresh(false, true);
@@ -930,7 +931,10 @@
       const plan = state.troopPlanner(doc.miscItems || [], state.troopAic);
       if (plan !== state.troopPlan) {
         state.troopPlan = plan;
-        state.troopMarkers = plan.filter(marker=>marker.count);
+        state.troopMarkers = plan.filter(marker=>marker.count).map(marker=>({
+          ...marker,...geo.gridFromOffset(marker.offset),
+          count:state.unitAssets.idleSprites?.[marker.type] ? marker.count : 1
+        }));
         state.unitCommandLimit = Math.max(128, plan.reduce((sum,marker)=>sum+marker.count,0)*8);
         state.unitCommands = new Map();
       }
@@ -945,11 +949,14 @@
       state.unitContext = context;
     }
     const support = troops.supports(items, bodenHoehe);
+    const rotation = currentRotation();
+    const layout = troops.layout(state.troopMarkers,(gx,gy)=>{
+      const tile = geo.rotateGrid(gx,gy,1,rotation);
+      return support(tile.gx,tile.gy);
+    });
     const commands = [], cache = state.unitCommands;
-    for (const marker of state.troopMarkers) {
-      const original = geo.gridFromOffset(marker.offset);
-      const tile = geo.rotateGrid(original.gx, original.gy, 1, currentRotation());
-      const elevation = support(tile.gx, tile.gy);
+    for (const {marker,gx,gy,elevation} of layout) {
+      const tile = geo.rotateGrid(gx,gy,1,rotation);
       const pose = state.unitAssets.idleSprites?.[marker.type];
       let img;
       if (pose) {
@@ -970,22 +977,16 @@
           state.unitMarkerImages.set(marker.type,img);
         }
       }
-      for (let index=0;index<(pose ? marker.count : 1);index++) {
-        const [dx,dy] = troops.formation[index];
-        const gx=tile.gx+dx, gy=tile.gy+dy;
-        const [x,y] = geo.isoPoint(gx+.5,gy+.5,state.view,elevation);
-        const key = [marker.ref,index,tile.gx,tile.gy,x,y,pose?.path || marker.type].join(':');
-        let command = cache.get(key);
-        if (!command) {
-          // Micro-positions stay in the marker's tile. Keep the tile's depth
-          // so a northern member cannot slip behind its own tower roof.
-          const order={gx:tile.gx,gy:tile.gy,tiles:1,layer:4+(dx+dy)/10};
-          [command] = recordSceneCommands(order,false,recorder => recorder.drawImage(img,
-            x+(pose?.dx ?? -12),y+(pose?.dy ?? -20),pose?.width ?? 24,pose?.height ?? 20));
-          cache.set(key,command);
-        }
-        commands.push(command);
+      const [x,y] = geo.isoPoint(tile.gx+.5,tile.gy+.5,state.view,elevation);
+      const key = [marker.ref,tile.gx,tile.gy,x,y,pose?.path || marker.type].join(':');
+      let command = cache.get(key);
+      if (!command) {
+        const order={gx:tile.gx,gy:tile.gy,tiles:1,layer:4};
+        [command] = recordSceneCommands(order,false,recorder => recorder.drawImage(img,
+          x+(pose?.dx ?? -12),y+(pose?.dy ?? -20),pose?.width ?? 24,pose?.height ?? 20));
+        cache.set(key,command);
       }
+      commands.push(command);
     }
     return commands.sort((a,b)=>geo.renderOrder(a.order,b.order));
   }

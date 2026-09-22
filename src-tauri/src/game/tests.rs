@@ -154,7 +154,7 @@ fn selected_installation_matches_reference() {
     check_assets(&buildings);
     let units = load_unit_sprites(root, &cache.join("units")).unwrap();
     assert_eq!(units.sprites.len(), 21);
-    assert_eq!(units.idle_sprites.len(), 14);
+    assert_eq!(units.idle_sprites.len(), 20);
     assert!(units.warnings.is_empty());
     assert_eq!(
         read_resource_icons(root)

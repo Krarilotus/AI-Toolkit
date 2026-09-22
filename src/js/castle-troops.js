@@ -10,9 +10,9 @@
   const fields = Object.freeze(['DefTotal', 'DefWalls', ...Array.from({length:8}, (_,i)=>'DefUnit'+(i+1))]);
   const defensiveTypes = new Set(Object.values(types));
   const nonnegative = value => Math.max(0, Math.floor(Number(value) || 0));
-  // Micro-positions inside one tile: centre first, then south and neighbours.
+  // One unit per tile: centre first, then south and neighbours.
   const formation = Object.freeze([[0,0],[0,1],[1,0],[-1,0],[0,-1],[-1,1],[1,1],[-1,-1],[1,-1]]
-    .map(([x,y])=>Object.freeze([x/3,y/3])));
+    .map(position=>Object.freeze(position)));
   const defenseKey = aic => aic ? JSON.stringify(fields.map(key=>aic[key])) : '';
 
   /** One immutable occupancy plan; repeated recruitment slots provide weights.
@@ -50,6 +50,39 @@
     };
   }
 
+  /** Distribute preview troops without changing their saved rally markers.
+   * Reserve every original marker before adding neighbours, so one group cannot
+   * displace another. Nine candidate tiles per marker bounds the work; crowded
+   * or unsupported tiles simply show fewer representatives.
+   * @template {{gx:number,gy:number,count:number}} T
+   * @param {T[]} markers
+   * @param {(x:number,y:number)=>number} support
+   * @returns {Array<{marker:T,gx:number,gy:number,elevation:number}>}
+   */
+  function layout(markers, support) {
+    const owners = new Map(), occupied = new Set(), result = [];
+    const size = geometry.GRID_SIZE;
+    for (const marker of markers) {
+      const key = marker.gy*size+marker.gx;
+      if (marker.count && !owners.has(key)) owners.set(key,marker);
+    }
+    for (const marker of markers) {
+      if (!marker.count) continue;
+      const elevation = support(marker.gx,marker.gy);
+      let placed = 0;
+      for (const [dx,dy] of formation) {
+        const gx = marker.gx+dx, gy = marker.gy+dy, key = gy*size+gx;
+        if (gx<0 || gy<0 || gx>=size || gy>=size || occupied.has(key)
+            || (owners.has(key) && owners.get(key)!==marker)
+            || support(gx,gy)!==elevation) continue;
+        occupied.add(key);
+        result.push({marker,gx,gy,elevation});
+        if (++placed>=marker.count) break;
+      }
+    }
+    return result;
+  }
+
   // Build-step-sensitive support map. Call only when scene content changes,
   // using visible placements; never use the complete future castle topology.
   function supports(items, terrainHeight) {
@@ -66,5 +99,5 @@
     }
     return (x,y) => surface.get(y*geometry.GRID_SIZE+x) ?? terrainHeight(x,y);
   }
-  return {types, fields, formation, defenseKey, plan, createPlanner, supports};
+  return {types, fields, formation, defenseKey, plan, createPlanner, layout, supports};
 });

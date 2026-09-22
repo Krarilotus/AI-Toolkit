@@ -201,7 +201,10 @@ test('UCP keeps dark shell tokens distinct from framed paper and original reorde
   assert.match(css, /var\(--step-arrow\) center \/ auto no-repeat/);
   assert.match(css, /scrollbar-track-piece:start:vertical/);
   assert.match(css, /scrollbar-thumb:vertical/);
-  assert.match(css, /var\(--texture-scroll-thumb\), var\(--texture-scroll-track\), radial-gradient/);
+  assert.match(css, /border-bottom: calc\(var\(--component-scrollbar-cap-height\) \/ 2\)/);
+  assert.match(css, /background: var\(--texture-scroll-thumb\) center \/ auto no-repeat/);
+  assert.doesNotMatch(css, /var\(--texture-scroll-thumb\), var\(--texture-scroll-track\)/);
+  assert.doesNotMatch(css, /radial-gradient\(40% 100%/);
   assert.doesNotMatch(css, /html\[data-theme=["']ucp/);
 });
 

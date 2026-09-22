@@ -68,6 +68,15 @@
   --component-toolbar-group-edit-accent: #ce937b;
   --component-toolbar-group-overlay-accent: #74bfb7;
   --component-toolbar-group-extras-accent: #b4a384;
+  --component-select-appearance: auto;
+  --component-select-indicator-size: 0px;
+  --component-select-indicator-inset: 5px;
+  --component-select-padding-inline-end: 8px;
+  --component-select-color-scheme: light;
+  --component-select-chrome-color-scheme: dark;
+  --component-scrollbar-width: 12px;
+  --component-scrollbar-horizontal-height: 7px;
+  --component-scrollbar-cap-height: 18px;
   --semantic-surface-app: var(--primitive-color-ink);
   --semantic-surface-deep: var(--primitive-color-deep);
   --semantic-surface-panel: var(--primitive-color-slate1);
@@ -107,6 +116,8 @@
   --component-panel-radius: var(--primitive-radius-normal);
   --component-palette-surface: var(--semantic-surface-chrome);
   --component-toolbar-surface: var(--semantic-surface-chrome);
+  --component-select-chrome-surface: var(--semantic-surface-chrome);
+  --component-select-option-surface: var(--semantic-surface-chrome);
   --semantic-content-on-chrome: var(--semantic-content-on-accent);
   --component-button-content: var(--semantic-content-on-accent);
   --component-button-border: var(--semantic-border-strong);
@@ -122,4 +133,6 @@
   --component-toolbar-border: var(--semantic-border-normal);
   --component-toolbar-group-border: var(--semantic-border-strong);
   --component-toolbar-content: var(--semantic-content-on-chrome);
+  --component-select-chrome-content: var(--semantic-content-on-chrome);
+  --component-select-option-content: var(--semantic-content-on-chrome);
 }

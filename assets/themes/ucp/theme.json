@@ -111,7 +111,7 @@
       "mode": "tile"
     },
     "scrollThumb": {
-      "file": "textures/scroll_bar_bottom.png",
+      "file": "textures/scroll_bar_bottom_hook.png",
       "mode": "contain"
     },
     "moveUp": {

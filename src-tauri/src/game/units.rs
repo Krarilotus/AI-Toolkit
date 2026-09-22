@@ -137,7 +137,7 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
             }
         }
     }
-    let mut sprites = BTreeMap::new();
+    let mut sprites: BTreeMap<String, UnitSprite> = BTreeMap::new();
     let mut idle_sprites = BTreeMap::new();
     let mut warnings = Vec::new();
     for &(id, name, rider) in SOURCES {
@@ -161,6 +161,14 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
         for (idle, frame, rider_frame) in std::iter::once((false, 0, rider.map(|_| 0)))
             .chain(poses::idle_pose(id).map(|(frame, rider)| (true, frame, rider)))
         {
+            // Stationary objects can use the same phase as their thumbnail.
+            // Share its native anchor and PNG instead of decoding it twice.
+            if idle && frame == 0 && rider_frame == rider.map(|_| 0) {
+                if let Some(sprite) = sprites.get(&id.to_string()) {
+                    idle_sprites.insert(id.to_string(), sprite.clone());
+                }
+                continue;
+            }
             let decoded = (|| {
                 let mut p = decode(&body, frame)?;
                 if let (Some(top), Some(frame)) = (top.as_ref(), rider_frame) {
@@ -212,6 +220,88 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn indexed_body(frames: usize) -> Vec<u8> {
+        let offsets = 88 + 5120;
+        let sizes = offsets + frames * 4;
+        let heads = sizes + frames * 4;
+        let data_at = heads + frames * 16;
+        let mut bytes = vec![0; data_at + frames * 2];
+        bytes[12..16].copy_from_slice(&(frames as u32).to_le_bytes());
+        bytes[20..24].copy_from_slice(&2u32.to_le_bytes());
+        bytes[72..76].copy_from_slice(&10u32.to_le_bytes());
+        bytes[76..80].copy_from_slice(&20u32.to_le_bytes());
+        for i in 0..frames {
+            let palette = 88 + 512 + (i + 1) * 2;
+            bytes[palette..palette + 2].copy_from_slice(&((i as u16 + 1) * 5).to_le_bytes());
+            bytes[offsets + i * 4..offsets + i * 4 + 4]
+                .copy_from_slice(&(i as u32 * 2).to_le_bytes());
+            bytes[sizes + i * 4..sizes + i * 4 + 4].copy_from_slice(&2u32.to_le_bytes());
+            bytes[heads + i * 16..heads + i * 16 + 2].copy_from_slice(&1u16.to_le_bytes());
+            bytes[heads + i * 16 + 2..heads + i * 16 + 4].copy_from_slice(&1u16.to_le_bytes());
+            bytes[data_at + i * 2..data_at + i * 2 + 2].copy_from_slice(&[0, i as u8 + 1]);
+        }
+        bytes
+    }
+
+    #[test]
+    fn stationary_markers_extract_verified_frames_and_reuse_shared_pngs() {
+        let root = std::env::temp_dir().join(format!(
+            "toolkit-stationary-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        fs::create_dir(root.join("gm")).unwrap();
+        let ids = [(2, 0), (3, 4), (4, 4), (5, 4), (20, 0), (21, 0)];
+        for &(id, frame) in &ids {
+            let (_, name, _) = SOURCES.iter().find(|(marker, _, _)| *marker == id).unwrap();
+            fs::write(
+                root.join("gm").join(format!("{name}.gm1")),
+                indexed_body(frame + 1),
+            )
+            .unwrap();
+        }
+        let cache = root.join("cache");
+        let assets = load_unit_sprites(&root, &cache).unwrap();
+        assert_eq!(assets.idle_sprites.len(), ids.len());
+        for (id, frame) in ids {
+            let idle = &assets.idle_sprites[&id.to_string()];
+            let thumbnail = &assets.sprites[&id.to_string()];
+            assert_eq!(
+                (idle.frame, idle.width, idle.height, idle.dx, idle.dy),
+                (frame, 1, 1, -10, -20)
+            );
+            if frame == 0 {
+                assert_eq!(
+                    idle, thumbnail,
+                    "Stationary first phases must reuse thumbnail output"
+                );
+            } else {
+                assert_ne!(
+                    fs::read(&idle.path).unwrap(),
+                    fs::read(&thumbnail.path).unwrap()
+                );
+            }
+        }
+        let timestamps: Vec<_> = fs::read_dir(&cache)
+            .unwrap()
+            .map(|entry| {
+                let file = entry.unwrap().path();
+                let modified = fs::metadata(&file).unwrap().modified().unwrap();
+                (file, modified)
+            })
+            .collect();
+        assert_eq!(load_unit_sprites(&root, &cache).unwrap(), assets);
+        for (file, modified) in timestamps {
+            assert_eq!(fs::metadata(file).unwrap().modified().unwrap(), modified);
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn trimming_preserves_scale_and_origin() {
         let mut p = Picture::empty(4, 4, -2, -3);

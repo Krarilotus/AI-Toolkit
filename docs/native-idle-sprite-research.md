@@ -1,8 +1,8 @@
 # Static idle troop previews: verified research
 
-Status: **implemented for 14 classic troop types**. Palette thumbnails retain
+Status: **implemented for 20 classic marker types**. Palette thumbnails retain
 their separate frame-0 contract; the 2.5D view uses the verified idle frames
-below. Siege engines, engineers, braziers, flags and DE-specific markers show
+below. Engineers and DE-specific markers show
 editor-drawn numbered rally markers until their stationary poses are verified.
 No game process is started or attached to, and no Firefly pixels are packaged.
 
@@ -34,6 +34,10 @@ and actual GM1 directories in `D:\Games\Stronghold Crusader KI-Liga`:
 
 | Unit | GM1 source | Idle table / first value | Game picture formula | Zero-based picture |
 | --- | --- | --- | --- | ---: |
+| Mangonel | `body_mangonel` | Stationary next-state branch | `direction + 1` | 0 at direction 0 |
+| Tower ballista | `body_ballista` | Stationary next-state branch | `((direction + 4) & 7) + 1` | 4 at direction 0 |
+| Trebuchet | `body_trebutchet` | Stationary next-state branch | `((direction + 4) & 7) + 1` | 4 at direction 0 |
+| Fire ballista | `body_arab_ballista` | Stationary next-state branch | `((direction + 4) & 7) + 1` | 4 at direction 0 |
 | European archer | `body_archer` | `0xB57938` / 1 | `0x280 + value*4 + direction/2` | 643 at direction 0 |
 | Crossbowman | `body_crossbowman` | `0xB57F68` / 8 | `0x90 + value` | 151 |
 | Spearman | `body_spearman` | `0xB58718` / 1 | `0x230 + value` | 560 |
@@ -50,6 +54,8 @@ and actual GM1 directories in `D:\Games\Stronghold Crusader KI-Liga`:
 | Horse archer rider | `body_horse_archer_top` | `0xB599C8` / 1 | `0x250 + value` | 592 |
 | Arabian swordsman | `body_arab_swordsman` | `0xB59D68` / 1 | `0x170 + value` | 368 |
 | Fire thrower | `body_arab_grenadier` | `0xB5A010` / 1 | `0x230 + value` | 560 |
+| Brazier | `body_brazier` | Stationary flame cycle, eight frames | First flame phase | 0 |
+| Small rally flag | `anim_flag_small` | Stationary cloth animation, 32 frames | First cloth phase | 0 |
 
 See `Map/Units/UpdateCrusaderArcher.cpp:635`,
 `UpdateCrossbowman.cpp:148`, `UpdateSwordsman.cpp:104`,
@@ -69,6 +75,15 @@ the resulting frame metadata ships; these executable addresses are not used
 by the runtime.
 
 ## Implementation and verification
+
+The stationary siege formulas come directly from the branches that set
+`stateBasedSpeed = 0` in `UpdateMangonel.cpp:73`, `UpdateBallista.cpp:75`,
+`UpdateTrebuchet.cpp:78`, and `UpdateFireBallista.cpp:81`. These sample the
+engine body; they do not invent manning engineers. `UpdateBrazierEntity.cpp:12`
+cycles eight flame frames without motion. `UpdateFlag_1_2_4_Entity.cpp` and
+`UpdateFlag3Entity.cpp` animate cloth at a fixed entity origin. The selected
+local files contain eight brazier frames and 32 small-flag frames. Their first
+phase is a stationary representation, not a walking-unit thumbnail fallback.
 
 `src-tauri/src/game/unit_poses.rs` owns frame metadata. The native extractor
 reads each resolved GM1 once for its thumbnail and idle pose, preserves native
@@ -90,17 +105,26 @@ AIV rally markers do not have build steps, so they remain present, dropping to
 the visible ground before a future supporting structure exists. Panning and
 zooming reuse the scene. Cached draw commands join the existing depth merge,
 damage tracking, GPU texture and command caches; they have no animation loop.
-Micro-positions remain within the marker tile, with its native depth order.
+Representatives occupy distinct whole tiles in the marker's 3-by-3 neighbourhood.
+Original rally tiles are reserved before neighbouring positions, so groups never
+overlap. Preview members stay on the same support elevation, inside the map;
+crowded locations or tower edges display fewer representatives instead of
+stacking them or floating them off the roof. Nine candidate tiles per marker
+bound the layout work; camera rotation preserves the same world positions.
 
-Local extraction proof: all 21 existing thumbnails and 14 idle poses decoded
+Local extraction proof: all 21 existing thumbnails and 20 stationary poses decoded
 with no warnings from `D:\Games\Stronghold Crusader KI-Liga`; a repeated call
-returned identical metadata and unchanged file modification times. Debug build
-timings were 85.8 ms cold and 30.3 ms warm including override revision lookup.
-The warm path does no pixel decoding. The tests cover allocation identity,
-zero/count weighting, preserved origins and forward/backward support heights.
+returned identical metadata and all 39 cache files retained their modification
+times. Debug build timings were 92 ms cold and 29 ms warm including override revision lookup.
+The warm path does no pixel decoding. Mangonel, brazier and flag reuse their
+already decoded first-frame thumbnail, including its preserved native anchor.
+The six added sprites were visually inspected at their original dimensions in
+an isolated extraction directory. Tests cover selected-frame pixels, shared
+PNG reuse, unchanged warm caches, allocation identity, zero/count weighting,
+preserved origins and forward/backward support heights.
 Live full-window drag/render performance remains a release acceptance check;
 the additional commands are not literally free.
 
-Definitive Edition-specific idle poses and classic siege/engineer poses remain
+Definitive Edition-specific idle poses and classic engineer poses remain
 unverified. Replacing sprite art may change animation conventions; a missing
 verified frame is reported rather than replaced by an arbitrary body frame.

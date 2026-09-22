@@ -162,13 +162,25 @@ html[data-themed-fields="true"] :is(input[type="number"], input[inputmode="numer
   color-scheme: var(--component-value-color-scheme);
 }
 html[data-themed-fields="true"] select {
-  appearance: none;
+  /* UCP's selects use the native indicator. dropdown_sel is a separate folder
+     expander in the source GUI; packs can opt into that art with a nonzero size. */
+  appearance: var(--component-select-appearance);
+  color-scheme: var(--component-select-color-scheme);
   border: 1px solid var(--line-strong);
   border-radius: 2px;
   color: var(--component-input-content);
-  background: var(--component-input-surface) var(--texture-dropdown) right 5px center / 16px 16px no-repeat;
-  padding-inline-end: 26px;
+  background: var(--component-input-surface) var(--texture-dropdown) right var(--component-select-indicator-inset) center / var(--component-select-indicator-size) auto no-repeat;
+  padding-inline-end: var(--component-select-padding-inline-end);
   font-family: var(--font-ui);
+}
+html[data-themed-fields="true"] :is(.workspaceTabs, .castleToolbar, .areaTabs, .isoViewControls) select {
+  background-color: var(--component-select-chrome-surface);
+  color: var(--component-select-chrome-content);
+  color-scheme: var(--component-select-chrome-color-scheme);
+}
+html[data-themed-fields="true"] select option {
+  background: var(--component-select-option-surface);
+  color: var(--component-select-option-content);
 }
 html[data-themed-fields="true"] :is(input, textarea)::placeholder { color: var(--component-panel-muted); opacity: 1; }
 html[data-themed-fields="true"] select:disabled { opacity: .55; }
@@ -239,10 +251,11 @@ html[data-themed-range="true"] input[type="range"]::-webkit-slider-runnable-trac
 }
 html[data-themed-range="true"] input[type="range"]::-webkit-slider-thumb { appearance: none; width: 12px; height: 20px; margin-top: -4px; border: 0; border-radius: 0; background: transparent var(--texture-range-thumb) center / 9px 20px no-repeat; }
 html[data-themed-range="true"] input[type="range"]::-webkit-slider-thumb:active { background-image: var(--texture-range-thumb-active); }
-/* Source: UCP3-GUI components/scrollbar.css. No native track or hover paint
-   remains behind the hanging rope. scroll_bar_top is unused by the source GUI. */
+/* UCP website paint rule: links and hook occupy separate areas. A native start
+   track ends at the thumb CENTER, so painting links on the thumb would duplicate
+   them. Reserve half the centered hook on the track; keep the native hit target. */
 html[data-themed-scrollbars="true"] * { scrollbar-width: auto; scrollbar-color: auto; }
-html[data-themed-scrollbars="true"] *::-webkit-scrollbar { width: 12px; height: 7px; background: transparent; }
+html[data-themed-scrollbars="true"] *::-webkit-scrollbar { width: var(--component-scrollbar-width); height: var(--component-scrollbar-horizontal-height); background: transparent; }
 html[data-themed-scrollbars="true"] *::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 html[data-themed-scrollbars="true"] *::-webkit-scrollbar-track,
 html[data-themed-scrollbars="true"] *::-webkit-scrollbar-track-piece,
@@ -250,11 +263,13 @@ html[data-themed-scrollbars="true"] *::-webkit-scrollbar-thumb,
 html[data-themed-scrollbars="true"] *::-webkit-scrollbar-corner { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 html[data-themed-scrollbars="true"] *::-webkit-scrollbar-track-piece:start:vertical {
   background: var(--texture-scroll-track) center bottom / auto repeat-y;
+  border-bottom: calc(var(--component-scrollbar-cap-height) / 2) solid transparent;
+  background-origin: padding-box;
+  background-clip: padding-box;
 }
 html[data-themed-scrollbars="true"] *::-webkit-scrollbar-thumb:vertical {
-  background-image: var(--texture-scroll-thumb), var(--texture-scroll-track), radial-gradient(40% 100% at center bottom, var(--semantic-scrollbar-thumb), transparent);
-  background-repeat: no-repeat, repeat-y, no-repeat;
-  background-position: center bottom, center bottom, center;
+  min-height: var(--component-scrollbar-cap-height);
+  background: var(--texture-scroll-thumb) center / auto no-repeat;
 }
 html[data-themed-scrollbars="true"] *::-webkit-scrollbar-track:horizontal {
   border: 0 solid transparent; border-top-width: 2px;

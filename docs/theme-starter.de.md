@@ -1,6 +1,6 @@
 # Eigenes AI-Toolkit-Design
 
-Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 123
+Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 136
 Farb-, Schrift- und Komponentenvariablen. Auch die großen Hintergründe sind
 enthalten. Du brauchst kein weiteres Theme und keine Entwicklungswerkzeuge.
 Als Ausgangspunkt dient das UCP-Design mit Monsterfishs Originalgrafiken.
@@ -33,6 +33,16 @@ wählbare Anzeigename. `default` und `ucp` sind reserviert.
   um die Buttons. Für Rahmen z. B. `border-width: 1px` und `radius: 6px`
   einstellen. `gap` trennt Gruppen bzw. Buttons, `padding-block` und
   `padding-inline` bestimmen Innenabstände. Die Logik bleibt unverändert.
+  Auswahlfelder nutzen unter `--component-select-*` den Systempfeil
+  (`appearance: auto`, `indicator-size: 0px`). Für einen eigenen Bildpfeil
+  `appearance: none`, `indicator-size: 20px` und `padding-inline-end: 30px`
+  setzen und die `dropdown`-Grafik ersetzen. `indicator-inset` bestimmt den
+  Randabstand; `color-scheme` passt Systempfeil und Auswahlliste an hell/dunkel an.
+  Die Auswahlfelder auf dunklen Werkzeugleisten verwenden die `chrome-*`-
+  Werte; die aufgeklappten Einträge verwenden `option-*`. Für Scrollleisten
+  stehen unter `--component-scrollbar-*` Breite, horizontale Höhe und
+  `cap-height` bereit. Letzteres reserviert den Platz für den Kettenhaken,
+  damit die wiederholten Kettenglieder nicht hinter ihm sichtbar bleiben.
 - **`theme.json`**: Name, Bildzuweisungen und Skalierung. `cover` füllt eine
   Fläche, `contain` erhält das vollständige Bild, `tile` kachelt, `frame`
   skaliert Rahmen in neun Abschnitten. `slice` bestimmt die Bildabschnitte,

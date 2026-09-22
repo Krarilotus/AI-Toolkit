@@ -134,11 +134,11 @@ button as the same textured rectangle:
 | Reading surface | `parchment_bg_light` | One continuous panel, with quiet data rows |
 | Text input | `searchfield` | Text fields and search |
 | Numeric value | `value_box` | Number fields |
-| Selection affordance | `dropdown_sel` | Native select arrow |
+| Selection affordance | Native select indicator | Same behavior as UCP's select menus; optional `dropdown` texture for custom packs |
 | Reorder | `move_up*`, `move_down*`, original 12 by 7 | Artwork centered in a 24 by 24 hit target |
 | Stepper | `add*`, `remove*` | Brush size controls |
 | Range | `slider*` | Build-step slider and transparency sliders |
-| Scrolling | `scroll_bar_middle`, `scroll_bar_bottom` | Native scrollbar paint |
+| Scrolling | `scroll_bar_middle`, website `scroll_bar_bottom_hook` | Native scrolling with separated chain and hook paint |
 | Checkbox | `checkbox_empty`, `checkbox_full` | Real checkbox controls |
 | Categories | `outline_border` | Original category colours retained |
 
@@ -148,6 +148,19 @@ when a custom pack omits them. Optional texture roles have presence flags, so a
 minimal pack cannot hide arrow labels behind absent icons. Main-menu actions,
 viewport controls and selectable rows remain distinct from large command buttons.
 A renamed copy of UCP uses the same role flags; there are no pack-ID selectors.
+
+UCP's `dropdown_sel.png` is the 20 by 20 button for the **recent-folders expander**,
+not its select-menu indicator (`overview/recent-folders.css`). Its regular selects
+retain their native arrow. The Toolkit therefore uses `component.select.appearance`
+`auto` and zero `indicatorSize` for UCP, with a light `colorScheme` matching its
+parchment fields. This avoids squeezing a beveled button into a tiny arrow slot.
+Custom packs can choose `appearance: none`, a nonzero `indicatorSize` (20 px for
+the supplied original), `indicatorInset` and sufficient `paddingInlineEnd` to
+use their assigned dropdown artwork. Both options keep native select semantics
+and keyboard navigation; no duplicate scripted menu is introduced.
+Chrome fields use `chromeSurface`, `chromeContent` and `chromeColorScheme`, and
+the option list uses `optionSurface`/`optionContent`, matching UCP's dark menu.
+Parchment form fields retain their dark text and corresponding native arrow.
 
 Live Tauri/WebView2 checks covered Castle, Character, Library, AI Content, the
 snapshot dialog, all 14 category hover colours, command hover/focus and native
@@ -172,11 +185,18 @@ with name and dimensions adjacent. This applies equally to both themes.
   `.parchment-box-bg-light` for its main reading panel; this is the original
   light parchment used by the Toolkit pack. Nested rows use the source's quiet
   translucent grey/light shading instead of repeating the frame or texture.
-- `components/scrollbar.css` puts the rope shaft on only the leading track
-  segment and inside the thumb, with the bottom-cap asset and radial fade.
-  `scroll_bar_top.png` exists in the source assets but is not used by that
-  stylesheet. The port follows the working source composition, clears native
-  track/hover/button paint, and uses the original ornament on horizontal bars.
+- The UCP website's `css/content.css` (`.chain-visuals`) corrects the old GUI
+  scrollbar's overlap: repeated links stop above a separate 18 px hook area.
+  The Toolkit uses that unchanged 7 by 18 hook with native scrollbar paint.
+  A native leading track reaches the thumb's **center**, not its start, so
+  repeating links on both track and thumb would still overlap. Links now paint
+  only on that track, clipped above half the hook height; the thumb paints just
+  its centered hook. This produces a continuous chain once per pixel, without
+  the old radial thumb shading. Native scrolling,
+  dragging and a 12 px hit target remain intact without scroll observers or
+  JavaScript drawing. Width, horizontal height and cap height are theme tokens.
+  Track/hover/button paint stays transparent and horizontal bars keep the
+  original ornament.
 - `extension-element/extension-element.css` centers unscaled reorder
   artwork. The 12 by 7 arrow is not stretched to the control's square hit area.
 - The pack uses a system serif stack for UCP's historical type role. The source
