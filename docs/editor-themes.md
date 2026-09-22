@@ -7,6 +7,12 @@ pack in `theme.json` and `ATTRIBUTION.md`; no game sprites or fonts are included
 
 ## Authoring one pack
 
+For a complete standalone starter, run `node scripts/package-theme-starter.mjs`.
+It packages every supported texture role (including Default's sidebar/backdrop),
+all variables and merged token sources, plus a German designer guide. The ZIP
+is written to `dist/Monsterfish-Theme-Starter.zip`; an optional argument sets the
+output path. Packaging checks role/variable coverage and byte-exact ZIP contents.
+
 Copy `assets/themes/ucp/` to a new folder and change its manifest ID/name. A pack
 contains `theme.json`, `tokens.json`, generated `variables.css`, and `textures/`.
 Add the ID/name to `assets/themes/registry.json` for a bundled pack. User packs
