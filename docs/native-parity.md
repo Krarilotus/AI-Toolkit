@@ -168,7 +168,20 @@ confirmed empty or incompatible snapshots still fall back. Two native regression
 tests cover that distinction. The interrupted run is not evidence of unattended
 source restoration; the local report records that limitation explicitly.
 
-The published ZIP is **7,728,703 bytes**; setup is **7,075,528 bytes**. WebView2 is
+The final `4b10b163` to `f06c691c` acceptance run passed unattended in about
+seven seconds: real update button, verified download, executable replacement,
+restart, selected experimental source and green current indicator. Both custom
+configuration edits, settings and localStorage survived. The receipt/executable
+matched the published archive; the owned test window closed cleanly. Evidence:
+`ai-toolkit-setup/native-updater-e2e-1790079396579/result.json`.
+
+Final `f06c691c` downloads are **7,124,091 bytes** portable and **6,537,949 bytes**
+installer. All 122 packaged images are byte-identical to source. Full-resolution
+screenshots of all four tabs were captured from that built preview, including
+expanded Character fields and the loaded 998-step castle. Numeric, text/search
+and map-search contrast were checked against their actual rendered styles.
+
+The earlier `4b10b163` baseline ZIP is **7,728,703 bytes**; setup is **7,075,528 bytes**. WebView2 is
 an external OS runtime, not included in these numbers. The ZIP central directory
 gives the following actual compressed contributions:
 
