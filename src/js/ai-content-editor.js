@@ -120,6 +120,7 @@
     for (const key of Object.keys(state.lines)) {
       const label = document.createElement('label');
       label.className = `aiLineField${key === 'description' ? ' long' : ''}`;
+      label.dataset.lineKey = key;
       const name = document.createElement('span');
       name.textContent = friendlyLabel(key);
       name.title = key;
@@ -135,7 +136,17 @@
       label.append(name, input);
       els.form.appendChild(label);
     }
+    window.toolkitI18n.applyTextDirection(els.form);
     updateDirtyDisplay();
+  }
+
+  function translateLineLabels() {
+    for (const label of els.form.querySelectorAll('.aiLineField')) {
+      const key = label.dataset.lineKey;
+      label.querySelector('span').textContent = friendlyLabel(key);
+      label.querySelector('textarea').placeholder = lineHint(key);
+    }
+    window.toolkitI18n.applyTextDirection(els.form);
   }
 
   function formatBytes(value) {
@@ -314,6 +325,7 @@
         ? tr("content:no_mapped_wav_speech_files_found_for_value", { value1: languageLabel(state.speechLanguage) })
         : tr("content:no_mapped_value_files_found", { value1: speech ? tr('details:wav_speech') : tr('details:bink_video') });
       list.appendChild(empty);
+      window.toolkitI18n.applyTextDirection(list);
       return;
     }
 
@@ -324,6 +336,7 @@
       const heading = document.createElement('div');
       heading.className = 'aiMediaHeading';
       const title = document.createElement('h3');
+      title.dataset.bidi = 'ltr';
       title.textContent = item.fileName;
       title.title = item.filePath;
       const badge = document.createElement('span');
@@ -372,6 +385,7 @@
       if (audio) card.appendChild(audio);
       list.appendChild(card);
     }
+    window.toolkitI18n.applyTextDirection(list);
   }
 
   function renderAllMedia() {
@@ -406,7 +420,7 @@
     state.speechLanguage = state.defaultLanguage;
     els.empty.hidden = true;
     els.editor.hidden = false;
-    window.toolkitI18n.bindText(els.path, state.linesPath);
+    window.toolkitI18n.bindText(els.path, state.linesPath, 'ltr');
     els.path.title = state.linesPath;
     els.portrait.src = state.portraits.portrait?.dataUrl || placeholder;
     els.portraitSmall.src = state.portraits.portraitSmall?.dataUrl || placeholder;
@@ -507,7 +521,7 @@
   };
 
   window.toolkitI18n?.onChange(() => {
-    renderLines(); renderAllMedia(); updateDirtyDisplay();
+    translateLineLabels(); renderAllMedia(); updateDirtyDisplay();
   });
   clearProject();
 })();

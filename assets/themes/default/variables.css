@@ -78,6 +78,14 @@
   --component-input-border: var(--semantic-border-strong);
   --component-panel-surface: var(--semantic-surface-panel);
   --component-panel-heading: var(--semantic-surface-section);
+  --component-panel-content: var(--semantic-content-main);
+  --component-panel-soft: var(--semantic-content-soft);
+  --component-panel-muted: var(--semantic-content-muted);
+  --component-panel-border: var(--semantic-border-normal);
+  --component-panel-accent: var(--semantic-action-accent);
+  --component-panel-selected: var(--semantic-action-selected);
+  --component-panel-success: var(--semantic-status-success);
+  --component-panel-danger: var(--semantic-status-danger);
   --component-tab-surface: var(--semantic-surface-section);
   --component-tab-selected: var(--semantic-surface-control);
   --component-tab-content: var(--semantic-content-soft);

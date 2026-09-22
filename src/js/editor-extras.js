@@ -206,6 +206,7 @@
       empty.className = 'castleGroupsEmpty';
       empty.textContent = tr("castle:no_groups_in_this_castle_yet_select_placements_on_the_map_give_them_a_na");
       els.list.appendChild(empty);
+      global.toolkitI18n.applyTextDirection(els.list);
       return;
     }
     for (const group of groups) {
@@ -234,6 +235,7 @@
       icon.appendChild(path); remove.appendChild(icon); row.appendChild(remove);
       els.list.appendChild(row);
     }
+    global.toolkitI18n.applyTextDirection(els.list);
   }
 
   function rowButton(label, title, onClick) {

@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "extends": "default",
   "variables": "variables.css",
-  "colorScheme": "light",
+  "colorScheme": "dark",
   "textures": {
     "control": {
       "file": "textures/button_ucp.png",
@@ -153,6 +153,13 @@
     "removeHover": {
       "file": "textures/remove_hover.png",
       "mode": "contain"
+    },
+    "ornament": {
+      "file": "textures/ornament_border.png",
+      "mode": "frame",
+      "slice": 8,
+      "width": 8,
+      "fill": false
     }
   },
   "attribution": [

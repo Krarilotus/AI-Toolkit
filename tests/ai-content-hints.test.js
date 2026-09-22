@@ -9,7 +9,7 @@ function editor(lines) {
   const inputs = new Map(), saved = [];
   const state = {lines: structuredClone(lines), linesPath: 'test/lines.json', busy: false};
   state.savedSnapshot = JSON.stringify(state.lines);
-  const element = tag => ({tag, value: '', placeholder: '', children: [], handlers: {},
+  const element = tag => ({tag, dataset: {}, value: '', placeholder: '', children: [], handlers: {},
     append(...nodes) { this.children.push(...nodes); },
     addEventListener(event, fn) { this.handlers[event] = fn; }});
   const form = {appendChild(label) { inputs.set(label.children[0].title, label.children[1]); }};

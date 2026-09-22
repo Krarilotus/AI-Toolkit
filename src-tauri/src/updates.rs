@@ -73,6 +73,7 @@ fn client() -> Result<reqwest::blocking::Client> {
     reqwest::blocking::Client::builder()
         .user_agent("AI-Toolkit-native-updater")
         .timeout(Duration::from_secs(30))
+        .min_tls_version(reqwest::tls::Version::TLS_1_2)
         .build()
         .map_err(crate::error::Error::diagnostic)
 }

@@ -73,12 +73,12 @@ button as the same textured rectangle:
 | --- | --- | --- |
 | Main commands | `button_ucp*`, 8px filled nine-slice | Open/save and toolbar actions |
 | Workspace tabs | `ornament_border_button*`, 18px slice | Main workspace navigation |
-| Dialog frame | `ornament_border_shadow`, 16px slice | Modal dialogs and contextual panels |
+| Reading frame | `ornament_border_shadow`, slice 16, auto image width | Reading panels, cards, dialogs and contextual panels |
 | Reading surface | `parchment_bg_light` | One continuous panel, with quiet data rows |
 | Text input | `searchfield` | Text fields and search |
 | Numeric value | `value_box` | Number fields |
 | Selection affordance | `dropdown_sel` | Native select arrow |
-| Reorder | `move_up*`, `move_down*` | Build-step arrow buttons |
+| Reorder | `move_up*`, `move_down*`, original 12 by 7 | Artwork centered in a 24 by 24 hit target |
 | Stepper | `add*`, `remove*` | Brush size controls |
 | Range | `slider*` | Build-step slider and transparency sliders |
 | Scrolling | `scroll_bar_middle`, `scroll_bar_bottom` | Native scrollbar paint |
@@ -103,3 +103,31 @@ Palette thumbnails do not contribute their intrinsic sprite dimensions to row
 layout. The keep's tall 7×15 image previously expanded its row to 91px; the shared
 thumbnail slot now covers the left side of a compact row (45px in the live check),
 with name and dimensions adjacent. This applies equally to both themes.
+
+### Source correspondence for the UCP hierarchy
+
+- UCP3-GUI `components/variables.css` and `titlebar/titlebar.css` define
+  `#212529` chrome. The Toolkit shell, toolbars and spaces between reading
+  panels use that dark role, with its existing Monsterfish backdrop behind the
+  workspaces. Maps and the entire application do not become parchment.
+- `components/base.css` defines `.parchment-box` with the shadow ornament
+  border. `ucp-tabs/config-editor/config-editor.tsx` explicitly selects
+  `.parchment-box-bg-light` for its main reading panel; this is the original
+  light parchment used by the Toolkit pack. Nested rows use the source's quiet
+  translucent grey/light shading instead of repeating the frame or texture.
+- `components/scrollbar.css` puts the rope shaft on only the leading track
+  segment and inside the thumb, with the bottom-cap asset and radial fade.
+  `scroll_bar_top.png` exists in the source assets but is not used by that
+  stylesheet. The port follows the working source composition, clears native
+  track/hover/button paint, and uses the original ornament on horizontal bars.
+- `extension-element/extension-element.css` centers unscaled reorder
+  artwork. The 12 by 7 arrow is not stretched to the control's square hit area.
+- The pack uses a system serif stack for UCP's historical type role. The source
+  GUI's custom fonts are not bundled.
+
+Paper foreground/border/accent tokens are scoped to reading components, not the
+root palette. Each theme therefore remains internally consistent, and a copied
+UCP pack is selected by its available component roles rather than its name. These
+changes add one original 1,231-byte ornament image; no image was resized or
+re-encoded. Text-only bidirectional rendering is shared with detached windows and
+does not mirror the workspace or world coordinates.

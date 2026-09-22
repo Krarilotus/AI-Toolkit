@@ -10,7 +10,7 @@
 })(typeof window === 'object' ? window : globalThis, function (root) {
   'use strict';
   const BUILTINS = Object.freeze([{ id: 'default', name: 'Default' }, { id: 'ucp', name: 'UCP' }]);
-  const SLOTS = Object.freeze(['control', 'controlHover', 'controlPressed', 'panel', 'panelSurface', 'checkbox', 'checkboxChecked', 'sidebar', 'backdrop', "tab", "tabActive", "input", "value", "dropdown", "outline", "rangeTrack", "rangeStart", "rangeEnd", "rangeThumb", "rangeThumbActive", "scrollTrack", "scrollThumb", "moveUp", "moveUpHover", "moveUpPressed", "moveDown", "moveDownHover", "moveDownPressed", "add", "addHover", "remove", "removeHover"]);
+  const SLOTS = Object.freeze(['control', 'controlHover', 'controlPressed', 'panel', 'panelSurface', 'ornament', 'checkbox', 'checkboxChecked', 'sidebar', 'backdrop', "tab", "tabActive", "input", "value", "dropdown", "outline", "rangeTrack", "rangeStart", "rangeEnd", "rangeThumb", "rangeThumbActive", "scrollTrack", "scrollThumb", "moveUp", "moveUpHover", "moveUpPressed", "moveDown", "moveDownHover", "moveDownPressed", "add", "addHover", "remove", "removeHover"]);
   const IDENTIFIER = /^[a-z][a-z0-9-]{0,47}$/;
   const STORAGE_KEY = 'ai-toolkit-theme';
   const hyphenate = value => value.replace(/[A-Z]/g, letter => '-' + letter.toLowerCase());
@@ -125,7 +125,7 @@
       element.dataset.themedControls = pack.textures.control ? 'true' : 'false';
       element.dataset.themedCheckboxes = pack.textures.checkbox && pack.textures.checkboxChecked ? 'true' : 'false';
       // Optional artwork changes paint only for roles that have a complete set.
-      const roles = { Tabs: ['tab', 'tabActive'], Fields: ['input', 'value', 'dropdown'], Reorder: ['moveUp', 'moveDown'], Stepper: ['add', 'remove'], Range: ['rangeTrack', 'rangeThumb'], Scrollbars: ['scrollTrack', 'scrollThumb'] };
+      const roles = { Panels: ['panel', 'panelSurface'], Tabs: ['tab', 'tabActive'], Fields: ['input', 'value', 'dropdown'], Reorder: ['moveUp', 'moveDown'], Stepper: ['add', 'remove'], Range: ['rangeTrack', 'rangeThumb'], Scrollbars: ['scrollTrack', 'scrollThumb'] };
       for (const [role, slots] of Object.entries(roles)) element.dataset['themed' + role] = slots.every(slot => pack.textures[slot]) ? 'true' : 'false';
       element.style.colorScheme = pack.colorScheme;
       win.dispatchEvent?.(new win.CustomEvent('toolkit-theme-changed', { detail: { id: pack.id } }));

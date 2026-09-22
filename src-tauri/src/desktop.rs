@@ -130,8 +130,10 @@ fn configuration(app: &AppHandle, name: &str) -> Result<Value> {
     }
     Ok(defaults)
 }
-fn pick(app: &AppHandle, payload: &Value) -> Result<Value> {
-    let mut dialog = app.dialog().file();
+fn pick(app: &AppHandle, window: &WebviewWindow, payload: &Value) -> Result<Value> {
+    // Modal ownership is required, not optional: edits behind Save As would
+    // otherwise diverge from the document captured before the picker opened.
+    let mut dialog = app.dialog().file().set_parent(window);
     if let Some(title) = payload["title"].as_str() {
         dialog = dialog.set_title(title);
     }
@@ -182,8 +184,8 @@ fn skin_path(app: &AppHandle, kind: &Value) -> Result<PathBuf> {
     fs::create_dir_all(&folder).map_err(crate::error::Error::diagnostic)?;
     Ok(folder.join(format!("{id}.png")))
 }
-fn image_selection(app: &AppHandle, payload: &Value) -> Result<Value> {
-    let choice = pick(app, payload)?;
+fn image_selection(app: &AppHandle, window: &WebviewWindow, payload: &Value) -> Result<Value> {
+    let choice = pick(app, window, payload)?;
     let Some(path) = choice.as_str() else {
         return Ok(Value::Null);
     };
@@ -254,6 +256,7 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
             let response = app
                 .dialog()
                 .message(str_arg(&p, "message")?)
+                .parent(window)
                 .title(str_arg(&p, "title")?)
                 .buttons(MessageDialogButtons::YesNoCancelCustom(
                     label(0),
@@ -318,7 +321,7 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
             .map(|p| json!(p))
             .unwrap_or(Value::Null)),
         Operation::ChooseInstallation => {
-            let choice = pick(app, &p)?;
+            let choice = pick(app, window, &p)?;
             if let Some(value) = choice.as_str() {
                 let root = storage::normalize_installation(Path::new(value))?;
                 storage::update_settings(app, "ucpInstallation", json!(root))?;
@@ -327,7 +330,7 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                 Ok(Value::Null)
             }
         }
-        Operation::PickPath => pick(app, &p),
+        Operation::PickPath => pick(app, window, &p),
         Operation::ReadDocument => storage::read_document(
             Path::new(str_arg(&p, "path")?),
             p["castle"].as_bool() == Some(true),
@@ -373,7 +376,7 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
         }
         Operation::ReplaceMedia => {
             let media = library::resolve_media(&p)?;
-            let choice = pick(app, &p["dialog"])?;
+            let choice = pick(app, window, &p["dialog"])?;
             if let Some(source) = choice.as_str() {
                 let dest = Path::new(library::text(&media, "filePath"));
                 let extension = |path: &Path| {
@@ -440,7 +443,7 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
             Ok(result)
         }
         Operation::ChooseSkin => {
-            let selected = pick(app, &p["dialog"])?;
+            let selected = pick(app, window, &p["dialog"])?;
             if let Some(source) = selected.as_str() {
                 let target = skin_path(app, &p["itemType"])?;
                 let bytes = fs::read(source).map_err(crate::error::Error::diagnostic)?;
@@ -468,9 +471,9 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                 .map_err(crate::error::Error::diagnostic)?;
             Ok(json!(folder))
         }
-        Operation::ChooseBackground => image_selection(app, &p),
+        Operation::ChooseBackground => image_selection(app, window, &p),
         Operation::SavePicture => {
-            let choice = pick(app, &p["dialog"])?;
+            let choice = pick(app, window, &p["dialog"])?;
             if let Some(path) = choice.as_str() {
                 let data = str_arg(&p, "png")?
                     .strip_prefix("data:image/png;base64,")

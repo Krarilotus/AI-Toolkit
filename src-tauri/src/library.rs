@@ -453,10 +453,39 @@ fn managed_target(request: &Value) -> Result<(PathBuf, PathBuf)> {
     }
     let plugin = root.join("ucp/plugins").join(MANAGED);
     let target = plugin.join("resources/ai").join(id);
-    fs::create_dir_all(&plugin).map_err(crate::error::Error::diagnostic)?;
-    let definition="name: aiv-mod-editor-local\ndisplay-name: AI Toolkit - My AIs\nversion: 1.0.0\nauthor: AI Toolkit\nmeta:\n  version: 1.0.0\ntype: plugin\ndependencies:\n  aiSwapper: \">= 1.2.0\"\n";
-    storage::atomic_write(&plugin.join("definition.yml"), definition.as_bytes())?;
     Ok((root, target))
+}
+fn managed_transaction<T>(
+    root: &Path,
+    target: &Path,
+    prepare: impl FnOnce(&Path) -> Result<T>,
+) -> Result<T> {
+    let plugin = root.join("ucp/plugins").join(MANAGED);
+    let definition = plugin.join("definition.yml");
+    if definition.is_file() {
+        // Existing metadata belongs to the installed plugin. Preserve it and
+        // avoid copying every other AI for an ordinary single-project update.
+        return transaction(target, prepare);
+    }
+    if definition.exists() {
+        return Err(crate::error::Error::diagnostic(format!(
+            "Expected a plugin definition file: {}",
+            definition.display()
+        )));
+    }
+    let relative = target
+        .strip_prefix(&plugin)
+        .map_err(crate::error::Error::diagnostic)?;
+    // First creation/recovery of the definition and the AI commit together in
+    // one directory rename. Failed preparation never publishes either one.
+    transaction(&plugin, |stage| {
+        let ai = stage.join(relative);
+        fs::create_dir_all(&ai).map_err(crate::error::Error::diagnostic)?;
+        let result = prepare(&ai)?;
+        let defaults = "name: aiv-mod-editor-local\ndisplay-name: AI Toolkit - My AIs\nversion: 1.0.0\nauthor: AI Toolkit\nmeta:\n  version: 1.0.0\ntype: plugin\ndependencies:\n  aiSwapper: \">= 1.2.0\"\n";
+        storage::atomic_write(&stage.join("definition.yml"), defaults.as_bytes())?;
+        Ok(result)
+    })
 }
 fn scanned_ai(root: &Path, target: &Path) -> Result<Value> {
     Ok(scan(root)?["ais"]
@@ -480,7 +509,7 @@ pub fn create(request: &Value, clone: bool) -> Result<Value> {
     if title.is_empty() {
         return Err(crate::error::Error::new("enter_an_ai_name"));
     }
-    transaction(&target, |stage| {
+    managed_transaction(&root, &target, |stage| {
         if clone {
             let source = storage::within(
                 &root.join("ucp/plugins"),
@@ -534,7 +563,7 @@ pub fn update(request: &Value) -> Result<Value> {
     }
     let content = text(request, "characterContent");
     serde_json::from_str::<Value>(content).map_err(crate::error::Error::diagnostic)?;
-    transaction(&target, |stage| {
+    managed_transaction(&root, &target, |stage| {
         storage::atomic_write(&stage.join("character.json"), content.as_bytes())?;
         let file = text(request, "castleFile");
         if !file.is_empty() {
@@ -690,6 +719,98 @@ mod tests {
         assert_eq!(
             fs::read(target.join("custom.yaml")).unwrap(),
             b"extension: untouched\n"
+        );
+    }
+    #[test]
+    fn failed_managed_operations_preserve_plugin_and_project_metadata() {
+        let fixture = Fixture::new();
+        let plugin = fixture.0.join("ucp/plugins").join(MANAGED);
+        let request = json!({"gameRoot":fixture.0,"aiId":"new","name":"New", "characterContent":"{}","castleBase64":"not base64"});
+        // Target calculation and failures during first creation leave no plugin.
+        managed_target(&request).unwrap();
+        assert!(!plugin.exists());
+        assert!(create(&request, false).is_err());
+        assert!(!plugin.exists());
+
+        let target = plugin.join("resources/ai/existing");
+        storage::atomic_write(&target.join("character.json"), b"{\"preserve\":true}").unwrap();
+        storage::atomic_write(&target.join("custom.txt"), b"custom AI file").unwrap();
+        let definition =
+            b"name: aiv-mod-editor-local\nversion: 1.0.0\ntype: plugin\ncustom: preserve\n";
+        storage::atomic_write(&plugin.join("definition.yml"), definition).unwrap();
+        // Fail before staging (duplicate ID / invalid character), and after a
+        // changed character was staged (invalid encoded castle).
+        assert!(create(
+            &json!({"gameRoot":fixture.0,"aiId":"existing","name":"Duplicate"}),
+            false
+        )
+        .is_err());
+        assert!(update(
+            &json!({"gameRoot":fixture.0,"aiId":"existing","characterContent":"invalid"})
+        )
+        .is_err());
+        assert!(update(&json!({"gameRoot":fixture.0,"aiId":"existing","characterContent":"{}","castleFile":"castle.aiv","castleBase64":"invalid"})).is_err());
+        assert_eq!(fs::read(plugin.join("definition.yml")).unwrap(), definition);
+        assert_eq!(
+            fs::read(target.join("character.json")).unwrap(),
+            b"{\"preserve\":true}"
+        );
+        assert_eq!(
+            fs::read(target.join("custom.txt")).unwrap(),
+            b"custom AI file"
+        );
+
+        // A plugin without its definition must also survive failed recovery.
+        fs::remove_file(plugin.join("definition.yml")).unwrap();
+        assert!(create(&request, false).is_err());
+        assert!(!plugin.join("definition.yml").exists());
+        assert!(!plugin.join("resources/ai/new").exists());
+        assert_eq!(
+            fs::read(target.join("custom.txt")).unwrap(),
+            b"custom AI file"
+        );
+    }
+    #[test]
+    fn successful_managed_creation_adds_definition_once_and_preserves_customizations() {
+        let fixture = Fixture::new();
+        let plugin = fixture.0.join("ucp/plugins").join(MANAGED);
+        let request = json!({"gameRoot":fixture.0,"aiId":"first","name":"First", "characterContent":"{}","castleBase64":"AAEC/w=="});
+        let first = create(&request, false).unwrap();
+        assert_eq!(first["name"], "First");
+        assert!(plugin.join("definition.yml").is_file());
+        let definition =
+            fs::read_to_string(plugin.join("definition.yml")).unwrap() + "custom: preserved\n";
+        fs::write(plugin.join("definition.yml"), &definition).unwrap();
+        storage::atomic_write(&plugin.join("custom-plugin.txt"), b"plugin extension").unwrap();
+        storage::atomic_write(
+            &plugin.join("resources/ai/first/custom.txt"),
+            b"first AI extension",
+        )
+        .unwrap();
+        let mut second = request.clone();
+        second["aiId"] = json!("second");
+        second["name"] = json!("Second");
+        create(&second, false).unwrap();
+        update(
+            &json!({"gameRoot":fixture.0,"aiId":"second","characterContent":"{\"changed\":true}"}),
+        )
+        .unwrap();
+        assert_eq!(
+            fs::read_to_string(plugin.join("definition.yml")).unwrap(),
+            definition
+        );
+        assert_eq!(
+            fs::read(plugin.join("custom-plugin.txt")).unwrap(),
+            b"plugin extension"
+        );
+        assert_eq!(
+            fs::read(plugin.join("resources/ai/first/custom.txt")).unwrap(),
+            b"first AI extension"
+        );
+        assert_eq!(
+            storage::read_json(plugin.join("resources/ai/second/character.json")).unwrap()
+                ["changed"],
+            true
         );
     }
     #[test]

@@ -50,6 +50,8 @@
       metric(tr("character:positive_negative"),fear.positive+' / '+fear.negative),
       metric(tr("character:net_buildings"),signed(fear.net)),
       metric(tr("character:population_groups_of_16"),fear.population+' / '+fear.groups));
+    window.toolkitI18n.applyTextDirection(container);
+    window.toolkitI18n.applyTextDirection(document.getElementById('characterFearDetails'));
   }
   window.characterHelperPanels={update(a,summary,population){
     const next=[a,summary?.counts||{},population],key=JSON.stringify(next);

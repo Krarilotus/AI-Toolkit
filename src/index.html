@@ -20,7 +20,7 @@
   <form id="releaseSourceForm">
     <h2 data-i18n="interface:experimental_snapshots">Experimental snapshots</h2>
     <label for="releaseSourceRepo" data-i18n="interface:toolkit_fork_owner_repository">Toolkit fork (owner/repository)</label>
-    <input id="releaseSourceRepo" placeholder="Krarilotus/AI-Toolkit" required autocomplete="off" spellcheck="false">
+    <input id="releaseSourceRepo" data-bidi="ltr" dir="ltr" placeholder="Krarilotus/AI-Toolkit" required autocomplete="off" spellcheck="false">
     <p data-i18n="interface:fork_builds_are_experimental_switching_sources_does_not_install_a_build_unti">Fork builds are experimental. Switching sources does not install a build until you press Install.</p>
     <p id="releaseSourceError" role="alert"></p>
     <div class="releaseSourceActions"><button id="releaseSourceCancel" type="button" data-i18n="interface:cancel">Cancel</button><button type="submit" data-i18n="interface:use_fork">Use fork</button></div>
@@ -488,8 +488,8 @@
               <p data-i18n="interface:the_complete_ai_package_is_copied_into_the_editor_owned_ucp_plugin_so_you_ca">The complete AI package is copied into the editor-owned UCP plugin so you can make a separate variant.</p>
               <div class="ucpCloneFields">
                 <label><span data-i18n="interface:ai_name">AI name</span> <input id="ucpCloneName" type="text"></label>
-                <label><span data-i18n="interface:folder_id">Folder ID</span> <input id="ucpCloneId" type="text" spellcheck="false"></label>
-                <label><span data-i18n="interface:version">Version</span> <input id="ucpCloneVersion" type="text" value="1.0.0" spellcheck="false"></label>
+                <label><span data-i18n="interface:folder_id">Folder ID</span> <input id="ucpCloneId" type="text" data-bidi="ltr" dir="ltr" spellcheck="false"></label>
+                <label><span data-i18n="interface:version">Version</span> <input id="ucpCloneVersion" type="text" data-bidi="ltr" dir="ltr" value="1.0.0" spellcheck="false"></label>
               </div>
               <button id="ucpCloneBtn" type="button" data-i18n="interface:clone_to_my_ais">Clone to My AIs</button>
             </section>
@@ -513,9 +513,9 @@
           <p data-i18n="interface:creates_a_complete_blank_ai_inside_ai_toolkit_my_ais">Creates a complete blank AI inside AI Toolkit - My AIs.</p>
         </div>
         <label><span data-i18n="interface:ai_name">AI name</span> <input id="ucpCreateName" type="text" required autocomplete="off"></label>
-        <label><span data-i18n="interface:folder_id">Folder ID</span> <input id="ucpCreateId" type="text" required spellcheck="false" autocomplete="off"></label>
+        <label><span data-i18n="interface:folder_id">Folder ID</span> <input id="ucpCreateId" type="text" data-bidi="ltr" dir="ltr" required spellcheck="false" autocomplete="off"></label>
         <label><span data-i18n="interface:author">Author</span> <input id="ucpCreateAuthor" type="text" autocomplete="off"></label>
-        <label><span data-i18n="interface:version">Version</span> <input id="ucpCreateVersion" type="text" value="1.0.0" required spellcheck="false"></label>
+        <label><span data-i18n="interface:version">Version</span> <input id="ucpCreateVersion" type="text" data-bidi="ltr" dir="ltr" value="1.0.0" required spellcheck="false"></label>
         <div class="ucpCreateActions">
           <button id="ucpCreateCancelBtn" type="button" data-i18n="interface:cancel">Cancel</button>
           <button id="ucpCreateConfirmBtn" type="submit" data-i18n="interface:create_ai">Create AI</button>

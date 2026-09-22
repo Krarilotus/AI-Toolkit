@@ -14,9 +14,28 @@
   const ownedText = new Map();
   const textCache = new Map();
   const numberFormats = new Map();
+  const textElements = '[data-i18n], [data-bidi], input, textarea, select, option, button, label, p, h1, h2, h3, h4, span, strong, small, summary, th, td, dt, dd, div, code, kbd';
+  const textInputTypes = new Set(['text', 'search', 'password', 'email', 'url', 'tel']);
+  const literalInputTypes = new Set(['number', 'range', 'email', 'url', 'tel']);
+  const isRtl = language => registry.languages.find(item => item.id === language)?.dir === 'rtl';
   engine.init({ lng: 'en', fallbackLng: 'en', supportedLngs: registry.languages.map(item => item.id),
     resources: { en: resources }, defaultNS: 'common', ns: Object.keys(resources), nsSeparator: ':', keySeparator: '.',
     initImmediate: false, initAsync: false, interpolation: { escapeValue: false }, returnNull: false });
+  engine.services.formatter.add('bidi', isolateInterpolation);
+  // Isolate inserted filenames, numbers and names from adjacent Persian text.
+  // These Unicode isolates are the plain-text equivalent of <bdi>; source data
+  // and editable values are never modified.
+  function isolateInterpolation(value, language) {
+    if (!isRtl(language) || value === '' || value == null) return value;
+    const numeric = typeof value === 'number' || /^[\p{Decimal_Number}+\-\u2212.,\u066b\u066c%\u066a\s]+$/u.test(value);
+    return (numeric ? '\u2066' : '\u2068') + value + '\u2069';
+  }
+  function isolateResourceArguments(resource) {
+    if (typeof resource === 'string') {
+      return resource.replace(/\{\{([^{}]+)\}\}/g, (_match, expression) => `{{${expression}, bidi}}`);
+    }
+    return Object.fromEntries(Object.entries(resource).map(([key, value]) => [key, isolateResourceArguments(value)]));
+  }
   /** @param {import('./i18n-keys').TranslationKey} key @param {Record<string, unknown>} [options] */
   function t(key, options) {
     if (options) return engine.t(key, options);
@@ -29,13 +48,49 @@
     return registry.languages.find(item => [item.id, ...(item.aliases || [])].some(alias => alias.toLowerCase() === normalized))?.id
       || registry.languages.find(item => [item.id, ...(item.aliases || [])].some(alias => alias.toLowerCase() === normalized.split('-')[0]))?.id || 'en';
   }
-  /** Dynamic content belongs to its editor, never to an initial HTML fallback. */
-  function bindText(element, value) {
+  /**
+   * Dynamic content belongs to its editor, never to an initial HTML fallback.
+   * @param {HTMLElement | null} element
+   * @param {string | (() => string)} value
+   * @param {'auto' | 'ltr'} [direction]
+   */
+  function bindText(element, value, direction = 'auto') {
     if (!element) return;
-    if (element.dataset) delete element.dataset.i18n;
+    if (element.dataset) {
+      if (element.dataset.i18n) delete element.dataset.i18n;
+      const bidi = direction === 'ltr' ? 'ltr' : 'text';
+      if (element.dataset.bidi !== bidi) element.dataset.bidi = bidi;
+    }
     if (typeof value === 'function') ownedText.set(element, value);
     else ownedText.delete(element);
     element.textContent = typeof value === 'function' ? value() : value;
+    setTextDirection(element);
+  }
+  // Direction belongs to text, never to the editor's flex/grid/table layout.
+  // Native dir=auto also follows the user's writing in text fields without an
+  // input handler, extra characters in values, or changes to caret selection.
+  function setTextDirection(element) {
+    if (!element) return;
+    const tag = element.tagName?.toLowerCase();
+    const type = (element.type || 'text').toLowerCase();
+    const literal = element.dataset?.bidi === 'ltr' || tag === 'code' || tag === 'kbd'
+      || (tag === 'input' && (literalInputTypes.has(type) || element.readOnly || /^(?:numeric|decimal)$/.test(element.inputMode)));
+    if (literal || tag === 'select' || tag === 'summary') {
+      if (element.dir !== 'ltr') element.dir = 'ltr';
+      return;
+    }
+    const editable = tag === 'textarea' || (tag === 'input' && textInputTypes.has(type));
+    if (tag === 'input' && !editable) return;
+    if (editable || element.dataset?.bidi === 'text'
+      || (!element.childElementCount && (element.textContent?.trim() || element.dataset?.i18n))) {
+      if ((!editable || !element.dir) && element.dir !== 'auto') element.dir = 'auto';
+      if (element.classList && !element.classList.contains('i18nText')) element.classList.add('i18nText');
+    }
+  }
+  function applyTextDirection(container = root.document) {
+    if (!container?.querySelectorAll) return;
+    if (container.matches?.(textElements)) setTextDirection(container);
+    for (const element of container.querySelectorAll(textElements)) setTextDirection(element);
   }
   function applyBindings(container = root.document) {
     if (!container?.querySelectorAll) return;
@@ -47,11 +102,13 @@
         if (colon !== -1) element.setAttribute(binding.slice(0, colon), t(binding.slice(colon + 1)));
       }
     }
+    applyTextDirection(container);
   }
   function updateDocument(document, locale) {
     if (!document) return;
     document.documentElement.lang = locale;
-    document.documentElement.dir = registry.languages.find(item => item.id === locale)?.dir || 'ltr';
+    // All languages share the same editor pane, tab, tool and world ordering.
+    document.documentElement.dir = 'ltr';
     applyBindings(document);
   }
   async function changeLanguage(value, { persist = true } = {}) {
@@ -60,7 +117,11 @@
       const response = await fetch(new URL(`../locales/${locale}.json`, scriptUrl));
       if (!response.ok) throw new Error(`Could not load interface language ${locale}: ${response.status}`);
       const namespaces = await response.json();
-      for (const [namespace, values] of Object.entries(namespaces)) engine.addResourceBundle(locale, namespace, values, true, true);
+      // Format interpolation runs once at load time through i18next's standard
+      // formatter chain; plural counts and saved catalogue strings stay intact.
+      for (const [namespace, values] of Object.entries(namespaces)) {
+        engine.addResourceBundle(locale, namespace, isRtl(locale) ? isolateResourceArguments(values) : values, true, true);
+      }
       loaded.add(locale);
     }
     if (revision !== generation) return;
@@ -77,8 +138,11 @@
     for (const [element, render] of ownedText) {
       if (element.isConnected === false) { ownedText.delete(element); continue; }
       element.textContent = render();
+      setTextDirection(element);
     }
     for (const listener of listeners) listener(locale);
+    applyTextDirection(root.document);
+    for (const win of documents) if (!win.closed) applyTextDirection(win.document);
     root.dispatchEvent?.(new CustomEvent('toolkit-language-changed', { detail: { language: preference, locale } }));
     if (persist) await root.electronAPI?.setLanguage?.(value);
   }
@@ -97,7 +161,7 @@
     return detach;
   }
   const api = { t, html: (key, options) => escapeHtml(t(key, options)), resolveLanguage, applyBindings, changeLanguage,
-    attachWindow, bindText,
+    attachWindow, bindText, applyTextDirection,
     get locale() { return engine.resolvedLanguage || 'en'; },
     get language() { return engine.resolvedLanguage || 'en'; },
     get preference() { return preference; },

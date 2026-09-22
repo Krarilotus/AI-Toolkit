@@ -38,7 +38,7 @@ function setup() {
       addEventListener(type, fn) { this.handlers[type] = fn; }, setAttribute(k, v) { this.attributes[k] = v; },
       removeAttribute(k) { delete this.attributes[k]; }, focus() {},
       scrollIntoView(options) { scrolled.push({index: Number(this.dataset.index), current: this.attributes['aria-current'], block: options.block}); },
-      classList: {add(key) { this[key] = true; }, remove(key) { this[key] = false; }, toggle(key, value) { this[key] = value; }}};
+      classList: {add(key) { this[key] = true; }, remove(key) { this[key] = false; }, toggle(key, value) { this[key] = value; }, contains(key) { return this[key] === true; }}};
     Object.defineProperty(node, 'innerHTML', {set() { this.children = []; }});
     return node;
   };

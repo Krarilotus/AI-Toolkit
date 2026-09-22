@@ -127,7 +127,7 @@ test('optional role art never hides functional controls in a minimal custom-styl
   const theme = createController(env);
   await theme.init(); await theme.apply('ucp');
   assert.equal(env.document.documentElement.dataset.themedControls, 'true');
-  for (const role of ['Reorder', 'Stepper', 'Range', 'Scrollbars', 'Tabs', 'Fields']) {
+  for (const role of ['Panels', 'Reorder', 'Stepper', 'Range', 'Scrollbars', 'Tabs', 'Fields']) {
     assert.equal(env.document.documentElement.dataset['themed' + role], 'false', role);
   }
 });
@@ -162,4 +162,23 @@ test('a native menu choice discovers a pack added after the window was opened', 
   await env.callbacks.theme('new-theme');
   assert.equal(theme.current, 'new-theme');
   assert.equal(env.document.documentElement.dataset.themedReorder, 'true');
+});
+
+
+test('UCP keeps dark shell tokens distinct from framed paper and original reorder proportions', () => {
+  const pack = JSON.parse(fs.readFileSync(path.join(directory, 'ucp/tokens.json'), 'utf8'));
+  assert.equal(pack.primitive.color.ink.$value.hex, '#212529');
+  assert.equal(pack.component.panel.surface.$value.hex, '#e4dbc3');
+  assert.equal(pack.component.panel.content.$value.hex, '#292720');
+  assert.equal(pack.component.input.content.$value, '{component.panel.content}');
+  for (const slot of ['moveUp', 'moveDown', 'moveUpHover', 'moveDownPressed']) {
+    const bytes = fs.readFileSync(path.join(directory, 'ucp', manifest('ucp').textures[slot].file));
+    assert.deepEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], [12, 7]);
+  }
+  const css = fs.readFileSync(path.join(__dirname, '../src/css/theme-components.css'), 'utf8');
+  assert.match(css, /var\(--step-arrow\) center \/ auto no-repeat/);
+  assert.match(css, /scrollbar-track-piece:start:vertical/);
+  assert.match(css, /scrollbar-thumb:vertical/);
+  assert.match(css, /var\(--texture-scroll-thumb\), var\(--texture-scroll-track\), radial-gradient/);
+  assert.doesNotMatch(css, /html\[data-theme=["']ucp/);
 });

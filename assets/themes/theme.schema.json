@@ -142,6 +142,9 @@
         },
         "removeHover": {
           "$ref": "#/$defs/texture"
+        },
+        "ornament": {
+          "$ref": "#/$defs/texture"
         }
       }
     },

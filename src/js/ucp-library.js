@@ -386,6 +386,7 @@
         ? (els.search.value.trim() ? tr("library:no_ais_match_this_search") : tr("library:no_ais_match_this_view"))
         : tr("interface:no_installation_selected");
       els.list.appendChild(empty);
+      window.toolkitI18n.applyTextDirection(els.list);
       return;
     }
     for (const ai of ais) {
@@ -412,6 +413,7 @@
       button.addEventListener('click', () => selectAi(ai.key));
       els.list.appendChild(button);
     }
+    window.toolkitI18n.applyTextDirection(els.list);
   }
 
   function renderCastleSummary() {
@@ -439,7 +441,7 @@
     return Boolean(ai?.owned && state.loadedProject && state.loadedProject.aiKey === ai.key);
   }
 
-  function renderDetails() {
+  function renderDetails({ preserveDraft = false } = {}) {
     const ai = selectedAi();
     els.empty.hidden = Boolean(ai);
     els.details.hidden = !ai;
@@ -471,9 +473,11 @@
     els.cloneCard.hidden = ai.owned || Boolean(ai.vanilla);
     els.updateCard.hidden = !ai.owned;
     if (!ai.owned) {
-      els.cloneName.value = `${ai.name} (Custom)`;
-      els.cloneId.value = `${germanSlug(ai.folderName || ai.name)}-custom`;
-      els.cloneVersion.value = ai.version || '1.0.0';
+      if (!preserveDraft) {
+        els.cloneName.value = `${ai.name} (Custom)`;
+        els.cloneId.value = `${germanSlug(ai.folderName || ai.name)}-custom`;
+        els.cloneVersion.value = ai.version || '1.0.0';
+      }
       setButtonAvailable(els.clone, true);
     } else {
       setButtonAvailable(els.update, loadedSelectionMatches());
@@ -482,6 +486,7 @@
         : tr("library:open_this_ai_in_the_editors_first");
     }
     renderCastleSummary();
+    window.toolkitI18n.applyTextDirection(els.details);
   }
 
   function selectAi(key) {
@@ -497,7 +502,7 @@
     try {
       state.library = await window.electronAPI.scanUcpAiLibrary(state.gameRoot);
       state.gameRoot = state.library.gameRoot;
-      window.toolkitI18n.bindText(els.installationPath, state.library.gameRoot);
+      window.toolkitI18n.bindText(els.installationPath, state.library.gameRoot, 'ltr');
       els.installationPath.title = state.library.gameRoot;
       setButtonAvailable(els.refresh, true);
       setButtonAvailable(els.openPlugins, true);
@@ -877,12 +882,10 @@
   }
 
   window.toolkitI18n?.onChange(() => {
-    const draft = [els.cloneName, els.cloneId, els.cloneVersion].map(input => input.value);
     updateAccessControl();
     renderList();
-    renderDetails();
+    renderDetails({ preserveDraft: true });
     renderCastleSummary();
-    [els.cloneName, els.cloneId, els.cloneVersion].forEach((input, index) => { input.value = draft[index]; });
   });
   window.ucpLibrary = {
     chooseInstallation,

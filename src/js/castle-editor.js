@@ -606,7 +606,7 @@
 
   function updateFileLabel() {
     const name = state.filePath ? state.filePath.split(/[\\/]/).pop() : 'Untitled.aiv';
-    window.toolkitI18n.bindText(els.fileLabel, `${name}${state.dirty ? ' *' : ''}`);
+    window.toolkitI18n.bindText(els.fileLabel, `${name}${state.dirty ? ' *' : ''}`, 'ltr');
     els.fileLabel.title = state.filePath || '';
     document.getElementById('castleSaveBtn').disabled = false;
   }
@@ -2179,6 +2179,7 @@
       items.appendChild(row);
     }
     els.palette.appendChild(items);
+    window.toolkitI18n.applyTextDirection(els.palette);
   }
 
   // Die Berechnung und die Detaildarstellung der beiden Uebersichten liegen
@@ -2336,6 +2337,7 @@
       });
       els.buildList.appendChild(row);
     });
+    window.toolkitI18n.applyTextDirection(els.buildList);
   }
 
   function scrollToActiveBuildStep(viewport) {

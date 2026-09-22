@@ -132,6 +132,7 @@
       hint.textContent = tr("viewport:no_window_open_one_from_the_toolbar");
       strip.insertBefore(hint, fill);
     }
+    window.toolkitI18n.applyTextDirection(strip);
   }
 
   function actionButton(act, glyph, title, areaId) {

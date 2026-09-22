@@ -11,8 +11,10 @@ const { build, registry, flatten } = require('../scripts/build-locales');
 const { checkReferences } = require('../scripts/check-locale-references');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'src/js/i18n.js'), 'utf8');
-function element(key, value = '') {
+function element(key, value = '', tagName = 'SPAN') {
   return {
+    tagName,
+    childElementCount: 0,
     dataset: key ? { i18n: key } : {},
     value,
     textContent: '',
@@ -24,7 +26,7 @@ function element(key, value = '') {
 }
 function harness({ language = 'en', system = 'en-US' } = {}) {
   const nodes = [element('categories:Bad Things'), element('common:actions.save')];
-  const input = element(null, 'Unsaved user content');
+  const input = element(null, 'Unsaved user content', 'INPUT');
   input.dataset.i18nAttrs = 'placeholder=interface:search';
   nodes.push(input);
   const document = {
@@ -204,19 +206,109 @@ test('translated HTML escapes interpolated text and unknown custom names remain 
   assert.equal(h.api.html('details:map_name', { name: '<img src=x onerror=alert(1)>' }), ' · map: &lt;img src=x onerror=alert(1)&gt;');
   assert.equal(h.api.t('items:custom-private-id', { defaultValue: 'My custom building' }), 'My custom building');
 });
-test('Persian sets RTL and detached controls track language without rebuilding input fields', async () => {
+test('Persian changes text direction without mirroring main or detached editor layouts', async () => {
   const h = harness();
   await h.api.ready;
   const label = element('common:actions.save');
   const detached = { document: { documentElement: {}, querySelectorAll: () => [label] }, addEventListener() {}, closed: false };
   const detach = h.api.attachWindow(detached);
   await h.api.changeLanguage('fa');
-  assert.equal(h.document.documentElement.dir, 'rtl');
-  assert.equal(detached.document.documentElement.dir, 'rtl');
+  assert.equal(h.document.documentElement.dir, 'ltr');
+  assert.equal(detached.document.documentElement.dir, 'ltr');
+  assert.equal(label.dir, 'auto');
   assert.notEqual(label.textContent, 'Save');
   detach();
   await h.api.changeLanguage('en');
   assert.equal(h.document.documentElement.dir, 'ltr');
+});
+test('bidi text preparation isolates prose and leaves pane order, numbers, paths and shortcuts LTR', async () => {
+  const h = harness();
+  await h.api.ready;
+  const pane = element(null, '', 'DIV');
+  pane.textContent = 'Persian labels and inputs';
+  pane.childElementCount = 3;
+  const text = element(null, '\u0633\u0644\u0627\u0645', 'TEXTAREA');
+  text.selectionStart = 2; text.selectionEnd = 3;
+  const number = element(null, '-12.5', 'INPUT'); number.inputMode = 'decimal';
+  const path = element(null, 'D:\\Gatekeeper\\\u0642\u0644\u0639\u0647.aiv', 'INPUT'); path.dataset.bidi = 'ltr';
+  const shortcut = element(null, 'Ctrl+Shift+V', 'INPUT'); shortcut.readOnly = true;
+  const select = element(null, 'Spearman', 'SELECT'); select.childElementCount = 2;
+  const summary = element('interface:population', '', 'SUMMARY');
+  const children = [text, number, path, shortcut, select];
+  h.nodes.push(summary);
+  h.nodes.push(pane, ...children);
+  await h.api.changeLanguage('fa');
+  assert.equal(pane.dir, undefined, 'a layout container never receives RTL or auto direction');
+  assert.equal(text.dir, 'auto', 'the browser chooses caret and paragraph direction from editable prose');
+  assert.equal(text.value, '\u0633\u0644\u0627\u0645');
+  assert.deepEqual([text.selectionStart, text.selectionEnd], [2, 3]);
+  for (const control of [number, path, shortcut, select]) assert.equal(control.dir, 'ltr');
+  assert.equal(summary.dir, 'ltr', 'disclosure controls stay on their original side');
+  assert.deepEqual(children.map(control => control.value), ['\u0633\u0644\u0627\u0645', '-12.5', 'D:\\Gatekeeper\\\u0642\u0644\u0639\u0647.aiv', 'Ctrl+Shift+V', 'Spearman']);
+  text.value = 'Latin text';
+  await h.api.changeLanguage('en');
+  assert.equal(text.dir, 'auto', 'text input direction is content-based rather than locked to the interface language');
+  assert.equal(h.document.documentElement.dir, 'ltr');
+});
+test('Persian interpolation isolates mixed-script filenames and signed numbers without modifying source values', async () => {
+  const h = harness({ language: 'fa' });
+  await h.api.ready;
+  const name = 'Gatekeeper (\u0642\u0644\u0639\u0647 2).aiv';
+  const message = h.api.t('feedback:opened', { name });
+  assert.ok(message.includes('\u2068' + name + '\u2069'));
+  const tiles = h.api.t('details:tile', { count: -12 });
+  assert.ok(tiles.includes('\u2066-12\u2069'));
+  assert.ok(h.api.t('feedback:opened', { name: '-12.5' }).includes('\u2066-12.5\u2069'));
+  assert.equal(name, 'Gatekeeper (\u0642\u0644\u0639\u0647 2).aiv');
+  await h.api.changeLanguage('en');
+  assert.equal(h.api.t('feedback:opened', { name }), name + ' opened.');
+});
+test('translating Content labels keeps existing textareas, values and caret ranges', async () => {
+  const h = harness();
+  await h.api.ready;
+  const input = element(null, '\u0633\u0644\u0627\u0645 Castle', 'TEXTAREA');
+  input.selectionStart = 1; input.selectionEnd = 3;
+  const name = element(null);
+  const label = { dataset: { lineKey: 'ai_name' }, querySelector: selector => selector === 'span' ? name : input };
+  const form = { querySelectorAll: selector => selector === '.aiLineField' ? [label] : [name, input] };
+  const scope = vm.createContext({
+    window: { toolkitI18n: h.api }, els: { form },
+    friendlyLabel: () => h.api.t('interface:ai_name'), lineHint: () => h.api.t('interface:search')
+  });
+  vm.runInContext(editorFunctions('ai-content-editor.js', ['translateLineLabels']), scope);
+  h.api.onChange(scope.translateLineLabels);
+  await h.api.changeLanguage('fa');
+  assert.equal(name.textContent, h.api.t('interface:ai_name'));
+  assert.equal(input.placeholder, h.api.t('interface:search'));
+  assert.equal(label.querySelector('textarea'), input);
+  assert.equal(input.value, '\u0633\u0644\u0627\u0645 Castle');
+  assert.deepEqual([input.selectionStart, input.selectionEnd], [1, 3]);
+  assert.equal(input.dir, 'auto');
+});
+test('translating Library details never rewrites an in-progress clone draft', async () => {
+  const h = harness();
+  await h.api.ready;
+  let writes = 0;
+  const fields = new Map();
+  const els = new Proxy({}, { get(_target, key) {
+    if (!fields.has(key)) {
+      const node = element(null, 'Draft text');
+      node.classList = { toggle() {} };
+      if (/^clone(?:Name|Id|Version)$/.test(key)) Object.defineProperty(node, 'value', { get: () => 'Draft text', set: () => { writes++; } });
+      fields.set(key, node);
+    }
+    return fields.get(key);
+  } });
+  const scope = vm.createContext({
+    window: { toolkitI18n: h.api }, els, tr: h.api.t, placeholderPortrait: '',
+    selectedAi: () => ({ name: 'Gatekeeper', plugin: { displayName: 'Test' }, castles: [] }),
+    setButtonAvailable() {}, renderCastleSummary() {}, germanSlug: value => value
+  });
+  vm.runInContext(editorFunctions('ucp-library.js', ['renderDetails']), scope);
+  h.api.onChange(() => scope.renderDetails({ preserveDraft: true }));
+  await h.api.changeLanguage('fa');
+  assert.equal(writes, 0);
+  assert.equal(els.cloneName.value, 'Draft text');
 });
 test('detached 2.5D title and Dock button follow the selected language', async () => {
   const h = harness({ language: 'de' });

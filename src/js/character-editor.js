@@ -161,6 +161,7 @@ function showHelp(content) {
 
   overlay.appendChild(box);
   document.body.appendChild(overlay);
+  window.toolkitI18n.applyTextDirection(overlay);
 }
 
 function mergeDefaults(target, source) {
@@ -192,6 +193,7 @@ function createField(key, value, parent) {
 }
 
   const label = document.createElement("span");
+  label.dataset.bidi = 'text';
   if (globalThis.toolkitI18n.engine.exists(`fields:${key}`)) label.dataset.i18n = `fields:${key}`;
 
   label.title = key;
@@ -256,6 +258,7 @@ else if (typeof value === "number") {
   input.type = "text";
 
   const isDecimal = key === "StrengthMultiplier";
+  input.inputMode = isDecimal ? 'decimal' : 'numeric';
 
   input.value = value;
 
@@ -357,13 +360,19 @@ if (val !== input.value) {
   return div;
 }
 
+function sectionHeading(title) {
+  const sum = document.createElement("summary");
+  const text = document.createElement('span');
+  text.textContent = trCharacter(`sections:${title}`, { defaultValue: title });
+  text.dataset.i18n = `sections:${title}`;
+  sum.appendChild(text);
+  return sum;
+}
+
 function buildSection(title, keys, source, container) {
   const sec = document.createElement("details");
   if (searchQuery) sec.open = true;
-  const sum = document.createElement("summary");
-  sum.textContent = trCharacter(`sections:${title}`, { defaultValue: title });
-  sum.dataset.i18n = `sections:${title}`;
-  sec.appendChild(sum);
+  sec.appendChild(sectionHeading(title));
 
   keys.forEach(k=>{
     if(source[k]!==undefined){
@@ -415,11 +424,7 @@ function buildForm(obj, container) {
     const sec = document.createElement("details");
     sec.open = !!searchQuery;
 
-    const sum = document.createElement("summary");
-    sum.textContent = trCharacter(`sections:${title}`, { defaultValue: title });
-    sum.dataset.i18n = `sections:${title}`;
-
-    sec.appendChild(sum);
+    sec.appendChild(sectionHeading(title));
     container.appendChild(sec);
 
     return sec;
@@ -467,6 +472,7 @@ function render(){
   const c = document.getElementById("form");
   c.innerHTML = "";
   buildForm(data, c);
+  window.toolkitI18n.applyTextDirection(c);
   updateHeaderInfo();
 }
 
@@ -783,7 +789,7 @@ function updateFilePathDisplay() {
     ? "..." + lastParts.join(separator)
     : currentFilePath;
 
-  window.toolkitI18n.bindText(el, `${shortPath}${dirtyMarker}`);
+  window.toolkitI18n.bindText(el, `${shortPath}${dirtyMarker}`, 'ltr');
   el.title = currentFilePath;
   el.style.fontSize = "12px";
 }
