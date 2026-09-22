@@ -3,6 +3,35 @@
 Windows x64, 22 September 2026. Native compilation/tests now also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Cached update retry follow-up: 9421b5fe
+
+The running Electron app retried `snapshot-native-39659543` from its hourly cache
+after the migration-compatible release was already published. Both failed stages
+identified that older release. Replaying one downloaded archive with the unchanged
+Prepare helper in an isolated folder reproduced `Incomplete Windows release`
+before installation. The previous migration E2E began with fresh metadata and did
+not cover this stale-cache state.
+
+The shared renderer now discards the failed candidate and its availability classes.
+Retry forces a new release check; it shows the new candidate before another explicit
+installation. A regression uses the real checker with time fixed within the cache
+hour and newly published metadata; it fails when the state-reset line is removed.
+Busy-click and unsaved-cancellation checks also pass. Full JavaScript: **568 pass,
+0 fail, 0 skip**; strict desktop TypeScript passes. No backend/rendering code changed.
+
+Published `snapshot-native-9421b5fe`: **7,396,986 bytes portable / 6,740,776 bytes
+Setup**, with all 122 source images unchanged. Existing old Electron installations
+can force the first refresh by switching to Official and back to their fork;
+the fix cannot change an older process that is already running.
+
+The final published 9421b5fe package passed the same isolated original-Electron
+update test against real GitHub metadata/downloads. Native startup, exact selected
+castle/config restoration and the visible fork's green `Aktuell` state passed;
+the user's live app and original EXE/ASAR hashes stayed unchanged. ZIP SHA-256:
+`dd894faa8f2eb82e08e517cd56f7bed31aa1192dcf0fca39e3f37a9d7f8b6d6c`.
+[Native CI at the release commit](https://github.com/Krarilotus/AI-Toolkit/actions/runs/35781436843)
+also passes on Windows, Linux and macOS.
+
 ## Electron updater migration preview: 14f5269c
 
 Published `snapshot-native-14f5269c`: **7,396,843 bytes portable / 6,740,570 bytes
