@@ -1,7 +1,61 @@
 # Native preview validation
 
-Windows x64, 22 September 2026. Native compilation/tests now also pass on
+Windows x64, 23 September 2026. Native compilation/tests now also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
+
+## UCP control styling and whole-tile troop previews: e2ed7f50
+
+UCP dropdowns now follow the source GUI's native select indicator instead of
+using its separate folder-expander button as an arrow. Chrome menus use the
+dark palette; parchment fields retain their own contrasting controls. Select
+appearance, arrow artwork/spacing and popup colors remain theme-owned tokens.
+
+The website's original 7-by-18 hook replaces the old scrollbar cap. Native
+start-track pieces extend to the thumb centre, so painting chain artwork on
+both pieces overlapped it. The chain now paints once on the leading track,
+with half the hook height reserved; the thumb paints only the centred hook.
+The scrollbar keeps native behavior and its existing hit area. Source image
+bytes are unchanged. The same GUI fix is submitted in
+[UCP3-GUI PR #384](https://github.com/UnofficialCrusaderPatch/UCP3-GUI/pull/384).
+
+Troop representatives now use whole neighbouring tiles, reserve each rally
+position before filling neighbours, and never share a tile. Map boundaries and
+support elevation limit the formation instead of placing troops off a tower.
+Camera rotation preserves world positions. Layout examines at most nine
+candidates per marker; AIC allocation and drawing command caches remain in use.
+Six verified stationary sprites replace numeric placeholders for the mangonel,
+ballista, trebuchet, fireballista, brazier and flag. Shared frame-zero outputs
+reuse thumbnail PNGs. Engineer and DE idle poses remain unverified.
+
+Source checks: **573 JavaScript tests, 70 Rust tests**, strict TypeScript and
+all nine complete catalogues. One local-game integration test remains opt-in.
+[Native CI](https://github.com/Krarilotus/AI-Toolkit/actions/runs/35791407612)
+passes on Windows, Linux and macOS. The updated designer starter contains
+136 variables and 33 texture roles.
+
+An image-decode error visible during testing came from a copied QA profile
+whose cached absolute asset paths still referenced the original profile, outside
+the clone's asset scope. Correcting only the copied metadata fixed the fixture;
+the installed editor's paths and PNGs were valid. No production cache purge or
+scope widening was added. Subsequent owned windows are explicitly titled as
+isolated tests.
+
+Final package: **7,401,148 bytes portable / 6,744,769 bytes Setup**; all 122
+source images match their packaged bytes. Portable SHA-256:
+`3fe8cc7f7ed0f925756b693c44575c42ffeacc75462da12a6582d02d077cbfe9`.
+The actual WebView popup was visible in the captured frame: dark options and
+white text/chevron. A native scrollbar drag moved scrollTop from 20,709 to 25,832;
+top/middle/end/dragged views show one thin chain and its hook. Zoomed roof
+formations show whole-tile rows and siege/brazier sprites in place of type IDs.
+
+Matched 306f0269/e2ed7f50 runs used GreekSea/Kratoloros, 998 steps, both GPU views,
+2560-by-1392 viewport, zoom 0.2790625, pan (470,393.75), and five slider round trips
+per second. All viewport, map, camera, slider and canvas dimensions matched.
+Input-to-next-animation-frame median/p95 was **19.1/25.6 ms before** and
+**15.4/20.2 ms after**; neither run had a main-thread task over 50 ms. These
+individual runs establish no observed regression, not a universal speedup or
+physical screen latency. Separate detail screenshots used the same closer zoom
+in both builds and did not affect the timed run. The user's app was untouched.
 
 ## Integrated chrome, theme groups and cached map restoration: 306f0269
 
