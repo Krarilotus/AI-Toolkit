@@ -34,6 +34,7 @@
   --primitive-radius-small: 4px;
   --primitive-radius-normal: 7px;
   --primitive-radius-large: 11px;
+  --component-value-color-scheme: normal;
   --semantic-surface-app: var(--primitive-color-ink);
   --semantic-surface-deep: var(--primitive-color-deep);
   --semantic-surface-panel: var(--primitive-color-slate1);
@@ -93,4 +94,6 @@
   --component-menu-content: var(--semantic-content-main);
   --component-palette-surface: var(--semantic-surface-deep);
   --component-palette-content: var(--semantic-content-main);
+  --component-value-surface: var(--semantic-surface-deep);
+  --component-value-content: var(--semantic-content-main);
 }

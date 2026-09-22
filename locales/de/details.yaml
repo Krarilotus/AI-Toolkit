@@ -34,10 +34,10 @@ spaces: Plätze
 per_space: '{{count}} pro Platz; {{source}}'
 none_produced: Keine passende Produktion eingestellt.
 none_produced_or_bought: Keine passende Produktion oder Rekrutierung eingestellt.
-stockpiles: '{{count}} Vorratslager einschließlich Bergfried; je 4 Plätze. Alle Rohstoffobergrenzen reserviert.'
-granaries: '{{count}} Kornspeicher; je 250 gemeinsam genutzte Nahrungsplätze.'
+stockpiles: 'Vorratslager: {{count}} (einschließlich Bergfried); je 4 Plätze. Alle Rohstoffobergrenzen reserviert.'
+granaries: 'Kornspeicher: {{count}}; je 250 Nahrungsplätze, gemeinsam für alle Nahrungssorten.'
 armories: >-
-  {{count}} Waffenkammern; je 10 getrennte Stapel zu 5 Waffen. Käufe aus eingestellter Rekrutierung
+  Waffenkammern: {{count}}; je 10 getrennte Stapel zu 5 Waffen. Käufe aus eingestellter Rekrutierung
   abgeleitet.
 hops: Hopfen
 fruit: Obst

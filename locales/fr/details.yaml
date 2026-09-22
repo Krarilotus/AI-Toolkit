@@ -36,9 +36,9 @@ spaces: Emplacements
 per_space: '{{count}} par emplacement ; {{source}}'
 none_produced: Aucune production correspondante configurée.
 none_produced_or_bought: Aucune production ni aucun recrutement correspondant configuré.
-stockpiles: '{{count}} réserves, donjon compris ; 4 emplacements chacune. Tous les plafonds de ressources sont réservés.'
-granaries: '{{count}} greniers ; chacun contient 250 unités de nourriture partagées.'
-armories: '{{count}} armureries ; 10 piles distinctes de 5 armes chacune. Achats déduits du recrutement configuré.'
+stockpiles: 'Réserves : {{count}} (donjon compris) ; 4 emplacements par réserve. Espace réservé pour tous les plafonds de ressources.'
+granaries: 'Greniers : {{count}} ; 250 unités par grenier, partagées entre les types de nourriture.'
+armories: 'Armureries : {{count}} ; 10 piles distinctes de 5 armes par armurerie. Achats déduits des paramètres de recrutement.'
 hops: Houblon
 fruit: Fruits
 wav_speech: Voix WAV

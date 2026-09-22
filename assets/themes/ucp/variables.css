@@ -45,6 +45,7 @@
   --component-panel-selected: #806022;
   --component-panel-success: #32653c;
   --component-panel-danger: #9b2924;
+  --component-value-color-scheme: dark;
   --semantic-surface-app: var(--primitive-color-ink);
   --semantic-surface-deep: var(--primitive-color-deep);
   --semantic-surface-panel: var(--primitive-color-slate1);
@@ -93,4 +94,6 @@
   --component-menu-surface: var(--semantic-surface-section);
   --component-menu-content: var(--semantic-content-main);
   --component-palette-content: var(--semantic-content-main);
+  --component-value-surface: var(--semantic-surface-deep);
+  --component-value-content: var(--semantic-content-on-accent);
 }

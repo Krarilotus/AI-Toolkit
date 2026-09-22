@@ -34,9 +34,9 @@ spaces: Spaces
 per_space: '{{count}} per space; {{source}}'
 none_produced: No relevant production configured.
 none_produced_or_bought: No relevant production or recruitment configured.
-stockpiles: '{{count}} stockpiles including the keep; 4 spaces each. All resource limits reserved.'
-granaries: '{{count}} granaries; 250 shared food each.'
-armories: '{{count}} armories; 10 separate stacks of 5 each. Purchases inferred from configured recruitment.'
+stockpiles: 'Stockpiles: {{count}} (including the keep); 4 spaces each. All resource limits reserved.'
+granaries: 'Granaries: {{count}}; 250 food each, shared across food types.'
+armories: 'Armories: {{count}}; 10 separate stacks of 5 weapons each. Purchases inferred from recruitment settings.'
 hops: Hops
 fruit: Fruit
 wav_speech: WAV speech

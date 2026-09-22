@@ -171,6 +171,8 @@ test('UCP keeps dark shell tokens distinct from framed paper and original reorde
   assert.equal(pack.component.panel.surface.$value.hex, '#e4dbc3');
   assert.equal(pack.component.panel.content.$value.hex, '#292720');
   assert.equal(pack.component.input.content.$value, '{component.panel.content}');
+  assert.equal(pack.component.value.content.$value, '{semantic.content.onAccent}');
+  assert.equal(pack.component.value.surface.$value, '{semantic.surface.deep}');
   for (const slot of ['moveUp', 'moveDown', 'moveUpHover', 'moveDownPressed']) {
     const bytes = fs.readFileSync(path.join(directory, 'ucp', manifest('ucp').textures[slot].file));
     assert.deepEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], [12, 7]);

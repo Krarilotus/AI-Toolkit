@@ -336,18 +336,36 @@ pub fn check(app: &AppHandle, force: bool) -> Value {
     check_repo(app, &repo, force)
         .unwrap_or_else(|e| json!({"status":"error","repo":repo,"error":e}))
 }
-pub fn sources(app: &AppHandle) -> Result<Value> {
+fn source_repos(
+    selected: &str,
+    forks: &[Value],
+    mut check: impl FnMut(&str) -> Result<Value>,
+) -> Vec<String> {
     let mut repos = vec![OFFICIAL.to_string()];
-    for fork in pages(OFFICIAL, "forks")? {
-        if let Some(repo) = fork["full_name"].as_str() {
-            if check_repo(app, repo, false)
-                .is_ok_and(|v| v["status"] == "available" || v["status"] == "current")
-            {
-                repos.push(repo.into());
-            }
+    for repo in
+        std::iter::once(selected).chain(forks.iter().filter_map(|fork| fork["full_name"].as_str()))
+    {
+        if repos.iter().any(|known| known.eq_ignore_ascii_case(repo)) {
+            continue;
+        }
+        let eligible = match check(repo) {
+            Ok(value) => value["status"] == "available" || value["status"] == "current",
+            // An unavailable API cannot establish that the user's source has
+            // become ineligible. Keep it selected so the next check can retry.
+            Err(_) => repo.eq_ignore_ascii_case(selected),
+        };
+        if eligible {
+            repos.push(repo.into());
         }
     }
-    Ok(json!({"selected":selected(app),"repos":repos}))
+    repos
+}
+pub fn sources(app: &AppHandle) -> Result<Value> {
+    let selected = selected(app);
+    let repos = source_repos(&selected, &pages(OFFICIAL, "forks")?, |repo| {
+        check_repo(app, repo, false)
+    });
+    Ok(json!({"selected":selected,"repos":repos}))
 }
 pub fn select(app: &AppHandle, repo: &str) -> Result<Value> {
     let repo = validate(repo)?;
@@ -815,6 +833,57 @@ pub fn apply_update(stage: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn source_discovery_preserves_selected_repo_on_transient_errors_only() {
+        let selected = "Krarilotus/AI-Toolkit";
+        let forks = json!([
+            {"full_name":"krarilotus/ai-toolkit"},
+            {"full_name":"Other/AI-Toolkit"},
+            {"full_name":"Current/AI-Toolkit"}
+        ]);
+        let mut checked = Vec::new();
+        let repos = source_repos(selected, forks.as_array().unwrap(), |repo| {
+            checked.push(repo.to_string());
+            if repo.starts_with("Current/") {
+                Ok(json!({"status":"current"}))
+            } else {
+                Err(crate::error::Error::diagnostic(
+                    "GitHub HTTP 403 rate limit",
+                ))
+            }
+        });
+        assert_eq!(repos, [OFFICIAL, selected, "Current/AI-Toolkit"]);
+        assert_eq!(
+            checked,
+            [selected, "Other/AI-Toolkit", "Current/AI-Toolkit"]
+        );
+        // Custom sources need not appear in the upstream fork listing.
+        assert_eq!(
+            source_repos(selected, &[], |_| Err(crate::error::Error::diagnostic(
+                "offline"
+            ))),
+            [OFFICIAL, selected]
+        );
+    }
+
+    #[test]
+    fn source_discovery_still_falls_back_for_confirmed_ineligible_snapshots() {
+        for status in ["empty", "unsupported"] {
+            assert_eq!(
+                source_repos("Krarilotus/AI-Toolkit", &[], |_| Ok(
+                    json!({"status":status})
+                )),
+                [OFFICIAL]
+            );
+        }
+        assert_eq!(
+            source_repos("Krarilotus/AI-Toolkit", &[], |_| Ok(
+                json!({"status":"available"})
+            )),
+            [OFFICIAL, "Krarilotus/AI-Toolkit"]
+        );
+    }
+
     struct Fixture {
         directory: PathBuf,
         root: PathBuf,

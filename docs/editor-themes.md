@@ -131,3 +131,9 @@ UCP pack is selected by its available component roles rather than its name. Thes
 changes add one original 1,231-byte ornament image; no image was resized or
 re-encoded. Text-only bidirectional rendering is shared with detached windows and
 does not mirror the workspace or world coordinates.
+
+Numeric fields have a separate `component.value` color role from text/search
+fields: the original 15 by 15 `value_box.png` has an opaque black center, and
+UCP GUI `CreateNumberInput.tsx` uses `text-light`. Numeric and decimal inputs
+therefore use a light foreground; parchment `searchfield.png` text inputs use
+the dark foreground. The texture and foreground always change as one role.

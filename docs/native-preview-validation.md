@@ -29,7 +29,7 @@ editor document isolation also passed. Closing a detached view exposed a stale
 native-window entry; the lifecycle correction is documented with the parity
 review, rather than treating the initial smoke test as sufficient updater proof.
 
-The follow-up source checks pass 544 editor tests, 38 Rust tests, strict desktop
+The follow-up source checks pass 544 editor tests, 40 Rust tests, strict desktop
 TypeScript and all nine complete language catalogues. The unchanged game-fixture
 test remains opt-in and was run separately for the previous published baseline.
 Full-window UCP screenshots are captured for Library, Character, Castle and AI

@@ -37,10 +37,10 @@ per_space: '{{count}} por espacio; {{source}}'
 none_produced: No hay producción relevante configurada.
 none_produced_or_bought: No hay producción ni reclutamiento relevante configurado.
 stockpiles: >-
-  {{count}} almacenes, incluido el de la torre del homenaje; 4 espacios cada uno. Se reservan todos los
+  Almacenes: {{count}} (incluido el de la torre del homenaje); 4 espacios cada uno. Se reservan todos los
   límites de recursos.
-granaries: '{{count}} graneros; capacidad compartida de 250 alimentos cada uno.'
-armories: '{{count}} armerías; 10 pilas separadas de 5 cada una. Las compras se deducen del reclutamiento configurado.'
+granaries: 'Graneros: {{count}}; capacidad de 250 alimentos por granero, compartida entre todos los tipos.'
+armories: 'Armerías: {{count}}; 10 pilas separadas de 5 armas cada una. Las compras se deducen de los ajustes de reclutamiento.'
 hops: Lúpulo
 fruit: Fruta
 wav_speech: Voz WAV

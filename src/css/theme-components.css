@@ -116,9 +116,9 @@ html[data-themed-fields="true"] :is(input:not([type="checkbox"]):not([type="radi
 html[data-themed-fields="true"] #characterWorkspace .field :is(input[type="number"], input[inputmode="numeric"], input[inputmode="decimal"]),
 html[data-themed-fields="true"] :is(input[type="number"], input[inputmode="numeric"], input[inputmode="decimal"], .numberInput) {
   border-image: var(--texture-value) var(--texture-value-slice) / var(--texture-value-width) / 0 stretch;
-  background: var(--component-input-surface);
-  color: var(--component-input-content);
-  color-scheme: light;
+  background: var(--component-value-surface);
+  color: var(--component-value-content);
+  color-scheme: var(--component-value-color-scheme);
 }
 html[data-themed-fields="true"] #characterWorkspace .field select,
 html[data-themed-fields="true"] select {

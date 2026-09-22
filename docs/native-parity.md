@@ -121,9 +121,11 @@ close bridge using the opener's standard Tauri window API and the popup's own
 label. Native lifecycle state tracks popup ownership; destruction of an editor
 closes only that editor's dependent viewports. The updater guard is unchanged.
 JavaScript tests cover idempotent, correctly targeted native close; Rust tests
-cover independent owners and cleanup. Actual detach/re-dock/owner-close behavior
-still needs confirmation on the rebuilt executable; no renderer changes were
-made for this fix.
+cover independent owners and cleanup. The rebuilt executable passed the live
+detach, language-switch, close and re-dock check: only `main` remained in the
+native window registry, the toolbar returned in English, and the document stayed
+unchanged. A second editor kept its own project and still correctly blocked
+installation until closed. No renderer changes were made for this fix.
 
 ## Published updater acceptance result
 
@@ -155,6 +157,17 @@ has separate native transaction coverage.
 
 ## Footprint measurements and bounded next steps
 
+The subsequent `4b10b163` to `3b171699` update also downloaded, installed and
+relaunched successfully with the exact receipt/executable hashes and both
+configuration markers preserved. GitHub rate limiting during the final check
+exposed a source-discovery bug: an API error was mistaken for an ineligible fork,
+which persisted Official as the selected source. After the quota reset, manual
+source reselection produced the green current indicator. The follow-up preserves
+the saved source on discovery/check errors, including when discovery omits it;
+confirmed empty or incompatible snapshots still fall back. Two native regression
+tests cover that distinction. The interrupted run is not evidence of unattended
+source restoration; the local report records that limitation explicitly.
+
 The published ZIP is **7,728,703 bytes**; setup is **7,075,528 bytes**. WebView2 is
 an external OS runtime, not included in these numbers. The ZIP central directory
 gives the following actual compressed contributions:
@@ -177,16 +190,16 @@ authoring files and unused legacy atlases. No image conversion is proposed here.
    only through `reqwest`. The follow-up Windows `native-tls` dependency uses
    SChannel; the active Windows graph no longer contains Rustls. Other targets
    retain Rustls. Certificate validation remains enabled; trust follows Windows
-   policy instead of the bundled Mozilla roots. Real GitHub API, redirect/download
-   and checksum checks are required before publishing the optimized candidate.
+   policy instead of the bundled Mozilla roots. The optimized executable passed
+   real GitHub API, redirected download and checksum checks in an isolated profile.
 2. **Selective Pixi bundle: implemented in follow-up source.** A
    temporary esbuild experiment retained the 13 symbols used by
    `castle-gpu-worker.js`, plus `pixi.js/unsafe-eval`. It produced 460,564 bytes
    versus the current 844,066-byte Pixi/CSP scripts. Independently deflating the
    scripts estimated 132,901 versus 237,912 bytes: approximately 105 KB less.
-   This script estimate is not an exact EXE saving. Graphics masks, fire overlays,
-   tile sprites, context recovery and both GPU
-   surfaces must remain live in the same realistic scrub benchmark before release.
+   This script estimate is not an exact EXE saving. Both GPU surfaces, sprites
+   and the fire-mask pass remained active in the repeated maximized-window scrub
+   benchmark; results are recorded in `native-preview-validation.md`.
 3. **Avoid a redundant native English catalogue.** The browser already receives
    all English messages from `locales/english.js`; `i18n.js` marks English loaded
    at initialization. Native packaging could omit the unused `en.json` while
