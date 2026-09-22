@@ -57,6 +57,11 @@ individual runs establish no observed regression, not a universal speedup or
 physical screen latency. Separate detail screenshots used the same closer zoom
 in both builds and did not affect the timed run. The user's app was untouched.
 
+After publication, forced live GitHub checks in labelled isolated copies
+confirmed that 306f0269 offers e2ed7f50 and e2ed7f50 reports current, including
+their visible Install/Up to date buttons. Both selected asset 582376421 with
+the exact portable hash and size above. No installation was invoked.
+
 ## Integrated chrome, theme groups and cached map restoration: 306f0269
 
 Final `snapshot-native-306f0269`: **7,399,459 bytes portable / 6,744,764 bytes
