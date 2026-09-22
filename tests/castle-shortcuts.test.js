@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
+const vm = require('./helpers/localized-vm');
 const shortcuts = require('../src/js/castle-shortcuts');
 const camera = require('../src/js/castle-camera');
 const source = fs.readFileSync(require.resolve('../src/js/castle-editor.js'), 'utf8');
@@ -115,8 +115,8 @@ test('palette entries and both mode dropdowns override generic button/select siz
   const html = fs.readFileSync(require.resolve('../src/index.html'), 'utf8');
   assert.match(css, /\.castlePanel \.paletteItem\s*\{\s*width: 100%/);
   assert.match(css, /#castleDeleteMode, #castleSelectMode \{ width: auto; min-width: 0/);
-  assert.match(html, /value="area">Border<\/option>/);
-  assert.match(html, /value="flood">Flood Fill<\/option>/);
+  assert.match(html, /value="area"[^>]*data-i18n="interface:border"[^>]*>Border<\/option>/);
+  assert.match(html, /value="flood"[^>]*data-i18n="interface:flood_fill"[^>]*>Flood Fill<\/option>/);
 });
 
 

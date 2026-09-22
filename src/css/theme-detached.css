@@ -1,0 +1,9 @@
+@import url('combined.css');
+
+/* Same control roles and selected pack, without duplicating a detached palette. */
+body { margin: 0; overflow: hidden; font: 12px/1.4 var(--font-ui) !important; color: var(--text-main) !important; background: var(--map-bg) !important; }
+#isoWindowChrome { background: var(--surface-2) !important; border-color: var(--line-strong) !important; color: var(--text-main); }
+#isoWindowChrome > strong { color: var(--text-main) !important; }
+.isoViewControls button, #isoWindowDockBtn { color: var(--component-button-content); background-color: var(--component-button-surface); border-color: var(--line-strong); font-family: var(--font-ui); }
+.isoViewControls select { color: var(--component-input-content); background: var(--component-input-surface); border-color: var(--line-strong); font-family: var(--font-ui); }
+#isoWindowStatus { background: color-mix(in srgb, var(--surface-1) 90%, transparent) !important; color: var(--text-muted); }

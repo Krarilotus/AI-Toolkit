@@ -524,11 +524,23 @@ test('the ground is tiled at the same scale as the map, not stretched', () => {
 
 test('absolute sprite atlas URLs are loaded without the bundled sprite path', () => {
   const iso = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
-  const laden = iso.slice(iso.indexOf('function image('), iso.indexOf('function drawDiamond'));
-  // Eine data:-Adresse ist schon vollstaendig. Wer ihr den Sprite-Pfad
-  // voranstellt, baut eine Adresse ins Nichts - und es erscheint nichts.
-  assert.match(laden, /\^\(data:\|blob:\|https\?:\|file:\)/);
-  assert.match(laden, /\? filename : SPRITE_PATH \+ filename/);
+  const source = iso.slice(iso.indexOf('function image('), iso.indexOf('function currentDocument('));
+  class ImageStub {
+    set src(value) {
+      assert.equal(this.crossOrigin, 'anonymous', 'set CORS before loading to preserve canvas export');
+      this.url = value;
+    }
+  }
+  const load = new Function('state', 'Image', 'refresh', 'onImageFailed', 'SPRITE_PATH', source + ';return image;')(
+    { images: new Map() }, ImageStub, () => {}, () => {}, '/bundled/',
+  );
+  for (const url of ['data:image/png;base64,AA==', 'blob:atlas', 'http://asset.localhost/game.png',
+    'https://asset.localhost/game.png', 'file:///game.png', 'asset://localhost/game.png']) {
+    const image = load(url);
+    assert.equal(image.url, url);
+    assert.equal(load(url), image, 'cached images retain identity');
+  }
+  assert.equal(load('keep.png').url, '/bundled/keep.png');
 });
 
 // ------------------------------- eine Karte des Spiels unter der Ansicht
@@ -709,8 +721,8 @@ test('die Ansicht dreht die Burg und rechnet die Maus zurueck', () => {
   assert.match(iso, /geo\.marqueeOutline\(box, state\.view, currentRotation\(\)\)/);
   // Die Drehung steht in der Statuszeile, sonst sieht man nur, DASS etwas
   // anders liegt.
-  assert.match(iso, /turned '/);
-  assert.match(iso, /game value/);
+  assert.match(iso, /details:map_rotation/);
+  assert.match(require('../src/js/i18n').t('details:map_rotation',{turns:'1 quarter turn',value:2}), /turned 1 quarter turn \(game value 2\)/);
 });
 
 // ------------------------------------------- der Bergfried auf der Karte

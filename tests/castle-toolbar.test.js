@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
+const vm = require('./helpers/localized-vm');
 const source = fs.readFileSync(require.resolve('../src/js/castle-editor.js'), 'utf8');
 const html = fs.readFileSync(require.resolve('../src/index.html'), 'utf8');
 const constants = require('../config/aiv_constants.json');
@@ -108,7 +108,7 @@ test('toolbar groups expose New and all existing overlay controls without duplic
     assert.equal((html.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1);
   }
   const deletion = html.slice(html.indexOf('id="castleDeleteMode"'), html.indexOf('</select>', html.indexOf('id="castleDeleteMode"')));
-  assert.match(deletion, /value="flood">Flood fill<\/option>/);
+  assert.match(deletion, /value="flood"[^>]*data-i18n="interface:flood_fill_2"[^>]*>Flood fill<\/option>/);
   for (const group of ['toolbarFileGroup', 'castleViewGroup', 'castleProjectGroup', 'castlePlacementGroup', 'castleEditGroup', 'castleOverlayGroup']) {
     assert.ok(html.includes(group), group);
   }

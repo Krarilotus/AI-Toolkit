@@ -1,0 +1,165 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { validateManifest, readVariables, createController } = require('../src/js/theme');
+
+const directory = path.join(__dirname, '../assets/themes');
+const manifest = id => JSON.parse(fs.readFileSync(path.join(directory, id, 'theme.json'), 'utf8'));
+
+test('each registered theme is a complete attributed pack with intact image files', () => {
+  for (const pack of JSON.parse(fs.readFileSync(path.join(directory, 'registry.json'), 'utf8'))) {
+    const definition = validateManifest(manifest(pack.id), pack.id);
+    assert.equal(definition.name, pack.name);
+    assert.ok(fs.existsSync(path.join(directory, pack.id, 'tokens.json')));
+    assert.ok(fs.existsSync(path.join(directory, pack.id, definition.variables)));
+    for (const texture of Object.values(definition.textures)) {
+      const bytes = fs.readFileSync(path.join(directory, pack.id, texture.file));
+      assert.equal(bytes.subarray(1, 4).toString(), 'PNG');
+      assert.ok(bytes.readUInt32BE(16) > 0 && bytes.readUInt32BE(20) > 0);
+    }
+  }
+});
+
+test('theme manifest rejects path traversal, remote textures, unknown slots and unsafe geometry', () => {
+  for (const file of ['../outside.png', 'textures/../outside.png', 'https://example.com/image.png', 'textures/test.css', 'textures/a\\b.png']) {
+    const value = manifest('ucp'); value.textures.control.file = file;
+    assert.throws(() => validateManifest(value), /texture/);
+  }
+  const value = manifest('ucp'); value.textures.control.width = 300;
+  assert.throws(() => validateManifest(value), /frame/);
+  value.textures.control.width = 8; value.textures.script = value.textures.control;
+  assert.throws(() => validateManifest(value), /slot/);
+});
+
+test('generated variable input cannot load arbitrary CSS or external files', () => {
+  for (const css of ['@import "evil.css";', ':root{--primitive-color-x:url(https://example.com)}', '<style>body{display:none}</style>', ':root{--primitive-color-x:expreSSion(x)}', ':root{--primitive-color-x:u\\72l(x)}']) {
+    assert.throws(() => readVariables(css, null), /unsupported CSS/);
+  }
+  const CSSSheet = class { replaceSync() { this.cssRules = [{ selectorText: 'body', style: {} }]; } };
+  assert.throws(() => readVariables('body { display:none }', null, CSSSheet), /:root/);
+});
+
+test('theme tokens use one shared semantic hierarchy, without a duplicate layout sheet', () => {
+  const base = JSON.parse(fs.readFileSync(path.join(directory, 'default/tokens.json'), 'utf8'));
+  const variant = JSON.parse(fs.readFileSync(path.join(directory, 'ucp/tokens.json'), 'utf8'));
+  assert.deepEqual(Object.keys(base).filter(key => !key.startsWith('$')).sort(), ['component', 'primitive', 'semantic']);
+  assert.equal(base.component.button.surface.$value, '{semantic.surface.control}');
+  assert.equal(base.component.input.content.$value, base.component.button.content.$value);
+  assert.equal(variant.component.button.content.$value, '{semantic.content.onAccent}');
+  assert.equal(fs.existsSync(path.join(__dirname, '../src/css/combined-blue.css')), false);
+  const css = fs.readFileSync(path.join(__dirname, '../src/css/theme-components.css'), 'utf8');
+  assert.match(css, /input\[type="checkbox"\]:checked/);
+  assert.match(css, /input\[type="checkbox"\]:indeterminate/);
+  assert.match(css, /forced-colors: active/);
+  assert.match(css, /:focus-visible/);
+});
+
+// The controller consumes the browser CSSOM. This tiny DOM stand-in tests its
+// asynchronous lifecycle, not CSS parsing (the packaged preview checks that).
+function environment({ delay = () => Promise.resolve() } = {}) {
+  const properties = new Map();
+  const callbacks = {};
+  const calls = [];
+  let saved = '';
+  const sheet = class {
+    replaceSync() {
+      const style = { 0: '--primitive-color-ink', length: 1, getPropertyPriority: () => '', getPropertyValue: () => '#101416' };
+      this.cssRules = [{ selectorText: ':root', style }];
+    }
+  };
+  const document = { currentScript: { src: 'file:///app/src/js/theme.js' }, baseURI: 'file:///app/src/index.html', documentElement: { style: { setProperty: (name, value) => properties.set(name, value) }, dataset: {} } };
+  return {
+    document, CSSStyleSheet: sheet, CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } }, dispatchEvent() {}, console,
+    electronAPI: { getInterfaceSettings: async () => ({ theme: 'default' }), setTheme: async id => { saved = id; }, onThemeChanged: callback => { callbacks.theme = callback; } },
+    fetch: async url => {
+      calls.push(String(url)); await delay(String(url));
+      const id = String(url).includes('/ucp/') ? 'ucp' : 'default';
+      return { ok: true, json: async () => manifest(id), text: async () => ':root { --primitive-color-ink: #101416; }' };
+    },
+    properties, callbacks, calls, saved: () => saved,
+  };
+}
+
+test('a theme switch persists once and reuses loaded packs without renderer work', async () => {
+  const env = environment(); const theme = createController(env);
+  await theme.init(); await theme.select('ucp');
+  assert.equal(env.saved(), 'ucp');
+  assert.equal(env.document.documentElement.dataset.themedCheckboxes, 'true');
+  assert.match(theme.texture('backdrop'), /\/default\/textures\/backdrop.png$/);
+  assert.match(env.properties.get('--texture-control'), /\/ucp\/textures\/button_ucp.png/);
+  const count = env.calls.length;
+  await theme.select('default'); await theme.select('ucp');
+  assert.equal(env.calls.length, count);
+});
+
+test('a late slow theme load cannot replace a newer choice', async () => {
+  let release;
+  const barrier = new Promise(resolve => { release = resolve; });
+  const env = environment({ delay: url => url.includes('/ucp/') ? barrier : Promise.resolve() });
+  const theme = createController(env); await theme.init();
+  const first = theme.apply('ucp'); await theme.apply('default'); release(); await first;
+  assert.equal(theme.current, 'default');
+  assert.equal(env.document.documentElement.dataset.theme, 'default');
+});
+
+test('native theme changes and detached windows share the same pack', async () => {
+  const env = environment(); const theme = createController(env); await theme.init();
+  const second = environment(); const links = [];
+  second.document.createElement = () => ({}); second.document.head = { appendChild: link => links.push(link) };
+  theme.attachWindow(second);
+  await env.callbacks.theme('ucp');
+  assert.equal(second.document.documentElement.dataset.theme, 'ucp');
+  assert.match(links[0].href, /\/src\/css\/theme-detached.css$/);
+});
+
+test('optional role art never hides functional controls in a minimal custom-style pack', async () => {
+  const env = environment(), originalFetch = env.fetch;
+  env.fetch = async url => {
+    const response = await originalFetch(url);
+    if (String(url).includes('/ucp/') && String(url).endsWith('theme.json')) {
+      const minimal = manifest('ucp');
+      minimal.textures = { control: minimal.textures.control };
+      return { ...response, json: async () => minimal };
+    }
+    return response;
+  };
+  const theme = createController(env);
+  await theme.init(); await theme.apply('ucp');
+  assert.equal(env.document.documentElement.dataset.themedControls, 'true');
+  for (const role of ['Reorder', 'Stepper', 'Range', 'Scrollbars', 'Tabs', 'Fields']) {
+    assert.equal(env.document.documentElement.dataset['themed' + role], 'false', role);
+  }
+});
+
+test('a discovered renamed UCP pack uses shared roles and its scoped local artwork', async () => {
+  const env = environment(), originalFetch = env.fetch;
+  env.electronAPI.listThemes = async () => [
+    { id: 'my-theme', name: 'My theme', baseUrl: 'http://asset.localhost/C%3A/users/test/themes/my-theme/' },
+    { id: 'remote', name: 'Remote', baseUrl: 'https://example.com/themes/remote/' },
+  ];
+  env.electronAPI.getInterfaceSettings = async () => ({ theme: 'my-theme' });
+  env.fetch = async url => String(url).includes('/my-theme/')
+    ? { ok: true, json: async () => ({ ...manifest('ucp'), id: 'my-theme', name: 'My theme' }), text: async () => ':root { --primitive-color-ink: #101416; }' }
+    : originalFetch(url);
+  const theme = createController(env); await theme.init();
+  assert.equal(theme.current, 'my-theme');
+  assert.equal(env.document.documentElement.dataset.themedReorder, 'true');
+  assert.equal(env.document.documentElement.dataset.themedCheckboxes, 'true');
+  assert.match(theme.texture('moveUp'), /^http:\/\/asset\.localhost\/.*\/my-theme\/textures\//);
+  assert.equal(theme.list().some(pack => pack.id === 'remote'), false);
+});
+
+test('a native menu choice discovers a pack added after the window was opened', async () => {
+  const env = environment(), originalFetch = env.fetch;
+  let available = [];
+  env.electronAPI.listThemes = async () => available;
+  env.fetch = async url => String(url).includes('/new-theme/')
+    ? { ok: true, json: async () => ({ ...manifest('ucp'), id: 'new-theme', name: 'New theme' }), text: async () => ':root { --primitive-color-ink: #101416; }' }
+    : originalFetch(url);
+  const theme = createController(env); await theme.init();
+  available = [{ id: 'new-theme', name: 'New theme', baseUrl: 'http://asset.localhost/themes/new-theme/' }];
+  await env.callbacks.theme('new-theme');
+  assert.equal(theme.current, 'new-theme');
+  assert.equal(env.document.documentElement.dataset.themedReorder, 'true');
+});

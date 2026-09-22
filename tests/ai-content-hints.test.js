@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
+const vm = require('./helpers/localized-vm');
 const {defaultLines} = require('../src/node/ucp-library');
 const source = fs.readFileSync(require.resolve('../src/js/ai-content-editor.js'), 'utf8');
 

@@ -1,3 +1,4 @@
+const trCharacter = (key, options) => globalThis.toolkitI18n.t(key, options);
 let isInitialized = false;
 let data = null;
 
@@ -32,7 +33,7 @@ let followCastlePopulation = true;
 async function init() {
   try {
     template = await loadConfig("template.json");
-    helpTexts = await loadConfig("helpTexts.json");
+    helpTexts = Object.keys(globalThis.toolkitI18n.engine.getResourceBundle('en', 'help'));
     fieldPools = await loadConfig("fieldPools.json");
     optionPools = await loadConfig("optionPools.json");
     groupBreaks = await loadConfig("groupBreaks.json");
@@ -54,7 +55,7 @@ async function init() {
     render();
   } catch (e) {
     console.error("INIT FAILED:", e);
-    alert("Failed to load config files.");
+    alert(trCharacter("character:failed_to_load_config_files"));
     throw e;
   }
 
@@ -148,7 +149,7 @@ function showHelp(content) {
   text.textContent = String(content || '').replace(/<br\s*\/?>/gi, '\n');
 
   const close = document.createElement("button");
-  close.textContent = "Close";
+  close.textContent = trCharacter("common:actions.close");
 
   const buttonWrap = document.createElement("div");
   buttonWrap.className = "helpButtonWrap";
@@ -177,10 +178,7 @@ function mergeDefaults(target, source) {
 }
 
 function characterFieldLabel(key) {
-  const troop = /^AIVTroops_(InitialRole|Movement)(?:_(.+))?$/.exec(key);
-  if (!troop) return key;
-  const unit = troop[2] ? troop[2].replace(/([a-z])([A-Z])/g, '$1 $2') : 'All troops';
-  return `${unit}: ${troop[1] === 'InitialRole' ? 'initial role' : 'movement'}`;
+  return trCharacter(`fields:${key}`, { defaultValue: key });
 }
 
 function createField(key, value, parent) {
@@ -192,8 +190,9 @@ function createField(key, value, parent) {
  if (!searchQuery && activeGroupBreaks.includes(key)) {
   div.classList.add("sectionDivider");
 }
- 
+
   const label = document.createElement("span");
+  if (globalThis.toolkitI18n.engine.exists(`fields:${key}`)) label.dataset.i18n = `fields:${key}`;
 
   label.title = key;
   if (searchQuery) {
@@ -219,10 +218,14 @@ if (key.startsWith("AIVTroops_") && fieldPools[key]) {
   input.dataset.aicField = key;
   const choices = optionPools[fieldPools[key]];
   if (!choices.includes(value)) {
-    const option = new Option("Unsupported value: " + String(value), String(value), true, true);
+    const option = new Option(trCharacter("character:unsupported_value") + String(value), String(value), true, true);
     input.appendChild(option);
   }
-  choices.forEach(choice => input.appendChild(new Option(choice === "" ? "Vanilla" : choice, choice, false, choice === value)));
+  choices.forEach(choice => {
+    const option = new Option(choice === "" ? trCharacter("common:state.vanilla") : trCharacter(`options:${choice}`, { defaultValue: choice }), choice, false, choice === value);
+    option.dataset.i18n = choice === '' ? 'common:state.vanilla' : `options:${choice}`;
+    input.appendChild(option);
+  });
   input.onchange = () => { parent[key] = input.value; updateHeaderInfo(); };
 }
 else if (numericBooleanFields.includes(key)) {
@@ -231,7 +234,8 @@ else if (numericBooleanFields.includes(key)) {
   ["True", "False"].forEach(v => {
     const o = document.createElement("option");
     o.value = v;
-    o.text = v;
+    o.text = trCharacter(`options:${v}`, { defaultValue: v });
+    o.dataset.i18n = `options:${v}`;
 
     if ((value === 1 && v === "True") || (value === 0 && v === "False")) {
       o.selected = true;
@@ -263,7 +267,7 @@ val = val.replace(/[^0-9.-]/g, "");
 
 if (val.includes("-")) {
   val = val.replace(/-/g, "");
-  val = "-" + val; 
+  val = "-" + val;
 }
 
 if (isDecimal) {
@@ -321,7 +325,8 @@ if (val !== input.value) {
     optionPools[fieldPools[key]].forEach(v => {
       const o = document.createElement("option");
       o.value = v;
-      o.text = v;
+      o.text = trCharacter(`options:${v}`, { defaultValue: v });
+      o.dataset.i18n = `options:${v}`;
       if (v === value) o.selected = true;
       input.appendChild(o);
     });
@@ -345,7 +350,7 @@ if (val !== input.value) {
   const help = document.createElement("div");
   help.className = "helpBtn";
   help.textContent = "?";
-  help.onclick = () => showHelp((helpTexts[key] || "No description yet."));
+  help.onclick = () => showHelp(helpTexts.includes(key) ? trCharacter(`help:${key}`) : trCharacter("character:no_description_yet"));
 
   div.appendChild(help);
 
@@ -356,7 +361,8 @@ function buildSection(title, keys, source, container) {
   const sec = document.createElement("details");
   if (searchQuery) sec.open = true;
   const sum = document.createElement("summary");
-  sum.textContent = title;
+  sum.textContent = trCharacter(`sections:${title}`, { defaultValue: title });
+  sum.dataset.i18n = `sections:${title}`;
   sec.appendChild(sum);
 
   keys.forEach(k=>{
@@ -410,7 +416,8 @@ function buildForm(obj, container) {
     sec.open = !!searchQuery;
 
     const sum = document.createElement("summary");
-    sum.textContent = title;
+    sum.textContent = trCharacter(`sections:${title}`, { defaultValue: title });
+    sum.dataset.i18n = `sections:${title}`;
 
     sec.appendChild(sum);
     container.appendChild(sec);
@@ -418,7 +425,7 @@ function buildForm(obj, container) {
     return sec;
   }
 
-  flat.forEach(({ key, value, parent, path }) => {  
+  flat.forEach(({ key, value, parent, path }) => {
 
     if (!toggleOx.checked && path.includes("AIOx")) return;
     if (!toggleRun.checked && path.includes("RunningUnits")) return;
@@ -441,11 +448,12 @@ function buildForm(obj, container) {
     }
 
     if (currentSection) {
-      const troopGroup = key.startsWith('AIVTroops_InitialRole_') ? 'Initial roles'
-        : key.startsWith('AIVTroops_Movement_') ? 'Movement' : '';
+      const troopGroup = key.startsWith('AIVTroops_InitialRole_') ? trCharacter("character:initial_roles")
+        : key.startsWith('AIVTroops_Movement_') ? trCharacter('character:movement') : '';
       if (troopGroup && troopGroup !== lastTroopGroup) {
         const heading = document.createElement('h3');
         heading.className = 'characterFieldGroup'; heading.textContent = troopGroup;
+        heading.dataset.i18n = key.startsWith('AIVTroops_InitialRole_') ? 'character:initial_roles' : 'character:movement';
         currentSection.appendChild(heading); lastTroopGroup = troopGroup;
       }
       currentSection.appendChild(field);
@@ -496,7 +504,7 @@ function loadFromContent(content, path, options = {}) {
 
   const unknownKeys = findUnknownKeys(activeTemplate, data);
   if (unknownKeys.length > 0) {
-    alert("Unknown parameters found:\n\n" + unknownKeys.join("\n"));
+    alert(trCharacter("character:unknown_parameters_found") + unknownKeys.join("\n"));
   }
 
   data = renameKeysPreserveOrder(data);
@@ -511,15 +519,15 @@ function loadFromContent(content, path, options = {}) {
   const parts = String(currentFilePath || '').split(/[\\/]/);
   AIName = parts[parts.length - 2] || "";
 
-  document.getElementById("aiName").textContent =
-  AIName || "No Character Loaded";
+  window.toolkitI18n.bindText(document.getElementById("aiName"), () =>
+    AIName || trCharacter("interface:no_character_loaded"));
 
 render();
 markCharacterSaved();
 }
 
 async function loadFile() {
-  if (!await window.unsavedChanges?.confirmEditor('character', 'opening another Character file')) return false;
+  if (!await window.unsavedChanges?.confirmEditor('character', trCharacter("character:opening_another_character_file"))) return false;
   const result = await window.electronAPI.openFile();
   if (!result) return false;
 
@@ -537,7 +545,7 @@ async function loadFile() {
       loadFromContent(content, path);
     }
   } catch (err) {
-    alert(`Could not open Character file:\n\n${err.message}`);
+    alert(trCharacter('details:open_character_error', { error: err.message }));
     console.error(err);
     return false;
   }
@@ -547,7 +555,7 @@ async function loadFile() {
 
 async function newCharacterFile() {
   if (!isInitialized) return false;
-  if (!await window.unsavedChanges?.confirmEditor('character', 'creating a new Character')) return false;
+  if (!await window.unsavedChanges?.confirmEditor('character', trCharacter("character:creating_a_new_character"))) return false;
   const disposition = await window.ucpLibrary?.chooseDocumentDisposition?.('character', 'new') || 'separate';
   if (disposition === 'cancel') return false;
   let projectPath = null;
@@ -568,12 +576,12 @@ async function newCharacterFile() {
   document.getElementById('toggleOx').checked = true;
   document.getElementById('toggleRun').checked = true;
   document.getElementById('toggleTroops').checked = true;
-  document.getElementById('aiName').textContent = AIName || 'No Character Loaded';
+  window.toolkitI18n.bindText(document.getElementById('aiName'), () => AIName || trCharacter("interface:no_character_loaded"));
   setActiveTemplateButton('standard');
   if (disposition !== 'project') window.ucpLibrary?.detachCastleProject?.();
   render();
   markCharacterSaved();
-  window.appWorkspace?.setStatus(projectPath ? 'New Character added to the loaded AI' : 'New Character');
+  window.appWorkspace?.setStatus(() => projectPath ? trCharacter("character:new_character_added_to_the_loaded_ai") : trCharacter("character:new_character"));
   return true;
 }
 
@@ -709,8 +717,8 @@ async function quickSaveFile() {
     return saveFile();
   }
 
-  
-  btn.textContent = "Saving...";
+
+  btn.textContent = trCharacter("character:saving");
   btn.disabled = true;
 
   try {
@@ -720,7 +728,7 @@ async function quickSaveFile() {
     });
 
     markCharacterSaved();
-    btn.textContent = "Saved!";
+    btn.textContent = trCharacter("character:saved");
 
     setTimeout(() => {
       btn.textContent = originalText;
@@ -730,7 +738,7 @@ async function quickSaveFile() {
 
   } catch (e) {
     console.error(e);
-    btn.textContent = "Error!";
+    btn.textContent = trCharacter("character:error");
     setTimeout(() => {
       btn.textContent = originalText;
       btn.disabled = false;
@@ -749,7 +757,7 @@ async function saveFile() {
     markCharacterSaved();
     return true;
   } catch (err) {
-    alert(`Could not save Character file:\n\n${err.message}`);
+    alert(trCharacter('details:save_character_error', { error: err.message }));
     console.error(err);
     return false;
   }
@@ -762,7 +770,7 @@ function updateFilePathDisplay() {
   const dirtyMarker = isCharacterDirty() ? " *" : "";
 
   if (!currentFilePath) {
-    el.textContent = `No file loaded${dirtyMarker}`;
+    window.toolkitI18n.bindText(el, () => trCharacter("character:no_file_loadedvalue", { dirtyMarker }));
     el.style.fontSize = "12px";
     return;
   }
@@ -775,7 +783,7 @@ function updateFilePathDisplay() {
     ? "..." + lastParts.join(separator)
     : currentFilePath;
 
-  el.textContent = `${shortPath}${dirtyMarker}`;
+  window.toolkitI18n.bindText(el, `${shortPath}${dirtyMarker}`);
   el.title = currentFilePath;
   el.style.fontSize = "12px";
 }
@@ -906,7 +914,7 @@ function calculateMaxPopNeeded() {
     const quarries    = Math.max(Number(a.MaxQuarries) || 0, 1);
     const farms       = Math.max(Number(a.MaxFarms) || 0, 1);
     const pitchrigs   = Math.max(Number(a.MaxPitchrigs) || 0, 1);
- 
+
     const oxTethers = calculateOxTethers(quarries, a);
 
     return (
@@ -920,7 +928,7 @@ function calculateMaxPopNeeded() {
 }
 
 function getQuarryLikeBuildings(pop, popPer, max) {
-  
+
     pop     = Number(pop) || 0;
     popPer  = Math.max(Number(popPer) || 0, 1);
     max     = Math.max(Number(max) || 0, 1);
@@ -1119,7 +1127,7 @@ window.castleEditor?.refreshPopulation?.();
 window.electronAPI.onTriggerLoad(() => {
   const active = window.appWorkspace?.getActive();
   if (active === "castle") window.castleEditor?.openFile();
-  else if (active === "content") window.appWorkspace?.setStatus('Open an AI from the Library to edit its content');
+  else if (active === "content") window.appWorkspace?.setStatus(() => trCharacter("character:open_an_ai_from_the_library_to_edit_its_content"));
   else if (active === "ucp") window.ucpLibrary?.chooseInstallation?.();
   else loadFile();
 });
@@ -1153,7 +1161,7 @@ window.electronAPI.onTriggerNewWindow(() => {
 window.electronAPI.onTriggerLoadInWindow(() => {
   const active = window.appWorkspace?.getActive();
   if (active === "castle") window.electronAPI.loadFileInNewWindow("aiv");
-  else if (active === "content") window.appWorkspace?.setStatus('AI Content belongs to the loaded AI project');
+  else if (active === "content") window.appWorkspace?.setStatus(() => trCharacter("character:ai_content_belongs_to_the_loaded_ai_project"));
   else if (active === "ucp") window.ucpLibrary?.openSelected?.();
   else loadInWindow();
 });

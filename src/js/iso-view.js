@@ -16,6 +16,7 @@
 
 (() => {
   'use strict';
+  const tr = (key, options) => globalThis.toolkitI18n.t(key, options);
 
   const geo = (typeof globalThis !== 'undefined' && globalThis.isoGeometry) || null;
   const CATALOGUE_PATH = '../assets/aiv/iso/verzeichnis.json';
@@ -78,12 +79,15 @@
     let img = state.images.get(filename);
     if (img) { img.terrainAsset ||= terrainAsset; return img; }
     img = new Image();
+    // Tauri serves local game atlases from its scoped asset origin. Request
+    // CORS explicitly so canvas export and worker ImageBitmap transfer stay clean.
+    img.crossOrigin = 'anonymous';
     img.terrainAsset = terrainAsset;
     img.decoding = 'async';
     img.onload = () => refresh(false, !img.terrainAsset);
     img.onerror = () => onImageFailed(filename);
     // Runtime atlases use absolute URLs; bundled sprites use relative paths.
-    img.src = /^(data:|blob:|https?:|file:)/.test(filename) ? filename : SPRITE_PATH + filename;
+    img.src = /^(data:|blob:|https?:|file:|asset:)/.test(filename) ? filename : SPRITE_PATH + filename;
     state.images.set(filename, img);
     return img;
   }
@@ -285,9 +289,9 @@
 
   function turnView(richtung) {
     if (gameMap() && !state.kachelVorrat?.cameras) {
-      setStatus(state.kachelVorrat?.nativeError
-        ? 'Rotation unavailable: ' + state.kachelVorrat.nativeError
-        : 'Loading camera views...');
+      setStatus(() => state.kachelVorrat?.nativeError
+        ? tr("viewport:rotation_unavailable") + state.kachelVorrat.nativeError
+        : tr("viewport:loading_camera_views"));
       return null;
     }
     const schritt = Number(richtung) < 0 ? -VIERTEL : VIERTEL;
@@ -390,10 +394,11 @@
     const pending = [];
     function cameraStock(daten) {
       const bild = new Image();
+      bild.crossOrigin = 'anonymous';
       bild.src = daten.atlas;
       pending.push(bild.decode());
       const upperImages = (daten.upper?.pages || (daten.upper?.dataUrl ? [daten.upper.dataUrl] : [])).map(url => {
-        const img = new Image(); img.src = url; pending.push(img.decode()); return img;
+        const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url; pending.push(img.decode()); return img;
       });
       return {
         path: daten.path,
@@ -646,7 +651,7 @@
       ctx.fillStyle = '#232a1c'; ctx.fillRect(0, 0, width, height);
       ctx.fillStyle = '#cbd2d2'; ctx.font = '14px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(state.mapLoadError || 'Loading map...', width / 2, height / 2, width - 24);
+      ctx.fillText(state.mapLoadError || tr("viewport:loading_map"), width / 2, height / 2, width - 24);
       ctx.textAlign = 'start';
       return;
     }
@@ -716,9 +721,10 @@
     paintInteraction(ctx, scene.items);
     const { items, missing } = scene;
     const editor = window.castleEditor;
-    const tool = editor && editor.getTool ? editor.getTool() : '—';
-    setStatus(items.length + ' items' + (missing ? ', ' + missing + ' without a sprite' : '') +
-              ' · tool: ' + tool + mapStatus() + ' · middle-drag pans · right-click clears · camera controls match Map');
+    const toolId=editor?.getTool?.();
+    const tool = toolId ? tr('shortcuts:'+toolId,{defaultValue:toolId}) : '—';
+    setStatus(() => items.length + tr("viewport:items") + (missing ? ', ' + missing + tr("viewport:without_a_sprite") : '') +
+              tr("viewport:tool") + tool + mapStatus() + tr("viewport:middle_drag_pans_right_click_clears_camera_controls_match_map"));
   }
 
   let fireLayer=null;
@@ -1186,25 +1192,23 @@
     if (!map) return '';
     const keep = currentKeep();
     const platz = map.keeps.length
-      ? (keep.player ? ' · start ' + keep.player : ' · start place ' + (map.keepIndex + 1)) +
-        ' (' + keep.x + ', ' + keep.y + ')'
-      : ' · no starting place, village in the middle of the map';
+      ? tr(keep.player ? 'details:map_start' : 'details:map_start_place', {number:keep.player || map.keepIndex+1,x:keep.x,y:keep.y})
+      : tr("viewport:no_starting_place_village_in_the_middle_of_the_map");
     // Die Zahl des Spiels wird mitgenannt: 0/2/4/6 ist das, was in
     // keepOrientation steht, und nur damit laesst sich nachrechnen.
     const drehung = keep.orientation
-      ? ' · turned ' + (keep.orientation / 2) + ' quarter turn' + (keep.orientation === 2 ? '' : 's') +
-        ' (game value ' + keep.orientation + ')'
-      : (map.keeps.length ? ' · not turned (game value 0)' : '');
+      ? tr('details:map_rotation', {turns:tr('quantity:quarter_turn',{count:keep.orientation/2}),value:keep.orientation})
+      : (map.keeps.length ? tr("viewport:not_turned_game_value_0") : '');
     // Und ob der Boden Hoehen hat. Ohne diese Zeile sieht man dem Bild nur an,
     // DASS etwas anders liegt, aber nicht warum - und ob es an dieser Karte
     // liegt.
     const spanne = dorfHoehen();
     let hoehe = '';
     if (spanne) {
-      hoehe = spanne.hoch === spanne.tief ? ' · flat ground (height ' + spanne.hoch + ')'
-        : ' · ground rises ' + (spanne.hoch - spanne.tief) + ' points (height ' + spanne.tief + ' to ' + spanne.hoch + ')';
+      hoehe = spanne.hoch === spanne.tief ? tr('details:map_flat',{height:spanne.hoch})
+        : tr('details:map_height',{range:spanne.hoch-spanne.tief,minimum:spanne.tief,maximum:spanne.hoch});
     }
-    return ' · map: ' + map.name + platz + drehung + hoehe;
+    return tr('details:map_name',{name:map.name}) + platz + drehung + hoehe;
   }
 
   // Was ein Klick setzen wuerde - mit dem richtigen Bild, halb durchsichtig.
@@ -1311,7 +1315,7 @@
   }
 
   function setStatus(text) {
-    if (state.host && state.host.statusEl) state.host.statusEl.textContent = text;
+    if (state.host && state.host.statusEl) window.toolkitI18n.bindText(state.host.statusEl, text);
   }
 
   function fit() { state.fitted = false; refresh(true); }
@@ -1378,7 +1382,7 @@
         setGameMapKeep(marke.index);
         window.castleEditor?.updateMapControls?.();
         const nummer = marke.platz.player || (marke.index + 1);
-        window.castleEditor?.setStatus?.(`Castle moved to start ${nummer} at (${marke.platz.x}, ${marke.platz.y})`);
+        window.castleEditor?.setStatus?.(() => tr("viewport:castle_moved_to_start_value_at_value_value", { nummer: nummer, x: marke.platz.x, y: marke.platz.y }));
         return;
       }
       const tile = editorTileAt(p.x, p.y);
@@ -1402,7 +1406,7 @@
       const ueberMarke = startPlaceAt(p.x, p.y);
       canvas.style.cursor = ueberMarke ? 'pointer' : '';
       canvas.title = ueberMarke
-        ? `Start ${ueberMarke.platz.player || (ueberMarke.index + 1)} at (${ueberMarke.platz.x}, ${ueberMarke.platz.y}) - click to build here`
+        ? tr("viewport:start_value_at_value_value_click_to_build_here", { value1: ueberMarke.platz.player || (ueberMarke.index + 1), x: ueberMarke.platz.x, y: ueberMarke.platz.y })
         : (window.castleEditor?.itemLabelAtTile?.(tile) || '');
       const moved = !state.hover || !grid || state.hover.gx !== grid.gx || state.hover.gy !== grid.gy;
       state.hover = grid;
@@ -1550,12 +1554,12 @@
     const win = window.open('', 'aiToolkitIsoView', 'width=1280,height=860');
     if (!win) return false;                       // blocked, or no user gesture
     unmount();
-    win.document.title = '2.5D view — AI Toolkit';
+    win.document.title = tr("viewport:2_5d_view_ai_toolkit");
     win.document.body.style.cssText =
       'margin:0;background:#171a14;overflow:hidden;font:12px/1.4 system-ui,sans-serif;color:#cfd6c8';
     win.document.body.innerHTML =
       '<div id="isoWindowChrome"><strong>2.5D</strong><div id="isoWindowControlSlot"></div>' +
-      '<span class="isoWindowFill"></span><button id="isoWindowDockBtn" type="button">Dock</button></div>' +
+      `<span class="isoWindowFill"></span><button id="isoWindowDockBtn" type="button" data-i18n="castle:dock">${globalThis.toolkitI18n.html("castle:dock")}</button></div>` +
       '<div id="isoWindowHost">' +
       '<canvas id="isoWindowCanvas" style="display:block;width:100%;height:100%;cursor:crosshair"></canvas>' +
       '</div>' +
@@ -1578,6 +1582,8 @@
       '.isoViewControls select{flex:none;width:128px;min-height:24px;border:1px solid #465158;border-radius:4px;' +
       'background:#2a3237;color:#eef1f6;font:11px system-ui,sans-serif}';
     win.document.head.appendChild(chromeStyle);
+    window.ToolkitTheme?.attachWindow(win);
+    window.toolkitI18n?.attachWindow(win);
     const controlSlot = win.document.getElementById('isoWindowControlSlot');
     if (controlSlot && state.controls) controlSlot.appendChild(state.controls);
     state.host = {
@@ -1630,6 +1636,12 @@
                      viewInfo: () => ({ ...state.view, rotation: currentRotation(), hand: viewRotation() }),
                      startPlaceMarks };
 
+  window.toolkitI18n?.onChange(() => {
+    if (state.host?.kind === 'window' && !state.host.win.closed) {
+      state.host.win.document.title = tr("viewport:2_5d_view_ai_toolkit");
+    }
+    if (state.host) refresh(true);
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
