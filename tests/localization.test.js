@@ -338,6 +338,40 @@ test('detached 2.5D title and Dock button follow the selected language', async (
   assert.equal(detached.document.title, h.api.t('viewport:2_5d_view_ai_toolkit'));
   assert.equal(refreshes, 1);
 });
+test('2.5D toolbar bindings follow locale changes while controls move between documents', async () => {
+  const h = harness();
+  await h.api.ready;
+  const gameMap = element('interface:game_map');
+  gameMap.dataset.i18nAttrs = 'title=interface:lay_a_map_of_the_game_under_the_slanted_view_to_scale_one_field_of_the_map_o';
+  const selectedStart = element(null, '3', 'SELECT');
+  const controls = { querySelectorAll: () => [gameMap, selectedStart], parentElement: null };
+  const state = { controls, host: null };
+  const store = { appendChild: child => { assert.equal(child, controls); child.parentElement = store; } };
+  const scope = vm.createContext({
+    window: { toolkitI18n: h.api }, state,
+    document: { getElementById: () => store }, tr: h.api.t, refresh() {}
+  });
+  const isoSource = fs.readFileSync(path.join(root, 'src/js/iso-view.js'), 'utf8');
+  visitSyntax(acorn.parse(isoSource, { ecmaVersion: 'latest' }), {
+    CallExpression(node) {
+      if (node.callee.property?.name === 'onChange') vm.runInContext(isoSource.slice(node.start, node.end), scope);
+    }
+  });
+  vm.runInContext(editorFunctions('iso-view.js', ['parkControls']), scope);
+  // During native close/reparenting the controls need not belong to either
+  // document's query results; their stable references still own the bindings.
+  await h.api.changeLanguage('de');
+  const germanLabel = gameMap.textContent;
+  assert.equal(germanLabel, h.api.t('interface:game_map'));
+  await h.api.changeLanguage('en');
+  assert.equal(gameMap.textContent, 'Game map');
+  assert.equal(gameMap.attributes.title, h.api.t('interface:lay_a_map_of_the_game_under_the_slanted_view_to_scale_one_field_of_the_map_o'));
+  gameMap.textContent = germanLabel;
+  scope.parkControls();
+  assert.equal(controls.parentElement, store);
+  assert.equal(gameMap.textContent, 'Game map', 'parking reconciles a toolbar from a differently localized detached document');
+  assert.equal(selectedStart.value, '3', 'translation never recreates or resets the map-start selection');
+});
 
 test('validation errors use the selected language without translating document fields', async () => {
   const h = harness({ language: 'de' });

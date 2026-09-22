@@ -1,5 +1,6 @@
 //! Native window lifecycle shared by the main and additional editor windows.
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Mutex,
@@ -20,7 +21,10 @@ pub struct Bounds {
 }
 
 #[derive(Default)]
-pub struct WindowState(Mutex<Option<Bounds>>);
+pub struct WindowState {
+    bounds: Mutex<Option<Bounds>>,
+    viewport_owners: Mutex<HashMap<String, String>>,
+}
 
 impl Bounds {
     fn fit(self, area: Self) -> Self {
@@ -88,7 +92,7 @@ pub fn restore(app: &AppHandle, window: &WebviewWindow) -> crate::storage::Resul
             bounds.width - border.0,
             bounds.height - border.1,
         ));
-        *app.state::<WindowState>().0.lock().unwrap() = Some(bounds);
+        *app.state::<WindowState>().bounds.lock().unwrap() = Some(bounds);
     }
     if saved["mainWindow"]["maximized"].as_bool() == Some(true) {
         let _ = window.maximize();
@@ -109,7 +113,7 @@ pub fn remember(window: &Window) {
         window.outer_size(),
         window.scale_factor(),
     ) {
-        if let Ok(mut normal) = window.state::<WindowState>().0.lock() {
+        if let Ok(mut normal) = window.state::<WindowState>().bounds.lock() {
             *normal = Some(Bounds {
                 x: position.x as f64 / scale,
                 y: position.y as f64 / scale,
@@ -122,7 +126,7 @@ pub fn remember(window: &Window) {
 
 pub fn persist(window: &Window) {
     remember(window);
-    if let Ok(bounds) = window.state::<WindowState>().0.lock() {
+    if let Ok(bounds) = window.state::<WindowState>().bounds.lock() {
         let _ = crate::storage::update_settings(
             window.app_handle(),
             "mainWindow",
@@ -133,6 +137,27 @@ pub fn persist(window: &Window) {
 
 static WINDOW_ID: AtomicU64 = AtomicU64::new(1);
 
+fn release_viewports(owners: &mut HashMap<String, String>, closed: &str) -> Vec<String> {
+    let mut children = Vec::new();
+    owners.retain(|child, owner| {
+        if owner == closed {
+            children.push(child.clone());
+        }
+        child != closed && owner != closed
+    });
+    children
+}
+
+pub fn destroyed(window: &Window) {
+    let state = window.state::<WindowState>();
+    let children = release_viewports(&mut state.viewport_owners.lock().unwrap(), window.label());
+    for label in children {
+        if let Some(child) = window.app_handle().get_webview_window(&label) {
+            let _ = child.close();
+        }
+    }
+}
+
 pub fn create(app: &AppHandle, main: bool) -> tauri::Result<WebviewWindow> {
     let mut config = app.config().app.windows[0].clone();
     if !main {
@@ -140,6 +165,7 @@ pub fn create(app: &AppHandle, main: bool) -> tauri::Result<WebviewWindow> {
         config.url = tauri::WebviewUrl::App("src/index.html?restoreProject=0".into());
     }
     let owner = app.clone();
+    let owner_label = config.label.clone();
     let user_data = crate::storage::user_data(app).map_err(std::io::Error::other)?;
     let migration = crate::migration::initialization(&user_data);
     WebviewWindowBuilder::from_config(app, &config)?
@@ -152,15 +178,24 @@ pub fn create(app: &AppHandle, main: bool) -> tauri::Result<WebviewWindow> {
                 return NewWindowResponse::Deny;
             }
             let label = format!("viewport-{}", WINDOW_ID.fetch_add(1, Ordering::Relaxed));
-            match WebviewWindowBuilder::new(&owner, label, tauri::WebviewUrl::External(url))
+            match WebviewWindowBuilder::new(&owner, &label, tauri::WebviewUrl::External(url))
                 .window_features(features)
+                .initialization_script(include_str!("viewport-close.js"))
                 .title("AI Toolkit")
                 .on_document_title_changed(|window, title| {
                     let _ = window.set_title(&title);
                 })
                 .build()
             {
-                Ok(window) => NewWindowResponse::Create { window },
+                Ok(window) => {
+                    owner
+                        .state::<WindowState>()
+                        .viewport_owners
+                        .lock()
+                        .unwrap()
+                        .insert(label, owner_label.clone());
+                    NewWindowResponse::Create { window }
+                }
                 Err(_) => NewWindowResponse::Deny,
             }
         })
@@ -170,6 +205,23 @@ pub fn create(app: &AppHandle, main: bool) -> tauri::Result<WebviewWindow> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn viewport_cleanup_only_closes_children_of_the_destroyed_editor() {
+        let mut owners = HashMap::from([
+            ("viewport-1".into(), "main".into()),
+            ("viewport-2".into(), "editor-3".into()),
+            ("viewport-4".into(), "main".into()),
+        ]);
+        assert!(release_viewports(&mut owners, "viewport-1").is_empty());
+        assert_eq!(release_viewports(&mut owners, "main"), ["viewport-4"]);
+        assert_eq!(
+            owners.get("viewport-2").map(String::as_str),
+            Some("editor-3")
+        );
+        assert!(release_viewports(&mut owners, "main").is_empty());
+        assert_eq!(release_viewports(&mut owners, "editor-3"), ["viewport-2"]);
+        assert!(owners.is_empty());
+    }
     #[test]
     fn restores_visible_bounds_after_monitor_removal() {
         let desktop = Bounds {

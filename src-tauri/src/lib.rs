@@ -32,6 +32,9 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                windows::destroyed(window);
+            }
             if matches!(
                 event,
                 tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_)

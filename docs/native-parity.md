@@ -42,7 +42,7 @@ runs and [packaging](native-packaging.md) for the image and installer audit.
 | Custom item skins / castle background | Existing userData skin directory and numeric item filenames are retained. Custom skins override local game previews. Background loading accepts the same image formats. | Source and existing renderer tests; native picker and damaged-image scenarios need OS-level checks. |
 | Full-resolution castle PNG | Export uses the shared renderer, not the current screen zoom. | Live verified: 8900×8900 PNG with local game sprites, unchanged document. Test supplied its own destination instead of interacting with the OS picker. |
 | Additional editor windows | Native senders target a window label; renderer listeners are window-scoped too. Document readiness and pending content share one mutex. | Live verified on final release build and unit verified: a secondary castle does not detach the main Gatekeeper project. Closing the secondary window leaves main open. |
-| Detached 2.5D window | Same-origin child view reuses the rendering state and theme/language services. | Live verified; multi-monitor mixed-DPI movement is untested. |
+| Detached 2.5D window | Same-origin child view reuses the rendering state and theme/language services. | Rendering live verified. Follow-up fixes a native window left registered after re-docking; rebuilt lifecycle proof is pending. Multi-monitor mixed-DPI movement is untested. |
 | Window bounds / maximization | Main window restores normal bounds and maximized state; restoration clamps to available monitor work areas. | Live restored-profile check and geometry unit tests. Removed-monitor geometry is tested, not every physical monitor arrangement. |
 | Unsaved changes / confirmation dialogs | Existing shared unsaved state gate is retained; closed-window events are scoped. | Live window/update guard verified. Published build's missing native dialog owner is fixed in follow-up source; OS modal ownership still awaits rebuilt smoke test. |
 | Native menus and shortcuts | File/Edit/View actions, customized castle shortcuts, viewport keys, zoom/fullscreen/reload and theme/language selection are bridged. Reload respects the unsaved gate. | Unit plus selected live actions. OS popup keyboard navigation and every accelerator are not comprehensively exercised. |
@@ -108,6 +108,22 @@ failure, and successful create/update preservation of custom plugin and AI files
 - Cold application startup has not been given a controlled end-to-end benchmark
   here. Map extraction timings and slider animation-frame timings must not be
   presented as startup or screen-presentation latency.
+
+### Detached popup close bypassed the native window registry
+
+The pinned Wry Windows implementation handles browser `window.close()` by
+destroying the WebView HWND directly. In a live follow-up candidate, re-docking
+removed the popup's CDP target but left its Tauri window registered, correctly
+causing the updater's extra-window guard to reject installation.
+
+**Follow-up source fix:** detached `about:blank` windows receive a small scoped
+close bridge using the opener's standard Tauri window API and the popup's own
+label. Native lifecycle state tracks popup ownership; destruction of an editor
+closes only that editor's dependent viewports. The updater guard is unchanged.
+JavaScript tests cover idempotent, correctly targeted native close; Rust tests
+cover independent owners and cleanup. Actual detach/re-dock/owner-close behavior
+still needs confirmation on the rebuilt executable; no renderer changes were
+made for this fix.
 
 ## Published updater acceptance result
 

@@ -67,7 +67,7 @@ html[data-themed-panels="true"] :is(.workspaceCommandBar, .characterControlBar, 
   color: var(--semantic-content-on-chrome);
 }
 /* These aliases are local to paper. The surrounding shell keeps its own contrast. */
-html[data-themed-panels="true"] :is(#characterWorkspace .editorCard, .characterForm, .castleBuildList, .castleOverviewPanel, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel, dialog, .helpBox, .castleContextMenu, .castleBuildContextMenu, .castleToolOptions) {
+html[data-themed-panels="true"] :is(#characterWorkspace .characterSidebar > .editorCard, .characterForm, .castleBuildList, .castleOverviewPanel, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel, dialog, .helpBox, .castleContextMenu, .castleBuildContextMenu, .castleToolOptions) {
   --text-main: var(--component-panel-content);
   --text-soft: var(--component-panel-soft);
   --text-muted: var(--component-panel-muted);

@@ -1490,6 +1490,7 @@
     if (state.controls && store && state.controls.parentElement !== store) {
       store.appendChild(state.controls);
     }
+    if (state.controls) window.toolkitI18n?.applyBindings(state.controls);
   }
 
   function isMounted() { return Boolean(state.host) && !hostIsGone(); }
@@ -1538,6 +1539,7 @@
     state.fitted = false;
     bindSurface(canvas);
     bindHostChrome(state.host);
+    if (state.controls) window.toolkitI18n?.applyBindings(state.controls);
     refresh();
     return true;
   }
@@ -1583,9 +1585,9 @@
       'background:#2a3237;color:#eef1f6;font:11px system-ui,sans-serif}';
     win.document.head.appendChild(chromeStyle);
     window.ToolkitTheme?.attachWindow(win);
-    window.toolkitI18n?.attachWindow(win);
     const controlSlot = win.document.getElementById('isoWindowControlSlot');
     if (controlSlot && state.controls) controlSlot.appendChild(state.controls);
+    window.toolkitI18n?.attachWindow(win);
     state.host = {
       kind: 'window',
       win,
@@ -1637,6 +1639,9 @@
                      startPlaceMarks };
 
   window.toolkitI18n?.onChange(() => {
+    // The toolbar can be between documents during docking. Translate its
+    // existing nodes explicitly instead of relying on a document-wide scan.
+    if (state.controls) window.toolkitI18n?.applyBindings(state.controls);
     if (state.host?.kind === 'window' && !state.host.win.closed) {
       state.host.win.document.title = tr("viewport:2_5d_view_ai_toolkit");
     }

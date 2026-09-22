@@ -182,3 +182,11 @@ test('UCP keeps dark shell tokens distinct from framed paper and original reorde
   assert.match(css, /var\(--texture-scroll-thumb\), var\(--texture-scroll-track\), radial-gradient/);
   assert.doesNotMatch(css, /html\[data-theme=["']ucp/);
 });
+
+
+test('framed Character sidebar cards outrank the later legacy helper-card surface', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../src/css/theme-components.css'), 'utf8');
+  // The stylesheet is imported before combined.css. Match the sidebar role so
+  // the later equally-specific details layout cannot erase its paper image.
+  assert.match(css, /html\[data-themed-panels="true"\] :is\(#characterWorkspace \.characterSidebar > \.editorCard,/);
+});

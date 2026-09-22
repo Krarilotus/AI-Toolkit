@@ -3,6 +3,39 @@
 Windows x64, 22 September 2026. This records measured results and remaining
 limits; the preview is not a claim of tested Linux/macOS support.
 
+## UCP usability follow-up
+
+The optimized `a16a6e50` candidate was checked in a separate WebView2 profile
+with the same 998-step castle, maximized window and both GPU views. These are
+input-to-next-animation-frame timings, not screen-presentation latency:
+
+| Test | Median | p95 | Maximum | Tasks over 50 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Default, rapid mouse jumps | 15.2 ms | 20.3 ms | 25.4 ms | 0 |
+| UCP with fire overlay enabled, rapid mouse jumps | 14.6 ms | 20.4 ms | 22.3 ms | 0 |
+| UCP with CPU profiler recording | 18.0 ms | 23.4 ms | 27.2 ms | 0 |
+
+The smaller Pixi bundle retained both GPU surfaces and the fire-mask pass. Its
+public exports and standard CSP adapter are bundled together by esbuild; no
+renderer logic or artwork was replaced. Windows SChannel successfully checked
+GitHub and downloaded/digest-verified the previous published portable release.
+
+Persian/English switching was checked against live pane/tab order, literal
+paths, numeric controls, input direction and caret selection. Content textareas
+retain their identity and values; switching languages no longer rebuilds them.
+The test restores the original language/workspace and checks unchanged project
+content and dirty state. Detached-view language/title propagation and secondary
+editor document isolation also passed. Closing a detached view exposed a stale
+native-window entry; the lifecycle correction is documented with the parity
+review, rather than treating the initial smoke test as sufficient updater proof.
+
+The follow-up source checks pass 544 editor tests, 38 Rust tests, strict desktop
+TypeScript and all nine complete language catalogues. The unchanged game-fixture
+test remains opt-in and was run separately for the previous published baseline.
+Full-window UCP screenshots are captured for Library, Character, Castle and AI
+Content from the built preview. Native OS picker interaction and Linux/macOS
+builds still have the limits listed in the parity review.
+
 ## Test conditions
 
 The actual packaged WebView2 application used a separate user-data directory,
