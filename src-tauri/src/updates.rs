@@ -245,7 +245,7 @@ fn is_current(
     }
     !compiled_tag.is_empty() && tag == compiled_tag && repo.eq_ignore_ascii_case(compiled_repo)
 }
-fn hash_file(path: &Path) -> Result<String> {
+pub(crate) fn hash_file(path: &Path) -> Result<String> {
     let mut file = fs::File::open(path).map_err(crate::error::Error::diagnostic)?;
     let mut digest = Sha256::new();
     let mut buffer = [0; 81920];
@@ -621,7 +621,7 @@ struct InstallPlan {
 fn default_executable() -> String {
     canonical_executable().into()
 }
-fn contained_path(root: &Path, relative: &str) -> Result<PathBuf> {
+pub(crate) fn contained_path(root: &Path, relative: &str) -> Result<PathBuf> {
     let result = root.join(relative);
     let existing = result
         .ancestors()
@@ -644,12 +644,12 @@ impl InstallPlan {
         contained_path(&root, &self.executable)
     }
 }
-struct Change {
-    destination: PathBuf,
-    backup: PathBuf,
-    existed: bool,
+pub(crate) struct Change {
+    pub(crate) destination: PathBuf,
+    pub(crate) backup: PathBuf,
+    pub(crate) existed: bool,
 }
-fn record_write(
+pub(crate) fn record_write(
     destination: &Path,
     backup: &Path,
     bytes: &[u8],
@@ -669,7 +669,7 @@ fn record_write(
     });
     storage::atomic_write(destination, bytes)
 }
-fn rollback(changes: &[Change]) -> Result<()> {
+pub(crate) fn rollback(changes: &[Change]) -> Result<()> {
     let mut errors = Vec::new();
     for change in changes.iter().rev() {
         let result = if change.existed {
@@ -812,7 +812,7 @@ fn apply_transaction(
     }
     Ok(exe)
 }
-fn acquire_closed_executable(exe: &Path, backup: &Path) -> Result<()> {
+pub(crate) fn acquire_closed_executable(exe: &Path, backup: &Path) -> Result<()> {
     // Never terminate another process. Only proceed after Windows releases the
     // actual installed filename, which can differ between NSIS and portable ZIP.
     // Stage/userData and the installed application can live on different drives;

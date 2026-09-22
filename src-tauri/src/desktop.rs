@@ -452,6 +452,9 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
         }
         Request::Ready => {
             window.show().map_err(crate::error::Error::diagnostic)?;
+            if window.label() == "main" {
+                crate::legacy_update::ready(app)?;
+            }
             Ok(json!(true))
         }
         Request::ConfirmClose => {

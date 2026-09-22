@@ -38,6 +38,7 @@
     "dist:electron": "npm run check && electron-builder --win portable"
   },
   "devDependencies": {
+    "@electron/asar": "3.4.1",
     "@tauri-apps/cli": "2.11.5",
     "acorn": "8.18.0",
     "electron": "^44.3.0",

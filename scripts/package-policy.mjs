@@ -17,7 +17,8 @@ export function validateManifest(policy) {
   const relative = value => typeof value === 'string' && value.split('/').every(part =>
     /^[A-Za-z0-9_. -]+$/.test(part) && part !== '.' && part !== '..' && !/[. ]$/.test(part));
   const outside = (file, directory) => file !== directory && !file.startsWith(directory + '/') && !directory.startsWith(file + '/');
-  record(policy, ['downloadBudget', 'executable', 'files', 'configuration', 'legacyUpdatePatterns'], 'Package policy');
+  record(policy, ['downloadBudget', 'legacyResourceArchive', 'executable', 'files', 'configuration', 'legacyUpdatePatterns'], 'Package policy');
+  assert.equal(policy.legacyResourceArchive, 'resources/app.asar', 'Legacy updater requires resources/app.asar');
   assert.ok(Number.isSafeInteger(policy.downloadBudget) && policy.downloadBudget > 0, 'downloadBudget must be a positive safe integer');
   const { executable, configuration, files, legacyUpdatePatterns } = policy;
   record(executable, ['path', 'aliases'], 'executable');
@@ -39,7 +40,7 @@ export function validateManifest(policy) {
     assert.ok(!stem.test(character) || /^[A-Za-z0-9_-]$/.test(character), 'Configuration stem ranges must not include separators or punctuation');
   }
   record(files, null, 'files');
-  const destinations = new Set(executable.aliases.map(name => name.toLowerCase()));
+  const destinations = new Set([...executable.aliases, policy.legacyResourceArchive].map(name => name.toLowerCase()));
   const sources = new Set();
   for (const [target, source] of Object.entries(files)) {
     assert.ok(relative(target) && relative(source), 'Resource paths must be safe relative paths');
@@ -68,7 +69,7 @@ const legacyPath = new RegExp(`^(?:${legacyUpdatePatterns.join('|')})$`);
 const matches = (expression, name) => expression.exec(name)?.[0] === name;
 export const isConfiguration = name => matches(configurationPath, name);
 export const isExecutable = name => executable.aliases.some(alias => alias.toLowerCase() === name.toLowerCase());
-export const portablePath = name => name === executable.path || Object.hasOwn(files, name) || isConfiguration(name);
+export const portablePath = name => name === executable.path || name === packagePolicy.legacyResourceArchive || Object.hasOwn(files, name) || isConfiguration(name);
 export const updatePath = name => isExecutable(name) || portablePath(name) || matches(legacyPath, name);
 
 /** Checked in for Tauri/NSIS; generate from the policy instead of hand editing. */

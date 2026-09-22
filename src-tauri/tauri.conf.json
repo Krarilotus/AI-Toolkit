@@ -53,6 +53,8 @@
         "silent": true
       },
       "nsis": {
+        "installerIcon": "../assets/icon.ico",
+        "uninstallerIcon": "../assets/icon.ico",
         "compression": "lzma",
         "installMode": "currentUser",
         "languages": [

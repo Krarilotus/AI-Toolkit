@@ -89,4 +89,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           SNAPSHOT_TAG: ${{ needs.build.outputs.tag }}
         run: |
-          gh release create "$SNAPSHOT_TAG" release/* --target "$GITHUB_SHA" --prerelease --title "Native preview $SNAPSHOT_TAG" --notes "Experimental Tauri preview. Use the setup EXE for the first migration from Electron. The portable ZIP requires the system WebView2 runtime. See the included README, checksums and package audit."
+          gh release create "$SNAPSHOT_TAG" release/* --target "$GITHUB_SHA" --prerelease --title "Native preview $SNAPSHOT_TAG" --notes "Experimental Tauri preview. The portable ZIP supports both the existing Electron updater and native updates; choose the experimental fork channel. Setup is available for manual installation. Missing WebView2 is downloaded separately from Microsoft. See the included README, checksums and package audit."

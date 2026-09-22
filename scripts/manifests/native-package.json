@@ -1,5 +1,6 @@
 {
   "downloadBudget": 8000000,
+  "legacyResourceArchive": "resources/app.asar",
   "executable": {
     "path": "AI Toolkit.exe",
     "aliases": ["AI Toolkit.exe", "AI-Toolkit.exe"]

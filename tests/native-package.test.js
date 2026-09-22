@@ -22,6 +22,9 @@ test('native window icons resolve on Windows and Unix with unchanged artwork', (
     return ico.subarray(offset, offset + length);
   });
   assert.ok(existingPngs.some(entry => entry.equals(png)), 'Unix icon must reuse existing native icon artwork');
+  for (const role of ['installerIcon', 'uninstallerIcon']) {
+    assert.deepEqual(fs.readFileSync(path.resolve(__dirname, '../src-tauri', config.bundle.windows.nsis[role])), ico);
+  }
 });
 
 function fixture(t) {
@@ -75,6 +78,8 @@ test('malformed package policies fail before generating or accepting artifacts',
   rejects(p => { p.files['readme.TXT'] = 'another.txt'; }, /Duplicate resource destination/);
   rejects(p => { p.files['extra.txt'] = p.files['README.txt']; }, /Duplicate resource source/);
   rejects(p => { p.files['AI Toolkit.exe'] = 'another.exe'; }, /Duplicate resource destination/);
+  rejects(p => { p.files['resources/app.asar'] = 'another.asar'; }, /Duplicate resource destination/);
+  rejects(p => { p.legacyResourceArchive = 'other.asar'; }, /Legacy updater/);
   rejects(p => { p.files['../outside.txt'] = 'another.txt'; }, /safe relative/);
   rejects(p => { p.legacyUpdatePatterns = ['(?=README)README']; }, /shared ASCII regex subset/);
   rejects(p => { p.legacyUpdatePatterns = ['[A-Z]*']; }, /empty filename/);
@@ -111,13 +116,28 @@ test('portable artifact retains every config and exact original file bytes', asy
   const executable = f.write('native.exe', Buffer.from([77, 90, 0, 255, 1, 2]));
   f.write('docs/native-preview-readme.txt', 'Native setup instructions');
   const destination = path.join(f.directory, 'preview.zip');
-  const names = archivePortable(executable, destination, f.directory);
+  const names = await archivePortable(executable, destination, f.directory);
   const actual = unzipSync(fs.readFileSync(destination));
   assert.ok(names.every(portablePath));
   for (const [name, text] of Object.entries(expected)) assert.equal(Buffer.from(actual[name]).toString(), text);
   assert.deepEqual(Buffer.from(actual['AI Toolkit.exe']), fs.readFileSync(executable));
   assert.equal(Buffer.from(actual['README.txt']).toString(), 'Native setup instructions');
-  for (const unsafe of ['../AI Toolkit.exe', 'resources/app.asar', 'node_modules/pixi.js/index.js', 'cache/map.png', 'config/../../outside.json']) assert.equal(portablePath(unsafe), false);
+  const capsule = f.write('capsule.asar', Buffer.from(actual['resources/app.asar']));
+  const asar = require('@electron/asar');
+  const manifest = JSON.parse(asar.extractFile(capsule, 'migration.json'));
+  assert.equal(manifest.schemaVersion, 1);
+  assert.equal(manifest.runtime, 'tauri');
+  const hash = bytes => require('node:crypto').createHash('sha256').update(bytes).digest('hex');
+  assert.deepEqual(manifest.executable, { path: 'AI Toolkit.exe', sha256: hash(actual['AI Toolkit.exe']) });
+  const resourceNames = Object.keys((await policy).packagePolicy.files);
+  assert.deepEqual(manifest.files.map(file => file.path).sort(), resourceNames.sort());
+  for (const file of manifest.files) {
+    const bytes = asar.extractFile(capsule, path.normalize(file.path));
+    assert.deepEqual(bytes, Buffer.from(actual[file.path]));
+    assert.equal(hash(bytes), file.sha256);
+  }
+  assert.throws(() => asar.extractFile(capsule, 'config/aiv.json'), /not found/);
+  for (const unsafe of ['../AI Toolkit.exe', 'node_modules/pixi.js/index.js', 'cache/map.png', 'config/../../outside.json']) assert.equal(portablePath(unsafe), false);
 });
 
 test('artwork audit rejects changed originals and bundled game sprites', async t => {

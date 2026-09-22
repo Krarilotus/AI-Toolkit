@@ -28,7 +28,7 @@
   { "path": "vk_swiftshader_icd.json", "portable": false, "update": true, "configuration": false },
   { "path": "LICENSE.electron.txt", "portable": false, "update": true, "configuration": false },
   { "path": "LICENSES.chromium.html", "portable": false, "update": true, "configuration": false },
-  { "path": "resources/app.asar", "portable": false, "update": true, "configuration": false },
+  { "path": "resources/app.asar", "portable": true, "update": true, "configuration": false },
   { "path": "resources/elevate.exe", "portable": false, "update": true, "configuration": false },
   { "path": "locales/de.pak", "portable": false, "update": true, "configuration": false },
   { "path": "locales/pt-BR.pak", "portable": false, "update": true, "configuration": false }

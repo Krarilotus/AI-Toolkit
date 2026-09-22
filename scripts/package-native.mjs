@@ -1,10 +1,13 @@
 ﻿import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { zipSync, unzipSync } from 'fflate';
+import asar from '@electron/asar';
 import { testInstallerHooks } from './test-installer.mjs';
 import { packagePolicy, portablePath, validatePackagePolicy } from './package-policy.mjs';
 export { portablePath } from './package-policy.mjs';
@@ -105,12 +108,42 @@ function notices() {
   fs.writeFileSync(path.join(root, 'THIRD_PARTY_NOTICES.txt'), heading + '\n' + body + '\n');
 }
 
-export function archivePortable(executable, destination, source = root) {
+/** Carry actual resources through the already-shipped Electron file allowlist. */
+async function legacyResources(entries) {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'toolkit-legacy-resources-'));
+  const input = path.join(scratch, 'input'), archive = path.join(scratch, 'app.asar');
+  const resources = Object.keys(packagePolicy.files).map(name => ({ path: name, sha256: sha256(entries[name]) }));
+  const manifest = {
+    schemaVersion: 1, runtime: 'tauri',
+    executable: { path: packagePolicy.executable.path, sha256: sha256(entries[packagePolicy.executable.path]) },
+    files: resources,
+  };
+  try {
+    for (const resource of resources) {
+      const target = path.join(input, resource.path);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, entries[resource.path]);
+    }
+    fs.writeFileSync(path.join(input, 'migration.json'), JSON.stringify(manifest));
+    await asar.createPackage(input, archive);
+    assert.deepEqual(JSON.parse(asar.extractFile(archive, 'migration.json')), manifest);
+    for (const { path: name } of resources) assert.deepEqual(asar.extractFile(archive, path.normalize(name)), entries[name]);
+    return fs.readFileSync(archive);
+  } finally {
+    asar.uncache(archive);
+    assert.equal(path.dirname(path.resolve(scratch)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(scratch).startsWith('toolkit-legacy-resources-'));
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+export async function archivePortable(executable, destination, source = root) {
   const entries = { [packagePolicy.executable.path]: fs.readFileSync(executable) };
   const { configuration } = packagePolicy;
   const configSource = path.join(source, configuration.source);
   for (const file of files(configSource)) entries[`${configuration.directory}/${relative(configSource, file)}`] = fs.readFileSync(file);
   for (const [target, file] of Object.entries(packagePolicy.files)) entries[target] = fs.readFileSync(path.join(source, file));
+  entries[packagePolicy.legacyResourceArchive] = await legacyResources(entries);
   for (const name of Object.keys(entries)) if (!portablePath(name)) throw Error(`Unexpected portable entry: ${name}`);
   const archive = zipSync(Object.fromEntries(Object.entries(entries).map(([name, bytes]) => [name, [bytes, { level: 9, mtime: new Date('2020-01-01T00:00:00Z') }]])));
   // Verify the actual artifact, not just the staging directory.
@@ -138,7 +171,7 @@ async function main() {
   const executable = path.join(root, 'src-tauri/target/release/ai-toolkit.exe');
   const images = auditFrontend();
   const zip = path.join(output, name + '.zip');
-  const entries = archivePortable(executable, zip);
+  const entries = await archivePortable(executable, zip);
   const installers = files(path.join(root, 'src-tauri/target/release/bundle/nsis')).filter(file => file.endsWith('-setup.exe'));
   const sourceSetup = installers.find(file => path.basename(file).includes(`_${version}_`));
   if (!sourceSetup) throw Error('Expected an NSIS installer for the current version');

@@ -1,16 +1,37 @@
 mod desktop;
 mod error;
 pub mod game;
+mod legacy_update;
 mod library;
 mod migration;
 mod storage;
 mod themes;
 mod updates;
+mod webview_dependency;
 mod windows;
 use tauri::{Emitter, Manager};
 
 pub fn run() {
-    tauri::Builder::default()
+    let mut pending = match legacy_update::detect() {
+        Ok(pending) => pending,
+        Err(error) => {
+            webview_dependency::notify_error(&error);
+            return;
+        }
+    };
+    let prepared = (|| -> Result<(), String> {
+        if let Some(migration) = pending.as_mut() {
+            migration.prepare()?;
+        }
+        webview_dependency::ensure()
+    })();
+    if let Err(error) = prepared {
+        startup_failed(&error, pending.as_ref());
+        return;
+    }
+    let pending = std::sync::Arc::new(std::sync::Mutex::new(pending));
+    let result = tauri::Builder::default()
+        .manage(legacy_update::Startup(pending.clone()))
         .manage(desktop::Session::default())
         .manage(updates::Updates::default())
         .manage(windows::WindowState::default())
@@ -21,7 +42,7 @@ pub fn run() {
             desktop::game_request,
             desktop::queue_document
         ])
-        .setup(|app| {
+        .setup(move |app| {
             let handle = app.handle();
             let cache = storage::user_data(handle)?;
             app.asset_protocol_scope().allow_directory(&cache, true)?;
@@ -29,6 +50,7 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 windows::restore(handle, &window)?;
             }
+            legacy_update::watch_startup(handle);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -63,8 +85,37 @@ pub fn run() {
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("AI Toolkit desktop startup failed");
+        .run(tauri::generate_context!());
+    let migration = pending.lock().ok().and_then(|mut pending| pending.take());
+    if let Err(error) = result {
+        startup_failed(&error.to_string(), migration.as_ref());
+    } else if migration.is_some() {
+        startup_failed(
+            "The editor closed before its first migration finished.",
+            migration.as_ref(),
+        );
+    }
+}
+
+pub(crate) fn startup_failed(error: &str, pending: Option<&legacy_update::Pending>) {
+    let message = if pending.is_some() {
+        format!("The native update could not start. The previous editor will be restored after you close this message.\n\n{error}")
+    } else {
+        format!("AI Toolkit could not start.\n\n{error}")
+    };
+    webview_dependency::notify_error(&message);
+    if let Some(pending) = pending {
+        if let Err(recovery) = pending.launch_recovery() {
+            webview_dependency::notify_error(&format!("Could not start automatic recovery. The previous editor backup remains in the release-updates cache.\n\n{recovery}"));
+        }
+    }
+}
+
+pub fn rollback_legacy(path: &std::path::Path) {
+    if let Err(error) = legacy_update::recover(path) {
+        let _ = std::fs::write(path.join("native-recovery-error.log"), &error);
+        webview_dependency::notify_error(&format!("The previous editor could not be restored automatically. Its backup remains in the release-updates cache.\n\n{error}"));
+    }
 }
 
 pub fn apply_update(path: &std::path::Path) -> Result<(), String> {
