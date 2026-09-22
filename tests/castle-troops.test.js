@@ -8,13 +8,69 @@ const marker = (type, offset=5050) => ({itemType:type, positionOfset:offset});
 const defense = (names, total=80, walls=total) => Object.fromEntries([
   ['DefTotal',total],['DefWalls',walls],...names.map((name,i)=>['DefUnit'+(i+1),name])]);
 
-test('defensive occupancy floors weighted recruitment slots over matching rally markers', () => {
+test('recruitment cycles conserve the budget and distribute remainders in slot order', () => {
   const names=['ArabArcher','EuropArcher','Crossbowman','Spearman','Pikeman','Maceman','Swordsman','Knight'];
-  const plan=troops.plan(Array.from({length:4},()=>marker(16)),defense(names));
-  assert.deepEqual(plan.map(p=>p.count),[2,2,2,2], '80 / 8 / 4 is floored to two');
+  const totals=troops.defenseTotals(defense(names,100));
+  assert.deepEqual([...totals.values()],[13,13,13,13,12,12,12,12]);
+  assert.equal([...totals.values()].reduce((a,b)=>a+b),100);
+  for (const [spots,expected] of [[3,[5,4,4]],[4,[4,3,3,3]]]) {
+    const plan=troops.plan(Array.from({length:spots},()=>marker(16)),defense(names,100));
+    assert.deepEqual(plan.filter(p=>p.type===16).map(p=>p.count),expected);
+    assert.equal(plan.reduce((sum,p)=>sum+p.count,0),100,'missing positions retain their units at fallback destinations');
+  }
   assert.deepEqual(troops.plan([marker(6),marker(7)],defense(['EuropArcher','EuropArcher','Crossbowman'],12)).map(p=>p.count),[8,4]);
-  assert.equal(troops.plan([marker(6)],defense(['EuropArcher'],1000))[0].count,9);
+  assert.equal(troops.plan([marker(6)],defense(['EuropArcher'],1000))[0].count,1000,'allocation is independent of the nine-sprite cap');
   assert.equal(troops.plan([marker(6)],defense(['EuropArcher'],3,80))[0].count,3,'wall preview cannot exceed total defenders');
+  assert.deepEqual([...troops.defenseTotals(defense(['EuropArcher','None','ArabArcher'],13))],[[6,13]],'first None terminates the cycle');
+  assert.deepEqual([...troops.defenseTotals(defense(['None','EuropArcher'],13))],[]);
+  assert.deepEqual([...troops.defenseTotals(defense(['EuropArcher','Crossbowman','EuropArcher'],5))],[[6,3],[7,2]],'duplicate slots aggregate only after rounding');
+});
+
+test('Gatekeeper preserves every wall defender with native keep/campfire fallbacks', () => {
+  const markers=[16,6,14].flatMap(type=>Array.from({length:10},()=>marker(type)));
+  const aic=defense(['ArabArcher','ArabArcher','ArabArcher','ArabArcher','EuropArcher','EuropArcher','Slinger','ArabSwordsman'],145,144);
+  const plan=troops.plan(markers,aic);
+  assert.deepEqual(plan.filter(p=>p.type===16).map(p=>p.count),[8,8,7,7,7,7,7,7,7,7]);
+  assert.deepEqual(plan.filter(p=>p.type===6).map(p=>p.count),[4,4,4,4,4,4,3,3,3,3]);
+  assert.deepEqual(plan.filter(p=>p.type===14).map(p=>p.count),[2,2,2,2,2,2,2,2,1,1]);
+  assert.deepEqual(plan.at(-1),{type:18,count:18,ref:'standby:18',destination:'keep'});
+  assert.equal(plan.reduce((sum,p)=>sum+p.count,0),144,'the remaining patrol recruit is not a wall defender');
+  const fallback=troops.plan([],defense(Object.keys(troops.types),80));
+  assert.equal(fallback.find(p=>p.type===8).destination,'campfire');
+  assert.equal(fallback.find(p=>p.type===6).destination,'keep');
+});
+
+test('generic allocation matches independent recruitment and smallest-group simulation', () => {
+  const names=Object.keys(troops.recruitmentTypes);
+  let seed=192837;
+  const random=limit=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed%limit;};
+  for (let trial=0;trial<400;trial++) {
+    const slots=Array.from({length:8},()=>random(6)===0 ? 'None' : names[random(names.length)]);
+    const total=random(250), walls=random(300), aic=defense(slots,total,walls);
+    const markers=Object.keys(troops.types).flatMap(name=>Array.from({length:random(5)},()=>marker(troops.types[name])));
+    const expected=markers.map(m=>({type:m.itemType,count:0})), standby=new Map();
+    const cycle=slots.slice(0,slots.includes('None') ? slots.indexOf('None') : 8);
+    for (let unit=0;cycle.length && unit<Math.min(total,walls);unit++) {
+      const type=troops.recruitmentTypes[cycle[unit%cycle.length]];
+      let smallest;
+      for (const group of expected) if (group.type===type && (!smallest || group.count<smallest.count)) smallest=group;
+      if (smallest) smallest.count++;
+      else standby.set(type,(standby.get(type)||0)+1);
+    }
+    const plan=troops.plan(markers,aic);
+    assert.deepEqual(plan.slice(0,markers.length).map(p=>p.count),expected.map(p=>p.count));
+    assert.deepEqual(new Map(plan.filter(p=>p.destination).map(p=>[p.type,p.count])),standby);
+    assert.equal(plan.reduce((sum,p)=>sum+p.count,0),cycle.length ? Math.min(total,walls) : 0);
+  }
+});
+
+test('every selectable recruitment type keeps its quota even without an AIV marker or idle sprite', () => {
+  const options=require('../config/optionPools.json').units.filter(name=>name!=='None');
+  assert.deepEqual(Object.keys(troops.recruitmentTypes).sort(),options.sort());
+  assert.deepEqual([...troops.defenseTotals(defense(['EuropArcher','Monk','ArabArcher','Tunneler'],12))],
+    [[6,3],['monk',3],[16,3],['tunneler',3]]);
+  const plan=troops.plan([],defense(['Monk','Tunneler'],7));
+  assert.deepEqual(plan.map(p=>[p.type,p.count,p.destination]),[['monk',4,'campfire'],['tunneler',3,'campfire']]);
 });
 
 test('zero or unmatched defense produces no troops, while no character retains one marker preview', () => {
@@ -32,6 +88,38 @@ test('occupancy identity changes only for defense inputs or markers, never unrel
   assert.notEqual(cached(markers,{...aic,DefWalls:6}),first);
   assert.notEqual(cached([marker(6,5051)],aic),first);
   assert.ok(Object.isFrozen(first) && Object.isFrozen(first[0]));
+  assert.notEqual(cached(markers,{...aic,lordType:'Arab'}),first);
+});
+
+test('lord appearance follows character lord.Type and reserves the centre of the visible keep', () => {
+  for (const [lordType,type] of [['Europ','lord-europ'],['Arab','lord-arab']]) {
+    const plan=troops.plan([], {...defense(['ArabSwordsman'],18),lordType});
+    assert.deepEqual(plan[0],{type,count:1,ref:'lord',destination:'lord'});
+    const keep={gx:43,gy:43,tiles:7,itemType:61};
+    const anchors=geo.troopAnchors(plan,keep,0);
+    assert.deepEqual([anchors[0].gx,anchors[0].gy],[46,46]);
+    assert.deepEqual([anchors[1].gx,anchors[1].gy],[46,47]);
+    const layout=troops.layout(anchors,troops.supports([keep],()=>0));
+    assert.equal(layout.length,10,'one lord and at most nine representative swordsmen');
+    assert.equal(new Set(layout.map(p=>p.gy*100+p.gx)).size,10);
+    assert.ok(layout.every(p=>p.elevation===92));
+    assert.equal(layout.find(p=>p.gx===46 && p.gy===46).marker.ref,'lord');
+    assert.deepEqual(geo.troopAnchors(plan,undefined,0),[],'no future keep leaks into an earlier step');
+  }
+  assert.deepEqual(troops.plan([],null),[],'no character means no invented lord');
+});
+
+test('standby anchors follow the rendered keep and campfire across map and camera turns', () => {
+  const groups=troops.plan([], {...defense(['ArabSwordsman','Slinger'],20),lordType:'Arab'});
+  for (const map of [0,2,4,6]) for (const camera of [0,2,4,6]) {
+    const world=geo.rotateGrid(43,43,7,map), rotation=(map+camera)%8;
+    const keep={...geo.rotateGrid(world.gx,world.gy,7,camera),tiles:7,itemType:61,cameraRotation:camera,
+      entry:{platten:[{dx:0,dy:8,kacheln:7}]}};
+    const resolved=geo.troopAnchors(groups,keep,rotation).map(group=>({
+      ...group,...geo.rotateGrid(group.gx,group.gy,1,map)}));
+    for (const group of resolved) assert.deepEqual([group.gx-world.gx,group.gy-world.gy],
+      group.destination==='lord' ? [3,3] : group.destination==='keep' ? [3,4] : [3,8]);
+  }
 });
 
 test('preview groups reserve rally tiles and never share a tile, including duplicate markers', () => {
@@ -65,7 +153,7 @@ test('troop supports use only visible walls, stairs, towers and gate decks above
   assert.equal(troops.supports([],()=>30)(11,13),30);
   assert.equal(troops.supports([tower],()=>30)(11,13),326);
   assert.equal(troops.supports([tower],()=>30)(13,13),30);
-  for(const [itemType,height] of [[25,90],[46,60],[181,80],[186,0],[144,90]])
+  for(const [itemType,height] of [[61,92],[25,90],[46,60],[181,80],[186,0],[144,90]])
     assert.equal(troops.supports([{gx:5,gy:8,tiles:1,itemType}],()=>7)(5,8),height+7);
 });
 
@@ -84,7 +172,10 @@ test('idle draw commands preserve native anchors and identity across visible-ste
   const raised=context.troopSceneCommands([tower])[0];
   assert.equal(raised.y,ground.y-296);
   assert.equal(context.troopSceneCommands([tower])[0],raised);
+  const stableAnchors=state.troopAnchors, stablePlan=state.troopPlan;
   assert.equal(context.troopSceneCommands([])[0],ground,'returning before the tower restores cached ground command');
+  assert.equal(state.troopAnchors,stableAnchors,'ordinary step changes reuse resolved rally anchors');
+  assert.equal(state.troopPlan,stablePlan,'ordinary step changes never recalculate recruitment');
   assert.equal(ground.w,20); assert.equal(ground.h,36);
   const [x,y]=geo.isoPoint(11.5,13.5,state.view);
   assert.equal(ground.x,x-10);assert.equal(ground.y,y-32);

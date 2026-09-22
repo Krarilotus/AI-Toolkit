@@ -332,6 +332,37 @@ test('a wide brush goes through the same check as a single tile', () => {
   assert.match(eines, /validatePlacement\(type, off/, 'und die steht unveraendert dort');
 });
 
+test('typed brush sizes, native steps and +/- buttons share one bounded value', () => {
+  const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
+  const control = () => ({ disabled: false, handlers: {}, addEventListener(type, fn) { this.handlers[type] = fn; } });
+  const input = { ...control(), value: '1', get valueAsNumber() { return this.value === '' ? NaN : Number(this.value); } };
+  const state = { brushSize: 1 };
+  const els = { brushSizeInput: input, brushMinus: control(), brushPlus: control() };
+  const context = { state, els, geometry: { GRID_SIZE: 100 }, scheduleDraw() {} };
+  const start = script.indexOf("  if (els.brushMinus) els.brushMinus.addEventListener");
+  const end = script.indexOf("  els.buildSlider.addEventListener", start);
+  require('node:vm').runInNewContext(
+    functionBody(script, 'setBrushSize') + functionBody(script, 'updateBrushSizeUI') + script.slice(start, end), context);
+  for (const [typed, expected] of [['37', 37], ['1000', 100], ['0', 1], ['3.6', 4]]) {
+    input.value = typed; input.handlers.input();
+    assert.equal(state.brushSize, expected);
+    assert.equal(input.value, String(expected));
+    assert.equal(input.max, '100');
+  }
+  input.value = ''; input.handlers.input();
+  assert.equal(state.brushSize, 4, 'temporarily clearing the field preserves the active brush');
+  input.handlers.change();
+  assert.equal(state.brushSize, 1, 'committing an empty field restores a valid minimum');
+  assert.equal(els.brushMinus.disabled, true);
+  els.brushPlus.handlers.click();
+  assert.equal(state.brushSize, 2);
+  assert.equal(input.value, '2');
+  els.brushMinus.handlers.click();
+  assert.equal(input.value, '1');
+  input.value = '100'; input.handlers.input();
+  assert.equal(els.brushPlus.disabled, true);
+});
+
 test('the bucket fills through the brush, so it obeys the same rules', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'castle-editor.js'), 'utf8');
   const eimer = functionBody(script, 'bucketFill');

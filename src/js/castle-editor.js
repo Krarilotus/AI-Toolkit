@@ -47,7 +47,7 @@
     replaceCancel: document.getElementById('castleReplaceCancelBtn'),
     brushMinus: document.getElementById('castleBrushMinus'),
     brushPlus: document.getElementById('castleBrushPlus'),
-    brushSizeOut: document.getElementById('castleBrushSize'),
+    brushSizeInput: document.getElementById('castleBrushSize'),
     host: document.getElementById('castleCanvasHost'),
     palette: document.getElementById('castlePalette'),
     itemInfo: document.getElementById('castleSelectedItemInfo'),
@@ -1825,13 +1825,12 @@
   }
 
   function updateBrushSizeUI() {
-    if (!els.brushSizeOut) return;
+    if (!els.brushSizeInput) return;
     const grenze = geometry.GRID_SIZE || 100;
-    els.brushSizeOut.textContent = String(state.brushSize);
+    els.brushSizeInput.value = String(state.brushSize);
+    els.brushSizeInput.max = String(grenze);
     if (els.brushMinus) els.brushMinus.disabled = state.brushSize <= 1;
     if (els.brushPlus) els.brushPlus.disabled = state.brushSize >= grenze;
-    const kasten = els.brushSizeOut.parentElement;
-    if (kasten) kasten.classList.remove('off');
   }
 
   function leavePlacementToolIfDisabled() {
@@ -4034,6 +4033,13 @@
   els.replaceForm.addEventListener('submit', submitReplacementDialog);
   if (els.brushMinus) els.brushMinus.addEventListener('click', () => setBrushSize(state.brushSize - 1));
   if (els.brushPlus) els.brushPlus.addEventListener('click', () => setBrushSize(state.brushSize + 1));
+  if (els.brushSizeInput) {
+    els.brushSizeInput.addEventListener('input', () => {
+      // Allow an empty field while replacing its digits; commit restores a valid size.
+      if (els.brushSizeInput.value !== '') setBrushSize(els.brushSizeInput.valueAsNumber);
+    });
+    els.brushSizeInput.addEventListener('change', () => setBrushSize(els.brushSizeInput.valueAsNumber));
+  }
   els.buildSlider.addEventListener('input', selectBuildStepFromSlider);
   let scrubKey = null;
   els.buildSlider.addEventListener('keydown', event => {

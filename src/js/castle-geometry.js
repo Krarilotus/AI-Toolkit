@@ -12,6 +12,7 @@
   // Heights are native image pixels above the supporting terrain.
   function structureHeight(type) {
     type = Number(type);
+    if (type === KEEP_ITEM_TYPE) return 92;
     if (type === 25) return 90;
     if (type === 46) return 60;
     if (type >= 181 && type <= 186) return (186 - type) * 16;

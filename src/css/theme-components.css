@@ -77,6 +77,14 @@ html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where
 }
 html[data-themed-controls="true"] button:disabled { opacity: .55; }
 
+/* Toolbar commands can be roomier than dialog actions. Asymmetric padding
+   lowers the label inside its frame without moving the hit area or artwork. */
+html[data-themed-controls="true"] .castleToolbar :is(.toolbarGroup > button, .toolbarGroup > details > summary) {
+  min-height: var(--component-toolbar-command-min-height);
+  padding-block-start: var(--component-toolbar-command-padding-block-start);
+  padding-block-end: var(--component-toolbar-command-padding-block-end);
+}
+
 /* Workspace navigation retains UCP's ornate tab frame, separate from commands. */
 html[data-themed-controls="true"] .workspaceTabs { background: var(--semantic-surface-chrome); box-shadow: none; }
 html[data-themed-tabs="true"] .workspaceTab {
@@ -240,6 +248,33 @@ html[data-themed-stepper="true"] :is(#castleBrushPlus, #castleBrushMinus) {
 }
 html[data-themed-stepper="true"] #castleBrushMinus { --step-icon: var(--texture-remove); --step-icon-hover: var(--texture-remove-hover); }
 html[data-themed-stepper="true"] :is(#castleBrushPlus, #castleBrushMinus):hover { background-image: var(--step-icon-hover); background-color: transparent; }
+
+/* A single numeric state supports either external +/- buttons or a native
+   spinner. Pack tokens choose the face; keyboard/input semantics are shared. */
+.numberStepper {
+  padding: var(--component-number-stepper-group-padding);
+  border: var(--component-number-stepper-group-border-width) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--component-number-stepper-group-surface);
+}
+.numberStepper > button { display: var(--component-number-stepper-button-display); }
+:root .numberStepper input[type="number"] {
+  appearance: var(--component-number-stepper-appearance);
+  width: var(--component-number-stepper-width);
+  padding: var(--component-number-stepper-padding);
+  border: var(--component-number-stepper-border-width) solid var(--component-number-stepper-border);
+  border-image: none;
+  border-radius: var(--component-number-stepper-radius);
+  background: var(--component-number-stepper-surface);
+  color: var(--component-number-stepper-content);
+  color-scheme: var(--component-number-stepper-color-scheme);
+  text-align: var(--component-number-stepper-text-align);
+}
+.numberStepper input[type="number"]::-webkit-inner-spin-button,
+.numberStepper input[type="number"]::-webkit-outer-spin-button {
+  display: var(--component-number-stepper-spinner-display);
+  opacity: 1;
+}
 
 /* Range controls and scrollbars keep native interaction; only their paint changes. */
 html[data-themed-range="true"] input[type="range"] { appearance: none; height: 20px; padding: 0; border: 0; background: transparent; }

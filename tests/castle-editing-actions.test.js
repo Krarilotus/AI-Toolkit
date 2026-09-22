@@ -96,7 +96,7 @@ test('brush size controls work for every tool, retaining size limits', () => {
   const start = source.indexOf('  function updateBrushSizeUI()');
   const end = source.indexOf('\n  function ', start + 10);
   const state = { tool: 'select', brushSize: 5 };
-  const els = { brushSizeOut: { parentElement: { classList: { remove() {} } } }, brushMinus: {}, brushPlus: {} };
+  const els = { brushSizeInput: {}, brushMinus: {}, brushPlus: {} };
   const context = vm.createContext({ state, els, geometry });
   vm.runInContext(source.slice(start, end), context);
   for (const tool of ['single', 'brush', 'select', 'delete', 'copy', 'replace', 'line', 'bucket']) {
@@ -104,13 +104,17 @@ test('brush size controls work for every tool, retaining size limits', () => {
     vm.runInContext('updateBrushSizeUI()', context);
     assert.equal(els.brushMinus.disabled, false, tool);
     assert.equal(els.brushPlus.disabled, false, tool);
+    assert.equal(els.brushSizeInput.value, '5', tool);
+    assert.equal(els.brushSizeInput.max, String(geometry.GRID_SIZE), tool);
   }
   state.brushSize = 1;
   vm.runInContext('updateBrushSizeUI()', context);
   assert.equal(els.brushMinus.disabled, true);
+  assert.equal(els.brushSizeInput.value, '1');
   state.brushSize = 100;
   vm.runInContext('updateBrushSizeUI()', context);
   assert.equal(els.brushPlus.disabled, true);
+  assert.equal(els.brushSizeInput.value, '100');
 });
 
 test('every configured item has a readable name and every category has a persistent color', () => {

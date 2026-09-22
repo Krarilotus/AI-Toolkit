@@ -184,9 +184,9 @@
           <button type="button" class="castleTool active" data-tool="single" title="Shortcut: 1 or S" data-i18n-attrs="title=interface:shortcut_1_or_s"><span data-i18n="interface:single">Single</span> <kbd>1</kbd></button>
           <button type="button" class="castleTool" data-tool="line" title="Shortcut: 6 or L" data-i18n-attrs="title=interface:shortcut_6_or_l"><span data-i18n="interface:line">Line</span> <kbd>2</kbd></button>
           <button type="button" class="castleTool" data-tool="brush" title="Shortcut: 2 or B" data-i18n-attrs="title=interface:shortcut_2_or_b"><span data-i18n="interface:brush">Brush</span> <kbd>3</kbd></button>
-          <span class="brushSize" title="How wide the brush paints. [ and ] make it smaller and bigger." data-i18n-attrs="title=interface:how_wide_the_brush_paints_and_make_it_smaller_and_bigger">
+          <span class="numberStepper" title="How wide the brush paints. [ and ] make it smaller and bigger." data-i18n-attrs="title=interface:how_wide_the_brush_paints_and_make_it_smaller_and_bigger">
             <button id="castleBrushMinus" type="button" aria-label="Smaller brush" data-i18n-attrs="aria-label=interface:smaller_brush">&#8722;</button>
-            <output id="castleBrushSize" for="castleBrushMinus castleBrushPlus">1</output>
+            <input id="castleBrushSize" type="number" min="1" max="100" step="1" value="1" aria-label="How wide the brush paints. [ and ] make it smaller and bigger." data-i18n-attrs="aria-label=interface:how_wide_the_brush_paints_and_make_it_smaller_and_bigger">
             <button id="castleBrushPlus" type="button" aria-label="Bigger brush" data-i18n-attrs="aria-label=interface:bigger_brush">+</button>
           </span>
           <button type="button" class="castleTool" data-tool="bucket" title="Fills everything up to a wall &#8212; the edge of the map counts as one. Shortcut: 7 or F" data-i18n-attrs="title=interface:fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o"><span data-i18n="interface:fill">Fill</span> <kbd>7</kbd></button>

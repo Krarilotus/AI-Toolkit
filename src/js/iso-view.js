@@ -932,10 +932,11 @@
       if (plan !== state.troopPlan) {
         state.troopPlan = plan;
         state.troopMarkers = plan.filter(marker=>marker.count).map(marker=>({
-          ...marker,...geo.gridFromOffset(marker.offset),
-          count:state.unitAssets.idleSprites?.[marker.type] ? marker.count : 1
+          ...marker,
+          count:state.unitAssets.idleSprites?.[marker.type] ? Math.min(9,marker.count)
+            : marker.destination ? 0 : 1
         }));
-        state.unitCommandLimit = Math.max(128, plan.reduce((sum,marker)=>sum+marker.count,0)*8);
+        state.unitCommandLimit = Math.max(128, state.troopMarkers.reduce((sum,marker)=>sum+marker.count,0)*8);
         state.unitCommands = new Map();
       }
       state.troopDocument = doc;
@@ -950,7 +951,15 @@
     }
     const support = troops.supports(items, bodenHoehe);
     const rotation = currentRotation();
-    const layout = troops.layout(state.troopMarkers,(gx,gy)=>{
+    const keep = items.find(item=>Number(item.itemType)===61);
+    if (state.troopAnchorSource!==state.troopMarkers || state.troopAnchorKeep!==keep
+        || state.troopAnchorRotation!==rotation) {
+      state.troopAnchors = geo.troopAnchors(state.troopMarkers,keep,rotation);
+      state.troopAnchorSource = state.troopMarkers;
+      state.troopAnchorKeep = keep;
+      state.troopAnchorRotation = rotation;
+    }
+    const layout = troops.layout(state.troopAnchors,(gx,gy)=>{
       const tile = geo.rotateGrid(gx,gy,1,rotation);
       return support(tile.gx,tile.gy);
     });

@@ -140,7 +140,14 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
     let mut sprites: BTreeMap<String, UnitSprite> = BTreeMap::new();
     let mut idle_sprites = BTreeMap::new();
     let mut warnings = Vec::new();
-    for &(id, name, rider) in SOURCES {
+    let sources =
+        SOURCES
+            .iter()
+            .map(|&(id, name, rider)| (id.to_string(), name, rider, Some(0), poses::idle_pose(id)))
+            .chain(poses::LORD_POSES.iter().map(|&(key, name, frame)| {
+                (key.to_owned(), name, None, None, Some((frame, None)))
+            }));
+    for (key, name, rider, thumbnail, idle_pose) in sources {
         // Thumbnail and idle pose share the same file/palette decode. Mounted
         // troops also share their rider file; never read it once per output.
         let sources = (|| {
@@ -158,16 +165,18 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
                 continue;
             }
         };
-        for (idle, frame, rider_frame) in std::iter::once((false, 0, rider.map(|_| 0)))
-            .chain(poses::idle_pose(id).map(|(frame, rider)| (true, frame, rider)))
+        for (idle, frame, rider_frame) in thumbnail
+            .map(|frame| (false, frame, rider.map(|_| 0)))
+            .into_iter()
+            .chain(idle_pose.map(|(frame, rider)| (true, frame, rider)))
         {
             // Stationary objects can use the same phase as their thumbnail.
             // Share its native anchor and PNG instead of decoding it twice.
             if idle && frame == 0 && rider_frame == rider.map(|_| 0) {
-                if let Some(sprite) = sprites.get(&id.to_string()) {
-                    idle_sprites.insert(id.to_string(), sprite.clone());
+                if let Some(sprite) = sprites.get(&key) {
+                    idle_sprites.insert(key.clone(), sprite.clone());
+                    continue;
                 }
-                continue;
             }
             let decoded = (|| {
                 let mut p = decode(&body, frame)?;
@@ -178,7 +187,7 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
             })();
             match decoded {
                 Ok(p) => {
-                    let path = cache_root.join(format!("{revision}-{id}-{frame}.png"));
+                    let path = cache_root.join(format!("{revision}-{key}-{frame}.png"));
                     fs::write(&path, png_bytes(p.width, p.height, &p.rgba)?)
                         .map_err(|e| e.to_string())?;
                     let target = if idle {
@@ -187,7 +196,7 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
                         &mut sprites
                     };
                     target.insert(
-                        id.to_string(),
+                        key.clone(),
                         UnitSprite {
                             path,
                             width: p.width,
@@ -221,6 +230,20 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
 mod tests {
     use super::*;
 
+    fn fixture(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "toolkit-{name}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        fs::create_dir(root.join("gm")).unwrap();
+        root
+    }
+
     fn indexed_body(frames: usize) -> Vec<u8> {
         let offsets = 88 + 5120;
         let sizes = offsets + frames * 4;
@@ -246,16 +269,7 @@ mod tests {
 
     #[test]
     fn stationary_markers_extract_verified_frames_and_reuse_shared_pngs() {
-        let root = std::env::temp_dir().join(format!(
-            "toolkit-stationary-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
-        fs::create_dir(&root).unwrap();
-        fs::create_dir(root.join("gm")).unwrap();
+        let root = fixture("stationary");
         let ids = [(2, 0), (3, 4), (4, 4), (5, 4), (20, 0), (21, 0)];
         for &(id, frame) in &ids {
             let (_, name, _) = SOURCES.iter().find(|(marker, _, _)| *marker == id).unwrap();
@@ -298,6 +312,42 @@ mod tests {
         assert_eq!(load_unit_sprites(&root, &cache).unwrap(), assets);
         for (file, modified) in timestamps {
             assert_eq!(fs::metadata(file).unwrap().modified().unwrap(), modified);
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn lord_variants_have_distinct_verified_idle_frames_and_no_palette_markers() {
+        let root = fixture("lords");
+        for &(key, name, frame) in poses::LORD_POSES {
+            let body = indexed_body(frame + 1);
+            fs::write(root.join("gm").join(format!("{name}.gm1")), &body).unwrap();
+            assert!(key.starts_with("lord-"));
+        }
+        let assets = load_unit_sprites(&root, &root.join("cache")).unwrap();
+        assert!(
+            assets.sprites.is_empty(),
+            "Lords are not placeable AIV markers"
+        );
+        assert_eq!(assets.idle_sprites.len(), 2);
+        for (key, name, frame) in [
+            ("lord-europ", "body_lord", 168),
+            ("lord-arab", "body_saladin", 40),
+        ] {
+            let pose = &assets.idle_sprites[key];
+            assert_eq!((pose.source.as_str(), pose.frame), (name, frame));
+            assert_eq!(
+                (pose.width, pose.height, pose.dx, pose.dy),
+                (1, 1, -10, -20)
+            );
+            assert_eq!(pose.player_palette, PREVIEW_PLAYER_PALETTE);
+            let body = Gm1::read(&root.join("gm").join(format!("{name}.gm1"))).unwrap();
+            let expected = decode(&body, frame).unwrap();
+            assert_eq!(
+                fs::read(&pose.path).unwrap(),
+                png_bytes(expected.width, expected.height, &expected.rgba).unwrap()
+            );
+            assert_ne!(expected.rgba, decode(&body, 0).unwrap().rgba);
         }
         fs::remove_dir_all(root).unwrap();
     }

@@ -1,6 +1,6 @@
 # Eigenes AI-Toolkit-Design
 
-Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 136
+Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 154
 Farb-, Schrift- und Komponentenvariablen. Auch die großen Hintergründe sind
 enthalten. Du brauchst kein weiteres Theme und keine Entwicklungswerkzeuge.
 Als Ausgangspunkt dient das UCP-Design mit Monsterfishs Originalgrafiken.
@@ -33,6 +33,9 @@ wählbare Anzeigename. `default` und `ucp` sind reserviert.
   um die Buttons. Für Rahmen z. B. `border-width: 1px` und `radius: 6px`
   einstellen. `gap` trennt Gruppen bzw. Buttons, `padding-block` und
   `padding-inline` bestimmen Innenabstände. Die Logik bleibt unverändert.
+  `--component-toolbar-command-*` bestimmt die Mindesthöhe der gerahmten
+  Werkzeugleisten-Buttons sowie den oberen und unteren Textabstand. UCP nutzt
+  34 px Mindesthöhe und 4/2 px Innenabstand: etwas höher, Schrift leicht tiefer.
   Auswahlfelder nutzen unter `--component-select-*` den Systempfeil
   (`appearance: auto`, `indicator-size: 0px`). Für einen eigenen Bildpfeil
   `appearance: none`, `indicator-size: 20px` und `padding-inline-end: 30px`
@@ -43,6 +46,12 @@ wählbare Anzeigename. `default` und `ucp` sind reserviert.
   stehen unter `--component-scrollbar-*` Breite, horizontale Höhe und
   `cap-height` bereit. Letzteres reserviert den Platz für den Kettenhaken,
   damit die wiederholten Kettenglieder nicht hinter ihm sichtbar bleiben.
+  `--component-number-stepper-*` gestaltet das kompakte Zahlenfeld für die
+  Pinselbreite. UCP nutzt ein orangefarbenes Feld mit nativen Auf/Ab-Pfeilen
+  (`button-display: none`, `appearance: auto`, `spinner-display: inline-block`).
+  Für getrennte Minus/Plus-Buttons wie im Standarddesign: `button-display:
+  inline-flex`, `appearance: textfield`, `spinner-display: none`. Farben,
+  Breite, Rahmen, Rundung und Abstände stehen in derselben Variablengruppe.
 - **`theme.json`**: Name, Bildzuweisungen und Skalierung. `cover` füllt eine
   Fläche, `contain` erhält das vollständige Bild, `tile` kachelt, `frame`
   skaliert Rahmen in neun Abschnitten. `slice` bestimmt die Bildabschnitte,

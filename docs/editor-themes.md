@@ -136,7 +136,7 @@ button as the same textured rectangle:
 | Numeric value | `value_box` | Number fields |
 | Selection affordance | Native select indicator | Same behavior as UCP's select menus; optional `dropdown` texture for custom packs |
 | Reorder | `move_up*`, `move_down*`, original 12 by 7 | Artwork centered in a 24 by 24 hit target |
-| Stepper | `add*`, `remove*` | Brush size controls |
+| External stepper buttons | `add*`, `remove*` | Optional brush +/- buttons; UCP uses the native spinner |
 | Range | `slider*` | Build-step slider and transparency sliders |
 | Scrolling | `scroll_bar_middle`, website `scroll_bar_bottom_hook` | Native scrolling with separated chain and hook paint |
 | Checkbox | `checkbox_empty`, `checkbox_full` | Real checkbox controls |
@@ -214,3 +214,19 @@ fields: the original 15 by 15 `value_box.png` has an opaque black center, and
 UCP GUI `CreateNumberInput.tsx` uses `text-light`. Numeric and decimal inputs
 therefore use a light foreground; parchment `searchfield.png` text inputs use
 the dark foreground. The texture and foreground always change as one role.
+
+The compact brush control instead follows UCP GUI `CreateNumberInput.tsx`:
+a rounded `#ab712d` numeric field, light text and native up/down spinner. It
+keeps one number input and the same size state and keyboard shortcuts in both
+themes. Default retains the separate +/- buttons. `component.numberStepper`
+owns this reusable control's group paint, button visibility, native spinner
+visibility/appearance, width, padding, border, radius, colors and alignment.
+UCP hides the external buttons; copied theme packs can choose either style
+without changing editor logic or duplicating the value field. The existing
+`add`/`remove` artwork remains available for packs choosing external buttons.
+
+Framed toolbar actions additionally use `component.toolbarCommand` for minimum
+height and independent top/bottom padding. UCP uses 34 px and 4/2 px, making
+these actions 2 px taller with labels 1 px below their former centered position.
+Dialog buttons, native window controls and Default metrics stay unchanged.
+No artwork or hit area is translated or clipped to achieve this alignment.

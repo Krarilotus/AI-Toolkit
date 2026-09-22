@@ -1,6 +1,6 @@
 # Static idle troop previews: verified research
 
-Status: **implemented for 20 classic marker types**. Palette thumbnails retain
+Status: **implemented for 20 classic marker types and both lord variants**. Palette thumbnails retain
 their separate frame-0 contract; the 2.5D view uses the verified idle frames
 below. Engineers and DE-specific markers show
 editor-drawn numbered rally markers until their stationary poses are verified.
@@ -56,6 +56,8 @@ and actual GM1 directories in `D:\Games\Stronghold Crusader KI-Liga`:
 | Fire thrower | `body_arab_grenadier` | `0xB5A010` / 1 | `0x230 + value` | 560 |
 | Brazier | `body_brazier` | Stationary flame cycle, eight frames | First flame phase | 0 |
 | Small rally flag | `anim_flag_small` | Stationary cloth animation, 32 frames | First cloth phase | 0 |
+| European lord | `body_lord` | `0xB5CA64` / 1, stationary guard/look phase | `direction + 0xA9 + lookDelta` | 168 at direction 0 |
+| Arabian lord | `body_saladin` | Same stationary phase, Arabian variant offset | `direction - 0x80 + 0xA9 + lookDelta` | 40 at direction 0 |
 
 See `Map/Units/UpdateCrusaderArcher.cpp:635`,
 `UpdateCrossbowman.cpp:148`, `UpdateSwordsman.cpp:104`,
@@ -74,6 +76,31 @@ from the local classic executable agree with the first values above. Only
 the resulting frame metadata ships; these executable addresses are not used
 by the runtime.
 
+## Lord selection and support
+
+The character field is `lord.Type`, with the exact values `Europ` and `Arab`.
+It is not an integer `LordType` field in the classic AIC structure.
+`extension-aiSwapper/scripts/lord.lua` resolves these to the game's lord
+variants 0 and 1. The native extractor exposes `idleSprites["lord-europ"]`
+and `idleSprites["lord-arab"]`; neither is a placeable AIV marker or added
+to the palette thumbnail map.
+
+`UpdateLord.cpp:112` sets stationary speed to zero. Lines 120-122 switch the
+Arabian variant to sprite file 205 (`body_saladin`) and subtract `0x80` from
+shared animation formulas. The stationary guard/look branch at lines 636-676
+uses table `AnimationFrameData+0x5FA0`: its first value is 1, producing a zero
+look offset. With direction zero, the shared `gfxNumber - 1` contract gives
+frames 168 and 40. Both frames were decoded from the local game and visually
+checked as stationary lords, preserving their native palette and origin.
+
+The classic stone keep's unit deck is **92 native pixels** above its terrain:
+`BuildingsState/getBuildingHeightForBuildingID.cpp:14-15` returns 92 for
+`BT_STONEKEEP`, `UnitsState/recomputeUnitStandingHeight.cpp` applies that
+building height, and `Rendering/ViewportRenderState/renderMap.cpp:1016`
+subtracts it directly from the unit's image Y coordinate. The preview lord
+occupies the central tile of the visible 7-by-7 keep, independent of defensive
+recruitment quotas. Its appearance follows the loaded character's lord type.
+
 ## Implementation and verification
 
 The stationary siege formulas come directly from the branches that set
@@ -90,16 +117,40 @@ reads each resolved GM1 once for its thumbnail and idle pose, preserves native
 pixel dimensions and signed origins, and caches PNGs by active graphics
 revision plus pose metadata. Returning a cached result does not rewrite PNGs.
 
-`src/js/castle-troops.js` owns the pure occupancy planner. It uses the smaller
-of `DefTotal` and `DefWalls`, distributes it across the active `DefUnit1–8`
-recruitment slots (repeated slots are weights), then divides each type's share
-by its matching marker count. `80 / 8 / 4` gives two sprites, capped at nine.
-Zero counts or absent matching recruitment slots give zero sprites. Without
-an opened/created character, one representative is shown per marker. Siege
-and decorative markers are independent of defense recruitment.
+`src/js/castle-troops.js` owns the pure, cached allocation planner. The budget
+is `min(DefTotal, DefWalls)`. `AI/AICState/aiRecruitUnits.cpp:147–163` cycles
+the recruitment slots in order, wrapping at slot eight or the first `None`.
+Quotient/remainder allocation reproduces that cycle in at most eight operations,
+then aggregates repeated types. For 100 defenders and eight distinct slots the
+quotas are 13,13,13,13,12,12,12,12, preserving the budget rather than independently
+rounding all eight shares up. `smallestTribeOfUnitType.cpp:51–72` selects the
+first smallest matching marker group. Another quotient/remainder split gives
+13 troops over three markers as 5,4,4, or over four as 4,3,3,3. Counts in this
+plan are complete; the nine-sprite display cap is a separate rendering concern.
+
+`assignUnitToATribe.cpp:40–54` sends unmatched European archers, crossbowmen,
+pikemen, swordsmen, Arabian archers, Arabian swordsmen and fire throwers to
+the keep. Other unmatched recruited types wait at the campfire. The keep target
+is world origin +(3,4); the campfire target uses the rendered camp plate's
+entrance +(3,0). World-oriented plates and rally points rotate with the camera,
+not again with the AIV layout. The lord occupies keep centre +(3,3).
+Synthetic groups only appear while their supporting keep exists in the visible
+build step; they never modify saved AIV markers.
+
+The portion of `DefTotal` above `DefWalls` belongs to outer patrols, not wall
+groups or automatic campfire reserves. This static preview does not simulate
+patrol movement, resource-limited recruitment, casualties or Extreme/nervous
+AI states. The UCP troop-behaviour plugin can also change patrol/group movement;
+its InitialRole setting does not change recruited-unit quotas or fallback types.
+Without an opened/created character, one representative is shown per marker.
+Siege and decorative markers remain independent of defense recruitment.
+Monk and Tunneler quotas are retained as named standby groups, even though they
+have no classic AIV marker and their idle sprites are not yet verified. An
+unsupported visual type never consumes another type's share or truncates the
+recruitment cycle; only `None`/an absent slot terminates it.
 
 The plan is identity-stable across unrelated character/building edits. Scene
-changes update support elevation from visible walls, stairs, gates and towers;
+changes update support elevation from visible keeps, walls, stairs, gates and towers;
 the height constants are shared with routing. Marker visibility matches 2D:
 AIV rally markers do not have build steps, so they remain present, dropping to
 the visible ground before a future supporting structure exists. Panning and
@@ -110,18 +161,25 @@ Original rally tiles are reserved before neighbouring positions, so groups never
 overlap. Preview members stay on the same support elevation, inside the map;
 crowded locations or tower edges display fewer representatives instead of
 stacking them or floating them off the roof. Nine candidate tiles per marker
-bound the layout work; camera rotation preserves the same world positions.
+bound the layout work. Standby groups search at most 49 nearby tiles, capped at
+nine representatives per type; the lord's central tile is reserved first.
+Resolved anchors are reused until the plan, visible keep or rotation changes.
+Camera rotation preserves the same world positions.
 
-Local extraction proof: all 21 existing thumbnails and 20 stationary poses decoded
+Local extraction proof: all 21 existing thumbnails and 22 stationary poses decoded
 with no warnings from `D:\Games\Stronghold Crusader KI-Liga`; a repeated call
-returned identical metadata and all 39 cache files retained their modification
-times. Debug build timings were 92 ms cold and 29 ms warm including override revision lookup.
+returned identical metadata and all 41 cache files retained their modification
+times. Debug build timings were 89 ms cold and 28 ms warm including override revision lookup.
 The warm path does no pixel decoding. Mangonel, brazier and flag reuse their
 already decoded first-frame thumbnail, including its preserved native anchor.
-The six added sprites were visually inspected at their original dimensions in
+The six stationary marker additions and both lord sprites were visually inspected at their original dimensions in
 an isolated extraction directory. Tests cover selected-frame pixels, shared
-PNG reuse, unchanged warm caches, allocation identity, zero/count weighting,
-preserved origins and forward/backward support heights.
+PNG reuse, unchanged warm caches, allocation identity, budget conservation,
+400 deterministic varied cases against an independent per-unit simulation,
+Gatekeeper's 72/36/18/18 wall quotas, zero/count weighting,
+preserved origins and forward/backward support heights. Lord extraction tests
+also verify the separate named keys, exact source/frame selection, native
+palette and anchors, and absence from the placeable marker palette.
 Live full-window drag/render performance remains a release acceptance check;
 the additional commands are not literally free.
 

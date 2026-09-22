@@ -7,38 +7,72 @@
   const types = Object.freeze({Engineer:1, EuropArcher:6, Crossbowman:7, Spearman:8,
     Pikeman:9, Maceman:10, Swordsman:11, Knight:12, Slave:13, Slinger:14,
     Assassin:15, ArabArcher:16, HorseArcher:17, ArabSwordsman:18, FireThrower:19});
+  // These recruits have no classic AIV marker. Keep their allocation separate
+  // from placeable marker IDs, even before an idle sprite is available.
+  const recruitmentTypes = Object.freeze({...types, Monk:'monk', Tunneler:'tunneler'});
   const fields = Object.freeze(['DefTotal', 'DefWalls', ...Array.from({length:8}, (_,i)=>'DefUnit'+(i+1))]);
   const defensiveTypes = new Set(Object.values(types));
-  const nonnegative = value => Math.max(0, Math.floor(Number(value) || 0));
+  // assignUnitToATribe: ranged and armoured defenders wait at the keep;
+  // other recruited types without a matching AIV group wait at the campfire.
+  const keepTypes = new Set([6,7,9,11,16,18,19]);
+  const nonnegative = value => Number.isFinite(Number(value)) ? Math.max(0,Math.floor(Number(value))) : 0;
   // One unit per tile: centre first, then south and neighbours.
   const formation = Object.freeze([[0,0],[0,1],[1,0],[-1,0],[0,-1],[-1,1],[1,1],[-1,-1],[1,-1]]
     .map(position=>Object.freeze(position)));
-  const defenseKey = aic => aic ? JSON.stringify(fields.map(key=>aic[key])) : '';
+  const standbyFormation = Object.freeze([...formation, ...[2,3].flatMap(radius=>{
+    const ring=[];
+    for (let y=-radius;y<=radius;y++) for (let x=-radius;x<=radius;x++) {
+      if (Math.max(Math.abs(x),Math.abs(y))===radius) ring.push(Object.freeze([x,y]));
+    }
+    return ring;
+  })]);
+  const defenseKey = aic => aic ? JSON.stringify([...fields.map(key=>aic[key]),aic.lordType]) : '';
 
-  /** One immutable occupancy plan; repeated recruitment slots provide weights.
+  /** @typedef {{type:number|string, count:number, ref:string,
+   * offset?:number, destination?:'keep'|'campfire'|'lord'}} TroopGroup */
+
+  // aiRecruitUnits visits the recruitment slots in order, stopping at the
+  // first None. Quotient/remainder is the same cycle without simulating units.
+  function defenseTotals(aic) {
+    const slots = [], totals = new Map();
+    if (!aic) return totals;
+    for (let i=1;i<=8;i++) {
+      const name = aic['DefUnit'+i];
+      if (!name || name==='None') break;
+      slots.push(Object.hasOwn(recruitmentTypes,name) ? recruitmentTypes[name] : String(name));
+    }
+    const budget = Math.min(nonnegative(aic.DefWalls), nonnegative(aic.DefTotal));
+    if (!slots.length) return totals;
+    const each = Math.floor(budget/slots.length), extra = budget%slots.length;
+    slots.forEach((type,index) => totals.set(type,(totals.get(type)||0)+each+(index<extra ? 1 : 0)));
+    return totals;
+  }
+
+  /** One immutable allocation plan, independent of sprite limits and geometry.
    * No character means one representative per marker, never an invented army.
    * @param {Array<{itemType:number,positionOfset:number}>} markers
    * @param {Record<string,unknown>|null} aic
+   * @returns {ReadonlyArray<Readonly<TroopGroup>>}
    */
   function plan(markers, aic) {
-    const counts = new Map(), slots = new Map();
+    const counts = new Map(), next = new Map(), totals = defenseTotals(aic);
     for (const marker of markers) counts.set(Number(marker.itemType), (counts.get(Number(marker.itemType)) || 0)+1);
-    let totalSlots = 0;
-    if (aic) for (let i=1;i<=8;i++) {
-      const name = aic['DefUnit'+i];
-      if (name && name !== 'None') {
-        totalSlots++;
-        const type = types[name];
-        if (type) slots.set(type, (slots.get(type)||0)+1);
-      }
-    }
-    const defenders = aic ? Math.min(nonnegative(aic.DefWalls), nonnegative(aic.DefTotal)) : 0;
-    return Object.freeze(markers.map((marker, index) => {
+    /** @type {TroopGroup[]} */
+    const groups = markers.map((marker, index) => {
       const type = Number(marker.itemType);
+      const total = totals.get(type)||0, size = counts.get(type), ordinal = next.get(type)||0;
+      next.set(type,ordinal+1);
       const count = !aic || !defensiveTypes.has(type) ? 1
-        : totalSlots ? Math.min(9, Math.floor(defenders * (slots.get(type)||0) / totalSlots / counts.get(type))) : 0;
-      return Object.freeze({type, offset:Number(marker.positionOfset), count, ref:'u:'+index});
-    }));
+        : Math.floor(total/size)+(ordinal<total%size ? 1 : 0);
+      return {type, offset:Number(marker.positionOfset), count, ref:'u:'+index};
+    });
+    for (const [type,count] of totals) if (count && !counts.has(type)) {
+      groups.push({type,count,ref:'standby:'+type,destination:keepTypes.has(type) ? 'keep' : 'campfire'});
+    }
+    if (aic?.lordType==='Europ' || aic?.lordType==='Arab') {
+      groups.unshift({type:aic.lordType==='Arab' ? 'lord-arab' : 'lord-europ',count:1,ref:'lord',destination:'lord'});
+    }
+    return Object.freeze(groups.map(group=>Object.freeze(group)));
   }
 
   function createPlanner() {
@@ -52,9 +86,11 @@
 
   /** Distribute preview troops without changing their saved rally markers.
    * Reserve every original marker before adding neighbours, so one group cannot
-   * displace another. Nine candidate tiles per marker bounds the work; crowded
+   * displace another. Nine candidate tiles per AIV marker bounds the work; crowded
    * or unsupported tiles simply show fewer representatives.
-   * @template {{gx:number,gy:number,count:number}} T
+   * Standby groups share a bounded 7x7 area around the keep/campfire, with at
+   * most nine representatives per type. The allocation keeps the full count.
+   * @template {{gx:number,gy:number,count:number,destination?:string}} T
    * @param {T[]} markers
    * @param {(x:number,y:number)=>number} support
    * @returns {Array<{marker:T,gx:number,gy:number,elevation:number}>}
@@ -70,14 +106,14 @@
       if (!marker.count) continue;
       const elevation = support(marker.gx,marker.gy);
       let placed = 0;
-      for (const [dx,dy] of formation) {
+      for (const [dx,dy] of marker.destination ? standbyFormation : formation) {
         const gx = marker.gx+dx, gy = marker.gy+dy, key = gy*size+gx;
         if (gx<0 || gy<0 || gx>=size || gy>=size || occupied.has(key)
             || (owners.has(key) && owners.get(key)!==marker)
             || support(gx,gy)!==elevation) continue;
         occupied.add(key);
         result.push({marker,gx,gy,elevation});
-        if (++placed>=marker.count) break;
+        if (++placed>=Math.min(9,marker.count)) break;
       }
     }
     return result;
@@ -99,5 +135,5 @@
     }
     return (x,y) => surface.get(y*geometry.GRID_SIZE+x) ?? terrainHeight(x,y);
   }
-  return {types, fields, formation, defenseKey, plan, createPlanner, layout, supports};
+  return {types, recruitmentTypes, fields, formation, defenseKey, defenseTotals, plan, createPlanner, layout, supports};
 });

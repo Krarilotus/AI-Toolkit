@@ -1110,7 +1110,8 @@ window.characterEditor = {
     isDirty: isCharacterDirty,
     getPath: () => currentFilePath,
     getDefensePreview: () => hasCharacterDocument && data?.aic
-      ? Object.fromEntries(window.castleTroops.fields.map(key=>[key,data.aic[key]])) : null,
+      ? {...Object.fromEntries(window.castleTroops.fields.map(key=>[key,data.aic[key]])),
+        lordType:data.lord?.Type} : null,
     markSaved: markCharacterSaved
 };
 

@@ -2,6 +2,15 @@
 //! update routines and Crusader 1.41 animation tables. GM1 indices are zero-based;
 //! sprite origins and player palettes always come from the selected local game.
 //! See docs/native-idle-sprite-research.md for formulas and table addresses.
+
+// Lords have no AIV palette marker. Keep their explicit keys separate from
+// serialized marker IDs; the renderer chooses one using character.lord.Type.
+// UpdateLord's stationary guard phase: 0xa9 - lord_variant_offset - 1.
+pub const LORD_POSES: &[(&str, &str, usize)] = &[
+    ("lord-europ", "body_lord", 168),
+    ("lord-arab", "body_saladin", 40),
+];
+
 pub fn idle_pose(marker: u16) -> Option<(usize, Option<usize>)> {
     let frame = match marker {
         2 => 0,     // UpdateMangonel: direction + 1 - 1
