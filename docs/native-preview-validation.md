@@ -3,7 +3,13 @@
 Windows x64, 22 September 2026. Native compilation/tests now also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
-## Integrated chrome, theme groups and cached map restoration
+## Integrated chrome, theme groups and cached map restoration: 306f0269
+
+Final `snapshot-native-306f0269`: **7,399,459 bytes portable / 6,744,764 bytes
+Setup**. All 122 packaged images remain byte-identical to source. ZIP SHA-256:
+`62c45a11b8c5f42b4706e20827df50c9a6be5fa09c13490886154c3f3f4c0343`.
+[Native CI at the release commit](https://github.com/Krarilotus/AI-Toolkit/actions/runs/35787949878)
+passes on Windows, Linux and macOS.
 
 The installed 9421b5fe was the correct updated native application, but editor
 windows still had Tauri's default Windows decorations above the existing menu/tab
@@ -11,13 +17,15 @@ bar. The earlier Electron titlebar tests and web-content screenshots did not cov
 the native frame. The new opt-in `scripts/test-native-titlebar.mjs` checks actual
 window metadata and geometry, as well as the rendered controls.
 
-On candidate d1bfed95, the native top inset changed from **31 px to 1 px**.
+On candidate d1bfed95 and the final 306f0269 package, the native top inset changed
+from **31 px to 1 px**.
 Main and secondary editor windows report `isDecorated=false`; detached viewports
 retain native decoration. Minimize, maximize/restore, fullscreen, detached
 dock/reopen and dirty-document Cancel/Discard close protection passed. The test
 uses the real native close-request path but supplies the unsaved dialog choice as
 a fixture; it does not claim OS dialog rendering. Caption controls fit at 800 px
-outer width and use flat paint in both themes. Physical dragging/Snap hover and
+outer width and use flat paint in both themes. The final package also verifies
+single-line, ellipsized tab labels at that width. Physical dragging/Snap hover and
 an outer-window screenshot remain unverified because computer-use was unavailable.
 
 The UCP toolbar previously targeted a nonexistent `.castleToolbarGroup` selector.
@@ -32,8 +40,9 @@ cache: its atlas retained a mixed-slash path, so the restored selection rejected
 the otherwise valid result. Rebinding response path/name to the current request
 fixed automatic GreekSea/Kratoloros restoration (998 steps). All **29 cached files
 kept identical bytes and modification times**; four camera layers were reused.
-The d1bfed95 run reached restored map data in 2.13 s from process spawn; this is
-one warm-cache startup observation, not a per-frame rendering benchmark. Both
+The final 306f0269 run reached restored map data in 2.06 s from process spawn;
+the earlier d1bfed95 run took 2.13 s. These are individual warm-cache startup
+observations, not a per-frame rendering benchmark or a measured speedup. Both
 maps were visible in the captured UCP castle view. No game process was invoked.
 
 Source checks pass **571 JavaScript tests**, **69 Rust tests**, strict desktop
