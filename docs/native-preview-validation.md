@@ -49,6 +49,13 @@ Source checks pass **571 JavaScript tests**, **69 Rust tests**, strict desktop
 TypeScript and all nine complete 1,727-message catalogues. One native game-fixture
 test remains opt-in. The user's running installation was left unchanged.
 
+After publication, isolated copies of the real 9421b5fe and 306f0269 applications
+queried live GitHub data. The old native build reported `available` and displayed
+the 306f0269 Install button; the final build reported `current` and displayed
+the green Up to date state. Both selected release 394143502 / asset 582316843,
+with the ZIP hash and size above. This was discovery-only: neither installation
+nor the user's running application was modified.
+
 ## Cached update retry follow-up: 9421b5fe
 
 The running Electron app retried `snapshot-native-39659543` from its hourly cache
