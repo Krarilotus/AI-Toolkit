@@ -186,9 +186,41 @@ test('UCP keeps dark shell tokens distinct from framed paper and original reorde
 });
 
 
-test('framed Character sidebar cards outrank the later legacy helper-card surface', () => {
-  const css = fs.readFileSync(path.join(__dirname, '../src/css/theme-components.css'), 'utf8');
-  // The stylesheet is imported before combined.css. Match the sidebar role so
-  // the later equally-specific details layout cannot erase its paper image.
-  assert.match(css, /html\[data-themed-panels="true"\] :is\(#characterWorkspace \.characterSidebar > \.editorCard,/);
+test('shared layers keep component paint below packs and accessibility above packs', () => {
+  const cssDirectory = path.join(__dirname, '../src/css');
+  const css = fs.readFileSync(path.join(cssDirectory, 'combined.css'), 'utf8');
+  assert.match(css, /@layer tokens, layout, components, theme, accessibility;/);
+  assert.match(css, /@import url\("\.\.\/\.\.\/assets\/themes\/default\/variables\.css"\) layer\(tokens\);/);
+  assert.match(css, /@layer layout \{/);
+  assert.match(css, /@layer components \{/);
+  // Late-loaded panels stay below the pack too: source order is not an override API.
+  for (const name of ['castle-sidebar.css', 'castle-cost-panel.css', 'editor-extras.css']) {
+    assert.match(fs.readFileSync(path.join(cssDirectory, name), 'utf8'), /^@layer components \{/);
+  }
+  const theme = fs.readFileSync(path.join(cssDirectory, 'theme-components.css'), 'utf8');
+  assert.match(theme, /@layer theme \{/);
+  assert.match(theme, /@layer accessibility \{/);
+  assert.doesNotMatch(theme, /#characterWorkspace \.field (?:input|select|:is\(input)/,
+    'field roles must work in all workspaces without ID specificity patches');
+  assert.doesNotMatch(theme, /(?:background|border-color|color):[^;\n]*!important/,
+    'pack paint must win by its layer, not important declarations');
+  // Parse every sheet through the already-shipped build tool, catching malformed
+  // wrappers/imports while preserving browser-native layers and nesting.
+  const { transformSync } = require('esbuild');
+  for (const name of fs.readdirSync(cssDirectory).filter(name => name.endsWith('.css'))) {
+    const result = transformSync(fs.readFileSync(path.join(cssDirectory, name), 'utf8'), { loader: 'css', target: 'chrome110' });
+    assert.deepEqual(result.warnings, [], name);
+  }
+});
+
+test('detached viewport chrome belongs to shared CSS, not a second inline theme', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../src/js/iso-view.js'), 'utf8');
+  const detached = fs.readFileSync(path.join(__dirname, '../src/css/theme-detached.css'), 'utf8');
+  assert.doesNotMatch(source, /chromeStyle|document\.body\.style\.cssText|id="isoWindow(?:Canvas|Status)" style=/);
+  assert.match(source, /ToolkitTheme\?\.attachWindow\(win\)/);
+  assert.match(detached, /@import url\('combined\.css'\);/);
+  assert.match(detached, /@layer layout \{/);
+  assert.match(detached, /#isoWindowHost \{ position: fixed; inset: 34px 0 0; \}/);
+  assert.doesNotMatch(detached, /!important|#[a-f\d]{6}\b/i,
+    'detached chrome inherits role colors without its own palette or specificity overrides');
 });

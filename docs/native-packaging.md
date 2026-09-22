@@ -27,6 +27,25 @@ the same build and uploads artifacts; publishing requires its explicit `publish`
 input and always creates an experimental `snapshot-*` prerelease. Reusing a tag
 does not silently replace an existing release.
 
+## Continuous integration
+
+`Native CI` runs on pull requests, pushes to `main` or `experiment/**`, and manual dispatch. One
+matrix compiles the native application and runs Rust unit/contract tests on
+Windows, Ubuntu 24.04 and macOS. Each runner also builds the embedded frontend,
+checks TypeScript, translations and the package policy, and runs the portable
+bridge/package tests. Linux dependencies follow the
+[official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/#linux).
+
+These checks do not start the GUI or publish a release. Passing them demonstrates
+compilation and automated logic coverage on those runners, not native dialogs,
+WebView rendering, accessibility, installers or in-game compatibility. The local
+game parity fixture remains explicitly opt-in; CI does not distribute or start
+the game. The separate existing `CI` workflow retains the full JavaScript suite
+and Electron renderer checks; the manual `Native preview` workflow owns Windows
+packaging, the download-size gate, installer verification and optional publication.
+
+## Build artifacts
+
 Outputs are in `release/native/`: the setup EXE, portable ZIP, SHA256SUMS.txt and
 package-report.json. Packaging fails if either download reaches 8,000,000 bytes.
 The report records the exact bytes, checksums, portable file list, and dimensions

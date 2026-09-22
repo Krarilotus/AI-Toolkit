@@ -46,3 +46,7 @@ strip = true
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[dev-dependencies]
+# Generate frontend request types from the serde wire contract; never shipped.
+ts-rs = { version = "=12.0.1", features = ["serde-json-impl"] }

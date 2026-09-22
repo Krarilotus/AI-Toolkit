@@ -6,17 +6,14 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { validatePackagePolicy } from './package-policy.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const quote = value => value.replaceAll('$', '$$').replaceAll('"', '$\\"');
 
 export function testInstallerHooks() {
   if (process.platform !== 'win32') throw Error('NSIS installer verification requires Windows.');
-  const bundle = JSON.parse(fs.readFileSync(path.join(root, 'src-tauri/tauri.conf.json'), 'utf8')).bundle;
-  assert.equal(bundle.windows.nsis.installerHooks, '../scripts/installer/config.nsh');
-  for (const [source, target] of Object.entries(bundle.resources || {})) {
-    assert.doesNotMatch(`${source}\n${target}`.replaceAll('\\', '/'), /(?:^|\n|\/)config(?:\/|$)/, 'editable config must stay outside generic overwrite/delete resources');
-  }
+  validatePackagePolicy();
   const nsis = path.join(process.env.LOCALAPPDATA, 'tauri/NSIS/makensis.exe');
   if (!fs.existsSync(nsis)) throw Error('Tauri NSIS tools missing; bundle once before running the installer check.');
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'toolkit-installer-test-'));
@@ -33,18 +30,20 @@ export function testInstallerHooks() {
     write('install/config/my-pack/note.txt', 'Keep unknown nested files too.');
     const snapshot = ['config/aiv_constants.json', 'config/custom.json', 'config/my-pack/note.txt']
       .map(name => [name, fs.readFileSync(path.join(install, name))]);
-    for (const [scenario, abort] of [['reinstall', false], ['aborted-install', true]]) {
+    for (const [scenario, abort] of [['fresh-install', false], ['reinstall', false], ['aborted-install', true]]) {
+      const target = scenario === 'fresh-install' ? path.join(base, 'fresh-install') : install;
       const exe = path.join(base, scenario + '.exe'), source = path.join(base, scenario + '.nsi');
-      fs.writeFileSync(source, `Unicode true\nRequestExecutionLevel user\nSilentInstall silent\nName "Toolkit installer verification"\nOutFile "${quote(exe)}"\nInstallDir "${quote(install)}"\n!define TOOLKIT_DEFAULT_CONFIG_DIR "${quote(defaults)}"\n!include "${quote(path.join(root, 'scripts/installer/config.nsh'))}"\nSection\n  !insertmacro NSIS_HOOK_POSTINSTALL\n  ${abort ? 'Abort' : ''}\nSectionEnd\n`);
+      fs.writeFileSync(source, `Unicode true\nRequestExecutionLevel user\nSilentInstall silent\nName "Toolkit installer verification"\nOutFile "${quote(exe)}"\nInstallDir "${quote(target)}"\n!define TOOLKIT_DEFAULT_CONFIG_DIR "${quote(defaults)}"\n!include "${quote(path.join(root, 'scripts/installer/config.nsh'))}"\nSection\n  !insertmacro NSIS_HOOK_POSTINSTALL\n  ${abort ? 'Abort' : ''}\nSectionEnd\n`);
       execFileSync(nsis, ['/V2', source], { windowsHide: true, stdio: 'pipe' });
       const result = spawnSync(exe, ['/S'], { windowsHide: true, timeout: 20_000, stdio: 'pipe' });
       if (result.error) throw result.error;
       if (!abort) assert.equal(result.status, 0, 'silent test install succeeded');
       else assert.notEqual(result.status, 0, 'test installation aborted');
-      for (const [name, bytes] of snapshot) assert.deepEqual(fs.readFileSync(path.join(install, name)), bytes, `${scenario} preserved ${name}`);
-      assert.equal(fs.readFileSync(path.join(install, 'config/new-config.json'), 'utf8'), '{"added":true}');
+      if (scenario === 'fresh-install') assert.equal(fs.readFileSync(path.join(target, 'config/aiv_constants.json'), 'utf8'), '{"newDefault":1}');
+      else for (const [name, bytes] of snapshot) assert.deepEqual(fs.readFileSync(path.join(target, name)), bytes, `${scenario} preserved ${name}`);
+      assert.equal(fs.readFileSync(path.join(target, 'config/new-config.json'), 'utf8'), '{"added":true}');
     }
-    console.log('NSIS config preservation: existing, unknown and nested files intact; new defaults added; aborted install preserved originals.');
+    console.log('NSIS config preservation: fresh install has all defaults; existing, unknown and nested files intact on reinstall; aborted install preserved originals.');
   } finally {
     // Verify the absolute target before any recursive cleanup on Windows.
     if (path.dirname(path.resolve(base)) !== path.resolve(os.tmpdir()) || !path.basename(base).startsWith('toolkit-installer-test-')) throw Error('Unexpected installer test cleanup path');

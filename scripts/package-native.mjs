@@ -6,10 +6,12 @@ import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { zipSync, unzipSync } from 'fflate';
 import { testInstallerHooks } from './test-installer.mjs';
+import { packagePolicy, portablePath, validatePackagePolicy } from './package-policy.mjs';
+export { portablePath } from './package-policy.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'release/native');
-const budget = 8_000_000;
+const budget = packagePolicy.downloadBudget;
 const sha256 = data => createHash('sha256').update(data).digest('hex');
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const run = (command, args, options = {}) => execFileSync(command, args, { cwd: root, stdio: 'inherit', ...options });
@@ -36,11 +38,6 @@ export function javascriptPackages(names, from = root) {
   }
   for (const name of names) visit(name, from);
   return [...packages.values()];
-}
-
-/** Portable files accepted by the native updater; no cache, runtime, or debug files. */
-export function portablePath(name) {
-  return /^(AI Toolkit\.exe|README\.txt|THIRD_PARTY_NOTICES\.txt|config\/[\w-]+\.json|assets\/aiv\/iso\/verzeichnis\.json)$/.test(name);
 }
 
 /** Preserve every packaged image byte and record original dimensions for review. */
@@ -109,11 +106,11 @@ function notices() {
 }
 
 export function archivePortable(executable, destination, source = root) {
-  const entries = { 'AI Toolkit.exe': fs.readFileSync(executable) };
-  for (const file of files(path.join(source, 'config')).filter(file => file.endsWith('.json'))) entries['config/' + relative(path.join(source, 'config'), file)] = fs.readFileSync(file);
-  entries['assets/aiv/iso/verzeichnis.json'] = fs.readFileSync(path.join(source, 'assets/aiv/iso/verzeichnis.json'));
-  entries['README.txt'] = fs.readFileSync(path.join(source, 'docs/native-preview-readme.txt'));
-  entries['THIRD_PARTY_NOTICES.txt'] = fs.readFileSync(path.join(source, 'THIRD_PARTY_NOTICES.txt'));
+  const entries = { [packagePolicy.executable.path]: fs.readFileSync(executable) };
+  const { configuration } = packagePolicy;
+  const configSource = path.join(source, configuration.source);
+  for (const file of files(configSource)) entries[`${configuration.directory}/${relative(configSource, file)}`] = fs.readFileSync(file);
+  for (const [target, file] of Object.entries(packagePolicy.files)) entries[target] = fs.readFileSync(path.join(source, file));
   for (const name of Object.keys(entries)) if (!portablePath(name)) throw Error(`Unexpected portable entry: ${name}`);
   const archive = zipSync(Object.fromEntries(Object.entries(entries).map(([name, bytes]) => [name, [bytes, { level: 9, mtime: new Date('2020-01-01T00:00:00Z') }]])));
   // Verify the actual artifact, not just the staging directory.
@@ -127,6 +124,7 @@ export function archivePortable(executable, destination, source = root) {
 async function main() {
   if (process.platform !== 'win32' || process.arch !== 'x64') throw Error('Windows x64 packaging must run on Windows x64.');
   const args = new Set(process.argv.slice(2));
+  validatePackagePolicy();
   run(process.execPath, [path.join(root, 'scripts/build-locales.js'), '--check', '--strict']);
   notices();
   if (args.has('--prepare')) return;

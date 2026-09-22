@@ -1,8 +1,10 @@
 # Static idle troop previews: verified research
 
-Status: **not implemented**. The current local unit thumbnails use frame 0; they
-must not be described as verified idle sprites. This investigation read local
-game files and OpenSHC references without starting or attaching to the game.
+Status: **implemented for 14 classic troop types**. Palette thumbnails retain
+their separate frame-0 contract; the 2.5D view uses the verified idle frames
+below. Siege engines, engineers, braziers, flags and DE-specific markers show
+editor-drawn numbered rally markers until their stationary poses are verified.
+No game process is started or attached to, and no Firefly pixels are packaged.
 
 ## Verified classic-game contract
 
@@ -34,11 +36,20 @@ and actual GM1 directories in `D:\Games\Stronghold Crusader KI-Liga`:
 | --- | --- | --- | --- | ---: |
 | European archer | `body_archer` | `0xB57938` / 1 | `0x280 + value*4 + direction/2` | 643 at direction 0 |
 | Crossbowman | `body_crossbowman` | `0xB57F68` / 8 | `0x90 + value` | 151 |
+| Spearman | `body_spearman` | `0xB58718` / 1 | `0x230 + value` | 560 |
+| Pikeman, standing | `body_pikeman` | `0xB57AD8` / 1 | `0xC0 + value` | 192 |
+| Maceman | `body_maceman` | `0xB57DC8` / 1 | `0x1B0 + value` | 432 |
 | Swordsman | `body_swordsman` | `0xB58988` / 21 | `0x141 + value` | 341 |
+| Knight body | `body_knight` | `0xB58C48` / 1 | `0xF9 + value*8 + direction` | 256 at direction 0 |
+| Knight rider | `body_knight_top` | `0xB58B48` / 6 | `0x179 + value*8 + direction` | 424 at direction 0 |
 | Arabian archer | `body_arab_shortbow` | `0xB592E0` / 1 | `0x36C + value` | 876 |
 | Slave | `body_arab_slave` | `0xB59030` / 1 | `0x100 + value` | 256 |
+| Slinger, seated | `body_arab_slinger` | `0xB59560` / 9 | `664 + value` | 672 |
+| Assassin | `body_arab_assasin` | `0xB5978C` / 20 | `0x310 + value` | 803 |
 | Horse archer body | `body_horse_archer` | `0xB59A28` / 1 | `0x250 + value` | 592 |
 | Horse archer rider | `body_horse_archer_top` | `0xB599C8` / 1 | `0x250 + value` | 592 |
+| Arabian swordsman | `body_arab_swordsman` | `0xB59D68` / 1 | `0x170 + value` | 368 |
+| Fire thrower | `body_arab_grenadier` | `0xB5A010` / 1 | `0x230 + value` | 560 |
 
 See `Map/Units/UpdateCrusaderArcher.cpp:635`,
 `UpdateCrossbowman.cpp:148`, `UpdateSwordsman.cpp:104`,
@@ -48,26 +59,48 @@ animations, not a claim that every pose has eight directional variants. The
 horse and rider use different tables; their frame numbers coincide only at the
 sampled phase. Their origins also differ (69,95 versus 68,95).
 
-## Bounded implementation plan
+Additional evidence: `UpdateSpearman.cpp` idle case, `UpdatePikeman.cpp:204–311`
+(standing branch), `UpdateMaceman.cpp:206`, `UpdateKnight.cpp:109–158`,
+`UpdateSlinger.cpp:525–608` (seated branch), `UpdateAssassin.cpp:116`,
+`UpdateArabianSwordsman.cpp:109`, `UpdateFireThrower.cpp:429–458`.
+The named table offsets in `AnimationFrameData.hpp` and bytes read directly
+from the local classic executable agree with the first values above. Only
+the resulting frame metadata ships; these executable addresses are not used
+by the runtime.
 
-1. Finish a small, source-annotated metadata registry for the remaining supported
-   troop and siege types. Verify each chosen frame exists in installed classic
-   assets; report missing overrides rather than substituting an unrelated frame.
-2. Extract one static pose through the existing Rust GM1 decoder and active-pack
-   resolver. Cache immutable PNGs and origins by graphics revision, pose and
-   player palette. Ship metadata only, never game pixels.
-3. Compute preview occupancy when defense AIC values or marker types/counts
-   change. The requested example implies flooring: `80 / 8 / 4 = 2.5` becomes
-   two drawn units per marker, with a maximum of nine. Document zero-count and
-   missing-character behavior before enabling the feature.
-4. Cache placement commands; integrate them with the current depth ordering,
-   height lookup, spatial index and GPU texture cache. Building-step changes
-   must still update marker visibility and supporting wall/tower height using
-   visible geometry, without leaking future steps. Panning and zooming only
-   change the view transform.
-5. Benchmark the same full-size, zoomed-in castle with rapid alternating step
-   positions before enabling the preview by default. Static caching avoids
-   animation work, but additional draw commands are not literally free.
+## Implementation and verification
 
-Definitive Edition-specific units and the remaining classic idle frames are
-unverified here. No game installation or runtime process was modified.
+`src-tauri/src/game/unit_poses.rs` owns frame metadata. The native extractor
+reads each resolved GM1 once for its thumbnail and idle pose, preserves native
+pixel dimensions and signed origins, and caches PNGs by active graphics
+revision plus pose metadata. Returning a cached result does not rewrite PNGs.
+
+`src/js/castle-troops.js` owns the pure occupancy planner. It uses the smaller
+of `DefTotal` and `DefWalls`, distributes it across the active `DefUnit1–8`
+recruitment slots (repeated slots are weights), then divides each type's share
+by its matching marker count. `80 / 8 / 4` gives two sprites, capped at nine.
+Zero counts or absent matching recruitment slots give zero sprites. Without
+an opened/created character, one representative is shown per marker. Siege
+and decorative markers are independent of defense recruitment.
+
+The plan is identity-stable across unrelated character/building edits. Scene
+changes update support elevation from visible walls, stairs, gates and towers;
+the height constants are shared with routing. Marker visibility matches 2D:
+AIV rally markers do not have build steps, so they remain present, dropping to
+the visible ground before a future supporting structure exists. Panning and
+zooming reuse the scene. Cached draw commands join the existing depth merge,
+damage tracking, GPU texture and command caches; they have no animation loop.
+Micro-positions remain within the marker tile, with its native depth order.
+
+Local extraction proof: all 21 existing thumbnails and 14 idle poses decoded
+with no warnings from `D:\Games\Stronghold Crusader KI-Liga`; a repeated call
+returned identical metadata and unchanged file modification times. Debug build
+timings were 85.8 ms cold and 30.3 ms warm including override revision lookup.
+The warm path does no pixel decoding. The tests cover allocation identity,
+zero/count weighting, preserved origins and forward/backward support heights.
+Live full-window drag/render performance remains a release acceptance check;
+the additional commands are not literally free.
+
+Definitive Edition-specific idle poses and classic siege/engineer poses remain
+unverified. Replacing sprite art may change animation conventions; a missing
+verified frame is reported rather than replaced by an arbitrary body frame.

@@ -6,7 +6,7 @@ export function loadConfig(file: string) {
   if (!configs.has(file)) {
     configs.set(
       file,
-      rpc<RecordData>('load-config', { file }).catch((error) => {
+      rpc('load-config', { file }).catch((error) => {
         configs.delete(file);
         throw error;
       }),
@@ -50,7 +50,7 @@ async function sourceBytes(request: SaveRequest) {
   if (request.sourceBytes?.length) return new Uint8Array(request.sourceBytes);
   if (request.sourcePath?.toLowerCase().endsWith('.aiv')) {
     try {
-      return fromBase64(await rpc<string>('read-bytes', { path: request.sourcePath }));
+      return fromBase64(await rpc('read-bytes', { path: request.sourcePath }));
     } catch {
       /* Fresh encoding remains possible. */
     }
@@ -75,7 +75,7 @@ export async function save(request: SaveRequest) {
   const castle = request.kind === 'aiv' || request.kind === 'aivjson';
   if (!path)
     path =
-      (await rpc<string | null>('pick-path', {
+      (await rpc('pick-path', {
         save: true,
         defaultPath: projectDialogPath(request.defaultPath),
         filters: castle
@@ -87,7 +87,7 @@ export async function save(request: SaveRequest) {
     // Native dialogs usually append the chosen filter's extension. If a
     // platform returns none, ask rather than silently exporting another format.
     if (!/\.(aiv|aivjson|aijson)$/i.test(path)) {
-      const format = await rpc<string | null>('confirm', {
+      const format = await rpc('confirm', {
         title: tr('native:save_as'),
         message: tr('native:choose_castle_format'),
         choices: [
@@ -110,11 +110,14 @@ export async function save(request: SaveRequest) {
     await rpc('write-file', { path, content: window.castleFormat.stringify(document) });
     return { path, native: false, sourceBytes: null };
   }
-  await rpc('write-file', { path, content: request.content });
+  await rpc('write-file', {
+    path,
+    content: typeof request.content === 'string' ? request.content : JSON.stringify(request.content, null, 2),
+  });
   return path;
 }
 export async function open(kind = 'json') {
-  const path = await rpc<string | null>('pick-path', {
+  const path = await rpc('pick-path', {
     defaultPath: state.projectRoot,
     filters: [
       {
@@ -124,7 +127,7 @@ export async function open(kind = 'json') {
     ],
   });
   return path
-    ? decodeDocument(await rpc<DocumentResult>('read-document', { path, castle: kind === 'aiv' }))
+    ? decodeDocument(await rpc('read-document', { path, castle: kind === 'aiv' }))
     : null;
 }
 export const imageDialog = () => ({

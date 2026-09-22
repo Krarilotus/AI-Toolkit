@@ -3,7 +3,6 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { LogicalPosition } from '@tauri-apps/api/dpi';
 import { Menu, Submenu, CheckMenuItem, PredefinedMenuItem } from '@tauri-apps/api/menu';
 import { rpc, tr, state, dispatch } from './runtime';
-import type { LanguageSettings } from './types';
 import { desktopShortcut, type ViewAction } from './shortcuts';
 export function createMenus() {
   let popup: Menu | null = null;
@@ -87,7 +86,7 @@ export function createMenus() {
       ];
     if (request.menu === 'edit') {
       await window.ToolkitTheme?.refresh?.();
-      const settings = await rpc<LanguageSettings>('interface-settings');
+      const settings = await rpc('interface-settings');
       const themeItems = await Promise.all(
         (
           window.ToolkitTheme?.list() || [

@@ -5,8 +5,38 @@ use super::{
     graphics::resolve_graphics,
     hash, png_bytes, read, u32le, Result,
 };
-use serde_json::{json, Value};
-use std::{fs, path::Path};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Path, PathBuf},
+};
+#[path = "unit_poses.rs"]
+mod poses;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct UnitSprite {
+    pub path: PathBuf,
+    pub width: usize,
+    pub height: usize,
+    pub dx: i32,
+    pub dy: i32,
+    pub source: String,
+    pub frame: usize,
+    pub player_palette: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct UnitAssets {
+    pub asset_revision: String,
+    pub sprites: BTreeMap<String, UnitSprite>,
+    pub idle_sprites: BTreeMap<String, UnitSprite>,
+    pub warnings: Vec<String>,
+}
 const SOURCES: &[(u16, &str, Option<&str>)] = &[
     (1, "body_siege_engineer", None),
     (2, "body_mangonel", None),
@@ -34,10 +64,9 @@ const SOURCES: &[(u16, &str, Option<&str>)] = &[
 // authoring palette and can contain diagnostic magenta/cyan colours; it is
 // not a neutral player. Use the first game's player colour consistently.
 const PREVIEW_PLAYER_PALETTE: usize = 1;
-fn decode(path: &Path) -> Result<Picture> {
-    let gm = Gm1::read(path)?;
+fn decode(gm: &Gm1, frame: usize) -> Result<Picture> {
     let mut p = gm.sprite(
-        0,
+        frame,
         if gm.kind == 2 {
             Some(PREVIEW_PLAYER_PALETTE)
         } else {
@@ -82,46 +111,97 @@ fn trim(p: Picture) -> Picture {
     composite(&mut out, &p, -(left as i32), -(top as i32));
     out
 }
-pub fn load_unit_sprites(root: &Path, cache_root: &Path) -> Result<Value> {
+pub fn load_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
     super::cache::extract(cache_root, || extract_unit_sprites(root, cache_root))
 }
-fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<Value> {
+fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
     let graphics = resolve_graphics(root)?;
-    let revision = hash(format!("unit-previews-v2:{}", graphics.revision).as_bytes());
+    let revision = hash(
+        format!(
+            "unit-previews-v3:{}:{}",
+            graphics.revision,
+            include_str!("unit_poses.rs")
+        )
+        .as_bytes(),
+    );
     fs::create_dir_all(cache_root).map_err(|e| e.to_string())?;
     let cache = cache_root.join(format!("{revision}.json"));
     if let Ok(bytes) = read(&cache) {
-        if let Ok(v) = serde_json::from_slice::<Value>(&bytes) {
-            if v["sprites"].as_object().is_some_and(|sprites| {
-                sprites
-                    .values()
-                    .all(|p| p["path"].as_str().is_some_and(|p| Path::new(p).is_file()))
-            }) {
+        if let Ok(v) = serde_json::from_slice::<UnitAssets>(&bytes) {
+            if v.sprites
+                .values()
+                .chain(v.idle_sprites.values())
+                .all(|p| p.path.is_file())
+            {
                 return Ok(v);
             }
         }
     }
-    let mut sprites = serde_json::Map::new();
+    let mut sprites = BTreeMap::new();
+    let mut idle_sprites = BTreeMap::new();
     let mut warnings = Vec::new();
     for &(id, name, rider) in SOURCES {
-        let decoded = (|| {
-            let mut p = decode(&graphics.file(name))?;
-            if let Some(rider) = rider {
-                p = compose(p, decode(&graphics.file(rider))?)
-            }
-            Ok::<_, String>(trim(p))
+        // Thumbnail and idle pose share the same file/palette decode. Mounted
+        // troops also share their rider file; never read it once per output.
+        let sources = (|| {
+            Ok::<_, String>((
+                Gm1::read(&graphics.file(name))?,
+                rider
+                    .map(|name| Gm1::read(&graphics.file(name)))
+                    .transpose()?,
+            ))
         })();
-        match decoded {
-            Ok(p) => {
-                let path = cache_root.join(format!("{revision}-{id}.png"));
-                fs::write(&path, png_bytes(p.width, p.height, &p.rgba)?)
-                    .map_err(|e| e.to_string())?;
-                sprites.insert(id.to_string(),json!({"path":path,"width":p.width,"height":p.height,"dx":p.dx,"dy":p.dy,"source":name,"frame":0,"playerPalette":PREVIEW_PLAYER_PALETTE}));
+        let (body, top) = match sources {
+            Ok(sources) => sources,
+            Err(error) => {
+                warnings.push(format!("{name}: {error}"));
+                continue;
             }
-            Err(e) => warnings.push(format!("{name}: {e}")),
+        };
+        for (idle, frame, rider_frame) in std::iter::once((false, 0, rider.map(|_| 0)))
+            .chain(poses::idle_pose(id).map(|(frame, rider)| (true, frame, rider)))
+        {
+            let decoded = (|| {
+                let mut p = decode(&body, frame)?;
+                if let (Some(top), Some(frame)) = (top.as_ref(), rider_frame) {
+                    p = compose(p, decode(top, frame)?)
+                }
+                Ok::<_, String>(trim(p))
+            })();
+            match decoded {
+                Ok(p) => {
+                    let path = cache_root.join(format!("{revision}-{id}-{frame}.png"));
+                    fs::write(&path, png_bytes(p.width, p.height, &p.rgba)?)
+                        .map_err(|e| e.to_string())?;
+                    let target = if idle {
+                        &mut idle_sprites
+                    } else {
+                        &mut sprites
+                    };
+                    target.insert(
+                        id.to_string(),
+                        UnitSprite {
+                            path,
+                            width: p.width,
+                            height: p.height,
+                            dx: p.dx,
+                            dy: p.dy,
+                            source: name.into(),
+                            frame,
+                            player_palette: PREVIEW_PLAYER_PALETTE,
+                        },
+                    );
+                }
+                Err(e) => warnings.push(format!("{name}: {e}")),
+            }
         }
     }
-    let value = json!({"assetRevision":revision,"sprites":sprites,"warnings":warnings});
+    let value = UnitAssets {
+        asset_revision: revision,
+        sprites,
+        idle_sprites,
+        warnings,
+    };
     fs::write(
         cache,
         serde_json::to_vec(&value).map_err(|e| e.to_string())?,
@@ -158,7 +238,7 @@ mod tests {
         let path =
             std::env::temp_dir().join(format!("toolkit-unit-palette-{}.gm1", std::process::id()));
         fs::write(&path, bytes).unwrap();
-        let result = decode(&path);
+        let result = Gm1::read(&path).and_then(|gm| decode(&gm, 0));
         fs::remove_file(path).unwrap();
         assert_eq!(result.unwrap().rgba, [0, 0, 255, 255]);
     }

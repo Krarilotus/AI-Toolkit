@@ -12,28 +12,44 @@ import {
   toBase64,
   fromBase64,
 } from './documents';
-import { assetUrls, loadedSkins } from './assets';
+import { assetUrls, loadedSkins, gameUnitSprites } from './assets';
 import { portraitPng } from './portraits';
-import type { RecordData, SaveRequest, DocumentResult, LanguageSettings, Listener } from './types';
+import { prepareViewportWindow } from './viewports';
+import type { RecordData, SaveRequest, Listener } from './types';
+import type { AiIdentity, DesktopPayload, ProjectLocation } from './contracts';
+
+type UpdateProject = Omit<DesktopPayload<'update-ai'>, 'castleBase64'> & {
+  castleDocument?: RecordData | null;
+  castleSourceBytes?: Uint8Array | null;
+  castleUnchanged?: boolean;
+};
+type AddDocument = ProjectLocation & (
+  | { kind: 'character'; content: string }
+  | {
+    kind: 'castle'; document: RecordData; suggestedFileName?: string | null;
+    sourcePath?: string | null; sourceBytes?: Uint8Array | null; unchanged?: boolean;
+  }
+);
 if ('__TAURI_INTERNALS__' in window) {
   const menus = createMenus();
   const api = {
+    prepareViewportWindow,
     checkReleaseUpdate: async (force = false) => {
-      const result = await rpc<RecordData>('check-update', { force });
-      if (result.error) reportError(result.error);
+      const result = await rpc('check-update', { force });
+      if (result.status === 'error') reportError(result.error);
       return result;
     },
     listUpdateSources: () => rpc('update-sources'),
     setUpdateSource: (repo: string) => rpc('set-update-source', { repo }),
     prepareReleaseUpdate: (key: string) => rpc('prepare-update', { key }),
     installReleaseUpdate: () => rpc('install-update'),
-    getInterfaceSettings: () => rpc<LanguageSettings>('interface-settings'),
-    setTheme: (theme: string) => rpc<LanguageSettings>('set-theme', { theme }),
+    getInterfaceSettings: () => rpc('interface-settings'),
+    setTheme: (theme: string) => rpc('set-theme', { theme }),
     listThemes: async () => {
-      const packs = await rpc<{ id: string; name: string; path: string }[]>('list-themes');
+      const packs = await rpc('list-themes');
       return packs.map((pack) => ({ ...pack, baseUrl: convertFileSrc(pack.path) + '/' }));
     },
-    setLanguage: (language: string) => rpc<LanguageSettings>('set-language', { language }),
+    setLanguage: (language: string) => rpc('set-language', { language }),
     onThemeChanged: (fn: Listener) => on('theme-changed', fn),
     onLanguageChanged: (fn: Listener) => on('language-changed', fn),
     loadConfig,
@@ -55,6 +71,7 @@ if ('__TAURI_INTERNALS__' in window) {
     chooseUcpInstallation: () =>
       rpc('choose-installation', { title: tr('native:choose_game'), directory: true }),
     loadGameBuildingAssets: async () => assetUrls(await game('buildings')),
+    loadGameUnitSprites: gameUnitSprites,
     readResourceIcons: () => game('resource-icons'),
     readInstalledBalance: () => game('balance'),
     listGameMaps: () => game('maps'),
@@ -79,14 +96,14 @@ if ('__TAURI_INTERNALS__' in window) {
         },
       }),
     scanUcpAiLibrary: (gameRoot: string) => rpc('scan-library', { gameRoot }),
-    loadUcpAiProject: async (request: RecordData) => {
-      const project = await rpc<RecordData>('read-project', request);
-      if (project.castle) project.castle = decodeDocument(project.castle as DocumentResult);
+    loadUcpAiProject: async (request: DesktopPayload<'read-project'>) => {
+      const project = await rpc('read-project', request);
+      if (project.castle) project.castle = decodeDocument(project.castle);
       return project;
     },
-    updateAiCastleMapping: (request: RecordData) => rpc('update-mapping', request),
-    cloneUcpAi: (request: RecordData) => rpc('clone-ai', request),
-    createUcpAi: async (request: RecordData) => {
+    updateAiCastleMapping: (request: DesktopPayload<'update-mapping'>) => rpc('update-mapping', request),
+    cloneUcpAi: (request: DesktopPayload<'clone-ai'>) => rpc('clone-ai', request),
+    createUcpAi: async (request: AiIdentity) => {
       const content = {
         pauseDelayAmount: 100,
         frames: [{ itemType: 61, tilePositionOfsets: [5643], shouldPause: false }],
@@ -114,31 +131,32 @@ if ('__TAURI_INTERNALS__' in window) {
         portraitSmallBase64: await portrait(36),
       });
     },
-    updateUcpAi: async (request: RecordData) => {
-      const castleBase64 = request.castleDocument
+    updateUcpAi: async (request: UpdateProject) => {
+      const { castleDocument, castleSourceBytes, castleUnchanged, ...nativeRequest } = request;
+      const castleBase64 = castleDocument
         ? toBase64(
             await encodeCastle({
-              content: request.castleDocument as RecordData,
-              sourceBytes: request.castleSourceBytes as Uint8Array,
-              unchanged: request.castleUnchanged === true,
+              content: castleDocument,
+              sourceBytes: castleSourceBytes,
+              unchanged: castleUnchanged === true,
             }),
           )
         : null;
-      const saved = await rpc<RecordData>('update-ai', { ...request, castleBase64 });
-      if (typeof saved.savedCastleBase64 === 'string') {
-        saved.savedCastleSourceBytes = fromBase64(saved.savedCastleBase64);
-        delete saved.savedCastleBase64;
+      const saved = await rpc('update-ai', { ...nativeRequest, castleBase64 });
+      if (saved && typeof saved.savedCastleBase64 === 'string') {
+        const { savedCastleBase64, ...metadata } = saved;
+        return { ...metadata, savedCastleSourceBytes: fromBase64(savedCastleBase64) };
       }
       return saved;
     },
-    addAiDocument: async (request: RecordData) => {
+    addAiDocument: async (request: AddDocument) => {
       if (request.kind === 'character') return rpc('replace-character', request);
       let fileName = String(request.suggestedFileName || request.sourcePath || '')
         .split(/[\\/]/)
         .pop()
         ?.replace(/\.aivjson$/i, '.aiv');
       if (!fileName) {
-        const path = await rpc<string | null>('pick-path', {
+        const path = await rpc('pick-path', {
           save: true,
           defaultPath: String(request.aiRoot) + '/aiv/New Castle.aiv',
           filters: [{ name: tr('native:castle_files'), extensions: ['aiv'] }],
@@ -148,10 +166,8 @@ if ('__TAURI_INTERNALS__' in window) {
       }
       if (!fileName) return null;
       if (!/\.aiv$/i.test(fileName)) fileName += '.aiv';
-      const info = await rpc<{ path: string; exists: boolean }>('castle-destination', {
-        ...request,
-        fileName,
-      });
+      const destination = { gameRoot: request.gameRoot, aiRoot: request.aiRoot, fileName };
+      const info = await rpc('castle-destination', destination);
       let overwrite =
         info.path.replaceAll('\\', '/').toLowerCase() ===
         String(request.sourcePath || '')
@@ -172,21 +188,20 @@ if ('__TAURI_INTERNALS__' in window) {
         overwrite = true;
       }
       const bytes = await encodeCastle({
-        content: request.document as RecordData,
-        sourcePath: request.sourcePath as string,
-        sourceBytes: request.sourceBytes as Uint8Array,
+        content: request.document,
+        sourcePath: request.sourcePath,
+        sourceBytes: request.sourceBytes,
         unchanged: request.unchanged === true,
       });
-      const saved = await rpc<RecordData>('add-castle', {
-        ...request,
-        fileName,
+      const saved = await rpc('add-castle', {
+        ...destination,
         overwrite,
         castleBase64: toBase64(bytes),
       });
       return { ...saved, sourceBytes: bytes };
     },
-    chooseAiPortrait: async (request: RecordData) => {
-      const selected = await rpc<{ dataUrl: string } | null>('choose-background', imageDialog());
+    chooseAiPortrait: async (request: Omit<DesktopPayload<'replace-portrait'>, 'base64'>) => {
+      const selected = await rpc('choose-background', imageDialog());
       if (!selected) return null;
       const size = request.kind === 'portraitSmall' ? 36 : 72;
       return rpc('replace-portrait', {
@@ -194,8 +209,8 @@ if ('__TAURI_INTERNALS__' in window) {
         base64: toBase64(await portraitPng(selected.dataUrl, size)),
       });
     },
-    loadAiMediaData: (request: RecordData) => rpc('read-media', request),
-    replaceAiMedia: (request: RecordData) =>
+    loadAiMediaData: (request: DesktopPayload<'read-media'>) => rpc('read-media', request),
+    replaceAiMedia: (request: DesktopPayload<'read-media'>) =>
       rpc('replace-media', {
         ...request,
         dialog: {
@@ -208,14 +223,14 @@ if ('__TAURI_INTERNALS__' in window) {
           ],
         },
       }),
-    openAiMedia: (request: RecordData) => rpc('open-media', request),
-    openUcpPath: (request: RecordData) => rpc('open-path', request),
+    openAiMedia: (request: DesktopPayload<'open-media'>) => rpc('open-media', request),
+    openUcpPath: (request: DesktopPayload<'open-path'>) => rpc('open-path', request),
     confirmWindowClose: () => rpc('confirm-close'),
     openNewWindow: () => rpc('new-window'),
     loadFileInNewWindow: async (kind = 'json') => {
       const result = await open(kind);
       if (!result) return null;
-      const label = await rpc<string>('new-window');
+      const label = await rpc('new-window');
       await invoke('queue_document', {
         label,
         payload: {

@@ -51,6 +51,21 @@
   // ---------------------------------------------------------- sprites
 
   let catalogueRequest = null;
+  let unitRequest = null;
+  function loadUnitSprites() {
+    if (!unitRequest) {
+      const request = Promise.resolve(window.electronAPI?.loadGameUnitSprites?.())
+      .then(assets => {
+        if (unitRequest !== request) return;
+        state.unitAssets = assets || {};
+        state.unitCommands = new Map();
+        for (const pose of Object.values(assets?.idleSprites || {})) image(pose.path);
+        refresh(false, true);
+      }).catch(error => { console.warn('Idle troop previews unavailable:', error); });
+      unitRequest = request;
+    }
+    return unitRequest;
+  }
   function loadCatalogue() {
     if (state.catalogue) return Promise.resolve(state.catalogue);
     if (!catalogueRequest) catalogueRequest = (async () => {
@@ -70,7 +85,9 @@
   async function reloadGameAssets() {
     catalogueRequest = null;
     state.catalogue = null;
-    await loadCatalogue();
+    unitRequest = null;
+    state.unitAssets = null;
+    await Promise.all([loadCatalogue(), loadUnitSprites()]);
     refresh();
   }
 
@@ -849,7 +866,17 @@
    * @param {SceneCommand[]} terrain @param {SceneCommand[]} buildings
    * @returns {Generator<SceneCommand>}
    */
-  function* mergeSceneCommands(terrain, buildings) {
+  function* mergeSceneCommands(terrain, buildings, overlays = null) {
+    if (overlays?.length) {
+      let next = 0;
+      for (const command of mergeSceneCommands(terrain, buildings)) {
+        while (next < overlays.length && geo.renderOrder(overlays[next].order, command.order) < 0)
+          yield overlays[next++];
+        yield command;
+      }
+      while (next < overlays.length) yield overlays[next++];
+      return;
+    }
     let t = 0, b = 0;
     while (t < terrain.length && b < buildings.length) {
       if (geo.renderOrder(terrain[t].order, buildings[b].order) <= 0) yield terrain[t++];
@@ -885,6 +912,86 @@
 
   function fireOverlayVisible() {
     return !!document.getElementById?.('castleShowFire')?.checked && !window.castleEditor?.isScrubbing?.();
+  }
+
+  function troopCharacterChanged() {
+    const troops = window.castleTroops;
+    if (!troops) return;
+    const aic = window.characterEditor?.getDefensePreview?.() || null;
+    const key = troops.defenseKey(aic);
+    if (key === state.troopCharacterKey) return;
+    state.troopCharacterKey = key;
+    state.troopAic = aic;
+    state.troopDocument = null;
+    refresh(false, true);
+  }
+
+  function troopSceneCommands(items) {
+    const troops = window.castleTroops, doc = currentDocument();
+    if (!troops || !doc || !state.unitAssets) return [];
+    if (!state.troopPlanner) state.troopPlanner = troops.createPlanner();
+    if (state.troopDocument !== doc) {
+      const plan = state.troopPlanner(doc.miscItems || [], state.troopAic);
+      if (plan !== state.troopPlan) {
+        state.troopPlan = plan;
+        state.troopMarkers = plan.filter(marker=>marker.count);
+        state.unitCommandLimit = Math.max(128, plan.reduce((sum,marker)=>sum+marker.count,0)*8);
+        state.unitCommands = new Map();
+      }
+      state.troopDocument = doc;
+    }
+    if (!state.troopMarkers.length) return [];
+    const context = [currentRotation(),state.view.panX,state.view.panY].join('/');
+    if (state.unitTerrain !== state.mapSceneryCommands || state.unitContext !== context
+        || state.unitCommands.size >= state.unitCommandLimit) {
+      state.unitCommands.clear();
+      state.unitTerrain = state.mapSceneryCommands;
+      state.unitContext = context;
+    }
+    const support = troops.supports(items, bodenHoehe);
+    const commands = [], cache = state.unitCommands;
+    for (const marker of state.troopMarkers) {
+      const original = geo.gridFromOffset(marker.offset);
+      const tile = geo.rotateGrid(original.gx, original.gy, 1, currentRotation());
+      const elevation = support(tile.gx, tile.gy);
+      const pose = state.unitAssets.idleSprites?.[marker.type];
+      let img;
+      if (pose) {
+        img = image(pose.path);
+        if (!img?.complete || !img.naturalWidth) continue;
+      } else {
+        // Explicit rally marker for unverified siege/DE poses, not a walking
+        // sprite disguised as idle. This editor-owned image is made once.
+        state.unitMarkerImages ||= new Map();
+        img = state.unitMarkerImages.get(marker.type);
+        if (!img) {
+          img = document.createElement('canvas'); img.width = 24; img.height = 20;
+          const c = img.getContext('2d');
+          c.fillStyle = '#173346'; c.strokeStyle = '#83c8ee';
+          c.fillRect(1,1,22,16); c.strokeRect(1,1,22,16);
+          c.fillStyle = '#e1f3ff'; c.font = '10px sans-serif'; c.textAlign = 'center';
+          c.fillText(String(marker.type >= 9000 ? marker.type-9000 : marker.type),12,13);
+          state.unitMarkerImages.set(marker.type,img);
+        }
+      }
+      for (let index=0;index<(pose ? marker.count : 1);index++) {
+        const [dx,dy] = troops.formation[index];
+        const gx=tile.gx+dx, gy=tile.gy+dy;
+        const [x,y] = geo.isoPoint(gx+.5,gy+.5,state.view,elevation);
+        const key = [marker.ref,index,tile.gx,tile.gy,x,y,pose?.path || marker.type].join(':');
+        let command = cache.get(key);
+        if (!command) {
+          // Micro-positions stay in the marker's tile. Keep the tile's depth
+          // so a northern member cannot slip behind its own tower roof.
+          const order={gx:tile.gx,gy:tile.gy,tiles:1,layer:4+(dx+dy)/10};
+          [command] = recordSceneCommands(order,false,recorder => recorder.drawImage(img,
+            x+(pose?.dx ?? -12),y+(pose?.dy ?? -20),pose?.width ?? 24,pose?.height ?? 20));
+          cache.set(key,command);
+        }
+        commands.push(command);
+      }
+    }
+    return commands.sort((a,b)=>geo.renderOrder(a.order,b.order));
   }
 
   function paintScene(ctx, width, height, options = {}) {
@@ -948,7 +1055,7 @@
       });
       placedCommands.push(...recorded);
     }
-    const buildingCommands = [...mergeSceneCommands(visibleMapObjects(items, plates), placedCommands)];
+    const buildingCommands = [...mergeSceneCommands(visibleMapObjects(items, plates), placedCommands, troopSceneCommands(items))];
     const commandsIn = rect => mergeSceneCommands(terrainCommandsIn(rect),
       buildingCommands.filter(command => intersectsSceneRect(command, rect)));
     if (state.nativeTerrain && state.gpu) {
@@ -1555,35 +1662,16 @@
     if (token !== state.mountToken) return false;      // somebody else took over meanwhile
     const win = window.open('', 'aiToolkitIsoView', 'width=1280,height=860');
     if (!win) return false;                       // blocked, or no user gesture
+    window.electronAPI?.prepareViewportWindow?.(win);
     unmount();
     win.document.title = tr("viewport:2_5d_view_ai_toolkit");
-    win.document.body.style.cssText =
-      'margin:0;background:#171a14;overflow:hidden;font:12px/1.4 system-ui,sans-serif;color:#cfd6c8';
     win.document.body.innerHTML =
       '<div id="isoWindowChrome"><strong>2.5D</strong><div id="isoWindowControlSlot"></div>' +
       `<span class="isoWindowFill"></span><button id="isoWindowDockBtn" type="button" data-i18n="castle:dock">${globalThis.toolkitI18n.html("castle:dock")}</button></div>` +
       '<div id="isoWindowHost">' +
-      '<canvas id="isoWindowCanvas" style="display:block;width:100%;height:100%;cursor:crosshair"></canvas>' +
+      '<canvas id="isoWindowCanvas"></canvas>' +
       '</div>' +
-      '<div id="isoWindowStatus" style="position:fixed;left:0;right:0;bottom:0;padding:5px 10px;' +
-      'background:rgba(0,0,0,.55);pointer-events:none"></div>';
-    const chromeStyle = win.document.createElement('style');
-    chromeStyle.textContent =
-      '[hidden]{display:none!important}' +
-      '#isoWindowChrome{position:fixed;inset:0 0 auto 0;height:34px;display:flex;align-items:center;gap:5px;' +
-      'padding:3px 6px;box-sizing:border-box;background:#20262a;border-bottom:1px solid #465158}' +
-      '#isoWindowChrome>strong{padding:0 4px;color:#eef1f6;font-size:11px}' +
-      '#isoWindowControlSlot{min-width:0;display:flex;flex:0 1 auto;overflow-x:auto;overflow-y:hidden}' +
-      '.isoWindowFill{flex:1}' +
-      '#isoWindowHost{position:fixed;inset:34px 0 0}' +
-      '.isoViewControls{min-width:0;display:flex;align-items:center;gap:3px}' +
-      '.isoViewControls button,#isoWindowDockBtn{flex:none;min-height:24px;padding:1px 7px;border:1px solid #465158;' +
-      'border-radius:4px;background:#2a3237;color:#eef1f6;font:600 11px system-ui,sans-serif;cursor:pointer}' +
-      '.isoViewControls button[aria-pressed="true"]{border-color:#b98542;background:#463722}' +
-      '.isoViewControls .isoViewReset{width:24px;padding:0}' +
-      '.isoViewControls select{flex:none;width:128px;min-height:24px;border:1px solid #465158;border-radius:4px;' +
-      'background:#2a3237;color:#eef1f6;font:11px system-ui,sans-serif}';
-    win.document.head.appendChild(chromeStyle);
+      '<div id="isoWindowStatus"></div>';
     window.ToolkitTheme?.attachWindow(win);
     const controlSlot = win.document.getElementById('isoWindowControlSlot');
     if (controlSlot && state.controls) controlSlot.appendChild(state.controls);
@@ -1626,6 +1714,9 @@
     bindSurface(document.getElementById('isoDockCanvas'));
     state.controls = document.getElementById('castleIsoControls');
     window.castleEditor?.addChangeListener?.(editorChanged);
+    window.addEventListener('character-population-changed', troopCharacterChanged);
+    troopCharacterChanged();
+    loadUnitSprites();
     loadCatalogue();
   }
 

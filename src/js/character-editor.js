@@ -1,6 +1,7 @@
 const trCharacter = (key, options) => globalThis.toolkitI18n.t(key, options);
 let isInitialized = false;
 let data = null;
+let hasCharacterDocument = false;
 
 async function loadConfig(name) {
   return await window.electronAPI.loadConfig(name);
@@ -506,6 +507,7 @@ function saveTroopPluginPreference(path, enabled) {
 function loadFromContent(content, path, options = {}) {
   followCastlePopulation = true;
   data = JSON.parse(content);
+  hasCharacterDocument = true;
   document.getElementById("toggleTroops").checked = loadTroopPluginPreference(path);
 
   const unknownKeys = findUnknownKeys(activeTemplate, data);
@@ -574,6 +576,7 @@ async function newCharacterFile() {
   activeGroupBreaks = groupBreaks;
   activeSections = sections;
   data = JSON.parse(JSON.stringify(template));
+  hasCharacterDocument = true;
   currentFilePath = projectPath;
   followCastlePopulation = true;
   AIName = projectPath ? projectPath.split(/[\\/]/).slice(-2, -1)[0] || '' : '';
@@ -1106,6 +1109,8 @@ window.characterEditor = {
     getContent: () => JSON.stringify(prepareOutputData(), null, 2) + "\n",
     isDirty: isCharacterDirty,
     getPath: () => currentFilePath,
+    getDefensePreview: () => hasCharacterDocument && data?.aic
+      ? Object.fromEntries(window.castleTroops.fields.map(key=>[key,data.aic[key]])) : null,
     markSaved: markCharacterSaved
 };
 

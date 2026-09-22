@@ -1,4 +1,5 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::{
     fs,
@@ -13,6 +14,24 @@ use tauri::{AppHandle, Manager};
 static WRITES: Mutex<()> = Mutex::new(());
 static SERIAL: AtomicU64 = AtomicU64::new(0);
 pub type Result<T> = std::result::Result<T, crate::error::Error>;
+
+#[derive(Default, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, ts(optional_fields = nullable))]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentResult {
+    pub path: PathBuf,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_base64: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_name: Option<String>,
+}
 
 pub fn user_data(app: &AppHandle) -> Result<PathBuf> {
     // Preserve the existing Electron settings and project history on migration.
@@ -200,24 +219,54 @@ pub fn data_url(path: &Path) -> Result<String> {
         STANDARD.encode(fs::read(path).map_err(crate::error::Error::diagnostic)?)
     ))
 }
-pub fn read_document(path: &Path, castle: bool) -> Result<Value> {
+pub fn read_document(path: &Path, castle: bool) -> Result<DocumentResult> {
     let extension = path.extension().and_then(|v| v.to_str()).unwrap_or("");
+    let mut result = DocumentResult {
+        path: path.to_path_buf(),
+        ..Default::default()
+    };
     if castle && extension.eq_ignore_ascii_case("aiv") {
-        Ok(
-            json!({"path":path,"source":"aiv","sourceBase64":STANDARD.encode(fs::read(path).map_err(crate::error::Error::diagnostic)?)}),
-        )
+        result.source = Some("aiv".into());
+        result.source_base64 =
+            Some(STANDARD.encode(fs::read(path).map_err(crate::error::Error::diagnostic)?));
     } else if castle {
-        Ok(json!({"path":path,"source":"aivjson","document":read_json(path)?}))
+        result.source = Some("aivjson".into());
+        result.document = Some(read_json(path)?);
     } else {
-        Ok(
-            json!({"path":path,"content":fs::read_to_string(path).map_err(crate::error::Error::diagnostic)?}),
-        )
+        result.content = Some(fs::read_to_string(path).map_err(crate::error::Error::diagnostic)?);
     }
+    Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn document_envelopes_preserve_source_bytes_content_and_unknown_json() {
+        let root =
+            std::env::temp_dir().join(format!("toolkit-document-contract-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let classic = root.join("castle.aiv");
+        fs::write(&classic, [0, 42, 255]).unwrap();
+        assert_eq!(
+            json!(read_document(&classic, true).unwrap()),
+            json!({"path":classic,"source":"aiv","sourceBase64":"ACr/"})
+        );
+        let content = "{\n \"unknown-plugin\": {\"large\":18446744073709551615,\"data\":[null,false,\"فارسی\"]}\n}\n";
+        let json_path = root.join("castle.aivjson");
+        fs::write(&json_path, content).unwrap();
+        assert_eq!(
+            json!(read_document(&json_path, true).unwrap()),
+            json!({"path":json_path,"source":"aivjson","document":serde_json::from_str::<Value>(content).unwrap()})
+        );
+        assert_eq!(
+            json!(read_document(&json_path, false).unwrap()),
+            json!({"path":json_path,"content":content})
+        );
+        fs::remove_file(classic).unwrap();
+        fs::remove_file(json_path).unwrap();
+        fs::remove_dir(root).unwrap();
+    }
     #[test]
     fn custom_item_configuration_preserves_existing_contract() {
         let defaults =

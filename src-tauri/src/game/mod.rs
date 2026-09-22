@@ -15,7 +15,7 @@ pub use balance::{read_exe_costs, read_installed_balance};
 pub use buildings::{load_building_assets, read_resource_icons};
 pub use graphics::{resolve_graphics, Graphics};
 pub use maps::{list_game_maps, load_map_tiles, read_map};
-pub use units::load_unit_sprites;
+pub use units::{load_unit_sprites, UnitAssets, UnitSprite};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use sha2::{Digest, Sha256};

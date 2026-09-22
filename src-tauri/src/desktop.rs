@@ -3,7 +3,11 @@ use crate::{
     storage::{self, Result},
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use serde::Deserialize;
+use serde::Serialize;
+mod contracts;
+mod responses;
+use contracts::{FileDialog, GameRequest, Request};
+use responses::{ImageSelection, InterfaceSettings, Skins};
 use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
@@ -42,69 +46,12 @@ impl DocumentDelivery {
         }
     }
 }
-#[derive(Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Operation {
-    InterfaceSettings,
-    SetTheme,
-    ListThemes,
-    SetLanguage,
-    LoadConfig,
-    Installation,
-    ChooseInstallation,
-    PickPath,
-    ReadDocument,
-    WriteFile,
-    ReadBytes,
-    ScanLibrary,
-    ReadProject,
-    ReplaceCharacter,
-    UpdateMapping,
-    ReadMedia,
-    ReplaceMedia,
-    OpenMedia,
-    OpenPath,
-    LoadSkins,
-    ChooseSkin,
-    RemoveSkin,
-    OpenSkins,
-    ChooseBackground,
-    SavePicture,
-    Ready,
-    ConfirmClose,
-    NewWindow,
-    Confirm,
-    CloneAi,
-    CreateAi,
-    UpdateAi,
-    CastleDestination,
-    AddCastle,
-    ReplacePortrait,
-    CheckUpdate,
-    UpdateSources,
-    SetUpdateSource,
-    PrepareUpdate,
-    InstallUpdate,
-    DocumentReady,
-    ProtectClose,
-    DeveloperTools,
-}
-#[derive(Deserialize)]
-pub struct Request {
-    operation: Operation,
-    #[serde(default)]
-    payload: Value,
-}
-fn str_arg<'a>(payload: &'a Value, key: &str) -> Result<&'a str> {
-    payload[key]
-        .as_str()
-        .ok_or_else(|| crate::error::Error::with_arguments("missing_argument", json!({"name":key})))
-}
 fn interface_settings(app: &AppHandle) -> Result<Value> {
     let s = storage::settings(app)?;
-    Ok(
-        json!({"theme":s["theme"].as_str().unwrap_or("default"),"language":s["language"].as_str().unwrap_or("system")}),
-    )
+    Ok(json!(InterfaceSettings {
+        theme: s["theme"].as_str().unwrap_or("default").into(),
+        language: s["language"].as_str().unwrap_or("system").into(),
+    }))
 }
 fn configuration(app: &AppHandle, name: &str) -> Result<Value> {
     storage::safe_name(name)?;
@@ -130,14 +77,14 @@ fn configuration(app: &AppHandle, name: &str) -> Result<Value> {
     }
     Ok(defaults)
 }
-fn pick(app: &AppHandle, window: &WebviewWindow, payload: &Value) -> Result<Value> {
+fn pick(app: &AppHandle, window: &WebviewWindow, payload: &FileDialog) -> Result<Value> {
     // Modal ownership is required, not optional: edits behind Save As would
     // otherwise diverge from the document captured before the picker opened.
     let mut dialog = app.dialog().file().set_parent(window);
-    if let Some(title) = payload["title"].as_str() {
+    if let Some(title) = payload.title.as_deref() {
         dialog = dialog.set_title(title);
     }
-    if let Some(default) = payload["defaultPath"].as_str() {
+    if let Some(default) = payload.default_path.as_deref() {
         let path = Path::new(default);
         if path.is_dir() {
             dialog = dialog.set_directory(path);
@@ -150,20 +97,13 @@ fn pick(app: &AppHandle, window: &WebviewWindow, payload: &Value) -> Result<Valu
             }
         }
     }
-    if let Some(filters) = payload["filters"].as_array() {
-        for f in filters {
-            let exts: Vec<_> = f["extensions"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(Value::as_str)
-                .collect();
-            dialog = dialog.add_filter(library::text(f, "name"), &exts);
-        }
+    for filter in payload.filters.as_deref().unwrap_or_default() {
+        let extensions: Vec<_> = filter.extensions.iter().map(String::as_str).collect();
+        dialog = dialog.add_filter(&filter.name, &extensions);
     }
-    let selected = if payload["directory"].as_bool() == Some(true) {
+    let selected = if payload.directory == Some(true) {
         dialog.blocking_pick_folder()
-    } else if payload["save"].as_bool() == Some(true) {
+    } else if payload.save == Some(true) {
         dialog.blocking_save_file()
     } else {
         dialog.blocking_pick_file()
@@ -173,10 +113,7 @@ fn pick(app: &AppHandle, window: &WebviewWindow, payload: &Value) -> Result<Valu
         .map(|p| json!(p))
         .unwrap_or(Value::Null))
 }
-fn skin_path(app: &AppHandle, kind: &Value) -> Result<PathBuf> {
-    let id = kind
-        .as_u64()
-        .ok_or_else(|| crate::error::Error::new("invalid_item_type"))?;
+fn skin_path(app: &AppHandle, id: u32) -> Result<PathBuf> {
     if id > 100000 {
         return Err(crate::error::Error::new("invalid_item_type"));
     }
@@ -184,7 +121,7 @@ fn skin_path(app: &AppHandle, kind: &Value) -> Result<PathBuf> {
     fs::create_dir_all(&folder).map_err(crate::error::Error::diagnostic)?;
     Ok(folder.join(format!("{id}.png")))
 }
-fn image_selection(app: &AppHandle, window: &WebviewWindow, payload: &Value) -> Result<Value> {
+fn image_selection(app: &AppHandle, window: &WebviewWindow, payload: &FileDialog) -> Result<Value> {
     let choice = pick(app, window, payload)?;
     let Some(path) = choice.as_str() else {
         return Ok(Value::Null);
@@ -197,7 +134,15 @@ fn image_selection(app: &AppHandle, window: &WebviewWindow, payload: &Value) -> 
     {
         return Err(crate::error::Error::new("selected_image_exceeds_128_mb"));
     }
-    Ok(json!({"fileName":file.file_name(),"path":file,"dataUrl":storage::data_url(file)?}))
+    Ok(json!(ImageSelection {
+        file_name: file
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned(),
+        path: file.to_path_buf(),
+        data_url: storage::data_url(file)?,
+    }))
 }
 
 #[tauri::command]
@@ -210,10 +155,51 @@ pub async fn desktop_request(
         .await
         .map_err(crate::error::Error::diagnostic)?
 }
+fn library_request<T: Serialize>(
+    payload: T,
+    handler: impl FnOnce(&Value) -> Result<Value>,
+) -> Result<Value> {
+    let value = serde_json::to_value(payload).map_err(crate::error::Error::diagnostic)?;
+    handler(&value)
+}
+fn set_interface_setting(app: &AppHandle, key: &str, value: &str) -> Result<Value> {
+    let theme = key == "theme";
+    if theme
+        && !matches!(value, "default" | "ucp")
+        && !crate::themes::discover(&storage::user_data(app)?.join("themes"))?
+            .iter()
+            .any(|pack| pack.id == value)
+    {
+        return Err(crate::error::Error::new("unknown_theme"));
+    }
+    if !theme
+        && !matches!(
+            value,
+            "system" | "en" | "de" | "fr" | "ru" | "hu" | "tr" | "zh-CN" | "es" | "fa"
+        )
+    {
+        return Err(crate::error::Error::new("unknown_language"));
+    }
+    storage::update_settings(app, key, json!(value))?;
+    let settings = interface_settings(app)?;
+    app.emit(
+        if theme {
+            "theme-changed"
+        } else {
+            "language-changed"
+        },
+        if theme {
+            json!(value)
+        } else {
+            settings.clone()
+        },
+    )
+    .map_err(crate::error::Error::diagnostic)?;
+    Ok(settings)
+}
 fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<Value> {
-    let p = request.payload;
-    match request.operation {
-        Operation::DocumentReady => {
+    match request {
+        Request::DocumentReady => {
             let state = app.state::<Session>();
             let pending = state
                 .documents
@@ -227,7 +213,7 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
             }
             Ok(Value::Null)
         }
-        Operation::ProtectClose => {
+        Request::ProtectClose => {
             app.state::<Session>()
                 .protected
                 .lock()
@@ -235,29 +221,25 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                 .insert(window.label().into());
             Ok(Value::Null)
         }
-        Operation::CheckUpdate => Ok(crate::updates::check(app, p["force"] == true)),
-        Operation::UpdateSources => crate::updates::sources(app),
-        Operation::SetUpdateSource => crate::updates::select(app, str_arg(&p, "repo")?),
-        Operation::PrepareUpdate => crate::updates::prepare(app, str_arg(&p, "key")?),
-        Operation::InstallUpdate => crate::updates::install(app),
-        Operation::InterfaceSettings => interface_settings(app),
-        Operation::Confirm => {
+        Request::CheckUpdate { force } => Ok(crate::updates::check(app, force)),
+        Request::UpdateSources => crate::updates::sources(app),
+        Request::SetUpdateSource { repo } => crate::updates::select(app, &repo),
+        Request::PrepareUpdate { key } => crate::updates::prepare(app, &key),
+        Request::InstallUpdate => crate::updates::install(app),
+        Request::InterfaceSettings => interface_settings(app),
+        Request::Confirm {
+            title,
+            message,
+            choices,
+            values,
+        } => {
             use tauri_plugin_dialog::{MessageDialogButtons, MessageDialogResult};
-            let labels = p["choices"]
-                .as_array()
-                .ok_or_else(|| crate::error::Error::new("missing_dialog_choices"))?;
-            let label = |i: usize| {
-                labels
-                    .get(i)
-                    .and_then(Value::as_str)
-                    .unwrap_or("")
-                    .to_string()
-            };
+            let label = |i: usize| choices.get(i).cloned().unwrap_or_default();
             let response = app
                 .dialog()
-                .message(str_arg(&p, "message")?)
+                .message(message)
                 .parent(window)
-                .title(str_arg(&p, "title")?)
+                .title(title)
                 .buttons(MessageDialogButtons::YesNoCancelCustom(
                     label(0),
                     label(1),
@@ -267,61 +249,23 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
             let index = match response {
                 MessageDialogResult::Yes => 0,
                 MessageDialogResult::No => 1,
-                MessageDialogResult::Custom(s) => labels
-                    .iter()
-                    .position(|v| v.as_str() == Some(&s))
-                    .unwrap_or(2),
+                MessageDialogResult::Custom(s) => choices.iter().position(|v| v == &s).unwrap_or(2),
                 _ => 2,
             };
-            Ok(p["values"].get(index).cloned().unwrap_or(Value::Null))
+            Ok(json!(values.get(index).cloned().flatten()))
         }
-        Operation::ListThemes => Ok(json!(crate::themes::discover(
+        Request::ListThemes => Ok(json!(crate::themes::discover(
             &storage::user_data(app)?.join("themes")
         )?)),
-        Operation::SetTheme | Operation::SetLanguage => {
-            let theme = matches!(request.operation, Operation::SetTheme);
-            let key = if theme { "theme" } else { "language" };
-            let value = str_arg(&p, key)?;
-            if theme
-                && !matches!(value, "default" | "ucp")
-                && !crate::themes::discover(&storage::user_data(app)?.join("themes"))?
-                    .iter()
-                    .any(|pack| pack["id"] == value)
-            {
-                return Err(crate::error::Error::new("unknown_theme"));
-            }
-            if !theme
-                && !matches!(
-                    value,
-                    "system" | "en" | "de" | "fr" | "ru" | "hu" | "tr" | "zh-CN" | "es" | "fa"
-                )
-            {
-                return Err(crate::error::Error::new("unknown_language"));
-            }
-            storage::update_settings(app, key, json!(value))?;
-            let settings = interface_settings(app)?;
-            app.emit(
-                if theme {
-                    "theme-changed"
-                } else {
-                    "language-changed"
-                },
-                if theme {
-                    json!(value)
-                } else {
-                    settings.clone()
-                },
-            )
-            .map_err(crate::error::Error::diagnostic)?;
-            Ok(settings)
-        }
-        Operation::LoadConfig => configuration(app, str_arg(&p, "file")?),
-        Operation::Installation => Ok(storage::installation(app)
+        Request::SetTheme { theme } => set_interface_setting(app, "theme", &theme),
+        Request::SetLanguage { language } => set_interface_setting(app, "language", &language),
+        Request::LoadConfig { file } => configuration(app, &file),
+        Request::Installation => Ok(storage::installation(app)
             .ok()
             .map(|p| json!(p))
             .unwrap_or(Value::Null)),
-        Operation::ChooseInstallation => {
-            let choice = pick(app, window, &p)?;
+        Request::ChooseInstallation(dialog) => {
+            let choice = pick(app, window, &dialog)?;
             if let Some(value) = choice.as_str() {
                 let root = storage::normalize_installation(Path::new(value))?;
                 storage::update_settings(app, "ucpInstallation", json!(root))?;
@@ -330,37 +274,47 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                 Ok(Value::Null)
             }
         }
-        Operation::PickPath => pick(app, window, &p),
-        Operation::ReadDocument => storage::read_document(
-            Path::new(str_arg(&p, "path")?),
-            p["castle"].as_bool() == Some(true),
-        ),
-        Operation::ReadBytes => Ok(json!(STANDARD
-            .encode(fs::read(str_arg(&p, "path")?).map_err(crate::error::Error::diagnostic)?))),
-        Operation::WriteFile => {
-            let path = Path::new(str_arg(&p, "path")?);
-            let bytes = if let Some(encoded) = p["base64"].as_str() {
+        Request::PickPath(dialog) => pick(app, window, &dialog),
+        Request::ReadDocument { path, castle } => {
+            Ok(json!(storage::read_document(Path::new(&path), castle)?))
+        }
+        Request::ReadBytes { path } => Ok(json!(
+            STANDARD.encode(fs::read(path).map_err(crate::error::Error::diagnostic)?)
+        )),
+        Request::WriteFile {
+            path,
+            content,
+            base64,
+        } => {
+            let bytes = if let Some(encoded) = base64 {
                 STANDARD
                     .decode(encoded)
                     .map_err(crate::error::Error::diagnostic)?
             } else {
-                str_arg(&p, "content")?.as_bytes().to_vec()
+                content
+                    .ok_or_else(|| {
+                        crate::error::Error::with_arguments(
+                            "missing_argument",
+                            json!({"name":"content"}),
+                        )
+                    })?
+                    .into_bytes()
             };
-            storage::atomic_write(path, &bytes)?;
+            storage::atomic_write(Path::new(&path), &bytes)?;
             Ok(json!(path))
         }
-        Operation::ScanLibrary => library::scan(Path::new(str_arg(&p, "gameRoot")?)),
-        Operation::ReadProject => library::read_project(&p),
-        Operation::ReplaceCharacter => library::replace_character(&p),
-        Operation::CloneAi => library::create(&p, true),
-        Operation::CreateAi => library::create(&p, false),
-        Operation::UpdateAi => library::update(&p),
-        Operation::CastleDestination => library::castle_destination(&p),
-        Operation::AddCastle => library::add_castle(&p),
-        Operation::ReplacePortrait => library::replace_portrait(&p),
-        Operation::UpdateMapping => library::update_mapping(&p),
-        Operation::ReadMedia => {
-            let mut media = library::resolve_media(&p)?;
+        Request::ScanLibrary { game_root } => library::scan(Path::new(&game_root)),
+        Request::ReadProject(p) => library_request(p, library::read_project),
+        Request::ReplaceCharacter(p) => library_request(p, library::replace_character),
+        Request::CloneAi(p) => library_request(p, |p| library::create(p, true)),
+        Request::CreateAi(p) => library_request(p, |p| library::create(p, false)),
+        Request::UpdateAi(p) => library_request(p, library::update),
+        Request::CastleDestination(p) => library_request(p, library::castle_destination),
+        Request::AddCastle(p) => library_request(p, library::add_castle),
+        Request::ReplacePortrait(p) => library_request(p, library::replace_portrait),
+        Request::UpdateMapping(p) => library_request(p, library::update_mapping),
+        Request::ReadMedia(p) => {
+            let mut media = library_request(p, library::resolve_media)?;
             if media["kind"] != "speech" {
                 return Err(crate::error::Error::new(
                     "use_open_externally_for_bink_video",
@@ -374,9 +328,11 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
             )))?);
             Ok(media)
         }
-        Operation::ReplaceMedia => {
-            let media = library::resolve_media(&p)?;
-            let choice = pick(app, window, &p["dialog"])?;
+        Request::ReplaceMedia(p) => {
+            let media_request =
+                serde_json::to_value(p.media).map_err(crate::error::Error::diagnostic)?;
+            let media = library::resolve_media(&media_request)?;
+            let choice = pick(app, window, &p.dialog)?;
             if let Some(source) = choice.as_str() {
                 let dest = Path::new(library::text(&media, "filePath"));
                 let extension = |path: &Path| {
@@ -394,31 +350,34 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                     dest,
                     &fs::read(source).map_err(crate::error::Error::diagnostic)?,
                 )?;
-                Ok(library::resolve_media(&p)?)
+                library::resolve_media(&media_request)
             } else {
                 Ok(Value::Null)
             }
         }
-        Operation::OpenMedia => {
-            let media = library::resolve_media(&p)?;
+        Request::OpenMedia(p) => {
+            let media = library_request(p, library::resolve_media)?;
             let path = library::text(&media, "filePath");
             app.opener()
                 .open_path(path, None::<&str>)
                 .map_err(crate::error::Error::diagnostic)?;
             Ok(json!(path))
         }
-        Operation::OpenPath => {
-            let root = storage::normalize_installation(Path::new(str_arg(&p, "gameRoot")?))?;
+        Request::OpenPath {
+            game_root,
+            target_path,
+        } => {
+            let root = storage::normalize_installation(Path::new(&game_root))?;
             let plugins = root.join("ucp/plugins");
-            let requested = p["targetPath"].as_str().filter(|path| !path.is_empty());
+            let requested = target_path.as_deref().filter(|path| !path.is_empty());
             let target = storage::within(&plugins, requested.map(Path::new).unwrap_or(&plugins))?;
             app.opener()
                 .open_path(target.to_string_lossy(), None::<&str>)
                 .map_err(crate::error::Error::diagnostic)?;
             Ok(json!(target))
         }
-        Operation::LoadSkins => {
-            let mut result = json!({"skins":{},"customSkinTypes":[]});
+        Request::LoadSkins => {
+            let mut result = Skins::default();
             let dir = storage::user_data(app)?.join("aiv-skins");
             if dir.exists() {
                 for entry in fs::read_dir(dir)
@@ -432,20 +391,17 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                             .extension()
                             .is_some_and(|e| e.eq_ignore_ascii_case("png"))
                     {
-                        result["skins"][stem] = json!(storage::data_url(&file)?);
-                        result["customSkinTypes"]
-                            .as_array_mut()
-                            .unwrap()
-                            .push(json!(stem));
+                        result.skins.insert(stem.into(), storage::data_url(&file)?);
+                        result.custom_skin_types.push(stem.into());
                     }
                 }
             }
-            Ok(result)
+            Ok(json!(result))
         }
-        Operation::ChooseSkin => {
-            let selected = pick(app, window, &p["dialog"])?;
+        Request::ChooseSkin { item_type, dialog } => {
+            let selected = pick(app, window, &dialog)?;
             if let Some(source) = selected.as_str() {
-                let target = skin_path(app, &p["itemType"])?;
+                let target = skin_path(app, item_type)?;
                 let bytes = fs::read(source).map_err(crate::error::Error::diagnostic)?;
                 if !bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
                     return Err(crate::error::Error::new("invalid_png"));
@@ -456,14 +412,14 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                 Ok(Value::Null)
             }
         }
-        Operation::RemoveSkin => {
-            let path = skin_path(app, &p["itemType"])?;
+        Request::RemoveSkin { item_type } => {
+            let path = skin_path(app, item_type)?;
             if path.exists() {
                 fs::remove_file(path).map_err(crate::error::Error::diagnostic)?;
             }
             Ok(json!(true))
         }
-        Operation::OpenSkins => {
+        Request::OpenSkins => {
             let folder = storage::user_data(app)?.join("aiv-skins");
             fs::create_dir_all(&folder).map_err(crate::error::Error::diagnostic)?;
             app.opener()
@@ -471,11 +427,11 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                 .map_err(crate::error::Error::diagnostic)?;
             Ok(json!(folder))
         }
-        Operation::ChooseBackground => image_selection(app, window, &p),
-        Operation::SavePicture => {
-            let choice = pick(app, window, &p["dialog"])?;
+        Request::ChooseBackground(dialog) => image_selection(app, window, &dialog),
+        Request::SavePicture { png, dialog } => {
+            let choice = pick(app, window, &dialog)?;
             if let Some(path) = choice.as_str() {
-                let data = str_arg(&p, "png")?
+                let data = png
                     .strip_prefix("data:image/png;base64,")
                     .ok_or_else(|| crate::error::Error::new("invalid_png"))?;
                 let bytes = STANDARD
@@ -490,15 +446,15 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
                 Ok(Value::Null)
             }
         }
-        Operation::DeveloperTools => {
+        Request::DeveloperTools => {
             window.open_devtools();
             Ok(Value::Null)
         }
-        Operation::Ready => {
+        Request::Ready => {
             window.show().map_err(crate::error::Error::diagnostic)?;
             Ok(json!(true))
         }
-        Operation::ConfirmClose => {
+        Request::ConfirmClose => {
             app.state::<Session>()
                 .approved_close
                 .lock()
@@ -507,7 +463,7 @@ fn handle(app: &AppHandle, window: &WebviewWindow, request: Request) -> Result<V
             window.close().map_err(crate::error::Error::diagnostic)?;
             Ok(json!(true))
         }
-        Operation::NewWindow => {
+        Request::NewWindow => {
             let window =
                 crate::windows::create(app, false).map_err(crate::error::Error::diagnostic)?;
             Ok(json!(window.label()))
@@ -559,30 +515,18 @@ mod tests {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum GameOperation {
-    Buildings,
-    Units,
-    ResourceIcons,
-    Balance,
-    Maps,
-    Map,
-    Tiles,
-}
 #[tauri::command]
-pub async fn game_request(
-    app: AppHandle,
-    operation: GameOperation,
-    payload: Value,
-) -> Result<Value> {
+pub async fn game_request(app: AppHandle, request: GameRequest) -> Result<Value> {
     tauri::async_runtime::spawn_blocking(move || {
         let root = match storage::installation(&app) {
             Ok(r) => r,
             Err(_) => {
-                return Ok(match operation {
-                    GameOperation::Maps => json!({"gameRoot":null,"maps":[]}),
-                    GameOperation::Units | GameOperation::ResourceIcons => json!({}),
+                return Ok(match request {
+                    GameRequest::Maps => json!({"gameRoot":null,"maps":[]}),
+                    GameRequest::Units => json!(responses::UnitAssetsResult::Missing(
+                        responses::EmptyObject {}
+                    )),
+                    GameRequest::ResourceIcons => json!({}),
                     _ => Value::Null,
                 })
             }
@@ -593,17 +537,18 @@ pub async fn game_request(
             .ok_or_else(|| crate::error::Error::new("invalid_resource_directory"))?
             .to_path_buf();
         use crate::game;
-        match operation {
-            GameOperation::Buildings => {
+        match request {
+            GameRequest::Buildings => {
                 game::load_building_assets(&root, &cache.join("game-building-assets"), &resources)
             }
-            GameOperation::Units => game::load_unit_sprites(&root, &cache.join("game-unit-assets")),
-            GameOperation::ResourceIcons => game::read_resource_icons(&root),
-            GameOperation::Balance => game::read_installed_balance(&root),
-            GameOperation::Maps => game::list_game_maps(&root),
-            GameOperation::Map => game::read_map(Path::new(str_arg(&payload, "path")?), &root),
-            GameOperation::Tiles => game::load_map_tiles(
-                Path::new(str_arg(&payload, "path")?),
+            GameRequest::Units => game::load_unit_sprites(&root, &cache.join("game-unit-assets"))
+                .map(|assets| json!(responses::UnitAssetsResult::Loaded(assets))),
+            GameRequest::ResourceIcons => game::read_resource_icons(&root),
+            GameRequest::Balance => game::read_installed_balance(&root),
+            GameRequest::Maps => game::list_game_maps(&root),
+            GameRequest::Map { path } => game::read_map(Path::new(&path), &root),
+            GameRequest::Tiles { path } => game::load_map_tiles(
+                Path::new(&path),
                 &root,
                 &cache.join("native-map-renderer"),
                 &resources,

@@ -1,10 +1,21 @@
 //! User theme packs live together under the existing editor data directory.
 //! Browser-side validation restricts CSS to the shared semantic token schema.
 use crate::storage::{self, Result};
-use serde_json::{json, Value};
-use std::{fs, path::Path};
+use serde::Serialize;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-pub fn discover(directory: &Path) -> Result<Vec<Value>> {
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ThemePack {
+    pub id: String,
+    pub name: String,
+    pub path: PathBuf,
+}
+
+pub fn discover(directory: &Path) -> Result<Vec<ThemePack>> {
     if !directory.exists() {
         return Ok(Vec::new());
     }
@@ -37,10 +48,14 @@ pub fn discover(directory: &Path) -> Result<Vec<Value>> {
             .as_str()
             .filter(|s| !s.is_empty() && s.len() <= 240)
         {
-            packs.push(json!({"id":id,"name":name,"path":root}));
+            packs.push(ThemePack {
+                id: id.into_owned(),
+                name: name.into(),
+                path: root,
+            });
         }
     }
-    packs.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
+    packs.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(packs)
 }
 fn valid_id(id: &str) -> bool {

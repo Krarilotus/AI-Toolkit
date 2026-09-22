@@ -13,4 +13,6 @@
       .then(target => target?.close())
       .catch(error => { closing = false; console.error('Detached window close:', error); });
   };
+  window.__toolkitNativeViewportReady = true;
+  window.dispatchEvent(new Event('toolkit-native-viewport-ready'));
 })();

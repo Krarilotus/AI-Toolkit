@@ -6,15 +6,81 @@ const path = require('node:path');
 const { unzipSync } = require('fflate');
 
 const packaging = import('../scripts/package-native.mjs');
+const policy = import('../scripts/package-policy.mjs');
 function fixture(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'toolkit-package-'));
-  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  t.after(() => {
+    assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(directory).startsWith('toolkit-package-'));
+    fs.rmSync(directory, { recursive: true, force: true });
+  });
   return { directory, write(name, data) {
     const file = path.join(directory, name);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, data); return file;
   } };
 }
+
+test('ZIP, updater and installer share the declared package contract', async () => {
+  const { portablePath, updatePath, isConfiguration, validatePackagePolicy } = await policy;
+  for (const { path: name, portable, update, configuration } of require('./fixtures/package-paths.json')) {
+    assert.equal(portablePath(name), portable, `portable: ${JSON.stringify(name)}`);
+    assert.equal(updatePath(name), update, `updater: ${JSON.stringify(name)}`);
+    assert.equal(isConfiguration(name), configuration, `configuration: ${JSON.stringify(name)}`);
+  }
+  validatePackagePolicy();
+});
+
+test('malformed package policies fail before generating or accepting artifacts', async () => {
+  const { validateManifest, packagePolicy } = await policy;
+  const rejects = (mutate, message) => {
+    const value = structuredClone(packagePolicy);
+    mutate(value);
+    assert.throws(() => validateManifest(value), message);
+  };
+  for (const budget of [undefined, null, 0, -1, 1.5, '8000000', NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    rejects(p => { p.downloadBudget = budget; }, /positive safe integer/);
+  }
+  rejects(p => { delete p.downloadBudget; }, /missing fields/);
+  rejects(p => { p.executable.path = 'Other.exe'; }, /included in aliases/);
+  rejects(p => { p.executable.aliases = []; }, /nonempty/);
+  rejects(p => { p.executable.aliases.push('ai toolkit.EXE'); }, /unique ignoring case/);
+  rejects(p => { p.executable.aliases.push('../Other.exe'); }, /plain ASCII/);
+  rejects(p => { p.executable.aliases.push('Töölkit.exe'); }, /plain ASCII/);
+  rejects(p => { p.configuration.directory = '../config'; }, /safe relative/);
+  rejects(p => { p.configuration.source = '$INSTDIR'; }, /safe relative/);
+  rejects(p => { p.configuration.extension = '.dll'; }, /must be JSON/);
+  rejects(p => { p.configuration.stemPattern = '\\w+'; }, /ASCII filename/);
+  rejects(p => { p.configuration.stemPattern = '[z-a]+'; }, /regular expression/);
+  rejects(p => { p.configuration.stemPattern = '[--z]+'; }, /must not include separators/);
+  rejects(p => { p.files['config/default.json'] = 'defaults.json'; }, /Editable configuration/);
+  rejects(p => { p.files['defaults.json'] = 'config/default.json'; }, /Editable configuration/);
+  rejects(p => { p.files['readme.TXT'] = 'another.txt'; }, /Duplicate resource destination/);
+  rejects(p => { p.files['extra.txt'] = p.files['README.txt']; }, /Duplicate resource source/);
+  rejects(p => { p.files['AI Toolkit.exe'] = 'another.exe'; }, /Duplicate resource destination/);
+  rejects(p => { p.files['../outside.txt'] = 'another.txt'; }, /safe relative/);
+  rejects(p => { p.legacyUpdatePatterns = ['(?=README)README']; }, /shared ASCII regex subset/);
+  rejects(p => { p.legacyUpdatePatterns = ['[A-Z]*']; }, /empty filename/);
+  rejects(p => { p.legacyUpdatePatterns = ['(broken']; }, /regular expression/);
+  assert.equal(validateManifest(structuredClone(packagePolicy)).downloadBudget, 8_000_000);
+});
+
+test('packaging rejects generic config replacement and stale installer hooks', async t => {
+  const { installerHook, validatePackagePolicy } = await policy, f = fixture(t);
+  const config = structuredClone(require('../src-tauri/tauri.conf.json'));
+  f.write('config/aiv_constants.json', '{}');
+  f.write('scripts/installer/config.nsh', installerHook());
+  config.bundle.resources['../config/'] = 'config/';
+  f.write('src-tauri/tauri.conf.json', JSON.stringify(config));
+  assert.throws(() => validatePackagePolicy(f.directory), /bundle resources differ/);
+  delete config.bundle.resources['../config/'];
+  f.write('src-tauri/tauri.conf.json', JSON.stringify(config));
+  f.write('scripts/installer/config.nsh', installerHook().replace('SetOverwrite off', 'SetOverwrite on'));
+  assert.throws(() => validatePackagePolicy(f.directory), /Regenerate the NSIS hook/);
+  f.write('scripts/installer/config.nsh', installerHook());
+  f.write('config/nested/unsupported.json', '{}');
+  assert.throws(() => validatePackagePolicy(f.directory), /Unexpected packaged configuration/);
+});
 
 test('portable artifact retains every config and exact original file bytes', async t => {
   const { archivePortable, portablePath } = await packaging, f = fixture(t);

@@ -1,7 +1,10 @@
-@import url("../../assets/themes/default/variables.css");
+/* Order is intentional: packs override component paint, never by specificity. */
+@layer tokens, layout, components, theme, accessibility;
+@import url("../../assets/themes/default/variables.css") layer(tokens);
 @import url("theme-components.css");
 
-/* Layout owns geometry; theme packs own the shared palette and control surfaces. */
+@layer layout {
+/* Workspace layout and Default paint consume the shared semantic palette. */
 :root {
   --app-bg: var(--semantic-surface-app);
   --app-bg-deep: var(--semantic-surface-deep);
@@ -52,7 +55,7 @@ body {
   color: var(--text-main);
   background:
     radial-gradient(circle at 78% -30%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 42%),
-    var(--app-bg) !important;
+    var(--app-bg);
   font: 1.4rem/1.45 var(--font-ui);
 }
 
@@ -281,8 +284,6 @@ button:disabled { cursor: default; }
   flex-wrap: wrap;
 }
 
-.primaryAction { background: var(--accent) !important; border-color: var(--accent-strong) !important; color: var(--semantic-content-on-accent) !important; }
-.primaryAction:hover:not(:disabled) { background: var(--accent-strong) !important; }
 .hidden { display: none !important; }
 [hidden] { display: none !important; }
 .unneeded { display: none !important; }
@@ -435,26 +436,8 @@ button:disabled { cursor: default; }
   display: inline-flex;
   align-items: stretch;
 }
-.populationStepButtonLeft {
-  width: 38px;
-  min-width: 38px;
-  min-height: 31px;
-  padding: 4px 5px;
-  font: 650 1.15rem var(--font-data);
-  border-radius: 0px !important;
-  border-top-left-radius: 5px !important;
-  border-bottom-left-radius: 5px !important;
-}
-.populationStepButtonRight {
-  width: 38px;
-  min-width: 38px;
-  min-height: 31px;
-  padding: 4px 5px;
-  font: 650 1.15rem var(--font-data);
-  border-radius: 0px !important;
-  border-top-right-radius: 5px !important;
-  border-bottom-right-radius: 5px !important;
-}
+
+
 .metricRow {
   min-height: 36px;
   display: flex;
@@ -521,7 +504,6 @@ button:disabled { cursor: default; }
   font-size: 1rem;
   line-height: 1.45;
 }
-.populationNegative { color: var(--danger) !important; }
 
 .characterEditorPanel {
   min-width: 0;
@@ -891,11 +873,7 @@ button:disabled { cursor: default; }
   color: var(--semantic-content-on-accent);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
 }
-.castleSaveBtn {
-    background: var(--accent) !important;
-    border-color: var(--accent-strong) !important;
-    color: var(--semantic-content-on-accent) !important;
-}
+
 .castleToolbar kbd {
   margin-left: 4px;
   padding: 1px 4px;
@@ -1769,21 +1747,7 @@ button:disabled { cursor: default; }
   outline-offset: 1px;
 }
 .ucpAiList { min-height: 0; overflow: auto; border-top: 1px solid var(--line); }
-.ucpAiListItem {
-  width: 100% !important;
-  display: grid;
-  grid-template-columns: 50px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  padding: 9px 11px !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--line) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  text-align: left;
-}
-.ucpAiListItem:hover { background: rgba(255,255,255,.035) !important; }
-.ucpAiListItem.selected { background: var(--accent-soft) !important; box-shadow: inset 3px 0 0 var(--accent-strong); }
+
 .ucpAiListPortrait {
   width: 48px;
   height: 48px;
@@ -2057,3 +2021,38 @@ html.dockResizing * { user-select: none !important; }
 .castleClipboardStatus { display: inline-flex; gap: 4px; margin-left: auto; }
 .castleClipboardStatus[hidden] { display: none; }
 .castleClipboardStatus button { font: 600 1.2rem/1.25 var(--font-ui); padding: 2px 6px; min-height: 22px; color: var(--text-main); background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; }
+
+} /* layout */
+
+/* Named component roles win over workspace defaults without !important. */
+@layer components {
+.primaryAction, .castleSaveBtn { background: var(--accent); border-color: var(--accent-strong); color: var(--semantic-content-on-accent); }
+.primaryAction:hover:not(:disabled) { background: var(--accent-strong); }
+
+.populationStepButtonLeft, .populationStepButtonRight {
+  width: 38px;
+  min-width: 38px;
+  min-height: 31px;
+  padding: 4px 5px;
+  font: 650 1.15rem var(--font-data);
+  border-radius: 0px;
+}
+.populationStepButtonLeft { border-radius: 5px 0 0 5px; }
+.populationStepButtonRight { border-radius: 0 5px 5px 0; }
+
+.ucpAiListItem {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 9px 11px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.ucpAiListItem:hover { background: rgba(255,255,255,.035); }
+.ucpAiListItem.selected { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent-strong); }
+}

@@ -3,6 +3,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 #[derive(Debug, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, ts(rename = "NativeError", optional_fields = nullable))]
 pub struct Error {
     pub code: String,
     #[serde(skip_serializing_if = "Option::is_none")]

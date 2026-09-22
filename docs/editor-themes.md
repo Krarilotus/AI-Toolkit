@@ -41,6 +41,31 @@ Real checkbox elements retain labels, keyboard operation, mixed/disabled states,
 focus indicators and forced-colors fallback. System font fallbacks cover translated
 scripts; no themed font is required to read the interface.
 
+### Stylesheet ownership
+
+All editor styles use the same explicit cascade order:
+
+`tokens` → `layout` → `components` → `theme` → `accessibility`
+
+- `tokens` supplies the Default variables and texture fallbacks. The selected
+  validated pack changes variables on the document root, without adding selectors.
+- `layout` owns workspace geometry and Default styling; `theme-detached.css`
+  extends this layer for the detached window using the same semantic tokens.
+- `components` owns reusable controls and separately loaded panels. Loading a
+  panel stylesheet later cannot overwrite a selected theme.
+- `theme` applies shared texture roles and corresponding foregrounds. A text
+  input, numeric value or reading panel is styled once for every workspace;
+  selectors do not need to outscore workspace IDs.
+- `accessibility` preserves focus, forced-colors and reduced-motion behavior
+  above decorative styling.
+
+New editor styles must join the appropriate named layer: unlayered rules would
+outrank all normal layered rules. Do not use `!important` for theme paint; it is
+reserved for interaction requirements such as hidden elements and reduced motion.
+Default action/list-row styles use the component layer rather than `!important`.
+Detached chrome uses the same stylesheet and tokens, not inline hard-coded colors.
+Runtime inline geometry remains appropriate for viewport sizes and drag positions.
+
 ## Desktop integration
 
 Load `js/theme.js` after `desktop-api.js`; initialization reads

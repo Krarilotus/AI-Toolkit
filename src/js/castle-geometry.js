@@ -8,6 +8,18 @@
   const KEEP_ITEM_TYPE = 61;
   const FORCED_STOCKPILE_ITEM_TYPE = 52;
 
+  // Classic construction deck heights, shared by routing and troop previews.
+  // Heights are native image pixels above the supporting terrain.
+  function structureHeight(type) {
+    type = Number(type);
+    if (type === 25) return 90;
+    if (type === 46) return 60;
+    if (type >= 181 && type <= 186) return (186 - type) * 16;
+    if (type >= 110 && type <= 114) return [296, 148, 180, 192, 192][type - 110];
+    if (type >= 144 && type <= 147) return 90;
+    return null;
+  }
+
   function rectangle(left, bottom, right, top, part = 'item') {
     return { left, bottom, right, top, part };
   }
@@ -451,6 +463,7 @@
     // Die Kantenlaenge der Karte. Stand bisher als 100 in jeder
     // Vorgabe; wer sie braucht, soll sie hier holen.
     GRID_SIZE: 100,
+    structureHeight,
     brushTiles,
     floodTiles,
     floodRegion,

@@ -1,47 +1,9 @@
 // Development-only CDP test: actual pointer drags in the loaded, maximized editor.
 import fs from "node:fs";
-const port = Number(process.env.AI_TOOLKIT_DEBUG_PORT || 9241);
-const targets = await (
-  await fetch(`http://127.0.0.1:${port}/json/list`)
-).json();
-const target = targets.find(
-  (t) => t.type === "page" && t.url.includes("src/index.html"),
-);
-if (!target)
-  throw new Error(
-    "Open an isolated native preview with a loaded castle first.",
-  );
-const socket = new WebSocket(target.webSocketDebuggerUrl);
-await new Promise((resolve) => (socket.onopen = resolve));
-let serial = 0;
-const pending = new Map();
-socket.onmessage = ({ data }) => {
-  const message = JSON.parse(data);
-  const waiter = pending.get(message.id);
-  if (waiter) {
-    pending.delete(message.id);
-    message.error
-      ? waiter.reject(message.error)
-      : waiter.resolve(message.result);
-  }
-};
-const send = (method, params = {}) =>
-  new Promise((resolve, reject) => {
-    const id = ++serial;
-    pending.set(id, { resolve, reject });
-    socket.send(JSON.stringify({ id, method, params }));
-  });
-const evaluate = async (expression) => {
-  const result = await send("Runtime.evaluate", {
-    expression,
-    awaitPromise: true,
-    returnByValue: true,
-  });
-  if (result.exceptionDetails)
-    throw new Error(JSON.stringify(result.exceptionDetails));
-  return result.result.value;
-};
+import { connectCdp } from './lib/cdp-client.mjs';
+const { send, evaluate, close } = await connectCdp(Number(process.env.AI_TOOLKIT_DEBUG_PORT));
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let measuring = false, profiling = false, pointerDown = false, pointer;
 try {
   const ready = await evaluate(
     `({dirty:castleEditor.isDirty()||characterEditor.isDirty(),steps:castleEditor.getDocument().frames.length,tiles:isoView.hasMapTiles()})`,
@@ -57,6 +19,7 @@ try {
   const context = await evaluate(
     `(()=>{const e=document.getElementById('castleBuildSlider'),r=e.getBoundingClientRect();return{viewport:[innerWidth,innerHeight],view:isoView.viewInfo(),map:isoView.gameMapInfo(),steps:castleEditor.getDocument().frames.length,slider:{x:r.x,y:r.y,width:r.width,height:r.height,min:+e.min,max:+e.max},canvas:[...document.querySelectorAll('canvas')].filter(c=>c.getClientRects().length).map(c=>({width:c.width,height:c.height,css:[c.clientWidth,c.clientHeight]}))}})()`,
   );
+  measuring = true;
   await evaluate(
     `(()=>{const data=window.previewMeasurement={frames:[],inputToFrame:[],longTasks:[],inputValues:[],alive:true};let last=performance.now();function tick(now){if(!data.alive)return;data.frames.push(now-last);last=now;requestAnimationFrame(tick);}requestAnimationFrame(tick);data.observer=new PerformanceObserver(list=>data.longTasks.push(...list.getEntries().map(e=>e.duration)));data.observer.observe({type:'longtask'});data.handler=()=>{const time=performance.now();data.inputValues.push(+document.getElementById('castleBuildSlider').value);requestAnimationFrame(()=>data.inputToFrame.push(performance.now()-time));};document.getElementById('castleBuildSlider').addEventListener('input',data.handler);return true;})()`,
   );
@@ -69,6 +32,7 @@ try {
   if (profileRequested) {
     await send("Profiler.enable");
     await send("Profiler.start");
+    profiling = true;
   }
   // Account for the thumb width, just as the native range control does.
   const x = (value) =>
@@ -76,6 +40,8 @@ try {
     8 +
     ((rect.width - 16) * (value - rect.min)) / (rect.max - rect.min);
   const y = rect.y + rect.height / 2;
+  pointer = {x:x(100),y};
+  pointerDown = true;
   await send("Input.dispatchMouseEvent", {
     type: "mousePressed",
     x: x(100),
@@ -91,6 +57,7 @@ try {
     const value =
       i % 4 === 0 ? 900 : i % 4 === 1 ? 101 : i % 4 === 2 ? 899 : 100;
     const start = performance.now();
+    pointer = {x:x(value),y};
     await send("Input.dispatchMouseEvent", {
       type: "mouseMoved",
       x: x(value),
@@ -112,8 +79,10 @@ try {
     buttons: 0,
     clickCount: 1,
   });
+  pointerDown = false;
   await delay(200);
   const profile = profileRequested ? await send("Profiler.stop") : null;
+  profiling = false;
   const measured = await evaluate(
     `(()=>{const d=previewMeasurement;d.alive=false;d.observer.disconnect();document.getElementById('castleBuildSlider').removeEventListener('input',d.handler);return{frames:d.frames,inputToFrame:d.inputToFrame,longTasks:d.longTasks,inputValues:d.inputValues,dirty:castleEditor.isDirty(),selected:castleEditor.getActiveBuildStep()};})()`,
   );
@@ -153,5 +122,13 @@ try {
     }),
   );
 } finally {
-  socket.close();
+  // Failed runs must not leave callbacks or an active synthetic drag behind
+  // and change the behavior measured by the next run on this owned QA window.
+  if (pointerDown) await send('Input.dispatchMouseEvent', {
+    type:'mouseReleased', ...pointer, button:'left', buttons:0, clickCount:1,
+  }).catch(() => {});
+  if (profiling) await send('Profiler.stop').catch(() => {});
+  if (measuring) await evaluate(`(()=>{const d=window.previewMeasurement;if(!d)return;d.alive=false;d.observer?.disconnect();document.getElementById('castleBuildSlider')?.removeEventListener('input',d.handler);})()`)
+    .catch(() => {});
+  close();
 }

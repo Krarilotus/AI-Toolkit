@@ -1,6 +1,10 @@
 //! Release identity and verified portable updates. The helper is this executable,
 //! copied outside the install folder so a running image is never overwritten.
+mod package_policy;
+pub(crate) mod responses;
 use crate::storage::{self, Result};
+use package_policy::{allowed, canonical_executable, executable_name, is_configuration};
+use responses::{PreparedUpdate, ReleaseAsset, ReleaseInfo, UpdateSources, UpdateStatus};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
@@ -140,10 +144,10 @@ fn selected(app: &AppHandle) -> String {
     .and_then(|v| v["repo"].as_str().map(String::from))
     .unwrap_or(OFFICIAL.into())
 }
-fn asset(release: &Value) -> Option<Value> {
+fn asset(release: &Value) -> Option<ReleaseAsset> {
     platform_asset(release, std::env::consts::OS, std::env::consts::ARCH)
 }
-fn platform_asset(release: &Value, os: &str, arch: &str) -> Option<Value> {
+fn platform_asset(release: &Value, os: &str, arch: &str) -> Option<ReleaseAsset> {
     // This transaction installs Windows portable releases. Other platforms
     // must never be offered a ZIP merely because its filename is similar.
     if os != "windows" {
@@ -199,9 +203,12 @@ fn platform_asset(release: &Value, os: &str, arch: &str) -> Option<Value> {
     {
         return None;
     }
-    Some(
-        json!({"id":a["id"],"url":a["browser_download_url"],"size":a["size"],"sha256":digest.to_ascii_lowercase()}),
-    )
+    Some(ReleaseAsset {
+        id: a["id"].as_u64()?,
+        url: a["browser_download_url"].as_str().map(String::from),
+        size: a["size"].as_u64()?,
+        sha256: digest.to_ascii_lowercase(),
+    })
 }
 fn receipt() -> Option<Value> {
     let exe = std::env::current_exe().ok()?;
@@ -306,8 +313,8 @@ fn check_repo(app: &AppHandle, repo: &str, force: bool) -> Result<Value> {
                 "{}:{}:{}:{}",
                 repo.to_lowercase(),
                 release["id"],
-                a["id"],
-                a["sha256"].as_str().unwrap_or("")
+                a.id,
+                a.sha256
             )
         });
         let installed = receipt();
@@ -320,9 +327,36 @@ fn check_repo(app: &AppHandle, repo: &str, force: bool) -> Result<Value> {
             compiled,
             option_env!("AI_TOOLKIT_RELEASE_REPO").unwrap_or(""),
         );
-        json!({"status":if a.is_none(){"unsupported"}else if current{"current"}else{"available"},"repo":repo,"experimental":experimental,"key":key,"latest":release["tag_name"],"publishedAt":release["published_at"],"installed":installed.map(|i|format!("{} {}",i["repo"].as_str().unwrap_or(""),i["tag"].as_str().unwrap_or(""))).unwrap_or_else(||compiled.into()),"url":release["html_url"],"asset":a})
+        let release = ReleaseInfo {
+            repo: repo.clone(),
+            experimental,
+            key,
+            latest: release["tag_name"].as_str().map(String::from),
+            published_at: release["published_at"].as_str().map(String::from),
+            installed: installed
+                .map(|i| {
+                    format!(
+                        "{} {}",
+                        i["repo"].as_str().unwrap_or(""),
+                        i["tag"].as_str().unwrap_or("")
+                    )
+                })
+                .unwrap_or_else(|| compiled.into()),
+            url: release["html_url"].as_str().map(String::from),
+            asset: a,
+        };
+        json!(if release.asset.is_none() {
+            UpdateStatus::Unsupported { release }
+        } else if current {
+            UpdateStatus::Current { release }
+        } else {
+            UpdateStatus::Available { release }
+        })
     } else {
-        json!({"status":"empty","repo":repo,"experimental":experimental})
+        json!(UpdateStatus::Empty {
+            repo: repo.clone(),
+            experimental
+        })
     };
     state
         .cache
@@ -333,8 +367,7 @@ fn check_repo(app: &AppHandle, repo: &str, force: bool) -> Result<Value> {
 }
 pub fn check(app: &AppHandle, force: bool) -> Value {
     let repo = selected(app);
-    check_repo(app, &repo, force)
-        .unwrap_or_else(|e| json!({"status":"error","repo":repo,"error":e}))
+    check_repo(app, &repo, force).unwrap_or_else(|error| json!(UpdateStatus::Error { repo, error }))
 }
 fn source_repos(
     selected: &str,
@@ -365,7 +398,7 @@ pub fn sources(app: &AppHandle) -> Result<Value> {
     let repos = source_repos(&selected, &pages(OFFICIAL, "forks")?, |repo| {
         check_repo(app, repo, false)
     });
-    Ok(json!({"selected":selected,"repos":repos}))
+    Ok(json!(UpdateSources { selected, repos }))
 }
 pub fn select(app: &AppHandle, repo: &str) -> Result<Value> {
     let repo = validate(repo)?;
@@ -466,7 +499,7 @@ pub fn prepare(app: &AppHandle, key: &str) -> Result<Value> {
             continue;
         };
         let path = if &enclosed == executable {
-            "AI Toolkit.exe"
+            canonical_executable()
         } else {
             path
         }
@@ -489,7 +522,7 @@ pub fn prepare(app: &AppHandle, key: &str) -> Result<Value> {
         let expected = entry.size();
         let digest = stage_stream(&mut entry, &destination, expected)?;
         let mut item = json!({"path":path,"sha256":digest});
-        if path.starts_with("config/") {
+        if is_configuration(&path) {
             let exe = std::env::current_exe().map_err(crate::error::Error::diagnostic)?;
             let installed = exe
                 .parent()
@@ -509,7 +542,7 @@ pub fn prepare(app: &AppHandle, key: &str) -> Result<Value> {
         }
         manifest.push(item);
     }
-    if !seen.contains("ai toolkit.exe") {
+    if !seen.contains(&canonical_executable().to_lowercase()) {
         return Err(crate::error::Error::new(
             "release_does_not_contain_ai_toolkit_exe",
         ));
@@ -529,13 +562,10 @@ pub fn prepare(app: &AppHandle, key: &str) -> Result<Value> {
         .prepared
         .lock()
         .map_err(crate::error::Error::diagnostic)? = Some(stage);
-    Ok(json!({"version":release["latest"],"key":key}))
-}
-fn allowed(path: &str) -> bool {
-    static ALLOWED: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-        regex::Regex::new(r"^((?i:AI[ -]Toolkit\.exe)|\.toolkit-release\.json|README\.txt|THIRD_PARTY_NOTICES\.txt|[a-zA-Z0-9_.-]+\.(dll|pak|bin|dat)|vk_swiftshader_icd\.json|LICENSE[\w.-]*\.(txt|html)|resources/app\.asar|resources/elevate\.exe|locales/[\w-]+\.pak|config/[\w-]+\.json|assets/aiv/iso/verzeichnis\.json)$").unwrap()
-    });
-    ALLOWED.is_match(path)
+    Ok(json!(PreparedUpdate {
+        version: release["latest"].as_str().map(String::from),
+        key: key.into()
+    }))
 }
 pub fn install(app: &AppHandle) -> Result<Value> {
     // Another document may have been opened while the download was running.
@@ -589,10 +619,7 @@ struct InstallPlan {
     release: ReleaseIdentity,
 }
 fn default_executable() -> String {
-    "AI Toolkit.exe".into()
-}
-fn executable_name(name: &str) -> bool {
-    name.eq_ignore_ascii_case("AI Toolkit.exe") || name.eq_ignore_ascii_case("AI-Toolkit.exe")
+    canonical_executable().into()
 }
 fn contained_path(root: &Path, relative: &str) -> Result<PathBuf> {
     let result = root.join(relative);
@@ -691,8 +718,9 @@ fn apply_transaction(
     for item in &plan.manifest {
         if !allowed(&item.path)
             || !seen.insert(item.path.to_lowercase())
-            || (executable_name(&item.path) && (item.path != "AI Toolkit.exe" || item.preserve))
-            || (item.preserve && !item.path.starts_with("config/"))
+            || (executable_name(&item.path)
+                && (item.path != canonical_executable() || item.preserve))
+            || (item.preserve && !is_configuration(&item.path))
         {
             return Err(crate::error::Error::new("invalid_manifest_path"));
         }
@@ -711,21 +739,21 @@ fn apply_transaction(
         }
         contained_path(
             root,
-            if item.path == "AI Toolkit.exe" {
+            if item.path == canonical_executable() {
                 &plan.executable
             } else {
                 &item.path
             },
         )?;
     }
-    if !seen.contains("ai toolkit.exe") {
+    if !seen.contains(&canonical_executable().to_lowercase()) {
         return Err(crate::error::Error::new(
             "release_does_not_contain_ai_toolkit_exe",
         ));
     }
     let backup = stage.join("backup");
     fs::create_dir_all(&backup).map_err(crate::error::Error::diagnostic)?;
-    let saved_exe = backup.join("AI Toolkit.exe");
+    let saved_exe = backup.join(canonical_executable());
     if saved_exe.exists() {
         return Err(crate::error::Error::new("staged_update_changed"));
     }
@@ -740,12 +768,12 @@ fn apply_transaction(
             if item.path == ".toolkit-release.json" || item.preserve {
                 continue;
             }
-            let destination = if item.path == "AI Toolkit.exe" {
+            let destination = if item.path == canonical_executable() {
                 exe.clone()
             } else {
                 root.join(&item.path)
             };
-            if item.path.starts_with("config/") {
+            if is_configuration(&item.path) {
                 let current = fs::read(&destination).ok().map(|v| sha(&v));
                 if current.as_deref() != item.expected_sha256.as_deref() {
                     continue;
@@ -756,7 +784,7 @@ fn apply_transaction(
             if sha(&bytes) != item.sha256 {
                 return Err(crate::error::Error::new("staged_update_changed"));
             }
-            if item.path == "AI Toolkit.exe" {
+            if item.path == canonical_executable() {
                 storage::atomic_write(&destination, &bytes)?;
             } else {
                 record_write(&destination, &backup.join(&item.path), &bytes, &mut changes)?;
@@ -934,10 +962,7 @@ mod tests {
     fn windows_asset_selection_ignores_other_platforms_and_prefers_explicit_portable() {
         let entry = |id, name| json!({"id":id,"name":name,"size":100,"digest":format!("sha256:{}","a".repeat(64)),"browser_download_url":"https://github.com/test/Toolkit/releases/download/1/a.zip"});
         let release = json!({"assets":[entry(1,"AI-toolkit-1.zip"),entry(2,"AI-Toolkit-1-linux-x64.zip"),entry(3,"AI-Toolkit-1-macos-arm64.zip"),entry(4,"AI-Toolkit-1-windows-x64.zip")]});
-        assert_eq!(
-            platform_asset(&release, "windows", "x86_64").unwrap()["id"],
-            4
-        );
+        assert_eq!(platform_asset(&release, "windows", "x86_64").unwrap().id, 4);
         assert!(platform_asset(&release, "linux", "x86_64").is_none());
         assert!(platform_asset(&release, "windows", "aarch64").is_none());
         let legacy = json!({"assets":[entry(1,"AI-toolkit-0.7.3.zip")]});
@@ -1003,6 +1028,13 @@ mod tests {
         )
         .unwrap();
         fs::write(f.root.join("settings.json"), b"user settings untouched").unwrap();
+        fs::create_dir_all(f.root.join("config/custom-pack")).unwrap();
+        fs::write(
+            f.root.join("config/custom-pack/note.txt"),
+            b"unknown nested file",
+        )
+        .unwrap();
+        fs::write(f.root.join("config/unknown.json"), b"unknown user defaults").unwrap();
         let mut manifest = vec![f.incoming("AI Toolkit.exe", b"new native executable")];
         for (name, expected, preserve) in [
             ("default", Some(sha(b"old default")), false),
@@ -1038,6 +1070,14 @@ mod tests {
         );
         assert!(!f.root.join("AI Toolkit.exe").exists());
         assert!(!f.root.join("config/deleted.json").exists());
+        assert_eq!(
+            fs::read(f.root.join("config/custom-pack/note.txt")).unwrap(),
+            b"unknown nested file"
+        );
+        assert_eq!(
+            fs::read(f.root.join("config/unknown.json")).unwrap(),
+            b"unknown user defaults"
+        );
         let receipt = read_receipt(&exe).unwrap();
         assert_eq!(receipt["key"], "new-release-key");
         assert!(receipt.get("asarSha256").is_none());
@@ -1142,13 +1182,22 @@ mod tests {
         for value in ["../AI-Toolkit", "https://github.com/a/b", "a/b/extra"] {
             assert!(repository(value).is_err());
         }
-        assert!(allowed("AI Toolkit.exe"));
-        assert!(allowed("config/aiv_constants.json"));
-        assert!(!allowed("main.js"));
-        assert!(!allowed("game.exe"));
-        assert!(!allowed("config/../../game.json"));
-        assert!(allowed("resources/app.asar"));
-        assert!(allowed("locales/de.pak"));
+        // Run the same accepted/rejected paths as the JavaScript ZIP builder.
+        let cases: Vec<Value> =
+            serde_json::from_str(include_str!("../../tests/fixtures/package-paths.json")).unwrap();
+        for case in cases {
+            let name = case["path"].as_str().unwrap();
+            assert_eq!(
+                allowed(name),
+                case["update"].as_bool().unwrap(),
+                "updater: {name:?}"
+            );
+            assert_eq!(
+                is_configuration(name),
+                case["configuration"].as_bool().unwrap(),
+                "configuration: {name:?}"
+            );
+        }
     }
     #[test]
     fn staging_is_bounded_and_checks_every_byte() {

@@ -1,5 +1,6 @@
 //! UCP project discovery and atomic project updates. No game process is involved.
 use crate::storage::{self, Result};
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -9,6 +10,78 @@ use std::{
 use walkdir::WalkDir;
 
 const MANAGED: &str = "aiv-mod-editor-local-1.0.0";
+
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct AiProject {
+    pub ai_root: PathBuf,
+    pub owned: bool,
+    pub vanilla: bool,
+    pub character: Option<storage::DocumentResult>,
+    pub lines: Option<ProjectLines>,
+    pub media: Option<Value>,
+    pub castle: Option<storage::DocumentResult>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional = nullable))]
+    pub portraits: Option<ProjectPortraits>,
+}
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ProjectLines {
+    pub path: PathBuf,
+    pub exists: bool,
+    pub content: String,
+}
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectPortraits {
+    pub portrait: PortraitFile,
+    pub portrait_small: PortraitFile,
+}
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct PortraitFile {
+    pub path: PathBuf,
+    pub exists: bool,
+    pub data_url: Option<String>,
+}
+impl PortraitFile {
+    fn read(path: PathBuf) -> Self {
+        Self {
+            exists: path.exists(),
+            data_url: storage::data_url(&path).ok(),
+            path,
+        }
+    }
+}
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct CharacterReplacement {
+    pub ai_root: PathBuf,
+    pub path: PathBuf,
+    pub content: String,
+}
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct CastleDestinationResult {
+    pub path: PathBuf,
+    pub exists: bool,
+    pub file_name: String,
+}
+#[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct PortraitResult {
+    pub path: PathBuf,
+    pub data_url: String,
+    pub width: u32,
+    pub height: u32,
+}
 fn default_lines(name: &str) -> Value {
     let keys: Vec<String> =
         serde_json::from_str(include_str!("../../src/shared/ai-line-keys.json"))
@@ -283,9 +356,18 @@ pub fn read_project(request: &Value) -> Result<Value> {
     } else {
         project_root(request)?
     };
-    let mut out = json!({"aiRoot":root,"owned":root.starts_with(game.join("ucp/plugins").join(MANAGED)),"vanilla":vanilla,"character":null,"lines":null,"media":null,"castle":null});
+    let mut out = AiProject {
+        ai_root: root.clone(),
+        owned: root.starts_with(game.join("ucp/plugins").join(MANAGED)),
+        vanilla,
+        character: None,
+        lines: None,
+        media: None,
+        castle: None,
+        portraits: None,
+    };
     if !vanilla {
-        out["character"] = storage::read_document(&root.join("character.json"), false)?;
+        out.character = Some(storage::read_document(&root.join("character.json"), false)?);
         let lines = root.join("lines.json");
         let (content, exists) = match fs::read_to_string(&lines) {
             Ok(content) => (content, true),
@@ -294,9 +376,16 @@ pub fn read_project(request: &Value) -> Result<Value> {
             }
             Err(error) => return Err(crate::error::Error::diagnostic(error)),
         };
-        out["lines"] = json!({"path":lines,"exists":exists,"content":content});
-        out["portraits"] = json!({"portrait":{"path":root.join("portrait.png"),"exists":root.join("portrait.png").exists(),"dataUrl":image(&root.join("portrait.png"))},"portraitSmall":{"path":root.join("portrait_small.png"),"exists":root.join("portrait_small.png").exists(),"dataUrl":image(&root.join("portrait_small.png"))}});
-        out["media"] = media(&root);
+        out.lines = Some(ProjectLines {
+            path: lines,
+            exists,
+            content,
+        });
+        out.portraits = Some(ProjectPortraits {
+            portrait: PortraitFile::read(root.join("portrait.png")),
+            portrait_small: PortraitFile::read(root.join("portrait_small.png")),
+        });
+        out.media = Some(media(&root));
     }
     let file = text(request, "castleFile");
     if !file.is_empty() {
@@ -315,11 +404,11 @@ pub fn read_project(request: &Value) -> Result<Value> {
         let mut castle = storage::read_document(&storage::within(&directory, &actual)?, true)?;
         // An imported JSON fallback still belongs to the mapped Classic castle.
         // Saving the project must create that .aiv, not overwrite its JSON source.
-        castle["path"] = json!(path);
-        castle["fileName"] = json!(file);
-        out["castle"] = castle;
+        castle.path = path;
+        castle.file_name = Some(file.into());
+        out.castle = Some(castle);
     }
-    Ok(out)
+    Ok(json!(out))
 }
 pub fn update_mapping(request: &Value) -> Result<Value> {
     let root = project_root(request)?;
@@ -369,7 +458,11 @@ pub fn replace_character(request: &Value) -> Result<Value> {
     serde_json::from_str::<Value>(content).map_err(crate::error::Error::diagnostic)?;
     let path = root.join("character.json");
     storage::atomic_write(&path, content.as_bytes())?;
-    Ok(json!({"aiRoot":root,"path":path,"content":content}))
+    Ok(json!(CharacterReplacement {
+        ai_root: root,
+        path,
+        content: content.into()
+    }))
 }
 
 fn copy_tree(source: &Path, target: &Path) -> Result<()> {
@@ -591,7 +684,11 @@ pub fn castle_destination(request: &Value) -> Result<Value> {
         return Err(crate::error::Error::new("expected_an_aiv_castle_filename"));
     }
     let path = root.join("aiv").join(file);
-    Ok(json!({"path":path,"exists":path.exists(),"fileName":file}))
+    Ok(json!(CastleDestinationResult {
+        exists: path.exists(),
+        path,
+        file_name: file.into()
+    }))
 }
 pub fn add_castle(request: &Value) -> Result<Value> {
     let info = castle_destination(request)?;
@@ -615,9 +712,12 @@ pub fn replace_portrait(request: &Value) -> Result<Value> {
         return Err(crate::error::Error::new("invalid_portrait_image"));
     }
     storage::atomic_write(&path, &bytes)?;
-    Ok(
-        json!({"path":path,"dataUrl":storage::data_url(&path)?,"width":if small{36}else{72},"height":if small{36}else{72}}),
-    )
+    Ok(json!(PortraitResult {
+        data_url: storage::data_url(&path)?,
+        path,
+        width: if small { 36 } else { 72 },
+        height: if small { 36 } else { 72 }
+    }))
 }
 
 #[cfg(test)]

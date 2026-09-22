@@ -1,7 +1,8 @@
 /** Shared desktop transport and window-local state; no editor document state. */
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import type { Listener, RecordData, DesktopOperation, GameOperation } from './types';
+import type { Listener, RecordData } from './types';
+import type { Arguments, NativeError, DesktopOperation, DesktopPayload, DesktopResponse, GameOperation, GamePayload, GameResponse } from './contracts';
 
 export const state = {
   workspace: 'ucp',
@@ -17,20 +18,24 @@ export function tr(key: string, args?: RecordData) {
 
 export function reportError(error: unknown): never {
   if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
-    const details = error as { code: string; arguments?: RecordData; details?: string };
+    const details = error as NativeError;
+    const args = details.arguments;
+    const interpolation = args && typeof args === 'object' && !Array.isArray(args) ? args : undefined;
     throw new Error(
-      tr(details.code, details.arguments) + (details.details ? '\n' + details.details : ''),
+      tr(details.code, interpolation) + (details.details ? '\n' + details.details : ''),
     );
   }
   throw error instanceof Error ? error : new Error(String(error));
 }
 
-export function rpc<T = unknown>(operation: DesktopOperation, payload: unknown = {}): Promise<T> {
-  return invoke<T>('desktop_request', { request: { operation, payload } }).catch(reportError);
+export function rpc<O extends DesktopOperation>(operation: O, ...args: Arguments<DesktopPayload<O>>): Promise<DesktopResponse<O>> {
+  const request = args.length ? { operation, payload: args[0] } : { operation };
+  return invoke<DesktopResponse<O>>('desktop_request', { request }).catch(reportError);
 }
 
-export function game<T = unknown>(operation: GameOperation, payload: unknown = {}): Promise<T> {
-  return invoke<T>('game_request', { operation, payload }).catch(reportError);
+export function game<O extends GameOperation>(operation: O, ...args: Arguments<GamePayload<O>>): Promise<GameResponse<O>> {
+  const request = args.length ? { operation, payload: args[0] } : { operation };
+  return invoke<GameResponse<O>>('game_request', { request }).catch(reportError);
 }
 
 const callbacks = new Map<string, Set<Listener>>();

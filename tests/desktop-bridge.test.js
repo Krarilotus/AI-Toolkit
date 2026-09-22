@@ -8,6 +8,14 @@ const esbuild = require('esbuild');
 const yaml = require('js-yaml');
 const root = path.join(__dirname, '..');
 
+test('desktop IPC types reject mismatched operations, payloads and result assertions', () => {
+  const { execFileSync } = require('node:child_process');
+  const compiler = path.join(path.dirname(require.resolve('typescript/package.json')), 'bin/tsc');
+  execFileSync(process.execPath, [compiler, '--project', path.join(__dirname, 'types/tsconfig.json')], {
+    cwd: root, encoding: 'utf8', stdio: 'pipe',
+  });
+});
+
 function loadModule(name, dependencies = {}, globals = {}) {
   const source = fs.readFileSync(path.join(root, 'src/desktop', name + '.ts'), 'utf8');
   const result = esbuild.transformSync(source, { loader: 'ts', format: 'cjs', target: 'es2022' });
@@ -77,6 +85,16 @@ test('unchanged classic saves retain source bytes without re-encoding', async ()
   assert.equal(h.calls[0].payload.base64, Buffer.from(source).toString('base64'));
 });
 
+test('JSON documents serialize once while existing content strings remain byte-for-byte intact', async () => {
+  const h = documentHarness();
+  const document = { unknownPlugin: { value: [null, false, 'فارسی', 9007199254740991] } };
+  await h.api.save({ path: '/tmp/character.json', content: document });
+  assert.deepEqual(JSON.parse(h.calls[0].payload.content), document);
+  const exact = '{\n  "opaque-plugin": [null, 42]\n}\n';
+  await h.api.save({ path: '/tmp/character.json', content: exact });
+  assert.equal(h.calls[1].payload.content, exact);
+});
+
 test('failed configuration loads can retry instead of poisoning the cache', async () => {
   let attempts = 0;
   const h = documentHarness({ 'load-config': () => { if (++attempts === 1) throw new Error('temporary'); return { custom: true }; } });
@@ -108,7 +126,7 @@ test('native bridge preserves the preload API and distinguishes destructive Char
   loadModule('api', {
     '@tauri-apps/api/core': {},
     './runtime': { rpc: (operation, payload) => { calls.push({ operation, payload }); }, tr, on: () => {}, state: {} },
-    './documents': {}, './assets': {}, './portraits': {}, './menus': { createMenus: () => ({}) },
+    './documents': {}, './assets': {}, './portraits': {}, './menus': { createMenus: () => ({}) }, './viewports': loadModule('viewports'),
   }, { window, document: { addEventListener() {} } });
   const legacy = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
   for (const [, name] of legacy.matchAll(/^  (\w+):/gm)) {
@@ -136,6 +154,68 @@ test('replacing the load-file consumer does not dispatch the same document twice
   assert.deepEqual(notifications, ['current']);
   assert.equal(registrations.length, 1);
   assert.equal(requests[0].payload.request.operation, 'document-ready');
+});
+
+test('the typed transport sends the native enum envelope and preserves errors and nullable responses', async () => {
+  const requests = [];
+  const runtime = loadModule('runtime', {
+    '@tauri-apps/api/core': { invoke: async (command, payload) => {
+      requests.push({ command, payload });
+      if (payload.request.operation === 'set-theme') throw { code: 'nativeErrors:unknown_theme', arguments: { name: 'x' }, details: 'detail' };
+      return null;
+    } },
+    '@tauri-apps/api/webviewWindow': {},
+  }, { window: { toolkitI18n: { t: (key, args) => key + ':' + args.name } } });
+  assert.equal(await runtime.rpc('pick-path', {}), null);
+  assert.equal(await runtime.game('map', { path: 'GreekSea.map' }), null);
+  await runtime.rpc('document-ready');
+  assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
+    { command: 'desktop_request', payload: { request: { operation: 'pick-path', payload: {} } } },
+    { command: 'game_request', payload: { request: { operation: 'map', payload: { path: 'GreekSea.map' } } } },
+    { command: 'desktop_request', payload: { request: { operation: 'document-ready' } } },
+  ]);
+  await assert.rejects(runtime.rpc('set-theme', { theme: 'unknown' }), /nativeErrors:unknown_theme:x\ndetail/);
+});
+
+test('idle unit assets only convert native URLs, preserving anchors and dimensions', async () => {
+  const sprite = { path: 'C:\\Game\\unit.png', width: 31, height: 52, dx: -15, dy: -47, frame: 12, source: 'archer', playerPalette: 1 };
+  let result = { assetRevision: 'revision', sprites: {}, idleSprites: { 1: sprite }, warnings: [] };
+  const api = loadModule('assets', {
+    '@tauri-apps/api/core': { convertFileSrc: value => 'asset:' + value },
+    './runtime': { game: async () => result },
+  });
+  const converted = await api.gameUnitSprites();
+  assert.equal(converted.assetRevision, 'revision');
+  assert.deepEqual(JSON.parse(JSON.stringify(converted.idleSprites[1])), { ...sprite, path: 'asset:' + sprite.path });
+  assert.equal(sprite.path, 'C:\\Game\\unit.png', 'cached extraction metadata remains immutable');
+  result = {};
+  assert.equal((await api.gameUnitSprites()).idleSprites, undefined, 'no installation has no extracted poses');
+});
+
+test('castle IPC transfers encoded bytes once and accepts an absent library refresh result', async () => {
+  const calls = [];
+  const window = { __TAURI_INTERNALS__: {} };
+  loadModule('api', {
+    '@tauri-apps/api/core': {},
+    './runtime': { rpc: async (operation, payload) => {
+      calls.push({ operation, payload });
+      if (operation === 'castle-destination') return { path: 'ai/aiv/Castle.aiv', exists: false };
+      if (operation === 'add-castle') return { path: 'ai/aiv/Castle.aiv', fileName: 'Castle.aiv' };
+      return null;
+    }, tr: key => key, on: () => {}, state: {} },
+    './documents': { encodeCastle: async () => Uint8Array.of(1, 2, 255), toBase64: bytes => Buffer.from(bytes).toString('base64') },
+    './assets': {}, './portraits': {}, './menus': { createMenus: () => ({}) }, './viewports': loadModule('viewports'),
+  }, { window, document: { addEventListener() {} } });
+  const document = { frames: [{ itemType: 61, tilePositionOfsets: [5643] }] };
+  const project = { gameRoot: 'game', aiRoot: 'ai' };
+  const saved = await window.electronAPI.addAiDocument({ ...project, kind: 'castle', suggestedFileName: 'Castle.aiv', document, sourceBytes: Uint8Array.of(42) });
+  assert.deepEqual(Array.from(saved.sourceBytes), [1, 2, 255]);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
+    { operation: 'castle-destination', payload: { ...project, fileName: 'Castle.aiv' } },
+    { operation: 'add-castle', payload: { ...project, fileName: 'Castle.aiv', overwrite: false, castleBase64: 'AQL/' } },
+  ]);
+  assert.equal(await window.electronAPI.updateUcpAi({ gameRoot: 'game', aiId: 'ai', characterContent: '{}', castleFile: 'Castle.aiv', castleDocument: document, castleSourceBytes: Uint8Array.of(42), castleUnchanged: true }), null);
+  assert.deepEqual(Object.keys(calls.at(-1).payload).sort(), ['aiId', 'castleBase64', 'castleFile', 'characterContent', 'gameRoot']);
 });
 
 test('document delivery and close requests stay in their editor while settings broadcast', async () => {

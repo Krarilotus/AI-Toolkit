@@ -1,4 +1,6 @@
-/* Shared component roles. Packs only supply tokens and texture slots. */
+/* Layer order is declared once by combined.css. Packs only supply tokens and
+   texture slots; shared roles paint every workspace, including detached views. */
+@layer tokens {
 :root {
   --texture-control: none;
   --texture-control-hover: none;
@@ -10,10 +12,12 @@
   --texture-sidebar: url('../../assets/themes/default/textures/sidebar.png');
   --texture-backdrop: url('../../assets/themes/default/textures/backdrop.png');
 }
+}
 
+@layer theme {
 /* UCP's bevelled commands use an actual 8px border, so the frame cannot paint
    over the label. Flat menu/list/icon controls deliberately have another role. */
-html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(.paletteCategoryButton):not(.paletteItem):not(.ucpAiListItem):not(.titlebarMenus button):not(.castlePieMenu button):not(.workspaceTab):not(.windowControl):not(.releaseUpdateButton):not(.buildStepControls button):not(.areaTabs button):not(.isoViewControls button):not(.infoButton):not(.helpButton):not(.helpBtn):not(.castleOverviewInfoButton):not(.editorCardToggle):not(#castleBrushMinus):not(#castleBrushPlus) {
+html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where(.paletteCategoryButton, .paletteItem, .ucpAiListItem, .titlebarMenus button, .castlePieMenu button, .workspaceTab, .windowControl, .releaseUpdateButton, .buildStepControls button, .areaTabs button, .isoViewControls button, .infoButton, .helpButton, .helpBtn, .castleOverviewInfoButton, .editorCardToggle, #castleBrushMinus, #castleBrushPlus)) {
 
   border: var(--texture-control-width) solid transparent;
   border-image: var(--texture-control) var(--texture-control-slice) / var(--texture-control-width) / 0 stretch;
@@ -29,7 +33,6 @@ html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(.palet
   &:hover:not(:disabled) { border-image-source: var(--texture-control-hover); color: var(--component-button-content); background: transparent; }
   &:is(:active, [aria-pressed="true"], .active) { border-image-source: var(--texture-control-pressed); color: var(--component-button-content); background: transparent; }
 }
-html[data-themed-controls="true"] :is(.primaryAction, .castleSaveBtn) { background: transparent !important; border-color: transparent !important; }
 html[data-themed-controls="true"] button:disabled { opacity: .55; }
 
 /* Workspace navigation retains UCP's ornate tab frame, separate from commands. */
@@ -67,7 +70,7 @@ html[data-themed-panels="true"] :is(.workspaceCommandBar, .characterControlBar, 
   color: var(--semantic-content-on-chrome);
 }
 /* These aliases are local to paper. The surrounding shell keeps its own contrast. */
-html[data-themed-panels="true"] :is(#characterWorkspace .characterSidebar > .editorCard, .characterForm, .castleBuildList, .castleOverviewPanel, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel, dialog, .helpBox, .castleContextMenu, .castleBuildContextMenu, .castleToolOptions) {
+html[data-themed-panels="true"] :is(.characterSidebar > .editorCard, .characterForm, .castleBuildList, .castleOverviewPanel, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel, dialog, .helpBox, .castleContextMenu, .castleBuildContextMenu, .castleToolOptions) {
   --text-main: var(--component-panel-content);
   --text-soft: var(--component-panel-soft);
   --text-muted: var(--component-panel-muted);
@@ -104,7 +107,6 @@ html[data-themed-controls="true"] .castleToolbar { gap: 5px; }
 html[data-themed-controls="true"] .castleToolbar kbd { border-color: #ffffff35; background: #ffffff10; }
 
 /* Text fields and numerical values use their respective original UCP assets. */
-html[data-themed-fields="true"] #characterWorkspace .field input,
 html[data-themed-fields="true"] :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), textarea) {
   border: var(--texture-input-width) solid transparent;
   border-image: var(--texture-input) var(--texture-input-slice) / var(--texture-input-width) / 0 stretch;
@@ -113,14 +115,12 @@ html[data-themed-fields="true"] :is(input:not([type="checkbox"], [type="radio"],
   color: var(--component-input-content);
   font-family: var(--font-ui);
 }
-html[data-themed-fields="true"] #characterWorkspace .field :is(input[type="number"], input[inputmode="numeric"], input[inputmode="decimal"]),
 html[data-themed-fields="true"] :is(input[type="number"], input[inputmode="numeric"], input[inputmode="decimal"], .numberInput) {
   border-image: var(--texture-value) var(--texture-value-slice) / var(--texture-value-width) / 0 stretch;
   background: var(--component-value-surface);
   color: var(--component-value-content);
   color-scheme: var(--component-value-color-scheme);
 }
-html[data-themed-fields="true"] #characterWorkspace .field select,
 html[data-themed-fields="true"] select {
   appearance: none;
   border: 1px solid var(--line-strong);
@@ -253,6 +253,9 @@ html[data-themed-checkboxes="true"] input[type="checkbox"]:indeterminate {
   background-size: 45% 3px, contain;
 }
 html[data-themed-checkboxes="true"] input[type="checkbox"]:disabled { opacity: .5; cursor: default; }
+}
+
+@layer accessibility {
 html :is(button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--semantic-action-selected);
   outline-offset: 2px;
@@ -260,12 +263,15 @@ html :is(button, input, select, textarea, summary, [tabindex]):focus-visible {
 
 @media (forced-colors: active) {
   html[data-themed-checkboxes="true"] input[type="checkbox"] { appearance: auto; background: none; }
-  html[data-themed-controls="true"] button { border-image: none !important; border: 1px solid ButtonText; color: ButtonText; background: ButtonFace; }
+  html[data-themed-controls="true"] button { border-image: none; border: 1px solid ButtonText; color: ButtonText; background: ButtonFace; }
 }
 @media (prefers-reduced-motion: reduce) {
   html *, html *::before, html *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
 }
 
+}
+
+@layer components {
 /* Only text changes reading direction; interface geometry and world space do not. */
 .i18nText, [data-i18n], [data-bidi="text"], :is(span, small, strong, p, h1, h2, h3, h4, option, th, td, dt, dd) { unicode-bidi: plaintext; }
 :is(code, kbd, [data-bidi="ltr"], input[type="number"], input[type="range"]) { direction: ltr; unicode-bidi: isolate; }
@@ -273,3 +279,5 @@ html :is(button, input, select, textarea, summary, [tabindex]):focus-visible {
 .castlePieMenu { position: fixed; z-index: 10000; width: 224px; height: 224px; border-radius: 50%; background: var(--component-menu-surface); box-shadow: 0 3px 18px #0009; border: 1px solid var(--accent); color: var(--component-menu-content); font: 600 13px var(--font-ui); }
 .castlePieMenu button { position: absolute; width: 84px; height: 40px; border: 0; border-radius: 20px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .castlePieMenu small { display: block; font-size: 10px; font-weight: 400; opacity: .8; }
+
+}
