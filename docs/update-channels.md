@@ -59,6 +59,15 @@ transaction backup remains available for recovery, and a native receipt records
 the successful handoff. There is still exactly one installable Toolkit ZIP per
 release, so older source selectors cannot reject an ambiguous pair of packages.
 
+An already-running older Electron app may still have a pre-migration native
+release cached for the current hour. Its old Retry button repeats that same
+download after `Incomplete Windows release`. Switch to Official releases and
+back to the experimental fork to force a new lookup before installing; this
+does not change the open project. The target must be a migration-compatible
+release (`snapshot-native-14f5269c` or later on Krarilotus), not the older
+`snapshot-native-39659543`. Current UI retries refresh the release information
+after an installation failure instead of retaining the failed candidate.
+
 ## Windows handoff regression
 
 The original detached + hidden PowerShell launch could report successful process

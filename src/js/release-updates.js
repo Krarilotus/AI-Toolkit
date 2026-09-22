@@ -82,6 +82,7 @@
       button.textContent = tr("updates:restarting");
       await api.installReleaseUpdate();
     } catch (error) {
+      build = null; button.classList.remove('releaseAvailable', 'releaseCurrent');
       button.textContent = tr("updates:retry_update");
       button.title = error.message.replace(/^Error invoking remote method '[^']+': Error: /, '');
       window.appWorkspace?.setStatus(button.title);
