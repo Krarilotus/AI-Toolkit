@@ -867,23 +867,19 @@
    * @returns {Generator<SceneCommand>}
    */
   function* mergeSceneCommands(terrain, buildings, overlays = null) {
-    if (overlays?.length) {
-      let next = 0;
-      for (const command of mergeSceneCommands(terrain, buildings)) {
-        while (next < overlays.length && geo.renderOrder(overlays[next].order, command.order) < 0)
-          yield overlays[next++];
-        yield command;
-      }
-      while (next < overlays.length) yield overlays[next++];
-      return;
+    let t = 0, b = 0, next = 0;
+    const overlayCount = overlays?.length || 0;
+    // Select directly from all three streams: wrapping a second generator
+    // would suspend/resume twice for every static scenery command.
+    while (t < terrain.length || b < buildings.length) {
+      const command = b >= buildings.length || (t < terrain.length
+        && geo.renderOrder(terrain[t].order, buildings[b].order) <= 0)
+        ? terrain[t++] : buildings[b++];
+      while (next < overlayCount && geo.renderOrder(overlays[next].order, command.order) < 0)
+        yield overlays[next++];
+      yield command;
     }
-    let t = 0, b = 0;
-    while (t < terrain.length && b < buildings.length) {
-      if (geo.renderOrder(terrain[t].order, buildings[b].order) <= 0) yield terrain[t++];
-      else yield buildings[b++];
-    }
-    while (t < terrain.length) yield terrain[t++];
-    while (b < buildings.length) yield buildings[b++];
+    while (next < overlayCount) yield overlays[next++];
   }
 
   function visibleSceneItems() {

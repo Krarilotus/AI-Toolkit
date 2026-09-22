@@ -17,7 +17,7 @@
 @layer theme {
 /* UCP's bevelled commands use an actual 8px border, so the frame cannot paint
    over the label. Flat menu/list/icon controls deliberately have another role. */
-html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where(.paletteCategoryButton, .paletteItem, .ucpAiListItem, .titlebarMenus button, .castlePieMenu button, .workspaceTab, .windowControl, .releaseUpdateButton, .buildStepControls button, .areaTabs button, .isoViewControls button, .infoButton, .helpButton, .helpBtn, .castleOverviewInfoButton, .editorCardToggle, #castleBrushMinus, #castleBrushPlus)) {
+html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where(.paletteCategoryButton, .paletteItem, .ucpAiListItem, .titlebarMenus button, .castlePieMenu button, .workspaceTab, .windowControl, .releaseUpdateButton, .buildStepControls button, .areaTabs button, .isoViewControls button, #isoWindowDockBtn, .infoButton, .helpButton, .helpBtn, .castleOverviewInfoButton, .editorCardToggle, #castleBrushMinus, #castleBrushPlus)) {
 
   border: var(--texture-control-width) solid transparent;
   border-image: var(--texture-control) var(--texture-control-slice) / var(--texture-control-width) / 0 stretch;
@@ -155,7 +155,7 @@ html[data-themed-controls="true"] .castlePanel .paletteItem.selected { box-shado
 html[data-themed-controls="true"] .paletteItemMeta { color: var(--text-muted); }
 
 /* Small viewport actions are quiet controls. Main navigation carries the frame. */
-html[data-themed-controls="true"] :is(.areaTabs button, .isoViewControls button, .infoButton, .helpButton, .editorCardToggle) {
+html[data-themed-controls="true"] :is(.areaTabs button, .isoViewControls button, #isoWindowDockBtn, .infoButton, .helpButton, .editorCardToggle) {
   border: 1px solid var(--line-strong);
   border-image: none;
   border-radius: 2px;
@@ -163,7 +163,7 @@ html[data-themed-controls="true"] :is(.areaTabs button, .isoViewControls button,
   color: var(--text-main);
   box-shadow: none;
 }
-html[data-themed-controls="true"] :is(.areaTabs button, .isoViewControls button, .infoButton, .helpButton, .editorCardToggle):is(:hover, [aria-pressed="true"], .active) { background: var(--surface-raised); color: var(--text-main); border-color: var(--accent); border-image: none; }
+html[data-themed-controls="true"] :is(.areaTabs button, .isoViewControls button, #isoWindowDockBtn, .infoButton, .helpButton, .editorCardToggle):is(:hover, [aria-pressed="true"], .active) { background: var(--surface-raised); color: var(--text-main); border-color: var(--accent); border-image: none; }
 
 /* The same up/down action uses UCP's arrow sprite in every build-order row. */
 html[data-themed-reorder="true"] .buildStep .buildStepControls button {

@@ -80,7 +80,15 @@ test('terrain, structures and troop commands share the same stable depth merge',
   vm.runInContext(source.slice(source.indexOf('  function* mergeSceneCommands('),source.indexOf('  function visibleSceneItems(')),context);
   const list=(prefix,layer)=>Array.from({length:100},(_,i)=>({key:prefix+i,order:{gx:i%10,gy:Math.floor(i/10),layer}}))
     .sort((a,b)=>geo.renderOrder(a.order,b.order));
-  const terrain=list('terrain',0),buildings=list('building',2),units=list('troop',4);
-  const expected=[...terrain,...buildings,...units].sort((a,b)=>geo.renderOrder(a.order,b.order));
-  assert.deepEqual([...context.mergeSceneCommands(terrain,buildings,units)],expected);
+  for (const layers of [[0,2,4],[2,2,2]]) {
+    const streams=[list('terrain',layers[0]),list('building',layers[1]),list('troop',layers[2])];
+    // Include equal-depth ties, exhausted streams and optional overlays.
+    for (let present=0;present<8;present++) {
+      const input=streams.map((stream,index)=>present & (1<<index) ? stream : []);
+      const expected=input.flat().sort((a,b)=>geo.renderOrder(a.order,b.order));
+      assert.deepEqual([...context.mergeSceneCommands(...input)],expected);
+    }
+    assert.deepEqual([...context.mergeSceneCommands(...streams.slice(0,2))],
+      streams.slice(0,2).flat().sort((a,b)=>geo.renderOrder(a.order,b.order)));
+  }
 });
