@@ -7,6 +7,23 @@ const { unzipSync } = require('fflate');
 
 const packaging = import('../scripts/package-native.mjs');
 const policy = import('../scripts/package-policy.mjs');
+test('native window icons resolve on Windows and Unix with unchanged artwork', () => {
+  const config = require('../src-tauri/tauri.conf.json');
+  const iconBytes = extension => {
+    const relative = config.bundle.icon.find(file => file.endsWith(extension));
+    assert.ok(relative, `Missing ${extension} native icon`);
+    return fs.readFileSync(path.resolve(__dirname, '../src-tauri', relative));
+  };
+  const ico = iconBytes('.ico'), png = iconBytes('.png');
+  assert.equal(png.subarray(1, 4).toString(), 'PNG');
+  assert.equal(png[25], 6, 'Tauri requires RGBA PNG icons');
+  const existingPngs = Array.from({ length: ico.readUInt16LE(4) }, (_, i) => {
+    const entry = 6 + i * 16, length = ico.readUInt32LE(entry + 8), offset = ico.readUInt32LE(entry + 12);
+    return ico.subarray(offset, offset + length);
+  });
+  assert.ok(existingPngs.some(entry => entry.equals(png)), 'Unix icon must reuse existing native icon artwork');
+});
+
 function fixture(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'toolkit-package-'));
   t.after(() => {

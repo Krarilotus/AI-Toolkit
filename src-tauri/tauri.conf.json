@@ -34,7 +34,8 @@
   "bundle": {
     "active": true,
     "icon": [
-      "../assets/icon.ico"
+      "../assets/icon.ico",
+      "icons/icon.png"
     ],
     "resources": {
       "../assets/aiv/iso/verzeichnis.json": "assets/aiv/iso/verzeichnis.json",
