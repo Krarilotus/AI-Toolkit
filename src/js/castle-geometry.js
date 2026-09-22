@@ -17,7 +17,8 @@
     if (type === 46) return 60;
     if (type >= 181 && type <= 186) return (186 - type) * 16;
     if (type >= 110 && type <= 114) return [296, 148, 180, 192, 192][type - 110];
-    if (type >= 144 && type <= 147) return 90;
+    // getBuildingHeightForBuildingID: both stone gatehouse roofs are 128px.
+    if (type >= 144 && type <= 147) return 128;
     return null;
   }
 

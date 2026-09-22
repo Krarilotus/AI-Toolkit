@@ -53,6 +53,10 @@
 .castleToolbar > .castleEditGroup { --group-accent: var(--component-toolbar-group-edit-accent); }
 .castleToolbar > .castleOverlayGroup { --group-accent: var(--component-toolbar-group-overlay-accent); }
 .castleToolbar > .castleExtrasGroup { --group-accent: var(--component-toolbar-group-extras-accent); }
+html[data-themed-controls="true"] .castleToolbar > .toolbarGroup + .toolbarGroup {
+  border-inline-start: var(--component-toolbar-group-separator-width) solid var(--component-toolbar-group-border);
+  padding-inline-start: var(--component-toolbar-group-separator-gap);
+}
 @media (max-width: 1100px) {
   .castleToolbar { gap: var(--component-toolbar-compact-gap); }
 }
@@ -77,12 +81,27 @@ html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where
 }
 html[data-themed-controls="true"] button:disabled { opacity: .55; }
 
-/* Toolbar commands can be roomier than dialog actions. Asymmetric padding
-   lowers the label inside its frame without moving the hit area or artwork. */
+/* Compact command chrome is a separate role from framed dialog buttons. */
 html[data-themed-controls="true"] .castleToolbar :is(.toolbarGroup > button, .toolbarGroup > details > summary) {
   min-height: var(--component-toolbar-command-min-height);
   padding-block-start: var(--component-toolbar-command-padding-block-start);
   padding-block-end: var(--component-toolbar-command-padding-block-end);
+  padding-inline: var(--component-toolbar-command-padding-inline);
+  border-width: var(--component-toolbar-command-border-width);
+  border-color: var(--component-toolbar-command-border);
+  border-image: var(--component-toolbar-command-frame);
+  background: var(--component-toolbar-command-surface);
+  white-space: nowrap;
+  &:hover:not(:disabled) {
+    border-image: var(--component-toolbar-command-frame);
+    border-color: var(--semantic-action-selected);
+    background: var(--component-toolbar-command-hover);
+  }
+  &:is(.active, [aria-pressed="true"], .primaryAction) {
+    border-image: var(--component-toolbar-command-frame);
+    border-color: var(--semantic-action-selected);
+    background: var(--component-toolbar-command-selected);
+  }
 }
 
 /* Workspace navigation retains UCP's ornate tab frame, separate from commands. */
@@ -240,15 +259,6 @@ html[data-themed-reorder="true"] .buildStepControls button:hover { background-im
 html[data-themed-reorder="true"] .buildStepControls button:active { background-image: var(--step-arrow-pressed); border-image: none; }
 
 
-html[data-themed-stepper="true"] :is(#castleBrushPlus, #castleBrushMinus) {
-  --step-icon: var(--texture-add); --step-icon-hover: var(--texture-add-hover);
-  width: 24px; height: 24px; min-height: 24px; border: 0; padding: 0;
-  border-image: none; box-shadow: none; font-size: 0;
-  background: transparent var(--step-icon) center / contain no-repeat;
-}
-html[data-themed-stepper="true"] #castleBrushMinus { --step-icon: var(--texture-remove); --step-icon-hover: var(--texture-remove-hover); }
-html[data-themed-stepper="true"] :is(#castleBrushPlus, #castleBrushMinus):hover { background-image: var(--step-icon-hover); background-color: transparent; }
-
 /* A single numeric state supports either external +/- buttons or a native
    spinner. Pack tokens choose the face; keyboard/input semantics are shared. */
 .numberStepper {
@@ -258,6 +268,22 @@ html[data-themed-stepper="true"] :is(#castleBrushPlus, #castleBrushMinus):hover 
   background: var(--component-number-stepper-group-surface);
 }
 .numberStepper > button { display: var(--component-number-stepper-button-display); }
+.numberStepperLabel {
+  display: var(--component-number-stepper-label-display);
+  padding-inline: 3px;
+  color: var(--text-soft);
+  font: var(--component-number-stepper-font);
+  white-space: nowrap;
+}
+html[data-themed-controls="true"] .numberStepper > button {
+  width: 24px; height: 26px; min-height: 26px; padding: 0;
+  justify-content: center; align-items: center;
+  border: 0; border-image: none; background: transparent;
+  color: var(--component-number-stepper-content);
+  font: 600 16px var(--font-ui);
+  box-shadow: none;
+}
+html[data-themed-controls="true"] .castleToolbar > .toolbarGroup { flex-wrap: nowrap; }
 :root .numberStepper input[type="number"] {
   appearance: var(--component-number-stepper-appearance);
   width: var(--component-number-stepper-width);
@@ -269,6 +295,7 @@ html[data-themed-stepper="true"] :is(#castleBrushPlus, #castleBrushMinus):hover 
   color: var(--component-number-stepper-content);
   color-scheme: var(--component-number-stepper-color-scheme);
   text-align: var(--component-number-stepper-text-align);
+  font: var(--component-number-stepper-font);
 }
 .numberStepper input[type="number"]::-webkit-inner-spin-button,
 .numberStepper input[type="number"]::-webkit-outer-spin-button {

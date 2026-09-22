@@ -252,3 +252,5 @@ the_chosen_map_is_laid_under_the_slanted_view_to_scale_one_field_of_the_map_: >-
   La carte choisie est placée à l'échelle sous la vue inclinée : une case de la carte correspond à une case de
   l'éditeur.
 filter_by_name: Filtrer par nom
+
+brush_size: Taille du pinceau

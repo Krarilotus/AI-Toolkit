@@ -1230,6 +1230,7 @@ export type TranslationKey =
   | "interface:map_of_the_game"
   | "interface:the_chosen_map_is_laid_under_the_slanted_view_to_scale_one_field_of_the_map_"
   | "interface:filter_by_name"
+  | "interface:brush_size"
   | "items:1"
   | "items:2"
   | "items:3"

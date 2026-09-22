@@ -2148,7 +2148,7 @@
       row.setAttribute('aria-label', row.title);
 
       const thumb = document.createElement('span');
-      thumb.className = 'paletteThumb';
+      thumb.className = isUnitType(Number(id)) ? 'paletteThumb paletteThumbUnit' : 'paletteThumb';
       const sequence = lineSequence(Number(id));
       const thumbnailType = String(sequence[0] ?? id);
       if (state.skins[thumbnailType]) {
@@ -3234,7 +3234,12 @@
     ctx.save();
     ctx.globalAlpha = alpha;
     if (img?.complete && img.naturalWidth) {
-      ctx.drawImage(img, r.x, r.y, r.w, r.h);
+      // Extracted unit sprites have tightly cropped, unequal dimensions. Fit
+      // their whole silhouette inside the marker box instead of stretching it.
+      const scale = isUnitType(type) ? Math.min(r.w / img.naturalWidth, r.h / img.naturalHeight) : null;
+      const width = scale == null ? r.w : img.naturalWidth * scale;
+      const height = scale == null ? r.h : img.naturalHeight * scale;
+      ctx.drawImage(img, r.x + (r.w - width) / 2, r.y + r.h - height, width, height);
       if (preview) {
         ctx.fillStyle = outlineOverride || css('--valid', '#55c271');
         ctx.globalAlpha = alpha * 0.24;

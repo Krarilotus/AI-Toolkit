@@ -16,7 +16,7 @@ const [base, ucp, schema] = await Promise.all([
 ]);
 const id = 'monsterfish-theme';
 const manifest = {
-  ...ucp, id, name: 'Monsterfish Theme', version: '1.5.0',
+  ...ucp, id, name: 'Monsterfish Theme', version: '1.6.0',
   textures: { ...base.textures, ...ucp.textures },
   attribution: [...base.attribution, ...ucp.attribution],
 };

@@ -153,7 +153,7 @@ test('troop supports use only visible walls, stairs, towers and gate decks above
   assert.equal(troops.supports([],()=>30)(11,13),30);
   assert.equal(troops.supports([tower],()=>30)(11,13),326);
   assert.equal(troops.supports([tower],()=>30)(13,13),30);
-  for(const [itemType,height] of [[61,92],[25,90],[46,60],[181,80],[186,0],[144,90]])
+  for(const [itemType,height] of [[61,92],[25,90],[46,60],[181,80],[186,0],[144,128],[145,128],[146,128],[147,128]])
     assert.equal(troops.supports([{gx:5,gy:8,tiles:1,itemType}],()=>7)(5,8),height+7);
 });
 
@@ -179,6 +179,12 @@ test('idle draw commands preserve native anchors and identity across visible-ste
   assert.equal(ground.w,20); assert.equal(ground.h,36);
   const [x,y]=geo.isoPoint(11.5,13.5,state.view);
   assert.equal(ground.x,x-10);assert.equal(ground.y,y-32);
+  for (const itemType of [144,145,146,147]) {
+    const gate = context.troopSceneCommands([{...tower,itemType,tiles:itemType<146 ? 5 : 7}])[0];
+    assert.equal(gate.x,ground.x,'the rally tile and sprite origin do not shift sideways');
+    assert.equal(gate.y,ground.y-128,'native gate roof height must not reuse the 90px wall height');
+    assert.equal(context.troopSceneCommands([])[0],ground,'scrubbing before the gate restores ground support');
+  }
   state.troopAic=defense(['EuropArcher'],9);state.troopDocument=null;
   const formation=context.troopSceneCommands([tower]);
   assert.equal(formation.length,9);

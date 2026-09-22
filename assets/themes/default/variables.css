@@ -56,6 +56,7 @@
   --component-toolbar-group-edit-accent: #ce937b;
   --component-toolbar-group-overlay-accent: #74bfb7;
   --component-toolbar-group-extras-accent: #b4a384;
+  --component-toolbar-group-separator-width: 0px;
   --component-select-appearance: auto;
   --component-select-indicator-size: 0px;
   --component-select-indicator-inset: 5px;
@@ -77,9 +78,17 @@
   --component-number-stepper-surface: transparent;
   --component-number-stepper-color-scheme: dark;
   --component-number-stepper-text-align: center;
+  --component-number-stepper-label-display: none;
+  --component-number-stepper-font: 11px var(--semantic-font-data);
   --component-toolbar-command-min-height: 32px;
   --component-toolbar-command-padding-block-start: 2px;
   --component-toolbar-command-padding-block-end: 2px;
+  --component-toolbar-command-padding-inline: 7px;
+  --component-toolbar-command-border-width: 8px;
+  --component-toolbar-command-frame: none;
+  --component-toolbar-command-surface: transparent;
+  --component-toolbar-command-hover: transparent;
+  --component-toolbar-command-selected: transparent;
   --semantic-surface-app: var(--primitive-color-ink);
   --semantic-surface-deep: var(--primitive-color-deep);
   --semantic-surface-panel: var(--primitive-color-slate1);
@@ -113,6 +122,7 @@
   --component-button-radius: var(--primitive-radius-small);
   --component-input-radius: var(--primitive-radius-small);
   --component-panel-radius: var(--primitive-radius-normal);
+  --component-toolbar-group-separator-gap: var(--component-toolbar-group-padding-inline);
   --semantic-surface-chrome: var(--semantic-surface-deep);
   --semantic-content-on-chrome: var(--semantic-content-soft);
   --component-button-surface: var(--semantic-surface-control);
@@ -149,6 +159,7 @@
   --component-number-stepper-group-surface: var(--semantic-surface-section);
   --component-number-stepper-border: var(--semantic-border-normal);
   --component-number-stepper-content: var(--semantic-content-main);
+  --component-toolbar-command-border: var(--semantic-border-normal);
   --component-select-chrome-surface: var(--semantic-surface-chrome);
   --component-select-chrome-content: var(--semantic-content-on-chrome);
   --component-select-option-surface: var(--semantic-surface-chrome);

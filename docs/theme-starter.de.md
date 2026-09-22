@@ -1,6 +1,6 @@
 # Eigenes AI-Toolkit-Design
 
-Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 154
+Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 165
 Farb-, Schrift- und Komponentenvariablen. Auch die großen Hintergründe sind
 enthalten. Du brauchst kein weiteres Theme und keine Entwicklungswerkzeuge.
 Als Ausgangspunkt dient das UCP-Design mit Monsterfishs Originalgrafiken.
@@ -35,7 +35,8 @@ wählbare Anzeigename. `default` und `ucp` sind reserviert.
   `padding-inline` bestimmen Innenabstände. Die Logik bleibt unverändert.
   `--component-toolbar-command-*` bestimmt die Mindesthöhe der gerahmten
   Werkzeugleisten-Buttons sowie den oberen und unteren Textabstand. UCP nutzt
-  34 px Mindesthöhe und 4/2 px Innenabstand: etwas höher, Schrift leicht tiefer.
+  30 px hohe, flache dunkle Buttons mit goldenen Zustandsakzenten. Rahmen,
+  Flächen und Abstände sind dort einstellbar; Dialogbuttons bleiben separat.
   Auswahlfelder nutzen unter `--component-select-*` den Systempfeil
   (`appearance: auto`, `indicator-size: 0px`). Für einen eigenen Bildpfeil
   `appearance: none`, `indicator-size: 20px` und `padding-inline-end: 30px`
@@ -47,10 +48,10 @@ wählbare Anzeigename. `default` und `ucp` sind reserviert.
   `cap-height` bereit. Letzteres reserviert den Platz für den Kettenhaken,
   damit die wiederholten Kettenglieder nicht hinter ihm sichtbar bleiben.
   `--component-number-stepper-*` gestaltet das kompakte Zahlenfeld für die
-  Pinselbreite. UCP nutzt ein orangefarbenes Feld mit nativen Auf/Ab-Pfeilen
-  (`button-display: none`, `appearance: auto`, `spinner-display: inline-block`).
-  Für getrennte Minus/Plus-Buttons wie im Standarddesign: `button-display:
-  inline-flex`, `appearance: textfield`, `spinner-display: none`. Farben,
+  Pinselbreite. UCP nutzt ein dunkles Feld mit sichtbarer Beschriftung und
+  Minus/Plus-Buttons (`button-display: inline-flex`, `appearance: textfield`,
+  `spinner-display: none`). Für native Auf/Ab-Pfeile: `button-display: none`,
+  `appearance: auto`, `spinner-display: inline-block`. Farben,
   Breite, Rahmen, Rundung und Abstände stehen in derselben Variablengruppe.
 - **`theme.json`**: Name, Bildzuweisungen und Skalierung. `cover` füllt eine
   Fläche, `contain` erhält das vollständige Bild, `tile` kachelt, `frame`

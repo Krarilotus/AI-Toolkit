@@ -101,6 +101,12 @@ subtracts it directly from the unit's image Y coordinate. The preview lord
 occupies the central tile of the visible 7-by-7 keep, independent of defensive
 recruitment quotas. Its appearance follows the loaded character's lord type.
 
+Both small and large stone gatehouses use **128 native pixels**, as returned
+by `getBuildingHeightForBuildingID`; their unit support must not reuse the
+90-pixel high-wall height. All four AIV gate orientations share this constant.
+The Gatekeeper slinger markers are centred on their 5-by-5 gate footprints;
+the previously low appearance was a 38-pixel vertical error, not a tile offset.
+
 ## Implementation and verification
 
 The stationary siege formulas come directly from the branches that set

@@ -232,3 +232,5 @@ apply_replacements: 应用替换
 map_of_the_game: 游戏地图
 the_chosen_map_is_laid_under_the_slanted_view_to_scale_one_field_of_the_map_: 所选地图按比例铺在斜视图下方：每个地图格对应一个编辑器格。
 filter_by_name: 按名称筛选
+
+brush_size: 笔刷大小

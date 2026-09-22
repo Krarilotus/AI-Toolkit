@@ -215,18 +215,16 @@ UCP GUI `CreateNumberInput.tsx` uses `text-light`. Numeric and decimal inputs
 therefore use a light foreground; parchment `searchfield.png` text inputs use
 the dark foreground. The texture and foreground always change as one role.
 
-The compact brush control instead follows UCP GUI `CreateNumberInput.tsx`:
-a rounded `#ab712d` numeric field, light text and native up/down spinner. It
-keeps one number input and the same size state and keyboard shortcuts in both
-themes. Default retains the separate +/- buttons. `component.numberStepper`
-owns this reusable control's group paint, button visibility, native spinner
-visibility/appearance, width, padding, border, radius, colors and alignment.
-UCP hides the external buttons; copied theme packs can choose either style
-without changing editor logic or duplicating the value field. The existing
-`add`/`remove` artwork remains available for packs choosing external buttons.
+The compact brush control is a dark, labelled `Brush size − value +` control.
+It shares one number input and the same state/shortcuts in both themes. The
+`component.numberStepper` role owns group paint, label/button visibility,
+font, native spinner appearance, width, padding, border, colors and alignment.
+Copied packs can choose external buttons or the native spinner without changing
+editor logic. Orange numeric fields remain appropriate to the parchment forms,
+rather than being applied indiscriminately to dark toolbar chrome.
 
-Framed toolbar actions additionally use `component.toolbarCommand` for minimum
-height and independent top/bottom padding. UCP uses 34 px and 4/2 px, making
-these actions 2 px taller with labels 1 px below their former centered position.
-Dialog buttons, native window controls and Default metrics stay unchanged.
-No artwork or hit area is translated or clipped to achieve this alignment.
+`component.toolbarCommand` owns compact command height, padding, border/frame
+and normal/hover/selected surfaces. UCP uses quiet 30 px dark controls with gold
+state accents; framed dialog buttons and ornate workspace tabs retain their
+separate roles. The toolbar is 38 px on one line, with slim group separators
+and wrapping between complete groups. Default metrics remain unchanged.
