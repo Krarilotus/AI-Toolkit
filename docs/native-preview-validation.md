@@ -1,7 +1,68 @@
 # Native preview validation
 
-Windows x64, 22 September 2026. This records measured results and remaining
-limits; the preview is not a claim of tested Linux/macOS support.
+Windows x64, 22 September 2026. Native compilation/tests now also pass on
+Linux/macOS; their OS GUI and updater integration remain untested.
+
+## Final cleanup preview: 39659543
+
+Published `snapshot-native-39659543`: **7,208,195 bytes portable / 6,597,650 bytes
+Setup**. All 122 packaged images match their source bytes. 564 JavaScript tests,
+strict TypeScript and all nine catalogues pass.
+[Native CI](https://github.com/Krarilotus/AI-Toolkit/actions/runs/35736981014)
+passes on Windows, Linux and macOS: 47 Rust tests and native binary compilation.
+The opt-in local game parity test passed separately against the installed game.
+
+Native create/save/clone/reopen/add/mapping checks preserve unknown character
+fields and unchanged castle bytes. Object-valued JSON saves work. Twelve rapid
+panel detach/dock cycles leave only `main` registered and the document clean.
+The final rebuilt detached UCP/Default controls fit without an inner scrollbar;
+Persian switches text direction without moving layout. Four maximized UCP tab
+screenshots were captured. No temporary CSS overrides were injected.
+
+All following drag runs use GreekSea/Kratoloros, 998 steps, 2560x1369, both GPU
+surfaces, zoom 0.2790625, pan (470,376.25), and 60 alternating pointer jumps at
+100 ms intervals. This castle has 50 troop markers. Document/AIC values are unchanged.
+
+| Build / mode | Median input to next rAF | p95 | Maximum | Tasks >50 ms |
+| --- | ---: | ---: | ---: | ---: |
+| f06c691c, Default, matched baseline | 16.0 ms | 22.2 ms | 23.9 ms | 0 |
+| f06c691c, UCP + fire, matched baseline | 16.5 ms | 22.1 ms | 27.2 ms | 0 |
+| 39659543, Default | 16.4 ms | 22.4 ms | 26.7 ms | 0 |
+| 39659543, UCP + fire | 17.5 ms | 23.0 ms | 28.0 ms | 0 |
+
+The preliminary 474bd4c6 Default run was slower: 19.8/29.1 ms median/p95, then
+18.9/32.0 ms on a warm repeat. Profiling found a nested generator merge added
+roughly 0.96 ms/input; the final single-pass stable merge removes that traversal.
+Troop command generation sampled 0.185 ms/input and support heights 0.063 ms/input.
+Disabling troops did not establish the cause of all timing variation. These
+small samples do not prove universally identical performance or screen latency.
+
+### Startup
+
+The new startup benchmark launches only an owned process/profile and verifies
+clean shutdown. Fresh profiles copy preferences, not app asset/WebView caches;
+OS filesystem caches are not flushed. Readiness is polled every 50 ms and means
+DOM/data readiness, not a fully presented GPU frame.
+
+| Build / profile | DOM ready | Project ready | Map data ready |
+| --- | ---: | ---: | ---: |
+| f06c691c, fresh | 0.66 s | 1.18 s | 1.52 s |
+| f06c691c, warm restart | 0.95 s | 1.21 s | 0.95 s |
+| 39659543, fresh | 0.67 s | 1.04 s | 1.42 s |
+| 39659543, warm restart | 0.96 s | 1.23 s | 0.96 s |
+
+These are individual paired observations, not a statistically proven speedup.
+Project and map loading are independent. Repeat with:
+
+```powershell
+node scripts/benchmark-native-startup.mjs --exe '<preview>/AI Toolkit.exe' --profile '<new-profile-directory>' --seed '<owned-settings-profile>' --port 9245 --output startup.json
+```
+
+The earlier real 4b10b163-to-f06c691c update passed download/install/restart,
+receipt, settings and config preservation. The repeat against 39659543 was
+blocked **before download** by GitHub's anonymous API quota (HTTP 403; reset
+22 September, 14:25:56 UTC). It is not claimed as a successful final-release
+update. Direct release downloads remain available.
 
 ## UCP usability follow-up
 
@@ -114,6 +175,7 @@ Run a separate portable copy, never the user's active installation:
 ```powershell
 $env:AI_TOOLKIT_USER_DATA = '<owned test profile>'
 $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9241'
+$env:AI_TOOLKIT_DEBUG_PORT = '9241'
 Start-Process '<test copy>/AI Toolkit.exe' -WindowStyle Hidden
 # Load the unchanged 998-step castle and game map, then:
 node scripts/benchmark-native-preview.mjs performance.json
@@ -131,7 +193,8 @@ Electron-to-native migration uses the installer or manual portable extraction;
 the old Electron updater cannot consume a native package. The native updater
 subsequently uses native ZIP releases.
 
-3D defensive troop formations remain research, not a shipped feature. Local
+Fourteen classic idle poses now have cached defensive formations; unverified
+engineer/siege/DE poses remain explicit rally markers. Local
 asset changes are rechecked on installation selection and map reload, not by a
 background filesystem watcher. Native OS popup/file-picker interaction still
 needs user testing: the computer-use bridge was unavailable, so live checks used

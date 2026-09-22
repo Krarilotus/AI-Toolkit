@@ -42,7 +42,7 @@ No game was launched or attached to during these checks.
 | Asset cache | Same-root extraction serialized; warm requests preserve metadata and PNG mtimes. Changed game/pack revisions invalidate caches. | No background watcher or automatic old-revision pruning. Reload rechecks sources; old cache retention affects local disk use, not bundle size. |
 | Native updater | Dynamic official/fork selection, SHA checks, staged install/rollback, config preservation and installed receipts. Real baseline-to-published update passed. | Native-to-official-Electron migration has fixture coverage, not live acceptance. |
 | Installer/runtime | NSIS downloads WebView2 separately only if missing. Config defaults written only when absent and retained on uninstall. Real NSIS hook/reinstall/abort checks pass. | Clean Windows without WebView2 and its runtime download. |
-| Linux/macOS | CI compiles the native application and runs portable contracts/tests on Windows, Linux and macOS. | CI results must pass; GUI, installer and updater integration remain Windows-only acceptance. |
+| Linux/macOS | CI compiles the native application and runs portable contracts/tests on Windows, Linux and macOS. | CI passes on all three OSes; GUI, installer and updater integration remain Windows-only acceptance. |
 
 ## Maintained boundaries
 
@@ -67,9 +67,9 @@ extraction: the old updater requires `resources/app.asar`. Subsequent native
 snapshots update through the experimental channel. Keep the PR in draft until the
 user has tested the preview and the outstanding OS acceptance is understood.
 
-The published `snapshot-native-f06c691c` baseline is 7,124,091 bytes (portable)
-and 6,537,949 bytes (Setup). The next release must repeat the exact packaging audit;
-these numbers do not describe unbuilt changes. Chromium, Node, source maps,
+Published `snapshot-native-39659543` is 7,208,195 bytes (portable) and 6,597,650
+bytes (Setup), with 122 unchanged source images. Its native CI passes on Windows,
+Linux and macOS. Chromium, Node, source maps,
 authoring files and Firefly sprite pixels are excluded. WebView2 is external.
 Every included image must remain byte-identical to its permitted source.
 

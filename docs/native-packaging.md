@@ -95,6 +95,11 @@ browser engine is bundled.
 
 ## Measured baseline
 
+Published `snapshot-native-39659543`: **7,208,195 bytes portable ZIP** and
+**6,597,650 bytes Setup**. Its audit covers 122 unchanged images and 23 portable
+files; real NSIS fresh/reinstall/abort checks pass. The authoritative
+`package-report.json` and SHA256SUMS are attached to the release.
+
 The 22 September 2026 `local-preview` build produced:
 
 | Artifact | Bytes | Decimal MB |
