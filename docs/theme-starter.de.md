@@ -1,6 +1,6 @@
 # Eigenes AI-Toolkit-Design
 
-Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 97
+Dieses Paket enthält alle 33 unterstützten UI-Texturrollen und alle 123
 Farb-, Schrift- und Komponentenvariablen. Auch die großen Hintergründe sind
 enthalten. Du brauchst kein weiteres Theme und keine Entwicklungswerkzeuge.
 Als Ausgangspunkt dient das UCP-Design mit Monsterfishs Originalgrafiken.
@@ -26,6 +26,13 @@ wählbare Anzeigename. `default` und `ucp` sind reserviert.
 - **`variables.css`**: alle Farben, Schriftfamilien und angebotenen Formwerte.
   Nur bestehende Variablen im `:root`-Block ändern. Die Reihenfolge ist
   Grundpalette → Bedeutung → Komponente; verknüpfte Werte folgen automatisch.
+  Unter `--component-toolbar-*` stehen die Hintergrund- und Abstandsregeln der
+  Werkzeugleiste, unter `--component-toolbar-group-*` deren Gruppenrahmen.
+  Im UCP-Ausgangspunkt sind `border-width` und `accent-width` jeweils `0px`,
+  `surface` ist `transparent` und `shadow` ist `none`: kein zusätzlicher Kasten
+  um die Buttons. Für Rahmen z. B. `border-width: 1px` und `radius: 6px`
+  einstellen. `gap` trennt Gruppen bzw. Buttons, `padding-block` und
+  `padding-inline` bestimmen Innenabstände. Die Logik bleibt unverändert.
 - **`theme.json`**: Name, Bildzuweisungen und Skalierung. `cover` füllt eine
   Fläche, `contain` erhält das vollständige Bild, `tile` kachelt, `frame`
   skaliert Rahmen in neun Abschnitten. `slice` bestimmt die Bildabschnitte,
@@ -48,8 +55,10 @@ Herkunft der enthaltenen Grafiken in `ATTRIBUTION.md` erhalten bzw. ergänzen.
 ## Umfang
 
 Das Paket enthält alle derzeit vom Theme-System angebotenen Einstellungen
-und Grafiken in einem Ordner. Layout, Bedienlogik und Barrierefreiheit bleiben
-Aufgabe des Editors; eigene CSS-Selektoren oder Skripte sind nicht vorgesehen.
+und Grafiken in einem Ordner. Dekoration und die angebotenen Abstandsregeln
+gehören zum Theme. Reihenfolge, Andocken und Umbruchlogik der Arbeitsbereiche,
+Bedienlogik und Barrierefreiheit bleiben Aufgabe des Editors; eigene
+CSS-Selektoren oder Skripte sind nicht vorgesehen.
 Kategoriefarben und Kartenfarben beschreiben Inhalte und gehören nicht zum
 Theme. Spielsprites und Übersetzungen werden separat verwaltet. Die eingebauten
 Standardwerte dienen weiterhin als Rückfall bei beschädigten eigenen Dateien.

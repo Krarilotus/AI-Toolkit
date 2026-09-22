@@ -15,6 +15,7 @@ import {
 import { assetUrls, loadedSkins, gameUnitSprites } from './assets';
 import { portraitPng } from './portraits';
 import { prepareViewportWindow } from './viewports';
+import { createWindowChrome } from './chrome';
 import type { RecordData, SaveRequest, Listener } from './types';
 import type { AiIdentity, DesktopPayload, ProjectLocation } from './contracts';
 
@@ -33,6 +34,7 @@ type AddDocument = ProjectLocation & (
 if ('__TAURI_INTERNALS__' in window) {
   const menus = createMenus();
   const api = {
+    ...createWindowChrome(),
     prepareViewportWindow,
     checkReleaseUpdate: async (force = false) => {
       const result = await rpc('check-update', { force });
@@ -61,7 +63,6 @@ if ('__TAURI_INTERNALS__' in window) {
       options: Partial<SaveRequest> = {},
     ) => save({ content, kind, defaultPath, ...options }),
     quickSaveFile: save,
-    getWindowChrome: async () => ({ integrated: true }),
     showTitlebarMenu: async (request: { menu: string; x: number; y: number }) =>
       menus.showMenu(request),
     setDialogProject: async (root: string | null) => {

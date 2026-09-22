@@ -40,8 +40,9 @@ slots tile; artwork can cover or contain. `theme.schema.json` describes the form
 Optional broken images fall back to Default and emit a diagnostic. Packs must not
 contain layout CSS, JavaScript, remote URLs, arbitrary selectors or unknown tokens.
 
-Layout remains in `src/css/combined.css`, with shared component surfaces in
-`theme-components.css`. The duplicate blue layout stylesheet was removed. Category
+Workspace structure remains in `src/css/combined.css`, with shared component
+surfaces and theme-controlled spacing in `theme-components.css`. The duplicate
+blue layout stylesheet was removed. Category
 colors and map data colors remain content semantics rather than theme artwork.
 Real checkbox elements retain labels, keyboard operation, mixed/disabled states,
 focus indicators and forced-colors fallback. System font fallbacks cover translated
@@ -71,6 +72,31 @@ reserved for interaction requirements such as hidden elements and reduced motion
 Default action/list-row styles use the component layer rather than `!important`.
 Detached chrome uses the same stylesheet and tokens, not inline hard-coded colors.
 Runtime inline geometry remains appropriate for viewport sizes and drag positions.
+
+### Toolbar density and grouping
+
+The `component.toolbar` and `component.toolbarGroup` tokens own the castle command
+bar's background, border, shadow, minimum height, spacing, padding and group accent
+colors. They are included in the standalone starter's `variables.css` and merged
+`tokens.json`. The same shared stylesheet consumes them for all packs; no theme ID
+changes markup or behavior. Default keeps its colored group frames. UCP sets group
+border/accent widths to zero, surface to transparent, and shadow to none, so its
+already-framed command buttons are not surrounded by another box. Logical groups
+still wrap together and retain their accessible labels.
+
+For a custom pack, edit `--component-toolbar-group-border-width`, `-accent-width`,
+`-radius`, `-surface` and `-shadow` to change decoration. `--component-toolbar-gap`
+sets the distance between groups; `--component-toolbar-group-gap` sets the distance
+between their controls. `-padding-block` and `-padding-inline` set density, and
+`--component-toolbar-compact-gap` applies to narrow windows. Window caption buttons
+reuse the same chrome/content/status roles as the rest of the titlebar.
+
+The theme API does not rearrange workspace order or docking structure. It exposes
+supported component geometry without loading arbitrary CSS selectors or scripts.
+An isolated Chromium check uses the actual toolbar markup and styles at 1680 px
+and 800 px: all six UCP groups have zero borders/padding/radius, transparent
+backgrounds and no shadow; Default restores its 1 px border and 3 px accent.
+Groups wrap without horizontal clipping, and the compact gap changes to 6 px.
 
 ## Desktop integration
 

@@ -55,6 +55,26 @@ test('theme tokens use one shared semantic hierarchy, without a duplicate layout
   assert.match(css, /:focus-visible/);
 });
 
+test('toolbar groups expose independent decoration and spacing in every complete pack', () => {
+  const read = file => fs.readFileSync(path.join(directory, file), 'utf8');
+  const defaults = JSON.parse(read('default/tokens.json')).component;
+  const ucp = JSON.parse(read('ucp/tokens.json')).component;
+  assert.equal(defaults.toolbarGroup.borderWidth.$value.value, 1);
+  assert.equal(defaults.toolbarGroup.accentWidth.$value.value, 3);
+  assert.equal(ucp.toolbarGroup.borderWidth.$value.value, 0);
+  assert.equal(ucp.toolbarGroup.accentWidth.$value.value, 0);
+  assert.equal(ucp.toolbarGroup.surface.$value, 'transparent');
+  assert.equal(ucp.toolbarGroup.shadow.$value, 'none');
+  const names = css => [...css.matchAll(/(--[a-z0-9-]+)\s*:/g)].map(match => match[1]).sort();
+  assert.deepEqual(names(read('ucp/variables.css')), names(read('default/variables.css')));
+  const css = fs.readFileSync(path.join(__dirname, '../src/css/theme-components.css'), 'utf8');
+  assert.match(css, /\.castleToolbar > \.toolbarGroup\s*\{/);
+  assert.doesNotMatch(css, /\.castleToolbarGroup\b/, 'group styles must target the actual shared markup');
+  assert.match(css, /gap: var\(--component-toolbar-group-gap\)/);
+  assert.match(css, /border: var\(--component-toolbar-group-border-width\)/);
+  assert.match(css, /background: var\(--component-toolbar-group-surface\)/);
+});
+
 // The controller consumes the browser CSSOM. This tiny DOM stand-in tests its
 // asynchronous lifecycle, not CSS parsing (the packaged preview checks that).
 function environment({ delay = () => Promise.resolve() } = {}) {

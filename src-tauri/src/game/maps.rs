@@ -679,6 +679,17 @@ pub fn load_map_tiles(
         extract_map_tiles(path, root, cache_root, resource_root)
     })
 }
+
+fn with_map_identity(mut tiles: Value, known: &Value, requested: &Path) -> Value {
+    // Atlas identity follows map contents and graphics, not a filename. A hit
+    // can come from another copy or an older spelling of the same Windows
+    // path. Echo this request so the renderer's stale-selection guard accepts
+    // the current result, and use the current map's display name.
+    tiles["path"] = json!(requested);
+    tiles["name"] = known["name"].clone();
+    tiles
+}
+
 fn extract_map_tiles(
     path: &Path,
     root: &Path,
@@ -707,7 +718,7 @@ fn extract_map_tiles(
             if let Ok(bytes) = fs::read(&cache) {
                 if let Ok(mut entry) = serde_json::from_slice::<Value>(&bytes) {
                     if entry["key"] == key && atlas::cached_pages_available(&entry["value"]) {
-                        return Ok(entry["value"].take());
+                        return Ok(with_map_identity(entry["value"].take(), &known, path));
                     }
                 }
             }
@@ -779,8 +790,7 @@ fn extract_map_tiles(
             &atlas_cache,
         )?
     };
-    value["name"] = known["name"].clone();
-    value["path"] = known["path"].clone();
+    value = with_map_identity(value, &known, path);
     value["pictureLayout"] = json!(stock.layout);
     value["assetRevision"] = json!(files.graphics.revision);
     // Saved-map decoding is a complete independent path, never a request to
@@ -827,5 +837,32 @@ mod tests {
         replace_keeps(&mut gfx, &[json!({"x":190,"y":190})], 123);
         assert_eq!(u16le(&gfx, tile_index(190, 190) * 2).unwrap(), 123);
         assert_eq!(u16le(&gfx, tile_index(188, 190) * 2).unwrap(), 0);
+    }
+
+    #[test]
+    fn cached_atlas_uses_the_requested_map_identity() {
+        let cached = json!({
+            "path": "D:/Games/Crusader\\maps\\GreekSea.map",
+            "name": "GreekSea",
+            "atlas": "file:///cache/terrain.png",
+            "plaetze": "unchanged terrain",
+            "cameras": [{"atlas": "file:///cache/camera.png"}],
+        });
+        // The selection guard compares strings; separator spelling from a
+        // former runtime must not reject an otherwise valid cached atlas.
+        let requested = Path::new(r"D:\Games\Crusader\maps\GreekSea.map");
+        let restored = with_map_identity(cached.clone(), &json!({"name":"GreekSea"}), requested);
+        assert_eq!(restored["path"], json!(requested));
+        assert_eq!(restored["atlas"], cached["atlas"]);
+        assert_eq!(restored["cameras"], cached["cameras"]);
+        assert_eq!(restored["plaetze"], cached["plaetze"]);
+
+        // Byte-identical maps intentionally share atlas work, but not labels
+        // or selection identity when a copy is selected from the map menu.
+        let copy = Path::new(r"D:\Games\Crusader\maps\GreekSea Copy.map");
+        let copied = with_map_identity(cached, &json!({"name":"GreekSea Copy"}), copy);
+        assert_eq!(copied["path"], json!(copy));
+        assert_eq!(copied["name"], "GreekSea Copy");
+        assert_eq!(copied["atlas"], restored["atlas"]);
     }
 }

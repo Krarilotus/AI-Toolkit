@@ -31,6 +31,30 @@ function loadModule(name, dependencies = {}, globals = {}) {
   return context.module.exports;
 }
 
+function chromeHarness() {
+  const calls = [];
+  let decorated = false;
+  const window = {
+    isDecorated: async () => decorated,
+    isMaximized: async () => false, isFullscreen: async () => false,
+    minimize: async () => calls.push('minimize'),
+    toggleMaximize: async () => calls.push('toggleMaximize'),
+    close: async () => calls.push('close-requested'),
+  };
+  const module = loadModule('chrome', { '@tauri-apps/api/window': { getCurrentWindow: () => window } });
+  return { module, calls, decorated: value => { decorated = value; } };
+}
+
+test('native caption adapter follows actual decorations and requests guarded close', async () => {
+  const h = chromeHarness(), api = h.module.createWindowChrome();
+  assert.equal((await api.getWindowChrome()).customControls, true);
+  h.decorated(true);
+  assert.equal((await api.getWindowChrome()).customControls, false);
+  assert.equal((await api.getWindowChrome()).integrated, true, 'menus remain available on native-caption platforms');
+  await api.minimizeWindow(); await api.toggleMaximizeWindow(); await api.closeWindow();
+  assert.deepEqual(h.calls, ['minimize', 'toggleMaximize', 'close-requested']);
+});
+
 function documentHarness(responses = {}) {
   const calls = [];
   const state = { projectRoot: 'D:\\Games\\Crusader\\ucp\\plugins\\TestAI' };
@@ -126,7 +150,7 @@ test('native bridge preserves the preload API and distinguishes destructive Char
   loadModule('api', {
     '@tauri-apps/api/core': {},
     './runtime': { rpc: (operation, payload) => { calls.push({ operation, payload }); }, tr, on: () => {}, state: {} },
-    './documents': {}, './assets': {}, './portraits': {}, './menus': { createMenus: () => ({}) }, './viewports': loadModule('viewports'),
+    './documents': {}, './chrome': chromeHarness().module, './assets': {}, './portraits': {}, './menus': { createMenus: () => ({}) }, './viewports': loadModule('viewports'),
   }, { window, document: { addEventListener() {} } });
   const legacy = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
   for (const [, name] of legacy.matchAll(/^  (\w+):/gm)) {
@@ -204,7 +228,7 @@ test('castle IPC transfers encoded bytes once and accepts an absent library refr
       return null;
     }, tr: key => key, on: () => {}, state: {} },
     './documents': { encodeCastle: async () => Uint8Array.of(1, 2, 255), toBase64: bytes => Buffer.from(bytes).toString('base64') },
-    './assets': {}, './portraits': {}, './menus': { createMenus: () => ({}) }, './viewports': loadModule('viewports'),
+    './chrome': chromeHarness().module, './assets': {}, './portraits': {}, './menus': { createMenus: () => ({}) }, './viewports': loadModule('viewports'),
   }, { window, document: { addEventListener() {} } });
   const document = { frames: [{ itemType: 61, tilePositionOfsets: [5643] }] };
   const project = { gameRoot: 'game', aiRoot: 'ai' };

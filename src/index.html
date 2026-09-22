@@ -45,6 +45,11 @@
     <button id="releaseUpdateButton" class="releaseUpdateButton" type="button" aria-live="polite" title="Check official releases" data-i18n-attrs="title=interface:check_official_releases" data-i18n="interface:check_updates">Check updates</button>
     <span id="workspaceStatus" class="workspaceStatus" data-i18n="interface:ucp_ai_library">UCP AI Library</span>
     <span class="appIdentity" aria-hidden="true"><span>AI</span> Toolkit</span>
+    <div id="windowControls" class="windowControls" role="group" aria-label="Window controls" data-i18n-attrs="aria-label=shell:window_controls" hidden>
+      <button class="windowControl" type="button" data-window-action="minimize" title="Minimize" aria-label="Minimize" data-i18n-attrs="title=shell:minimize_window;aria-label=shell:minimize_window"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6.5h10"/></svg></button>
+      <button class="windowControl" type="button" data-window-action="maximize" title="Maximize" aria-label="Maximize" data-i18n-attrs="title=shell:maximize_window;aria-label=shell:maximize_window"><svg viewBox="0 0 12 12" aria-hidden="true"><path class="maximizeGlyph" d="M1.5 1.5h9v9h-9z"/><path class="restoreGlyph" d="M1.5 3.5h7v7h-7zm2-2h7v7"/></svg></button>
+      <button class="windowControl" type="button" data-window-action="close" title="Close" aria-label="Close" data-i18n-attrs="title=common:actions.close;aria-label=common:actions.close"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m1.5 1.5 9 9m0-9-9 9"/></svg></button>
+    </div>
   </nav>
   <section id="characterWorkspace" class="workspace" aria-hidden="true">
     <div class="characterApp">

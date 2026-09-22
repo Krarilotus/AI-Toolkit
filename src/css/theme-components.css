@@ -15,6 +15,48 @@
 }
 
 @layer theme {
+.windowControl {
+  border: 0; border-radius: 0; background: transparent;
+  color: var(--semantic-content-on-chrome);
+}
+.windowControl:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.windowControl[data-window-action="close"]:hover {
+  background: var(--semantic-status-danger); color: var(--semantic-content-on-accent);
+}
+
+/* Logical command groups stay in the markup; their decoration and density are
+   one pack-owned component, including flat groups with no surrounding frame. */
+.castleToolbar {
+  min-height: var(--component-toolbar-min-height);
+  gap: var(--component-toolbar-gap);
+  padding: var(--component-toolbar-padding-block) var(--component-toolbar-padding-inline);
+  background: var(--component-toolbar-image), var(--component-toolbar-surface);
+  color: var(--component-toolbar-content);
+  border-bottom: 1px solid var(--component-toolbar-border);
+  box-shadow: var(--component-toolbar-shadow);
+}
+.castleToolbar > .toolbarGroup {
+  --group-accent: var(--component-toolbar-group-border);
+  gap: var(--component-toolbar-group-gap);
+  padding: var(--component-toolbar-group-padding-block) var(--component-toolbar-group-padding-inline);
+  border: var(--component-toolbar-group-border-width) solid var(--component-toolbar-group-border);
+  border-inline-start-width: var(--component-toolbar-group-accent-width);
+  border-inline-start-color: var(--group-accent);
+  border-radius: var(--component-toolbar-group-radius);
+  background: var(--component-toolbar-group-surface);
+  box-shadow: var(--component-toolbar-group-shadow);
+}
+.castleToolbar > .toolbarFileGroup { --group-accent: var(--component-toolbar-group-file-accent); }
+.castleToolbar > .castleViewGroup { --group-accent: var(--component-toolbar-group-view-accent); }
+.castleToolbar > .castleProjectGroup { --group-accent: var(--component-toolbar-group-project-accent); }
+.castleToolbar > .castlePlacementGroup { --group-accent: var(--component-toolbar-group-placement-accent); }
+.castleToolbar > .castleEditGroup { --group-accent: var(--component-toolbar-group-edit-accent); }
+.castleToolbar > .castleOverlayGroup { --group-accent: var(--component-toolbar-group-overlay-accent); }
+.castleToolbar > .castleExtrasGroup { --group-accent: var(--component-toolbar-group-extras-accent); }
+@media (max-width: 1100px) {
+  .castleToolbar { gap: var(--component-toolbar-compact-gap); }
+}
+
 /* UCP's bevelled commands use an actual 8px border, so the frame cannot paint
    over the label. Flat menu/list/icon controls deliberately have another role. */
 html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where(.paletteCategoryButton, .paletteItem, .ucpAiListItem, .titlebarMenus button, .castlePieMenu button, .workspaceTab, .windowControl, .releaseUpdateButton, .buildStepControls button, .areaTabs button, .isoViewControls button, #isoWindowDockBtn, .infoButton, .helpButton, .helpBtn, .castleOverviewInfoButton, .editorCardToggle, #castleBrushMinus, #castleBrushPlus)) {
@@ -65,7 +107,7 @@ html[data-themed-panels="true"] #appRoot {
 html[data-themed-panels="true"] :is(.characterApp, .characterMain, .characterSidebar, .characterEditorPanel, .castleBuildPanel, .ucpLibraryApp, .ucpLibraryMain, .aiContentApp, .aiContentEditor) {
   background: transparent;
 }
-html[data-themed-panels="true"] :is(.workspaceCommandBar, .characterControlBar, .castleToolbar, .panelHeader, .areaTabs, .dockTitlebar, .buildScrubber, .buildHint) {
+html[data-themed-panels="true"] :is(.workspaceCommandBar, .characterControlBar, .panelHeader, .areaTabs, .dockTitlebar, .buildScrubber, .buildHint) {
   background: var(--semantic-surface-chrome);
   color: var(--semantic-content-on-chrome);
 }
@@ -102,8 +144,6 @@ html[data-themed-panels="true"] #characterWorkspace .field > span { font-family:
 html[data-themed-panels="true"] :is(.aiPortraitCard, .aiMediaCard) { background: #f5f5e36b; box-shadow: none; border-radius: 0; }
 html[data-themed-panels="true"] .helpText { background: #f5f5e36b; }
 html[data-themed-panels="true"] .ucpAiListItem { color: var(--text-main); }
-html[data-themed-controls="true"] .castleToolbarGroup { background: transparent; border: 0; border-inline-end: 1px solid var(--line-strong); border-radius: 0; padding-inline: 7px; }
-html[data-themed-controls="true"] .castleToolbar { gap: 5px; }
 html[data-themed-controls="true"] .castleToolbar kbd { border-color: #ffffff35; background: #ffffff10; }
 
 /* Text fields and numerical values use their respective original UCP assets. */
@@ -260,6 +300,7 @@ html :is(button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--semantic-action-selected);
   outline-offset: 2px;
 }
+.windowControl:focus-visible { outline-offset: -3px; }
 
 @media (forced-colors: active) {
   html[data-themed-checkboxes="true"] input[type="checkbox"] { appearance: auto; background: none; }

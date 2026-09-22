@@ -160,6 +160,13 @@ pub fn destroyed(window: &Window) {
 
 pub fn create(app: &AppHandle, main: bool) -> tauri::Result<WebviewWindow> {
     let mut config = app.config().app.windows[0].clone();
+    // Windows editor controls live in the existing menu/tab row. Keep the
+    // framework's resizable window, but omit its second native title bar.
+    // Other platforms and detached viewports retain their native controls.
+    #[cfg(windows)]
+    {
+        config.decorations = false;
+    }
     if !main {
         config.label = format!("editor-{}", WINDOW_ID.fetch_add(1, Ordering::Relaxed));
         config.url = tauri::WebviewUrl::App("src/index.html?restoreProject=0".into());

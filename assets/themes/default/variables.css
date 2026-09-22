@@ -35,6 +35,27 @@
   --primitive-radius-normal: 7px;
   --primitive-radius-large: 11px;
   --component-value-color-scheme: normal;
+  --component-toolbar-image: linear-gradient(110deg, color-mix(in srgb, var(--semantic-action-accent) 4.5%, transparent), transparent 35%);
+  --component-toolbar-shadow: inset 0 -1px 0 rgba(0, 0, 0, .2);
+  --component-toolbar-min-height: 50px;
+  --component-toolbar-gap: 10px;
+  --component-toolbar-compact-gap: 6px;
+  --component-toolbar-padding-block: 7px;
+  --component-toolbar-padding-inline: 10px;
+  --component-toolbar-group-border-width: 1px;
+  --component-toolbar-group-accent-width: 3px;
+  --component-toolbar-group-radius: 6px;
+  --component-toolbar-group-padding-block: 5px;
+  --component-toolbar-group-padding-inline: 7px;
+  --component-toolbar-group-gap: 5px;
+  --component-toolbar-group-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+  --component-toolbar-group-file-accent: #c79a55;
+  --component-toolbar-group-view-accent: #79aec8;
+  --component-toolbar-group-project-accent: #a89bcc;
+  --component-toolbar-group-placement-accent: #88b98b;
+  --component-toolbar-group-edit-accent: #ce937b;
+  --component-toolbar-group-overlay-accent: #74bfb7;
+  --component-toolbar-group-extras-accent: #b4a384;
   --semantic-surface-app: var(--primitive-color-ink);
   --semantic-surface-deep: var(--primitive-color-deep);
   --semantic-surface-panel: var(--primitive-color-slate1);
@@ -96,4 +117,9 @@
   --component-palette-content: var(--semantic-content-main);
   --component-value-surface: var(--semantic-surface-deep);
   --component-value-content: var(--semantic-content-main);
+  --component-toolbar-surface: var(--semantic-surface-panel);
+  --component-toolbar-content: var(--semantic-content-main);
+  --component-toolbar-border: var(--semantic-border-normal);
+  --component-toolbar-group-surface: var(--semantic-surface-deep);
+  --component-toolbar-group-border: var(--semantic-border-strong);
 }

@@ -46,6 +46,28 @@
   --component-panel-success: #32653c;
   --component-panel-danger: #9b2924;
   --component-value-color-scheme: dark;
+  --component-toolbar-image: none;
+  --component-toolbar-shadow: none;
+  --component-toolbar-min-height: 46px;
+  --component-toolbar-gap: 10px;
+  --component-toolbar-compact-gap: 6px;
+  --component-toolbar-padding-block: 7px;
+  --component-toolbar-padding-inline: 10px;
+  --component-toolbar-group-surface: transparent;
+  --component-toolbar-group-border-width: 0px;
+  --component-toolbar-group-accent-width: 0px;
+  --component-toolbar-group-radius: 0px;
+  --component-toolbar-group-padding-block: 0px;
+  --component-toolbar-group-padding-inline: 0px;
+  --component-toolbar-group-gap: 5px;
+  --component-toolbar-group-shadow: none;
+  --component-toolbar-group-file-accent: #c79a55;
+  --component-toolbar-group-view-accent: #79aec8;
+  --component-toolbar-group-project-accent: #a89bcc;
+  --component-toolbar-group-placement-accent: #88b98b;
+  --component-toolbar-group-edit-accent: #ce937b;
+  --component-toolbar-group-overlay-accent: #74bfb7;
+  --component-toolbar-group-extras-accent: #b4a384;
   --semantic-surface-app: var(--primitive-color-ink);
   --semantic-surface-deep: var(--primitive-color-deep);
   --semantic-surface-panel: var(--primitive-color-slate1);
@@ -84,6 +106,7 @@
   --component-input-radius: var(--primitive-radius-small);
   --component-panel-radius: var(--primitive-radius-normal);
   --component-palette-surface: var(--semantic-surface-chrome);
+  --component-toolbar-surface: var(--semantic-surface-chrome);
   --semantic-content-on-chrome: var(--semantic-content-on-accent);
   --component-button-content: var(--semantic-content-on-accent);
   --component-button-border: var(--semantic-border-strong);
@@ -96,4 +119,7 @@
   --component-palette-content: var(--semantic-content-main);
   --component-value-surface: var(--semantic-surface-deep);
   --component-value-content: var(--semantic-content-on-accent);
+  --component-toolbar-border: var(--semantic-border-normal);
+  --component-toolbar-group-border: var(--semantic-border-strong);
+  --component-toolbar-content: var(--semantic-content-on-chrome);
 }

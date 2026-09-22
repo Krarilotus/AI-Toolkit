@@ -35,6 +35,7 @@
       "const": "default"
     },
     "variables": {
+      "description": "Known primitive, semantic and component CSS variables; includes toolbar/group decoration and spacing. Selectors and scripts are not allowed.",
       "const": "variables.css"
     },
     "colorScheme": {
