@@ -89,7 +89,7 @@ for (const [name, data] of Object.entries(unzipSync(bytes))) {
   const file = path.resolve(portable, name); assert.ok(file.startsWith(portable + path.sep));
   fs.mkdirSync(path.dirname(file), {recursive: true}); fs.writeFileSync(file, data);
 }
-fs.writeFileSync(path.join(profile, 'settings.json'), JSON.stringify({titlebarAcceptance: true, mainWindow: {bounds: {x: 100, y: 100, width: 1200, height: 850}, maximized: false}}));
+fs.writeFileSync(path.join(profile, 'settings.json'), JSON.stringify({titlebarAcceptance: true, mainWindow: {bounds: {x: 100, y: 100, width: options.baseline ? 1200 : 800, height: 850}, maximized: false}}));
 const report = {startedAt: new Date().toISOString(), directory, archive: path.resolve(options.archive), archiveSha256: sha(bytes), baseline: Boolean(options.baseline), verification: {nativeWindowMetadata: true, rendererScreenshotOnly: true, outerWindowScreenshot: false, physicalDrag: false, nativeSnapHover: false, nativeUnsavedDialogRendering: false}};
 const save = () => fs.writeFileSync(path.join(directory, 'result.json'), JSON.stringify(report, null, 2) + '\n');
 const clients = []; let processHandle;
@@ -115,6 +115,7 @@ try {
     report.normalUI = await main.evaluate(titlebarExpression); verifyControls(report.normalUI);
     await screenshot(main, 'normal-renderer-only.png');
     report.themeControls = {};
+    report.themeTabs = {};
     for (const theme of ['default', 'ucp']) {
       await main.evaluate(`ToolkitTheme.select(${JSON.stringify(theme)})`);
       await until(() => main.evaluate(`document.documentElement.dataset.theme===${JSON.stringify(theme)}`));
@@ -124,6 +125,15 @@ try {
         assert.equal(button.borderImageSource, 'none'); assert.equal(button.borderRadius, '0px');
       }
       report.themeControls[theme] = paint;
+      const tabs = await main.evaluate(`(()=>[...document.querySelectorAll('.workspaceTab')].map(button=>{const css=getComputedStyle(button),range=document.createRange();range.selectNodeContents(button);return{id:button.id,whiteSpace:css.whiteSpace,textOverflow:css.textOverflow,overflowX:css.overflowX,display:css.display,textLineCount:new Set([...range.getClientRects()].filter(rect=>rect.height>0).map(rect=>Math.round(rect.y))).size}}))()`);
+      assert.equal(tabs.length, 4);
+      for (const tab of tabs) {
+        assert.equal(tab.whiteSpace, 'nowrap', `${theme} narrow ${tab.id} must keep its label on one line`);
+        assert.equal(tab.textOverflow, 'ellipsis', `${theme} narrow ${tab.id} must deliberately truncate long labels`);
+        assert.equal(tab.overflowX, 'hidden'); assert.equal(tab.display, 'block');
+        assert.equal(tab.textLineCount, 1);
+      }
+      report.themeTabs[theme] = tabs;
       verifyControls(await main.evaluate(titlebarExpression));
       await screenshot(main, `${theme}-controls-renderer-only.png`);
     }
@@ -157,6 +167,7 @@ try {
     await main.evaluate(`${nativeWindow}.setFullscreen(true)`);
     await until(() => main.evaluate(`(async()=>await ${nativeWindow}.isFullscreen()&&document.documentElement.classList.contains('windowFullscreen'))()`));
     report.fullscreenUI = await main.evaluate(titlebarExpression);
+    assert.equal(report.fullscreenUI.controlsHidden, true, 'Fullscreen hides the native caption controls');
     await main.evaluate(`${nativeWindow}.setFullscreen(false)`);
     await until(() => main.evaluate(`(async()=>!(await ${nativeWindow}.isFullscreen())&&!document.documentElement.classList.contains('windowFullscreen'))()`));
     report.fullscreenStatePassed = true;
@@ -165,6 +176,7 @@ try {
     const editorTarget = await until(async () => (await targets()).find(target => target.type === 'page' && target.url.includes('restoreProject=0')));
     const editor = await connect(editorTarget); clients.push(editor);
     await until(() => editor.evaluate('Boolean(window.castleEditor&&window.isoView&&window.unsavedChanges&&window.__TAURI__)'));
+    await until(() => editor.evaluate(`Boolean(document.getElementById('windowControls')&&!document.getElementById('windowControls').hidden)`));
     report.secondary = await editor.evaluate(metadataExpression); assert.equal(report.secondary.label, editorLabel); verifyIntegratedFrame(report.secondary);
     report.secondaryUI = await editor.evaluate(titlebarExpression); verifyControls(report.secondaryUI);
     await editor.evaluate(`appWorkspace.setActive('castle');isoView.openWindow()`);

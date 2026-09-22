@@ -233,7 +233,10 @@ button:disabled { cursor: default; }
 @media (max-width: 950px) {
   .customWindowControls .titlebarMenus { margin-right: 4px; padding-right: 4px; }
   .customWindowControls .titlebarMenus button { padding-inline: 6px; }
-  .customWindowControls .workspaceTab { padding-inline: 6px; flex-shrink: 1; overflow: hidden; }
+  .customWindowControls .workspaceTab {
+    padding-inline: 6px; flex-shrink: 1; display: block; align-content: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .customWindowControls .releaseSourceSelect { width: 90px; }
   .customWindowControls .releaseUpdateButton { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .customWindowControls .appIcon { margin-inline: 0 4px; }
