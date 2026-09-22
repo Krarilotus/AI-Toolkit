@@ -105,7 +105,7 @@ html[data-themed-controls="true"] .castleToolbar kbd { border-color: #ffffff35; 
 
 /* Text fields and numerical values use their respective original UCP assets. */
 html[data-themed-fields="true"] #characterWorkspace .field input,
-html[data-themed-fields="true"] :is(input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"])), textarea) {
+html[data-themed-fields="true"] :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), textarea) {
   border: var(--texture-input-width) solid transparent;
   border-image: var(--texture-input) var(--texture-input-slice) / var(--texture-input-width) / 0 stretch;
   border-radius: 0;
