@@ -3,7 +3,51 @@
 Windows x64, 22 September 2026. Native compilation/tests now also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
-## Final cleanup preview: 39659543
+## Electron updater migration preview: 14f5269c
+
+Published `snapshot-native-14f5269c`: **7,396,843 bytes portable / 6,740,570 bytes
+Setup**. All 122 packaged images remain byte-identical to source. The package now
+contains a real supplemental ASAR resource capsule for older Electron updaters;
+neither download bundles Chromium or WebView2. Setup/uninstall use the Toolkit icon.
+
+566 JavaScript tests, strict desktop TypeScript and nine complete catalogues pass.
+[Native CI](https://github.com/Krarilotus/AI-Toolkit/actions/runs/35778275868)
+passes on Windows, Linux and macOS: 68 Rust tests and application compilation.
+The one opt-in local-game fixture was not rerun for this update-only change.
+The renderer is unchanged; performance measurements below belong to their named builds.
+
+An isolated copy of the installed `snapshot-002e40d` Electron application exercised
+its original update button, checker, downloader and PowerShell installer. These
+production files were byte-identical to the installed originals. The preliminary
+run used fixture release responses; it passed download, install, exit and native
+restart at the same path. The exact second castle, workspace, localStorage,
+settings, selected update source and customized UTF-8 configuration were preserved.
+Supplemental resources were restored and the native receipt matched the new EXE.
+The original live installation's EXE/ASAR hashes stayed unchanged.
+
+The repeat against the **published GitHub release** also passed with no fixture
+transport: download, checksum verification, installation, restart and restoration
+all completed. The real native checker returned `current` with the release/asset
+key, and the rendered fork selector remained `Krarilotus/AI-Toolkit` with a green
+`Aktuell` (`releaseCurrent`) button. Receipt key:
+`krarilotus/ai-toolkit:394086658:582167250:f62fa6344b93442a5c3e09fb277d502a566a43be0ba9cbf258d41525031ccae9`.
+The test app closed itself; the user's original app remained running unchanged.
+
+The installer failure fixture removes the staged receipt after preflight/backups
+to exercise partial-write rollback through the unchanged shipped helper. Native
+tests cover resource/receipt binding, bounded archive parsing, path containment,
+readiness and recovery. WebView2 tests cover the installed fast path and rejection
+of unsigned installers; the actual Microsoft bootstrapper's signature was verified
+without executing it. Clean-machine runtime installation and hard power-loss
+recovery remain unverified. Existing users' WebView2 was not removed for testing.
+
+Repeat the real published-release acceptance test in an isolated clone:
+
+```powershell
+node scripts/test-legacy-native-migration.mjs --archive release/native/AI-Toolkit-0.11.0-windows-x64.zip --original-root '<existing Electron installation>' --run --published --repo Krarilotus/AI-Toolkit --tag snapshot-native-14f5269c
+```
+
+## Earlier cleanup preview: 39659543
 
 Published `snapshot-native-39659543`: **7,208,195 bytes portable / 6,597,650 bytes
 Setup**. All 122 packaged images match their source bytes. 564 JavaScript tests,
@@ -63,6 +107,7 @@ receipt, settings and config preservation. The repeat against 39659543 was
 blocked **before download** by GitHub's anonymous API quota (HTTP 403; reset
 22 September, 14:25:56 UTC). It is not claimed as a successful final-release
 update. Direct release downloads remain available.
+The newer 14f5269c migration run above passed against the public release.
 
 ## UCP usability follow-up
 
@@ -188,10 +233,9 @@ The debug port is a test-only launch option, not enabled in shipped shortcuts.
 
 ## Limits
 
-WebView2 is an external runtime, downloaded separately if missing. The first
-Electron-to-native migration uses the installer or manual portable extraction;
-the old Electron updater cannot consume a native package. The native updater
-subsequently uses native ZIP releases.
+WebView2 is an external runtime, downloaded separately if missing. The universal
+ZIP supports both the existing Electron updater and native updates. Clean-machine
+runtime installation and hard power-loss recovery still require acceptance tests.
 
 Fourteen classic idle poses now have cached defensive formations; unverified
 engineer/siege/DE poses remain explicit rally markers. Local

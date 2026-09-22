@@ -41,7 +41,8 @@ No game was launched or attached to during these checks.
 | Troop previews | 14 verified classic idle poses extracted locally, mounted layers composed with signed origins. Pure cached AIC occupancy, visible-step support heights and stable bounded draw commands. | Engineer/siege/DE idle poses are unverified and retain explicit rally markers. |
 | Asset cache | Same-root extraction serialized; warm requests preserve metadata and PNG mtimes. Changed game/pack revisions invalidate caches. | No background watcher or automatic old-revision pruning. Reload rechecks sources; old cache retention affects local disk use, not bundle size. |
 | Native updater | Dynamic official/fork selection, SHA checks, staged install/rollback, config preservation and installed receipts. Real baseline-to-published update passed. | Native-to-official-Electron migration has fixture coverage, not live acceptance. |
-| Installer/runtime | NSIS downloads WebView2 separately only if missing. Config defaults written only when absent and retained on uninstall. Real NSIS hook/reinstall/abort checks pass. | Clean Windows without WebView2 and its runtime download. |
+| Electron migration | Unchanged shipped Electron updater installed the published native ZIP in an isolated clone, restarted it, restored the exact selected castle and custom config, and displayed the selected fork as current. | Hard power-loss recovery is not live-tested. |
+| Installer/runtime | NSIS and portable startup obtain WebView2 separately only if missing. Portable downloads verify Microsoft's Authenticode signature. Config defaults written only when absent and retained on uninstall. Real NSIS hook/reinstall/abort checks pass. | Clean Windows without WebView2 and its runtime installation. |
 | Linux/macOS | CI compiles the native application and runs portable contracts/tests on Windows, Linux and macOS. | CI passes on all three OSes; GUI, installer and updater integration remain Windows-only acceptance. |
 
 ## Maintained boundaries
@@ -62,12 +63,12 @@ No game was launched or attached to during these checks.
 
 ## Release boundaries
 
-The first migration from an old Electron build needs native Setup or manual ZIP
-extraction: the old updater requires `resources/app.asar`. Subsequent native
-snapshots update through the experimental channel. Keep the PR in draft until the
+The universal native ZIP supports migration through the old Electron updater's
+experimental channel. Its small `resources/app.asar` carries verified supplemental
+resources, not an Electron runtime. Keep the PR in draft until the
 user has tested the preview and the outstanding OS acceptance is understood.
 
-Published `snapshot-native-39659543` is 7,208,195 bytes (portable) and 6,597,650
+Published `snapshot-native-14f5269c` is 7,396,843 bytes (portable) and 6,740,570
 bytes (Setup), with 122 unchanged source images. Its native CI passes on Windows,
 Linux and macOS. Chromium, Node, source maps,
 authoring files and Firefly sprite pixels are excluded. WebView2 is external.

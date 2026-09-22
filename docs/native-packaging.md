@@ -1,8 +1,8 @@
 # Native preview packaging
 
 The Windows preview uses Tauri and the installed Microsoft WebView2 runtime. The
-runtime is not embedded in either download. NSIS downloads Microsoft's bootstrapper
-only when WebView2 is missing; the portable ZIP requires it to be installed already.
+runtime is not embedded in either download. NSIS and the portable application
+download Microsoft's bootstrapper only when WebView2 is missing.
 This keeps the editor download small without reducing image quality or removing
 editor features.
 
@@ -88,15 +88,17 @@ node-pkware codec attribution. When a published package omitted its license file
 URL and checksum. Packaging fails on an unresolved notice. Installer-specific
 Hungarian and Farsi strings supplement Tauri's built-in translations.
 
-Existing Electron installations need the setup EXE or a manual portable extraction
-for the first native migration: their updater requires Electron's app.asar format.
-Subsequent native snapshot updates use the portable ZIP. No Electron shim or second
-browser engine is bundled.
+The same ZIP supports already-shipped Electron updaters and native updates.
+`resources/app.asar` contains the supplemental resource files and an
+executable-bound migration manifest. Native startup validates and restores those
+resources when the old installer's allowlist omitted their direct ZIP entries.
+The receipt is finalized after the main window opens. No Electron shim or second
+browser engine is bundled. See [update channels](update-channels.md).
 
 ## Measured baseline
 
-Published `snapshot-native-39659543`: **7,208,195 bytes portable ZIP** and
-**6,597,650 bytes Setup**. Its audit covers 122 unchanged images and 23 portable
+Published `snapshot-native-14f5269c`: **7,396,843 bytes portable ZIP** and
+**6,740,570 bytes Setup**. Its audit covers 122 unchanged images and 24 portable
 files; real NSIS fresh/reinstall/abort checks pass. The authoritative
 `package-report.json` and SHA256SUMS are attached to the release.
 
