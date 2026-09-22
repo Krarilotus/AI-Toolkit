@@ -3,6 +3,72 @@
 Windows x64, 23 September 2026. Native compilation/tests now also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Conserved defenders, lords and UCP numeric controls: a972e2eb
+
+Defensive preview quotas follow the active recruitment cycle, aggregate repeated
+types, then distribute each type over its markers in stable round-robin order.
+`None` terminates the active slots; a type without a verified sprite still keeps
+its quota. Four hundred varied deterministic cases match an independent per-unit
+recruitment/smallest-group simulation. Gatekeeper's 144 wall defenders allocate
+72 Arabian archers, 36 European archers, 18 slingers and 18 Arabian swordsmen.
+The last group has no markers and uses the game's keep fallback; light unmatched
+types use the campfire. This remains a stationary preview, not a patrol simulation.
+
+The character's `lord.Type` selects the European/Arabian idle sprite at the centre
+of its visible keep. Both sprites come from the selected game, with native pixel
+origins and the verified 92-pixel keep deck. Synthetic standby/lord groups never
+alter the saved AIV. Full allocation, bounded visual representatives and render
+geometry are separate concerns. Allocation and resolved anchor identities remain
+stable across ordinary build-step changes; pan/zoom still reuses the scene.
+
+The UCP brush control uses the source GUI's orange native number spinner. Its
+toolbar commands are two pixels taller, with labels one pixel lower. Default
+retains its existing metrics and external plus/minus buttons. The standalone
+starter is version 1.5.0, with all 154 variables and 33 texture roles.
+
+Checks: **579 JavaScript tests and 71 Rust tests pass**, plus strict desktop
+TypeScript, all nine catalogues, installer hooks and package audits. The local
+game integration test remains opt-in. [CI at the release commit](https://github.com/Krarilotus/AI-Toolkit/actions/runs/35794440829)
+passes on Windows, Linux and macOS.
+
+Package: **7,402,828 bytes portable / 6,746,281 bytes Setup**, 24 portable files,
+and all 122 packaged images byte-identical to their source files. ZIP SHA-256:
+`0c7b736a13643792cdcece2e4df984cd43371f8c74bac9d5a196575c436527ac`.
+The new sprites add metadata and extraction support, not bundled game artwork.
+
+Packaged WebView checks verify all four Gatekeeper quotas and exact marker
+remainders, nine representative swordsmen plus one lord on distinct integer
+keep tiles, and both lord choices through the actual bound Character select.
+The centre tile is (46,46) above a keep at (43,43); elevation is terrain 80 + deck
+92 = 172. An in-memory fixture without Slinger markers preserves its 18-unit
+quota and renders nine campfire representatives at ground elevation 80; nearby
+castle structures occlude part of that view. The original document and character
+were restored exactly, with a clean final dirty state. UCP native up/down and
+Default plus/minus each change brush size 3 → 4 → 3.
+
+Matched e2ed/a972 runs use GreekSea/Kratoloros, 998 steps, both GPU views and
+the same maximized 2560-by-1392 window, zoom 0.2790625 and panX 470. The requested
+two-pixel taller UCP toolbar reduces canvas heights by two pixels and changes
+centred panY from 393.75 to 392.75. The old harness's exact layout assertion
+flagged this intended change; no application fix or favourable zoom change was
+used to hide it. All functional checks completed before that fixture assertion.
+A separate strict acceptance check passes with exactly that expected delta:
+canvas height -2, centred panY -1 and slider Y +2; window/map/step count/zoom,
+panX, camera rotation and every canvas width remain identical.
+At five slider round trips per second, input-to-next-animation-frame median/p95
+is **14.9/20.4 ms before** and **15.9/21.4 ms after**, maximum 22.7/23.4 ms.
+Neither run reports a main-thread task over 50 ms. These single runs document
+the observed small difference; they do not prove a speedup or physical screen
+latency. Instrumentation for detailed troop assertions was added after timing.
+
+After publication, GitHub's exhausted anonymous API quota initially blocked
+fork validation with HTTP 403. After the advertised reset, forced live native
+checks confirm e2ed7f50 offers a972e2eb, while a972e2eb reports current. Both
+identify the same published asset and the exact ZIP hash/size above. This last
+check validates native updater responses, not toolbar initialization or an
+installation. The labelled test clones closed cleanly; the user's app/profile
+were untouched.
+
 ## UCP control styling and whole-tile troop previews: e2ed7f50
 
 UCP dropdowns now follow the source GUI's native select indicator instead of
