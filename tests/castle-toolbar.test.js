@@ -114,23 +114,58 @@ test('toolbar groups expose New and all existing overlay controls without duplic
   }
 });
 
-test('overlay button is exactly as wide as its panel and the panel hangs directly below it', () => {
+test('every toolbar menu button is exactly as wide as its panel and the panel hangs directly below it', () => {
   const css = fs.readFileSync(require.resolve('../src/css/combined.css'), 'utf8');
-  assert.match(css, /\.castleOverlayOptions \{[^}]*left: 0; right: 0;/);
-  const panel = {style: {width: ''}, getBoundingClientRect: () => ({width: panel.style.width === 'max-content' && overlayMenu.open ? 211.4 : 0})};
-  const overlayMenu = {open: false, style: {minWidth: ''}, getClientRects: () => [{}]};
-  const context = vm.createContext({overlayMenu, overlayOptions: panel});
-  vm.runInContext(section('  function matchOverlayMenuWidth(', '  // Resizing the observed button'), context);
-  context.matchOverlayMenuWidth();
-  assert.equal(overlayMenu.style.minWidth, '212px');
-  assert.equal(overlayMenu.open, false, 'measuring does not leave the menu open');
+  assert.match(css, /\.toolbarMenuPanel \{[^}]*left: 0; right: 0;/);
+  const panel = {style: {width: ''}, getBoundingClientRect: () => ({width: panel.style.width === 'max-content' && menu.open ? 211.4 : 0})};
+  const menu = {open: false, style: {minWidth: ''}, getClientRects: () => [{}], querySelector: () => panel};
+  const context = vm.createContext({});
+  vm.runInContext(section('  function matchMenuWidth(', '  const matchMenuWidths'), context);
+  context.matchMenuWidth(menu);
+  assert.equal(menu.style.minWidth, '212px');
+  assert.equal(menu.open, false, 'measuring does not leave the menu open');
   assert.equal(panel.style.width, '');
-  overlayMenu.open = true; context.matchOverlayMenuWidth();
-  assert.equal(overlayMenu.open, true, 'an open menu stays open');
-  overlayMenu.getClientRects = () => []; overlayMenu.style.minWidth = '99px';
-  context.matchOverlayMenuWidth();
-  assert.equal(overlayMenu.style.minWidth, '99px', 'hidden tabs keep the last measured width');
-  assert.match(source, /addEventListener\('toolkit-language-changed', matchOverlayMenuWidth\)/);
+  menu.open = true; context.matchMenuWidth(menu);
+  assert.equal(menu.open, true, 'an open menu stays open');
+  menu.getClientRects = () => []; menu.style.minWidth = '99px';
+  context.matchMenuWidth(menu);
+  assert.equal(menu.style.minWidth, '99px', 'hidden tabs keep the last measured width');
+  assert.match(source, /addEventListener\('toolkit-language-changed', matchMenuWidths\)/);
+  for (const id of ['castleFileMenu', 'castleDrawMenu', 'castleOverlayMenu'])
+    assert.match(html, new RegExp(`<details id="${id}" class="toolbarMenu[^"]*">`), id);
+  const files = html.slice(html.indexOf('id="castleFileMenu"'), html.indexOf('</details>', html.indexOf('id="castleFileMenu"')));
+  for (const id of ['castleOpenBtn', 'castleSaveBtn', 'castleExportDeBtn', 'castleNewBtn']) assert.ok(files.includes(`id="${id}"`), id);
+});
+
+test('Draw shows the chosen drawing mode, greys out without an item and offers brush size only for Brush', () => {
+  const nodes = new Map();
+  const node = id => nodes.get(id) || nodes.set(id, {id, textContent: '', hidden: false, attributes: {}, setAttribute(name, value) { this.attributes[name] = value; }}).get(id);
+  const summary = {classes: new Set(), classList: {toggle(name, on) { on ? summary.classes.add(name) : summary.classes.delete(name); }}};
+  const tools = ['single', 'line', 'brush', 'bucket'].map(tool => ({dataset: {tool}, disabled: false,
+    querySelector: selector => ({textContent: selector === 'span' ? `name ${tool}` : `key ${tool}`})}));
+  const menu = {open: true, classes: new Set(), classList: {toggle(name, on) { on ? menu.classes.add(name) : menu.classes.delete(name); }},
+    querySelector: () => summary, querySelectorAll: () => tools};
+  nodes.set('castleDrawMenu', menu);
+  const state = {tool: 'brush', drawTool: 'single'};
+  const document = {getElementById: node,
+    querySelector: selector => tools.find(button => selector.includes(`"${button.dataset.tool}"`))};
+  const context = vm.createContext({state, document});
+  vm.runInContext(section('  function isPlacementTool(', '  // Was man ohne'), context);
+  vm.runInContext(section('  function updateDrawMenu(', '  function loadToolShortcuts('), context);
+  context.updateDrawMenu();
+  assert.equal(node('castleDrawIcon').attributes.href, '#tool-brush');
+  assert.equal(node('castleDrawLabel').textContent, 'name brush');
+  assert.equal(node('castleBrushStepper').hidden, false);
+  assert.ok(summary.classes.has('active'));
+  state.tool = 'select'; context.updateDrawMenu();
+  assert.equal(node('castleDrawLabel').textContent, 'name brush', 'Select keeps the last drawing mode on the button');
+  assert.ok(!summary.classes.has('active'));
+  state.tool = 'bucket'; context.updateDrawMenu();
+  assert.equal(node('castleBrushStepper').hidden, true, 'brush size is only offered for Brush');
+  for (const tool of tools) tool.disabled = true;
+  context.updateDrawMenu();
+  assert.ok(menu.classes.has('disabled')); assert.equal(menu.open, false);
+  assert.ok(!summary.classes.has('active'), 'a greyed-out Draw is never shown as active');
 });
 
 test('floor plan export averages exactly each tile\'s own block of the full picture', () => {

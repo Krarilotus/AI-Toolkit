@@ -111,6 +111,7 @@
     format: 'aiv',
     dirty: false,
     tool: 'single',
+    drawTool: 'single',
     itemTools: Object.create(null),
     currentItemType: null,
     activeCategory: null,
@@ -1812,6 +1813,7 @@
       button.disabled = (lineOnly && (tool === 'single' || tool === 'brush'))
                      || (nothingChosen && isPlacementTool(tool));
     });
+    updateDrawMenu();
   }
 
   // Ein gesperrtes Werkzeug darf nicht aktiv stehen bleiben. Wer das Gebaeude
@@ -1892,8 +1894,31 @@
     });
     for (const [action, label, , id] of shortcutConfig.actions) {
       const button = id && document.getElementById(id);
-      if (button) button.title = label + (state.toolShortcuts[action]?.[0] ? ` (${state.toolShortcuts[action][0].toUpperCase()})` : '');
+      if (!button) continue;
+      const key = state.toolShortcuts[action]?.[0]?.toUpperCase() || '';
+      button.title = label + (key ? ` (${key})` : '');
+      const badge = button.closest('.toolbarMenuPanel') && button.querySelector('kbd');
+      if (badge) badge.textContent = key;
     }
+    updateDrawMenu();
+  }
+
+  // Draw shows the current drawing mode; the palette behind it holds all four.
+  // Brush size only matters to Brush, so its stepper appears only there.
+  function updateDrawMenu() {
+    if (isPlacementTool(state.tool)) state.drawTool = state.tool;
+    const tool = state.drawTool || 'single';
+    const choice = document.querySelector(`.castleDrawPalette .castleTool[data-tool="${tool}"]`);
+    const menu = document.getElementById('castleDrawMenu');
+    if (!choice || !menu) return;
+    document.getElementById('castleDrawIcon').setAttribute('href', `#tool-${tool}`);
+    document.getElementById('castleDrawLabel').textContent = choice.querySelector('span').textContent;
+    document.getElementById('castleDrawKey').textContent = choice.querySelector('kbd').textContent;
+    const unavailable = [...menu.querySelectorAll('.castleTool')].every(button => button.disabled);
+    menu.querySelector('summary').classList.toggle('active', isPlacementTool(state.tool) && !unavailable);
+    menu.classList.toggle('disabled', unavailable);
+    if (unavailable) menu.open = false;
+    document.getElementById('castleBrushStepper').hidden = tool !== 'brush';
   }
 
   function loadToolShortcuts() {
@@ -3881,45 +3906,60 @@
   });
 
   document.querySelectorAll('.castleTool').forEach(btn => btn.addEventListener('click', () => setTool(btn.dataset.tool)));
+  // Nothing is chosen at startup either, so Draw starts greyed out.
+  updateToolAvailability();
   document.getElementById('castleNewBtn').addEventListener('click', newFile);
   document.getElementById('castleOpenBtn').addEventListener('click', openFile);
   document.getElementById('castleSaveBtn').addEventListener('click', saveFile);
   document.getElementById('castleExportDeBtn').addEventListener('click', () => saveAs('aivjson'));
   for (const id of ['castleShowFire','castleShowRoutes']) document.getElementById(id)?.addEventListener('change', scheduleDraw);
   const overlayMenu = document.getElementById('castleOverlayMenu');
+  const toolbarMenus = [...document.querySelectorAll('.castleToolbar .toolbarMenu')];
   document.addEventListener('pointerdown', event => {
-    if (!overlayMenu.contains(event.target)) overlayMenu.open = false;
+    for (const menu of toolbarMenus) if (!menu.contains(event.target)) menu.open = false;
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && overlayMenu.open) {
+    const menu = toolbarMenus.find(candidate => candidate.open);
+    if (event.key === 'Escape' && menu) {
       event.preventDefault();
-      overlayMenu.open = false;
-      overlayMenu.querySelector('summary').focus();
+      menu.open = false;
+      menu.querySelector('summary').focus();
     }
   });
-  window.addEventListener('blur', () => { overlayMenu.open = false; });
-  const overlayOptions = overlayMenu.querySelector('.castleOverlayOptions');
-  // The button is exactly as wide as its panel, so the panel drops straight
-  // below it and stays on screen wherever the toolbar wraps the button.
-  function matchOverlayMenuWidth() {
-    if (!overlayMenu.getClientRects().length) return;
-    const open = overlayMenu.open;
-    overlayMenu.open = true;
-    overlayOptions.style.width = 'max-content';
-    const width = Math.ceil(overlayOptions.getBoundingClientRect().width);
-    overlayOptions.style.width = '';
-    overlayMenu.open = open;
-    overlayMenu.style.minWidth = `${width}px`;
+  window.addEventListener('blur', () => { for (const menu of toolbarMenus) menu.open = false; });
+  for (const menu of toolbarMenus) {
+    // A command closes its menu; the overlay checkboxes keep theirs open.
+    menu.querySelector('.toolbarMenuPanel').addEventListener('click', event => {
+      if (event.target.closest('button')) menu.open = false;
+    });
+    menu.querySelector('summary').addEventListener('click', event => {
+      if (menu.classList.contains('disabled')) event.preventDefault();
+    });
   }
+  // A menu button is exactly as wide as its panel, so the panel drops straight
+  // below it and stays on screen wherever the toolbar wraps the button.
+  function matchMenuWidth(menu) {
+    if (!menu.getClientRects().length) return;
+    const panel = menu.querySelector('.toolbarMenuPanel');
+    const open = menu.open;
+    menu.open = true;
+    panel.style.width = 'max-content';
+    const width = Math.ceil(panel.getBoundingClientRect().width);
+    panel.style.width = '';
+    menu.open = open;
+    menu.style.minWidth = `${width}px`;
+  }
+  const matchMenuWidths = () => toolbarMenus.forEach(matchMenuWidth);
   // Resizing the observed button inside its own callback would trip the
   // browser's ResizeObserver loop guard, so the width follows a frame later.
-  let overlayWidthFrame = 0;
-  new ResizeObserver(() => {
-    cancelAnimationFrame(overlayWidthFrame);
-    overlayWidthFrame = requestAnimationFrame(matchOverlayMenuWidth);
-  }).observe(overlayMenu);
-  window.addEventListener('toolkit-language-changed', matchOverlayMenuWidth);
-  window.addEventListener('toolkit-theme-changed', matchOverlayMenuWidth);
+  let menuWidthFrame = 0;
+  const menuSizes = new ResizeObserver(() => {
+    cancelAnimationFrame(menuWidthFrame);
+    menuWidthFrame = requestAnimationFrame(matchMenuWidths);
+  });
+  for (const menu of toolbarMenus) menuSizes.observe(menu);
+  window.addEventListener('toolkit-language-changed', matchMenuWidths);
+  window.addEventListener('toolkit-theme-changed', matchMenuWidths);
   els.showNames.addEventListener('change', scheduleDraw);
   els.showUnitNumbers.addEventListener('change', scheduleDraw);
   els.showCompatibility.addEventListener('change', scheduleDraw);

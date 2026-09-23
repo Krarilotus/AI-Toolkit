@@ -162,38 +162,62 @@
     <div class="castleApp">
       <div id="castleSaveNotice" class="castleSaveNotice" role="status" aria-live="polite" hidden></div>
       <header class="castleToolbar workspaceCommandBar">
+        <svg class="iconSprite" aria-hidden="true" focusable="false">
+          <symbol id="icon-scroll" viewBox="0 0 24 24"><path d="M7 3.5h9.5L20 7v13.5H7zM16.5 3.5V7H20M10 10.5h7M10 14h7M10 17.5h4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 3.5a2.5 2.5 0 0 0 0 5h2" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+          <symbol id="icon-castle" viewBox="0 0 24 24"><path d="M3 21V6h2v2h2V6h2v5h6V6h2v2h2V6h2v15h-7.5v-4a1.5 1.5 0 0 0-3 0v4z" fill="currentColor"/></symbol>
+          <symbol id="icon-map" viewBox="0 0 24 24"><path d="M9 9h6v6H9z" fill="currentColor" opacity=".55"/><path d="M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+          <symbol id="icon-iso" viewBox="0 0 24 24"><path d="M12 3l8.5 4.5L12 12 3.5 7.5z" fill="currentColor" opacity=".45"/><path d="M12 3l8.5 4.5v9L12 21l-8.5-4.5v-9zM3.5 7.5 12 12l8.5-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+          <symbol id="icon-overlays" viewBox="0 0 24 24"><circle cx="12" cy="10" r="10" class="iconGlow"/><path d="M5 14.5V5h1.4v1.3h1.3V5h1.4v3.2h5.8V5h1.4v1.3h1.3V5H19v9.5h-5.8v-2.3a1.2 1.2 0 0 0-2.4 0v2.3z" fill="currentColor"/><path d="M12 23v-5.5M9.6 19.8 12 17.4l2.4 2.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+          <symbol id="tool-grid" viewBox="0 0 24 24"><path d="M2 2h20v20H2zM6 2v20M10 2v20M14 2v20M18 2v20M2 6h20M2 10h20M2 14h20M2 18h20" fill="none" stroke="currentColor" stroke-width=".6" opacity=".4"/></symbol>
+          <symbol id="tool-single" viewBox="0 0 24 24"><use href="#tool-grid"/><path d="M10 10h4v4h-4z" fill="currentColor"/></symbol>
+          <symbol id="tool-line" viewBox="0 0 24 24"><use href="#tool-grid"/><path d="M2 10h20v4H2z" fill="currentColor"/></symbol>
+          <symbol id="tool-brush" viewBox="0 0 24 24"><use href="#tool-grid"/><path d="M10 6h4v4h4v4h-4v4h-4v-4H6v-4h4z" fill="currentColor"/></symbol>
+          <symbol id="tool-bucket" viewBox="0 0 24 24"><path d="M6 6h12v12H6z" fill="currentColor" opacity=".45"/><path d="M2 2h20v20H2zM6 6v12h12V6z" fill="currentColor" fill-rule="evenodd"/></symbol>
+          <symbol id="tool-select" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.5 2"/><path d="M12 7v10M7 12h10M10 9l2-2 2 2M10 15l2 2 2-2M9 10l-2 2 2 2M15 10l2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        </svg>
         <div class="toolbarGroup toolbarFileGroup" role="group" aria-label="Castle files" data-i18n-attrs="aria-label=interface:castle_files">
-          <button id="castleOpenBtn" type="button" data-i18n="interface:open_castle">Open castle</button>
-          <button id="castleSaveBtn" class="primaryAction" type="button" data-i18n="interface:save_castle">Save castle</button>
-          <button id="castleExportDeBtn" type="button" title="Export a Definitive Edition castle (.aivjson)" data-i18n-attrs="title=interface:export_a_definitive_edition_castle_aivjson" data-i18n="interface:export_de">Export DE</button>
-          <button id="castleNewBtn" type="button" data-i18n="interface:new">New</button>
+          <details id="castleFileMenu" class="toolbarMenu">
+            <summary title="Castle files" data-i18n-attrs="title=interface:castle_files"><svg class="toolbarIcon" aria-hidden="true"><use href="#icon-scroll"></use></svg><span data-i18n="interface:castle">Castle</span></summary>
+            <div class="toolbarMenuPanel">
+              <button id="castleOpenBtn" type="button"><span data-i18n="interface:open_castle">Open castle</span><kbd></kbd></button>
+              <button id="castleSaveBtn" class="primaryAction" type="button"><span data-i18n="interface:save_castle">Save castle</span><kbd></kbd></button>
+              <button id="castleExportDeBtn" type="button" title="Export a Definitive Edition castle (.aivjson)" data-i18n-attrs="title=interface:export_a_definitive_edition_castle_aivjson"><span data-i18n="interface:export_de">Export DE</span><kbd></kbd></button>
+              <button id="castleNewBtn" type="button"><span data-i18n="interface:new">New</span><kbd></kbd></button>
+            </div>
+          </details>
         </div>
         <div class="toolbarGroup castleViewGroup" role="group" aria-label="Castle views" data-i18n-attrs="aria-label=interface:castle_views">
-          <button id="castleMapBtn" type="button" aria-pressed="true" title="Show or close the map seen from above" data-i18n-attrs="title=interface:show_or_close_the_map_seen_from_above" data-i18n="interface:map">Map</button>
-          <button id="castleIsoBtn" type="button" aria-pressed="false" title="Show or close the slanted view - drag a tab to move a window" data-i18n-attrs="title=interface:show_or_close_the_slanted_view_drag_a_tab_to_move_a_window" data-i18n="interface:2_5d_view">2.5D view</button>
+          <button id="castleMapBtn" type="button" aria-pressed="true" title="Show or close the map seen from above" data-i18n-attrs="title=interface:show_or_close_the_map_seen_from_above"><svg class="toolbarIcon" aria-hidden="true"><use href="#icon-map"></use></svg><span data-i18n="interface:map">Map</span></button>
+          <button id="castleIsoBtn" type="button" aria-pressed="false" title="Show or close the slanted view - drag a tab to move a window" data-i18n-attrs="title=interface:show_or_close_the_slanted_view_drag_a_tab_to_move_a_window"><svg class="toolbarIcon" aria-hidden="true"><use href="#icon-iso"></use></svg><span data-i18n="interface:2_5d_view">2.5D view</span></button>
         </div>
         <div class="toolbarGroup castleProjectGroup" role="group" aria-label="AI castle selection" data-i18n-attrs="aria-label=interface:ai_castle_selection">
-          <label class="castleProjectChoice" for="ucpCastleSelect">
-            <span data-i18n="interface:ai_castle">AI castle</span>
+          <label class="castleProjectChoice" for="ucpCastleSelect" title="AI castle" data-i18n-attrs="title=interface:ai_castle">
+            <svg class="toolbarIcon" aria-hidden="true"><use href="#icon-castle"></use></svg>
+            <span class="visuallyHidden" data-i18n="interface:ai_castle">AI castle</span>
             <select id="ucpCastleSelect" disabled>
               <option value="" data-i18n="interface:no_ai_project">No AI project</option>
             </select>
           </label>
         </div>
         <div class="toolbarGroup castleTools castlePlacementGroup" role="group" aria-label="Placement tools" data-i18n-attrs="aria-label=interface:placement_tools">
-          <button type="button" class="castleTool active" data-tool="single" title="Shortcut: 1 or S" data-i18n-attrs="title=interface:shortcut_1_or_s"><span data-i18n="interface:single">Single</span> <kbd>1</kbd></button>
-          <button type="button" class="castleTool" data-tool="line" title="Shortcut: 6 or L" data-i18n-attrs="title=interface:shortcut_6_or_l"><span data-i18n="interface:line">Line</span> <kbd>2</kbd></button>
-          <button type="button" class="castleTool" data-tool="brush" title="Shortcut: 2 or B" data-i18n-attrs="title=interface:shortcut_2_or_b"><span data-i18n="interface:brush">Brush</span> <kbd>3</kbd></button>
-          <span class="numberStepper" title="How wide the brush paints. - and + make it smaller and bigger." data-i18n-attrs="title=interface:how_wide_the_brush_paints_and_make_it_smaller_and_bigger">
+          <details id="castleDrawMenu" class="toolbarMenu castleDrawMenu">
+            <summary title="Placement tools" data-i18n-attrs="title=interface:placement_tools"><svg class="toolbarIcon" aria-hidden="true"><use id="castleDrawIcon" href="#tool-single"></use></svg><span id="castleDrawLabel">Single</span><kbd id="castleDrawKey">1</kbd></summary>
+            <div class="toolbarMenuPanel castleDrawPalette">
+              <button type="button" class="castleTool" data-tool="single" title="Shortcut: 1 or S" data-i18n-attrs="title=interface:shortcut_1_or_s"><svg class="toolIcon" aria-hidden="true"><use href="#tool-single"></use></svg><span data-i18n="interface:single">Single</span> <kbd>1</kbd></button>
+              <button type="button" class="castleTool" data-tool="line" title="Shortcut: 6 or L" data-i18n-attrs="title=interface:shortcut_6_or_l"><svg class="toolIcon" aria-hidden="true"><use href="#tool-line"></use></svg><span data-i18n="interface:line">Line</span> <kbd>2</kbd></button>
+              <button type="button" class="castleTool" data-tool="brush" title="Shortcut: 2 or B" data-i18n-attrs="title=interface:shortcut_2_or_b"><svg class="toolIcon" aria-hidden="true"><use href="#tool-brush"></use></svg><span data-i18n="interface:brush">Brush</span> <kbd>3</kbd></button>
+              <button type="button" class="castleTool" data-tool="bucket" title="Fills everything up to a wall &#8212; the edge of the map counts as one. Shortcut: 7 or F" data-i18n-attrs="title=interface:fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o"><svg class="toolIcon" aria-hidden="true"><use href="#tool-bucket"></use></svg><span data-i18n="interface:fill">Fill</span> <kbd>4</kbd></button>
+            </div>
+          </details>
+          <span id="castleBrushStepper" class="numberStepper" title="How wide the brush paints. - and + make it smaller and bigger." data-i18n-attrs="title=interface:how_wide_the_brush_paints_and_make_it_smaller_and_bigger" hidden>
             <label class="numberStepperLabel" for="castleBrushSize" data-i18n="interface:brush_size">Brush size</label>
             <button id="castleBrushMinus" type="button" aria-label="Smaller brush" data-i18n-attrs="aria-label=interface:smaller_brush">&#8722;</button>
             <input id="castleBrushSize" type="number" min="1" max="100" step="1" value="1" aria-label="Brush size" data-i18n-attrs="aria-label=interface:brush_size">
             <button id="castleBrushPlus" type="button" aria-label="Bigger brush" data-i18n-attrs="aria-label=interface:bigger_brush">+</button>
           </span>
-          <button type="button" class="castleTool" data-tool="bucket" title="Fills everything up to a wall &#8212; the edge of the map counts as one. Shortcut: 7 or F" data-i18n-attrs="title=interface:fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o"><span data-i18n="interface:fill">Fill</span> <kbd>4</kbd></button>
         </div>
         <div class="toolbarGroup castleTools castleEditGroup" role="group" aria-label="Selection and editing tools" data-i18n-attrs="aria-label=interface:selection_and_editing_tools">
-          <button type="button" class="castleTool" data-tool="select" title="Shortcut: 3 or V" data-i18n-attrs="title=interface:shortcut_3_or_v"><span data-i18n="interface:select_move">Select / Move</span> <kbd>5</kbd></button>
+          <button type="button" class="castleTool" data-tool="select" title="Shortcut: 3 or V" data-i18n-attrs="title=interface:shortcut_3_or_v"><svg class="toolbarIcon" aria-hidden="true"><use href="#tool-select"></use></svg><span data-i18n="interface:select_move">Select / Move</span> <kbd>5</kbd></button>
           <label id="castleSelectModeLabel" class="castleProjectChoice" hidden><span data-i18n="interface:select_mode">Select mode</span>
             <select id="castleSelectMode" title="Flood selects connected placements of the same type, including diagonals. Shift adds; Ctrl-click toggles the connected group." data-i18n-attrs="title=interface:flood_selects_connected_placements_of_the_same_type_including_diagonals_shif">
               <option value="area" data-i18n="interface:border">Border</option>
@@ -208,9 +232,9 @@
           </label>
         </div>
         <div class="toolbarGroup castleOverlayGroup" role="group" aria-label="Display overlays" data-i18n-attrs="aria-label=interface:display_overlays">
-          <details id="castleOverlayMenu" class="castleOverlayMenu">
-            <summary data-i18n="interface:overlays">Overlays</summary>
-            <div class="castleOverlayOptions">
+          <details id="castleOverlayMenu" class="toolbarMenu castleOverlayMenu">
+            <summary><svg class="toolbarIcon" aria-hidden="true"><use href="#icon-overlays"></use></svg><span data-i18n="interface:overlays">Overlays</span></summary>
+            <div class="toolbarMenuPanel castleOverlayOptions">
           <label class="compactToggle"><input id="castleShowNames" type="checkbox"> <span data-i18n="interface:item_names">Item names</span></label>
           <label class="compactToggle"><input id="castleShowUnitNumbers" type="checkbox"> <span data-i18n="interface:unit_order">Unit Order</span></label>
           <label class="compactToggle"><input id="castleShowCompatibility" type="checkbox"> <span data-i18n="interface:guide_lines">Guide lines</span></label>

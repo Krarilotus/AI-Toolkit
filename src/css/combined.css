@@ -797,28 +797,42 @@ button:disabled { cursor: default; }
 .castleToolbar > .toolbarGroup {
   flex-wrap: wrap; max-width: 100%;
 }
-.castleOverlayMenu { position: relative; }
-.castleOverlayMenu summary {
+/* Castle, Draw and Overlays are menus behind one button each. */
+.toolbarMenu { position: relative; }
+.toolbarMenu > summary {
   /* A summary does not centre its text like a button does. */
   display: flex; align-items: center; gap: 6px; list-style: none;
-  cursor: pointer; padding: 5px 8px; min-height: 30px;
+  cursor: pointer; padding: 5px 8px; min-height: 30px; white-space: nowrap;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   background: var(--surface-3); color: var(--text-main);
   font: 600 1.4rem/1.25 var(--font-ui);
 }
-.castleOverlayMenu summary::-webkit-details-marker { display: none; }
-.castleOverlayMenu summary::before { content: '\25B8'; font-size: .8em; }
-.castleOverlayMenu[open] summary::before { content: '\25BE'; }
-.castleOverlayMenu[open] summary { border-color: var(--accent-strong); }
-.castleOverlayMenu summary:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
-.castleOverlayOptions {
+.toolbarMenu > summary::-webkit-details-marker { display: none; }
+.toolbarMenu > summary::after { content: '\25BE'; margin-inline-start: auto; padding-inline-start: 2px; font-size: .75em; opacity: .75; }
+.toolbarMenu[open] > summary { border-color: var(--accent-strong); }
+.toolbarMenu > summary:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.castleToolbar .toolbarMenu > summary.active {
+  background: var(--accent); border-color: var(--accent-strong); color: var(--semantic-content-on-accent);
+}
+.toolbarMenu.disabled > summary { opacity: .45; cursor: default; }
+.toolbarMenuPanel {
   position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 100;
-  display: grid; gap: 3px; min-width: 180px; padding: 7px;
+  display: grid; gap: 3px; padding: 7px;
   border: 1px solid var(--line-strong); border-radius: 6px;
   background: var(--surface-2); box-shadow: 0 5px 18px #0008;
 }
+.castleToolbar .toolbarMenuPanel > button { display: flex; align-items: center; gap: 8px; justify-content: flex-start; text-align: start; white-space: nowrap; }
+.toolbarMenuPanel > button > kbd:empty { display: none; }
+.toolbarMenuPanel > button > kbd { margin-inline-start: auto; }
 .castleOverlayOptions .compactToggle { padding: 7px 9px; color: var(--text-main); cursor: pointer; }
 .castleOverlayOptions .compactToggle:hover { background: var(--surface-3); border-radius: 3px; }
+/* Each drawing mode shows what it does on a small tile grid. */
+.castleDrawPalette .toolIcon { width: 28px; height: 28px; flex: none; }
+.castleToolbar .toolbarIcon { width: 20px; height: 20px; flex: none; }
+.castleToolbar button:has(> .toolbarIcon) { display: inline-flex; align-items: center; gap: 6px; }
+.castleToolbar .iconGlow { fill: var(--accent); opacity: .5; }
+.iconSprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.visuallyHidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .toolbarRight { margin-left: auto; }
 .toolbarFileGroup {
   padding-right: 10px;
@@ -832,7 +846,7 @@ button:disabled { cursor: default; }
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-muted);
+  color: var(--text-soft);
   white-space: nowrap;
 }
 .castleProjectChoice select {
