@@ -121,6 +121,7 @@
     redo: [],
     cell: DEFAULT_CELL,
     snapshotLabels: false,
+    floorPlan: false,
     panX: 0,
     panY: 0,
     canvasWidth: 0,
@@ -2667,6 +2668,8 @@
     clearCacheContext(staticCacheCtx, target);
 
     ctx = staticCacheCtx;
+    // A floor plan keeps only the castle; the ground stays transparent.
+    if (state.floorPlan) return;
     ctx.fillStyle = '#101216';
     ctx.fillRect(0, 0, state.canvasWidth, state.canvasHeight);
     const mapSize = GRID * state.cell;
@@ -2692,13 +2695,13 @@
     const futureCacheCtx = future.getContext('2d');
     paintCanvasBackground(target);
     const movingRefs = state.gesture === 'move' ? state.moveStartOffsets : null;
-    const activeStep = Number.isInteger(state.insertionFrameIndex) ? state.insertionFrameIndex : null;
+    const activeStep = Number.isInteger(state.insertionFrameIndex) && !state.floorPlan ? state.insertionFrameIndex : null;
     const futurePlacements = [];
     const unitPlacements = [];
     for (const placement of placementRefs()) {
       if (movingRefs?.has(placement.ref)) continue;
       if (placement.kind === 'unit') {
-        unitPlacements.push(placement);
+        if (!state.floorPlan) unitPlacements.push(placement);
       } else if (activeStep != null && placement.fi > activeStep) {
         futurePlacements.push(placement);
       } else {
@@ -2732,7 +2735,7 @@
     }
 
     ctx = staticCacheCtx;
-    drawAnalysisOverlay();
+    if (!state.floorPlan) drawAnalysisOverlay();
     for (const placement of unitPlacements) {
       drawPlacement(placement.type, placement.off, state.selected.has(placement.ref));
     }
@@ -3942,16 +3945,28 @@
     } finally { button.disabled = false; }
   });
 
-  // A floor plan keeps one pixel per tile: the centre pixel of each tile in
-  // the full picture (nearest neighbour), so colours match the map exactly
-  // and neither grid lines nor footprint borders leak in.
+  // A floor plan has one pixel per tile: the average of exactly that tile's
+  // cell-by-cell block of the full picture, never reaching into a neighbour.
+  // Colours are weighted by coverage, so a half-covered tile keeps the
+  // building's colour at half opacity instead of fading towards black.
   function floorPlanPixels(picture, cell) {
     const source = picture.getContext('2d'), plan = document.createElement('canvas');
     plan.width = plan.height = GRID;
-    const planCtx = plan.getContext('2d'), pixels = planCtx.createImageData(GRID, GRID), centre = Math.floor(cell / 2);
+    const planCtx = plan.getContext('2d'), pixels = planCtx.createImageData(GRID, GRID), width = GRID * cell;
+    const sums = new Float64Array(GRID * 4);
     for (let y = 0; y < GRID; y++) {
-      const row = source.getImageData(0, y * cell + centre, GRID * cell, 1).data;
-      for (let x = 0; x < GRID; x++) pixels.data.set(row.subarray((x * cell + centre) * 4, (x * cell + centre) * 4 + 4), (y * GRID + x) * 4);
+      const block = source.getImageData(0, y * cell, width, cell).data;
+      sums.fill(0);
+      for (let i = 0; i < block.length; i += 4) {
+        const tile = Math.floor((i / 4 % width) / cell) * 4, alpha = block[i + 3];
+        sums[tile] += block[i] * alpha; sums[tile + 1] += block[i + 1] * alpha; sums[tile + 2] += block[i + 2] * alpha; sums[tile + 3] += alpha;
+      }
+      for (let x = 0; x < GRID; x++) {
+        const alpha = sums[x * 4 + 3], out = (y * GRID + x) * 4;
+        if (!alpha) continue;
+        for (let c = 0; c < 3; c++) pixels.data[out + c] = Math.round(sums[x * 4 + c] / alpha);
+        pixels.data[out + 3] = Math.round(alpha / (cell * cell));
+      }
     }
     planCtx.putImageData(pixels, 0, 0);
     return plan;
@@ -3969,11 +3984,12 @@
     const picture = document.createElement('canvas');
     const future = document.createElement('canvas');
     picture.width = picture.height = future.width = future.height = GRID * cell;
-    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty', 'snapshotLabels', 'selected'].map(key => [key, state[key]]));
+    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty', 'snapshotLabels', 'floorPlan', 'selected'].map(key => [key, state[key]]));
     const savedContext = ctx, showNames = els.showNames.checked;
     try {
-      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null, snapshotLabels: !floorPlan});
-      // The floor plan shows buildings only: no names, selection or unit markers.
+      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null, snapshotLabels: !floorPlan, floorPlan});
+      // The floor plan shows buildings only: no ground, names, selection,
+      // troops or overlays, and the whole castle regardless of the build step.
       if (floorPlan) { state.selected = new Set(); els.showNames.checked = false; }
       rebuildStaticCache(picture, future);
       if (floorPlan) return floorPlanPixels(picture, cell).toDataURL('image/png');
