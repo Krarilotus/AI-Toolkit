@@ -249,3 +249,11 @@ test('detached viewport chrome belongs to shared CSS, not a second inline theme'
   assert.doesNotMatch(detached, /!important|#[a-f\d]{6}\b/i,
     'detached chrome inherits role colors without its own palette or specificity overrides');
 });
+
+test('growing panels and lists keep room for their scrollbar, so their boxes keep one width', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'css', 'combined.css'), 'utf8');
+  const rule = css.match(/:is\(([^)]*)\) \{\s*scrollbar-gutter: stable;/);
+  assert.ok(rule, 'scrollbar-gutter rule');
+  for (const name of ['.castleBuildList', '.castleSidebarOverviews', '.castlePalette', '.characterForm', '.ucpAiList'])
+    assert.ok(rule[1].includes(name), name);
+});

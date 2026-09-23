@@ -79,6 +79,12 @@ button:disabled { cursor: default; }
   background: var(--semantic-scrollbar-thumb);
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--semantic-scrollbar-hover); }
+/* Panels and lists that grow keep room for their scrollbar, so the boxes
+   inside do not change width when it appears. */
+:is(.characterSidebar, .characterForm, .castleBuildList, .castleSidebarOverviews, .costTable, .castlePalette,
+  .aiLinesPanel, .aiAssetsPanel, .ucpAiList, .ucpLibraryDetails, .castleReplaceRows, .castleMapList, .castleGroupsList) {
+  scrollbar-gutter: stable;
+}
 
 #appRoot {
   width: 100vw;
