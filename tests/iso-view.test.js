@@ -297,6 +297,29 @@ test('no box, no outline', () => {
   assert.equal(geometry.marqueeOutline(null, view), null);
 });
 
+test('a free-standing crenel is always the single merlon, a row keeps the checkerboard', () => {
+  const b = name => ({ bild: name, breite: 30, hoehe: 135 });
+  const paar = name => ({ klotz: b(name + '_klotz'), scharte: b(name + '_scharte') });
+  const reihe = name => ({ klotz: Array.from({length: 16}, () => b(name + '_klotz')), scharte: Array.from({length: 16}, () => b(name + '_scharte')) });
+  const zinne = { kacheln: 1, mauer: { hoehe: 98, zinne: true, laengs: reihe('l'), quer: reihe('q'),
+    rand: { laengs: paar('rl'), quer: paar('rq'), allein: paar('ra') } } };
+  const felder = new Set();
+  const mauerAn = (gx, gy) => felder.has(gx + ':' + gy) ? zinne.mauer : null;
+  const bild = (gx, gy) => geometry.variantFor(zinne, gx, gy, mauerAn).bild;
+  // x + y gerade: das Spiel malte hier die Scharte.
+  felder.add('10:89');
+  assert.equal(bild(10, 89), 'ra_klotz', 'allein auf einem Schartenfeld');
+  felder.clear(); felder.add('11:89');
+  assert.equal(bild(11, 89), 'ra_klotz', 'allein auf einem Klotzfeld');
+  felder.clear(); for (const gx of [10, 11, 12]) felder.add(gx + ':89');
+  assert.equal(bild(11, 89), 'l_klotz');
+  assert.equal(bild(10, 89), 'rl_scharte', 'Reihen behalten das Schachbrett');
+  assert.equal(bild(12, 89), 'ra_scharte', 'auch das hintere Ende einer Reihe');
+  felder.clear(); felder.add('10:89'); felder.add('10:90');
+  assert.equal(bild(10, 89), 'rq_scharte');
+  assert.equal(bild(10, 90), 'ra_klotz', 'x + y ungerade');
+});
+
 test('every drawn item carries the key the editor uses for its selection', () => {
   const dokument = { frames: [
     { itemType: 20, tilePositionOfsets: [2030, 2031] },

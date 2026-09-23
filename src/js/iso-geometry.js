@@ -256,6 +256,10 @@
       else if (traegt(gx, gy - 1) && traegt(gx, gy + 1)) gewaehlt = mauer.quer[welche][y & 15];
       else if (traegt(gx + 1, gy)) gewaehlt = mauer.rand.laengs[welche];
       else if (traegt(gx, gy + 1)) gewaehlt = mauer.rand.quer[welche];
+      // Eine ganz allein stehende Zinne ist immer die Einzelzinne. Das
+      // Schachbrett des Spiels gaebe jedem zweiten Feld die Scharte - in den
+      // Originalgrafiken fast gleich, in anderen Texturen fehlt die Zinne.
+      else if (!traegt(gx - 1, gy) && !traegt(gx, gy - 1)) gewaehlt = mauer.rand.allein.klotz;
     }
     if (!gewaehlt) gewaehlt = mauer.rand.allein[welche];
     return { ...gewaehlt, kacheln: sprite.kacheln };
