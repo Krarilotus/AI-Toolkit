@@ -321,6 +321,14 @@ if ('__TAURI_INTERNALS__' in window) {
     ),
   };
 
+  // WebView2 offers Back, Refresh and Print on every right-click; Refresh
+  // would reload the editor and drop unsaved work. Text fields keep their
+  // copy/paste menu.
+  document.addEventListener('contextmenu', (event) => {
+    const target = event.target as Element | null;
+    if (!target?.closest?.('input, textarea, [contenteditable="true"]')) event.preventDefault();
+  });
+
   document.addEventListener(
     'DOMContentLoaded',
     () => {

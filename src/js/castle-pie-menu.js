@@ -14,7 +14,7 @@
     if (bound.has(canvas)) return;
     bound.add(canvas);
     const doc = canvas.ownerDocument, win = doc.defaultView;
-    let menu = null, gesture = null;
+    let menu = null, gesture = null, swallowMenuUntil = 0;
     const labels = {merge:'common:actions.merge', groups:'castle:groups', replace:'common:actions.replace', cut:'castle:cut_and_copy', deselect:'castle:deselect'};
     function close() {
       const pointer = gesture?.id;
@@ -73,9 +73,16 @@
       event.preventDefault(); event.stopImmediatePropagation();
       const action = gesture.center === 'groups' ? 'groups' : direction(event.clientX-gesture.x, event.clientY-gesture.y);
       const position = {x:gesture.x, y:gesture.y, document:doc};
+      // Windows sends contextmenu after the release, to whatever now lies
+      // under the pointer - e.g. the groups dialog this gesture opens. The
+      // browser must not add its own menu on top of ours.
+      swallowMenuUntil = performance.now() + 500;
       close(); run(action, position);
     }, true);
     canvas.addEventListener('contextmenu', event => { event.preventDefault(); });
+    doc.addEventListener('contextmenu', event => {
+      if (performance.now() < swallowMenuUntil) { swallowMenuUntil = 0; event.preventDefault(); }
+    }, true);
     canvas.addEventListener('keydown', event => {
       if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
         event.preventDefault(); const rect = canvas.getBoundingClientRect();
