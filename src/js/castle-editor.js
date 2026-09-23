@@ -3895,6 +3895,22 @@
     }
   });
   window.addEventListener('blur', () => { overlayMenu.open = false; });
+  const overlayOptions = overlayMenu.querySelector('.castleOverlayOptions');
+  // The button is exactly as wide as its panel, so the panel drops straight
+  // below it and stays on screen wherever the toolbar wraps the button.
+  function matchOverlayMenuWidth() {
+    if (!overlayMenu.getClientRects().length) return;
+    const open = overlayMenu.open;
+    overlayMenu.open = true;
+    overlayOptions.style.width = 'max-content';
+    const width = Math.ceil(overlayOptions.getBoundingClientRect().width);
+    overlayOptions.style.width = '';
+    overlayMenu.open = open;
+    overlayMenu.style.minWidth = `${width}px`;
+  }
+  new ResizeObserver(matchOverlayMenuWidth).observe(overlayMenu);
+  window.addEventListener('toolkit-language-changed', matchOverlayMenuWidth);
+  window.addEventListener('toolkit-theme-changed', matchOverlayMenuWidth);
   els.showNames.addEventListener('change', scheduleDraw);
   els.showUnitNumbers.addEventListener('change', scheduleDraw);
   els.showCompatibility.addEventListener('change', scheduleDraw);

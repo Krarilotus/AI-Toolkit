@@ -113,3 +113,22 @@ test('toolbar groups expose New and all existing overlay controls without duplic
     assert.ok(html.includes(group), group);
   }
 });
+
+test('overlay button is exactly as wide as its panel and the panel hangs directly below it', () => {
+  const css = fs.readFileSync(require.resolve('../src/css/combined.css'), 'utf8');
+  assert.match(css, /\.castleOverlayOptions \{[^}]*left: 0; right: 0;/);
+  const panel = {style: {width: ''}, getBoundingClientRect: () => ({width: panel.style.width === 'max-content' && overlayMenu.open ? 211.4 : 0})};
+  const overlayMenu = {open: false, style: {minWidth: ''}, getClientRects: () => [{}]};
+  const context = vm.createContext({overlayMenu, overlayOptions: panel});
+  vm.runInContext(section('  function matchOverlayMenuWidth(', '  new ResizeObserver(matchOverlayMenuWidth)'), context);
+  context.matchOverlayMenuWidth();
+  assert.equal(overlayMenu.style.minWidth, '212px');
+  assert.equal(overlayMenu.open, false, 'measuring does not leave the menu open');
+  assert.equal(panel.style.width, '');
+  overlayMenu.open = true; context.matchOverlayMenuWidth();
+  assert.equal(overlayMenu.open, true, 'an open menu stays open');
+  overlayMenu.getClientRects = () => []; overlayMenu.style.minWidth = '99px';
+  context.matchOverlayMenuWidth();
+  assert.equal(overlayMenu.style.minWidth, '99px', 'hidden tabs keep the last measured width');
+  assert.match(source, /addEventListener\('toolkit-language-changed', matchOverlayMenuWidth\)/);
+});
