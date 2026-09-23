@@ -85,10 +85,21 @@
     }
     return checked;
   }
+  // Earlier versions saved their defaults on first start, so an untouched
+  // profile still carries the old tool keys. Only a complete, unchanged old
+  // set moves to the number row, and only if no other action holds those keys.
+  const previousDefaults = { line: '6', brush: '2', brushSmaller: '[', brushLarger: ']', bucket: '7', select: '3', replace: '8', delete: '4' };
+  function refreshDefaults(saved) {
+    const moved = Object.keys(previousDefaults);
+    if (!moved.every(id => saved?.[id]?.[0] === previousDefaults[id])) return saved;
+    const others = new Set(actions.map(([id]) => id).filter(id => !moved.includes(id)).map(id => saved[id]?.[0]).filter(Boolean));
+    if (moved.some(id => others.has(defaults[id][0]))) return saved;
+    return { ...saved, ...Object.fromEntries(moved.map(id => [id, [...defaults[id]]])) };
+  }
   function actionFor(event, bindings) {
     const key = typeof event === 'string' ? normalize(event) : fromEvent(event);
     return key ? actions.find(([id]) => bindings[id]?.[0] === key)?.[0] || null : null;
   }
   function accelerator(key) { return key ? key.split('+').map(part => part === 'ctrl' ? 'CmdOrCtrl' : part === 'space' ? 'Space' : part === 'plus' ? 'Plus' : part.toUpperCase()).join('+') : undefined; }
-  return { get actions() { return actions.map(([id, label, ...rest]) => [id, tr(label), ...rest]); }, defaults, normalize, fromEvent, validate, migrate, upgrade, actionFor, accelerator, isReserved: key => reserved.has(key) };
+  return { get actions() { return actions.map(([id, label, ...rest]) => [id, tr(label), ...rest]); }, defaults, normalize, fromEvent, validate, migrate, upgrade, refreshDefaults, actionFor, accelerator, isReserved: key => reserved.has(key) };
 });

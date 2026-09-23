@@ -1923,14 +1923,17 @@
 
   function loadToolShortcuts() {
     try {
-      const saved = JSON.parse(localStorage.getItem(SHORTCUT_STORAGE_KEY) || 'null');
+      const stored = JSON.parse(localStorage.getItem(SHORTCUT_STORAGE_KEY) || 'null');
+      const saved = stored && shortcutConfig.refreshDefaults(stored);
       const previous = JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v2') || 'null');
+      const first = JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v1') || 'null');
       const savedCamera = JSON.parse(localStorage.getItem(CAMERA_STORAGE_KEY) || 'null');
       const cameraKeys = camera.directions.flatMap(direction => savedCamera?.[direction] ? [savedCamera[direction], `shift+${savedCamera[direction]}`] : []);
       state.toolShortcuts = saved ? validateToolShortcuts(saved)
         : previous ? shortcutConfig.upgrade(previous, cameraKeys)
-        : shortcutConfig.migrate(JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v1') || 'null'));
-      if (!saved) localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(state.toolShortcuts));
+        : shortcutConfig.migrate(first);
+      // Untouched defaults stay unsaved, so a later change of defaults reaches them.
+      if (saved !== stored || (!stored && (previous || first))) localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(state.toolShortcuts));
     } catch (error) {
       console.warn('Ignoring invalid saved Castle shortcuts:', error);
       state.toolShortcuts = deepClone(DEFAULT_TOOL_SHORTCUTS);

@@ -150,3 +150,15 @@ test('new installs start with the number-row tool layout and -/+ brush size', ()
     {single:'1', line:'2', brush:'3', bucket:'4', select:'5', replace:'r', delete:'d', brushSmaller:'-', brushLarger:'plus'});
   assert.equal(shortcuts.actionFor({key:'+'}, fresh), 'brushLarger');
 });
+
+test('profiles that saved the old tool defaults untouched move to the number row, customised ones stay', () => {
+  const old = {...shortcuts.defaults, line: ['6'], brush: ['2'], brushSmaller: ['['], brushLarger: [']'], bucket: ['7'], select: ['3'], replace: ['8'], delete: ['4']};
+  assert.deepEqual(shortcuts.validate(shortcuts.refreshDefaults(old)), shortcuts.defaults);
+  const custom = {...old, select: ['v']};
+  assert.equal(shortcuts.refreshDefaults(custom), custom, 'one changed tool key keeps the whole set');
+  const taken = {...old, rotateLeft: ['r']};
+  assert.equal(shortcuts.refreshDefaults(taken), taken, 'a new key held by another action keeps the old set');
+  assert.equal(shortcuts.refreshDefaults(shortcuts.defaults), shortcuts.defaults);
+  assert.match(source, /const saved = stored && shortcutConfig\.refreshDefaults\(stored\);/);
+  assert.match(source, /if \(saved !== stored \|\| \(!stored && \(previous \|\| first\)\)\) localStorage\.setItem\(SHORTCUT_STORAGE_KEY/);
+});
