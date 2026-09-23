@@ -69,10 +69,10 @@
       "fill": true
     },
     "value": {
-      "file": "textures/value_box.png",
+      "file": "textures/searchfield.png",
       "mode": "frame",
-      "slice": 3,
-      "width": 3,
+      "slice": 4,
+      "width": 4,
       "fill": true
     },
     "dropdown": {

@@ -117,6 +117,8 @@
         const name = '--texture-' + hyphenate(slot);
         element.style.setProperty(name, texture ? `url("${texture.url.replaceAll('"', '%22')}")` : 'none');
         element.style.setProperty(name + '-slice', texture?.mode === 'frame' ? String(texture.slice) + (texture.fill ? ' fill' : '') : '0');
+        // The frame alone, for controls that must paint their own middle.
+        element.style.setProperty(name + '-edge-slice', texture?.mode === 'frame' ? String(texture.slice) : '0');
         element.style.setProperty(name + '-width', texture?.mode === 'frame' ? texture.width + 'px' : '0px');
         element.style.setProperty(name + '-repeat', texture?.mode === 'tile' ? 'repeat' : 'no-repeat');
         element.style.setProperty(name + '-size', texture?.mode === 'tile' ? 'auto' : texture?.mode === 'cover' ? 'cover' : 'contain');

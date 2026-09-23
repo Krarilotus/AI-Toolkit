@@ -799,11 +799,16 @@ button:disabled { cursor: default; }
 }
 .castleOverlayMenu { position: relative; }
 .castleOverlayMenu summary {
+  /* A summary does not centre its text like a button does. */
+  display: flex; align-items: center; gap: 6px; list-style: none;
   cursor: pointer; padding: 5px 8px; min-height: 30px;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   background: var(--surface-3); color: var(--text-main);
   font: 600 1.4rem/1.25 var(--font-ui);
 }
+.castleOverlayMenu summary::-webkit-details-marker { display: none; }
+.castleOverlayMenu summary::before { content: '\25B8'; font-size: .8em; }
+.castleOverlayMenu[open] summary::before { content: '\25BE'; }
 .castleOverlayMenu[open] summary { border-color: var(--accent-strong); }
 .castleOverlayMenu summary:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
 .castleOverlayOptions {

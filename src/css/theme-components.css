@@ -200,6 +200,24 @@ html[data-themed-fields="true"] select {
   padding-inline-end: var(--component-select-padding-inline-end);
   font-family: var(--font-ui);
 }
+/* On panels a dropdown wears the same frame as the text and number fields
+   beside it, so a form reads as one set of boxes. A filled frame would paint
+   over the arrow, so the dropdown draws the frame's edges, shades its own
+   middle like the field art and puts the arrow on top in the text colour. */
+html[data-themed-fields="true"] select:not(:is(.workspaceTabs, .castleToolbar, .areaTabs, .isoViewControls) select) {
+  appearance: none;
+  padding-block: 4px;
+  padding-inline: 7px 24px;
+  border: var(--texture-input-width) solid transparent;
+  border-image: var(--texture-input) var(--texture-input-edge-slice) / var(--texture-input-width) / 0 stretch;
+  border-radius: 0;
+  background:
+    linear-gradient(45deg, transparent 50%, currentColor 50%) right 13px center / 5px 5px no-repeat,
+    linear-gradient(-45deg, transparent 50%, currentColor 50%) right 8px center / 5px 5px no-repeat,
+    linear-gradient(to right, #0000001f, transparent 18%, transparent 82%, #0000001f),
+    linear-gradient(#00000019, transparent 30%, transparent 70%, #00000019),
+    var(--component-input-surface);
+}
 html[data-themed-fields="true"] :is(.workspaceTabs, .castleToolbar, .areaTabs, .isoViewControls) select {
   background-color: var(--component-select-chrome-surface);
   color: var(--component-select-chrome-content);
@@ -284,6 +302,15 @@ html[data-themed-controls="true"] .numberStepper > button {
   box-shadow: none;
 }
 html[data-themed-controls="true"] .castleToolbar > .toolbarGroup { flex-wrap: nowrap; }
+/* The population steps sit flush against their field: same height, a frame
+   as slim as the field's, and the label centred instead of pushed aside. */
+html[data-themed-controls="true"] button:is(.populationStepButtonLeft, .populationStepButtonRight) {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 0; padding: 0 4px;
+  border-width: var(--texture-input-width);
+  border-image-width: var(--texture-input-width);
+  font: 650 13px/1 var(--font-data);
+}
 :root .numberStepper input[type="number"] {
   appearance: var(--component-number-stepper-appearance);
   width: var(--component-number-stepper-width);
