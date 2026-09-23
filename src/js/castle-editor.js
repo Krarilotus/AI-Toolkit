@@ -3908,7 +3908,13 @@
     overlayMenu.open = open;
     overlayMenu.style.minWidth = `${width}px`;
   }
-  new ResizeObserver(matchOverlayMenuWidth).observe(overlayMenu);
+  // Resizing the observed button inside its own callback would trip the
+  // browser's ResizeObserver loop guard, so the width follows a frame later.
+  let overlayWidthFrame = 0;
+  new ResizeObserver(() => {
+    cancelAnimationFrame(overlayWidthFrame);
+    overlayWidthFrame = requestAnimationFrame(matchOverlayMenuWidth);
+  }).observe(overlayMenu);
   window.addEventListener('toolkit-language-changed', matchOverlayMenuWidth);
   window.addEventListener('toolkit-theme-changed', matchOverlayMenuWidth);
   els.showNames.addEventListener('change', scheduleDraw);

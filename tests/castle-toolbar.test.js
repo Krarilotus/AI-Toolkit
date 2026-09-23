@@ -120,7 +120,7 @@ test('overlay button is exactly as wide as its panel and the panel hangs directl
   const panel = {style: {width: ''}, getBoundingClientRect: () => ({width: panel.style.width === 'max-content' && overlayMenu.open ? 211.4 : 0})};
   const overlayMenu = {open: false, style: {minWidth: ''}, getClientRects: () => [{}]};
   const context = vm.createContext({overlayMenu, overlayOptions: panel});
-  vm.runInContext(section('  function matchOverlayMenuWidth(', '  new ResizeObserver(matchOverlayMenuWidth)'), context);
+  vm.runInContext(section('  function matchOverlayMenuWidth(', '  // Resizing the observed button'), context);
   context.matchOverlayMenuWidth();
   assert.equal(overlayMenu.style.minWidth, '212px');
   assert.equal(overlayMenu.open, false, 'measuring does not leave the menu open');
