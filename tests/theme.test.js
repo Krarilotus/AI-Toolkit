@@ -257,3 +257,9 @@ test('growing panels and lists keep room for their scrollbar, so their boxes kee
   for (const name of ['.castleBuildList', '.castleSidebarOverviews', '.castlePalette', '.characterForm', '.ucpAiList'])
     assert.ok(rule[1].includes(name), name);
 });
+
+test('the overviews share one frame like the build list, so their scrollbar runs inside it', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'css', 'theme-components.css'), 'utf8');
+  assert.match(css, /:is\([^)]*\.castleBuildList, \.castleOverviewPanel, \.castleSidebarOverviews,[^)]*\) \{\s*--text-main/);
+  assert.match(css, /\.castleSidebarOverviews > \.castleOverviewPanel \{ margin: 0; border: 0; border-image: none; background: transparent; \}/);
+});

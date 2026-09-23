@@ -139,7 +139,7 @@ html[data-themed-panels="true"] :is(.workspaceCommandBar, .characterControlBar, 
   color: var(--semantic-content-on-chrome);
 }
 /* These aliases are local to paper. The surrounding shell keeps its own contrast. */
-html[data-themed-panels="true"] :is(.characterSidebar > .editorCard, .characterForm, .castleBuildList, .castleOverviewPanel, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel, dialog, .helpBox, .castleContextMenu, .castleBuildContextMenu, .castleToolOptions) {
+html[data-themed-panels="true"] :is(.characterSidebar > .editorCard, .characterForm, .castleBuildList, .castleOverviewPanel, .castleSidebarOverviews, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel, dialog, .helpBox, .castleContextMenu, .castleBuildContextMenu, .castleToolOptions) {
   --text-main: var(--component-panel-content);
   --text-soft: var(--component-panel-soft);
   --text-muted: var(--component-panel-muted);
@@ -163,7 +163,11 @@ html[data-themed-panels="true"] :is(.characterSidebar > .editorCard, .characterF
   background: var(--component-panel-surface) var(--texture-panel-surface) repeat;
   box-shadow: none;
 }
-html[data-themed-panels="true"] :is(.characterForm, .castleBuildList, .castleOverviewPanel, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel) { margin: 8px; }
+html[data-themed-panels="true"] :is(.characterForm, .castleBuildList, .castleOverviewPanel, .castleSidebarOverviews, .ucpLibraryListPanel, .ucpLibraryDetails, .aiLinesPanel, .aiPortraitPanel) { margin: 8px; }
+/* The overviews scroll together, so they share one frame like the build list
+   and its chain runs inside the frame; each overview is a section of it. */
+html[data-themed-panels="true"] .castleSidebarOverviews > .castleOverviewPanel { margin: 0; border: 0; border-image: none; background: transparent; }
+html[data-themed-panels="true"] .castleSidebarOverviews > .castleOverviewPanel:not([hidden]) ~ .castleOverviewPanel:not([hidden]) { border-top: 1px solid var(--line); }
 html[data-themed-panels="true"] .characterForm { padding: 12px; }
 html[data-themed-panels="true"] :is(.editorCardHeading, #characterWorkspace summary) { background: #9b9b9b30; color: var(--text-main); }
 html[data-themed-panels="true"] #characterWorkspace .characterForm details { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; }
