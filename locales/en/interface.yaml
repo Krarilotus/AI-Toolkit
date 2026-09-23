@@ -235,6 +235,9 @@ merge_selected_steps: Merge selected steps…
 lock_positions: Lock positions
 save_castle_picture: Save castle picture
 save_png: Save PNG
+picture_size: "Size"
+full_resolution: "Full resolution"
+floor_plan_100x100_1_px_per_tile: "Floor plan 100×100 (1 px per tile)"
 merge_placements_by_item_type: Merge placements by item type
 merge: Merge
 replace_selected_items: Replace selected items

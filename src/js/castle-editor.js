@@ -3929,7 +3929,7 @@
     const button = document.getElementById('castleSnapshotSave');
     button.disabled = true;
     try {
-      const png = renderCastlePicture();
+      const png = renderCastlePicture({ floorPlan: document.getElementById('castleSnapshotSize').value === 'plan' });
       const saved = await window.electronAPI.saveCastlePicture(png);
       if (!saved) return;
       if (document.getElementById('castleSnapshotBackground').checked) {
@@ -3942,7 +3942,22 @@
     } finally { button.disabled = false; }
   });
 
-  function renderCastlePicture() {
+  // A floor plan keeps one pixel per tile: the centre pixel of each tile in
+  // the full picture (nearest neighbour), so colours match the map exactly
+  // and neither grid lines nor footprint borders leak in.
+  function floorPlanPixels(picture, cell) {
+    const source = picture.getContext('2d'), plan = document.createElement('canvas');
+    plan.width = plan.height = GRID;
+    const planCtx = plan.getContext('2d'), pixels = planCtx.createImageData(GRID, GRID), centre = Math.floor(cell / 2);
+    for (let y = 0; y < GRID; y++) {
+      const row = source.getImageData(0, y * cell + centre, GRID * cell, 1).data;
+      for (let x = 0; x < GRID; x++) pixels.data.set(row.subarray((x * cell + centre) * 4, (x * cell + centre) * 4 + 4), (y * GRID + x) * 4);
+    }
+    planCtx.putImageData(pixels, 0, 0);
+    return plan;
+  }
+
+  function renderCastlePicture({ floorPlan = false } = {}) {
     // Render at native sprite resolution (at least 32 px/tile), not viewport zoom.
     let cell = 32;
     for (const placement of placementRefs()) {
@@ -3954,17 +3969,21 @@
     const picture = document.createElement('canvas');
     const future = document.createElement('canvas');
     picture.width = picture.height = future.width = future.height = GRID * cell;
-    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty', 'snapshotLabels'].map(key => [key, state[key]]));
-    const savedContext = ctx;
+    const saved = Object.fromEntries(['cell', 'panX', 'panY', 'canvasWidth', 'canvasHeight', 'gesture', 'staticCacheDirty', 'snapshotLabels', 'selected'].map(key => [key, state[key]]));
+    const savedContext = ctx, showNames = els.showNames.checked;
     try {
-      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null, snapshotLabels: true});
+      Object.assign(state, {cell, panX: 0, panY: 0, canvasWidth: picture.width, canvasHeight: picture.height, gesture: null, snapshotLabels: !floorPlan});
+      // The floor plan shows buildings only: no names, selection or unit markers.
+      if (floorPlan) { state.selected = new Set(); els.showNames.checked = false; }
       rebuildStaticCache(picture, future);
+      if (floorPlan) return floorPlanPixels(picture, cell).toDataURL('image/png');
       ctx = picture.getContext('2d');
       drawUnitMarkers();
       if (els.showCompatibility.checked) drawCompatibilityOriginMarker();
       return picture.toDataURL('image/png');
     } finally {
       Object.assign(state, saved);
+      els.showNames.checked = showNames;
       ctx = savedContext;
     }
   }

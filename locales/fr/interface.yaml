@@ -243,6 +243,9 @@ merge_selected_steps: Fusionner les étapes sélectionnées…
 lock_positions: Verrouiller les positions
 save_castle_picture: Enregistrer l'image du château
 save_png: Enregistrer le PNG
+picture_size: "Taille"
+full_resolution: "Pleine résolution"
+floor_plan_100x100_1_px_per_tile: "Plan 100×100 (1 px par case)"
 merge_placements_by_item_type: Fusionner les placements par type
 replace_selected_items: Remplacer les éléments sélectionnés
 choose_a_replacement_for_each_item_type_inside_the_box: Choisissez un remplacement pour chaque type d'élément dans le cadre.

@@ -235,6 +235,9 @@ merge_selected_steps: ادغام گام‌های انتخاب‌شده…
 lock_positions: قفل موقعیت‌ها
 save_castle_picture: ذخیرهٔ تصویر قلعه
 save_png: ذخیرهٔ PNG
+picture_size: "اندازه"
+full_resolution: "وضوح کامل"
+floor_plan_100x100_1_px_per_tile: "نقشهٔ کف ۱۰۰×۱۰۰ (۱ پیکسل برای هر خانه)"
 merge_placements_by_item_type: ادغام موارد بر اساس نوع
 merge: ادغام
 replace_selected_items: جایگزینی موارد انتخاب‌شده

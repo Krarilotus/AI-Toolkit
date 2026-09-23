@@ -132,3 +132,28 @@ test('overlay button is exactly as wide as its panel and the panel hangs directl
   assert.equal(overlayMenu.style.minWidth, '99px', 'hidden tabs keep the last measured width');
   assert.match(source, /addEventListener\('toolkit-language-changed', matchOverlayMenuWidth\)/);
 });
+
+test('floor plan export keeps one exact colour per tile from each tile centre', () => {
+  const cell = 4, GRID = 100, size = GRID * cell;
+  // Each tile is filled with its own colour; the tile's border pixels are black
+  // like grid lines and must never reach the plan.
+  const picture = new Uint8ClampedArray(size * size * 4);
+  for (let py = 0; py < size; py++) for (let px = 0; px < size; px++) {
+    const x = Math.floor(px / cell), y = Math.floor(py / cell), edge = px % cell === 0 || py % cell === 0;
+    picture.set(edge ? [0, 0, 0, 255] : [x, y, (x + y) % 256, 255], (py * size + px) * 4);
+  }
+  let written = null;
+  const plan = {getContext: () => ({
+    createImageData: (w, h) => ({width: w, height: h, data: new Uint8ClampedArray(w * h * 4)}),
+    putImageData: data => { written = data; }})};
+  const full = {getContext: () => ({getImageData: (x, y, w, h) => ({data: picture.subarray((y * size + x) * 4, ((y + h - 1) * size + x + w) * 4)})})};
+  const context = vm.createContext({GRID, document: {createElement: () => plan}});
+  vm.runInContext(section('  function floorPlanPixels(', '  function renderCastlePicture('), context);
+  assert.equal(context.floorPlanPixels(full, cell), plan);
+  assert.equal(plan.width, 100); assert.equal(plan.height, 100);
+  for (const [x, y] of [[0, 0], [7, 3], [99, 99], [42, 17]])
+    assert.deepEqual([...written.data.subarray((y * 100 + x) * 4, (y * 100 + x) * 4 + 4)], [x, y, (x + y) % 256, 255], `${x},${y}`);
+  assert.ok(![...written.data].some((v, i) => i % 4 === 3 && v !== 255), 'no transparent gaps');
+  assert.match(html, /<select id="castleSnapshotSize">[\s\S]*value="plan"/);
+  assert.match(source, /renderCastlePicture\(\{ floorPlan: document\.getElementById\('castleSnapshotSize'\)\.value === 'plan' \}\)/);
+});

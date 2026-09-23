@@ -238,6 +238,9 @@ merge_selected_steps: Kijelölt lépések egyesítése…
 lock_positions: Helyek rögzítése
 save_castle_picture: Várkép mentése
 save_png: PNG mentése
+picture_size: "Méret"
+full_resolution: "Teljes felbontás"
+floor_plan_100x100_1_px_per_tile: "Alaprajz 100×100 (mezőnként 1 px)"
 merge_placements_by_item_type: Elhelyezések egyesítése elemtípus szerint
 merge: Egyesítés
 replace_selected_items: Kijelölt elemek cseréje
