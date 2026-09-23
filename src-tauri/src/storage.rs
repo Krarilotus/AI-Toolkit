@@ -199,6 +199,22 @@ pub fn resource(app: &AppHandle, relative: &str) -> Result<PathBuf> {
         json!({"path":relative}),
     ))
 }
+/// Started straight from the portable ZIP, Windows extracts only the
+/// executable. Maps, building textures and troop previews would then fail one
+/// by one without explanation, so startup stops with a clear message instead.
+pub fn require_resources(app: &AppHandle) -> std::result::Result<(), String> {
+    for relative in ["config", "assets/aiv/iso/verzeichnis.json"] {
+        if resource(app, relative).is_err() {
+            return Err(format!(
+                "AI Toolkit is missing files that belong next to the program ({relative}).\n\n\
+                 If you opened AI Toolkit directly from the downloaded ZIP, extract the whole \
+                 ZIP first (right-click, Extract All) and start AI Toolkit.exe from the \
+                 extracted folder."
+            ));
+        }
+    }
+    Ok(())
+}
 pub fn data_url(path: &Path) -> Result<String> {
     let mime = match path
         .extension()

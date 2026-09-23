@@ -44,6 +44,17 @@ pub fn run() {
         ])
         .setup(move |app| {
             let handle = app.handle();
+            // Tauri panics on setup errors, so explain and leave here instead.
+            if let Err(message) = storage::require_resources(handle) {
+                let migration = handle
+                    .state::<legacy_update::Startup>()
+                    .0
+                    .lock()
+                    .ok()
+                    .and_then(|mut pending| pending.take());
+                startup_failed(&message, migration.as_ref());
+                std::process::exit(1);
+            }
             let cache = storage::user_data(handle)?;
             app.asset_protocol_scope().allow_directory(&cache, true)?;
             windows::create(handle, true)?;
