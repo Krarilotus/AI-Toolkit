@@ -80,7 +80,7 @@ shortcut_6_or_l: "میانبر: 6 یا L"
 line: خط
 shortcut_2_or_b: "میانبر: 2 یا B"
 brush: قلم‌مو
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: پهنای قلم‌مو؛ [ و ] آن را کوچک‌تر و بزرگ‌تر می‌کنند.
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: پهنای قلم‌مو؛ - و + آن را کوچک‌تر و بزرگ‌تر می‌کنند.
 smaller_brush: قلم‌موی کوچک‌تر
 bigger_brush: قلم‌موی بزرگ‌تر
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: "فضا را تا دیوار پر می‌کند؛ لبهٔ نقشه هم دیوار محسوب می‌شود. میانبر: 7 یا F"

@@ -80,7 +80,7 @@ shortcut_6_or_l: 'Raccourci : 6 ou L'
 line: Ligne
 shortcut_2_or_b: 'Raccourci : 2 ou B'
 brush: Pinceau
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Largeur du pinceau. [ la réduit et ] l'agrandit.
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Largeur du pinceau. - la réduit et + l'agrandit.
 smaller_brush: Pinceau plus petit
 bigger_brush: Pinceau plus grand
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: 'Remplit jusqu''à un mur — le bord de la carte compte comme un mur. Raccourci : 7 ou F'

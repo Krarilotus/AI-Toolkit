@@ -80,7 +80,7 @@ shortcut_6_or_l: "Gyorsbillentyű: 6 vagy L"
 line: Vonal
 shortcut_2_or_b: "Gyorsbillentyű: 2 vagy B"
 brush: Ecset
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Az ecset szélessége. A [ csökkenti, a ] növeli.
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Az ecset szélessége. A - csökkenti, a + növeli.
 smaller_brush: Kisebb ecset
 bigger_brush: Nagyobb ecset
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: "A falakig tölti ki a területet; a térkép széle is falnak számít. Gyorsbillentyű: 7 vagy F"

@@ -83,7 +83,7 @@ shortcut_6_or_l: 'Kısayol: 6 veya L'
 line: Çizgi
 shortcut_2_or_b: 'Kısayol: 2 veya B'
 brush: Fırça
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Fırça genişliği. [ ve ] küçültür ve büyütür.
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Fırça genişliği. - ve + küçültür ve büyütür.
 smaller_brush: Daha küçük fırça
 bigger_brush: Daha büyük fırça
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: 'Bir sura kadar her şeyi doldurur; harita kenarı da sınır sayılır. Kısayol: 7 veya F'

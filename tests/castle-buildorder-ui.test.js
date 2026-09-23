@@ -381,7 +381,7 @@ test('the fill tool needs an item like the other placement tools', () => {
   assert.match(html, /data-tool="bucket"/, 'der Knopf steht in der Werkzeugleiste');
   assert.match(html, /id="castleBrushMinus"/);
   assert.match(html, /id="castleBrushPlus"/);
-  assert.deepEqual(require('../src/js/castle-shortcuts').defaults.bucket, ['7']);
+  assert.deepEqual(require('../src/js/castle-shortcuts').defaults.bucket, ['4']);
 });
 
 // -------------------------------------------- gesperrte Bauschritte

@@ -134,12 +134,19 @@ test('upgrading fills free bindings while preserving custom shortcuts and camera
   assert.deepEqual(next.groups,['']);
   assert.deepEqual(next.merge,['']);
   assert.deepEqual(next.brush,['g']);
-  assert.deepEqual(shortcuts.upgrade({...old,brush:['2']}).groups,['g']);
+  assert.deepEqual(shortcuts.upgrade({...old,brush:['3']}).groups,['g']);
   assert.deepEqual(shortcuts.validate({...next,groups:['']}).groups,[''],'explicitly cleared v3 keys remain empty');
 });
 
 test('group and merge keys dispatch the same actions as the pie menu', () => {
-  const h = renderer(); h.key('g'); h.key('m'); h.key('8');
+  const h = renderer(); h.key('g'); h.key('m'); h.key('r');
   assert.deepEqual(h.calls, ['groups','merge','replace']);
   h.key('g',{repeat:true}); assert.equal(h.calls.length,3);
+});
+
+test('new installs start with the number-row tool layout and -/+ brush size', () => {
+  const fresh = shortcuts.migrate(null);
+  assert.deepEqual(Object.fromEntries(['single','line','brush','bucket','select','replace','delete','brushSmaller','brushLarger'].map(id => [id, fresh[id][0]])),
+    {single:'1', line:'2', brush:'3', bucket:'4', select:'5', replace:'r', delete:'d', brushSmaller:'-', brushLarger:'plus'});
+  assert.equal(shortcuts.actionFor({key:'+'}, fresh), 'brushLarger');
 });

@@ -85,7 +85,7 @@ shortcut_6_or_l: 'Atajo: 6 o L'
 line: Línea
 shortcut_2_or_b: 'Atajo: 2 o B'
 brush: Pincel
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Ancho del pincel. [ y ] lo reducen y amplían.
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Ancho del pincel. - y + lo reducen y amplían.
 smaller_brush: Pincel más pequeño
 bigger_brush: Pincel más grande
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: 'Rellena hasta una muralla; el borde del mapa también cuenta como límite. Atajo: 7 o F'

@@ -80,7 +80,7 @@ shortcut_6_or_l: 'Tastenkürzel: 6 oder L'
 line: Linie
 shortcut_2_or_b: 'Tastenkürzel: 2 oder B'
 brush: Pinsel
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Breite des Pinsels. Mit [ verkleinern und mit ] vergrößern.
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: Breite des Pinsels. Mit - verkleinern und mit + vergrößern.
 smaller_brush: Kleinerer Pinsel
 bigger_brush: Größerer Pinsel
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: 'Füllt die zusammenhängende freie Fläche bis zu Mauern oder zum Kartenrand. Tastenkürzel: 7 oder F'

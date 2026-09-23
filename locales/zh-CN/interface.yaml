@@ -80,7 +80,7 @@ shortcut_6_or_l: 快捷键：6 或 L
 line: 直线
 shortcut_2_or_b: 快捷键：2 或 B
 brush: 画笔
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: 画笔绘制宽度。使用 [ 缩小，] 放大。
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: 画笔绘制宽度。使用 - 缩小，+ 放大。
 smaller_brush: 缩小画笔
 bigger_brush: 放大画笔
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: 填充直至遇到城墙，地图边缘也视为城墙。快捷键：7 或 F

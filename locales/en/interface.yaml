@@ -80,7 +80,7 @@ shortcut_6_or_l: 'Shortcut: 6 or L'
 line: Line
 shortcut_2_or_b: 'Shortcut: 2 or B'
 brush: Brush
-how_wide_the_brush_paints_and_make_it_smaller_and_bigger: How wide the brush paints. [ and ] make it smaller and bigger.
+how_wide_the_brush_paints_and_make_it_smaller_and_bigger: How wide the brush paints. - and + make it smaller and bigger.
 smaller_brush: Smaller brush
 bigger_brush: Bigger brush
 fills_everything_up_to_a_wall_the_edge_of_the_map_counts_as_one_shortcut_7_o: 'Fills everything up to a wall — the edge of the map counts as one. Shortcut: 7 or F'
