@@ -22,6 +22,7 @@
   const CATALOGUE_PATH = '../assets/aiv/iso/verzeichnis.json';
   const SPRITE_PATH = '../assets/aiv/iso/';
   const MAX_RENDER_DPR = 1.5;
+  const GPU_SPARE = 256;          // device px of picture the GPU layer draws beyond the panel
   const MAP_MARGIN = 5;
 
   const state = {
@@ -724,7 +725,11 @@
     if (scene.gpu && state.gpu) {
       try {
         state.gpu.presentBehind(ctx.canvas, dpr);
-        state.gpu.render(ctx.canvas.width,ctx.canvas.height,z*dpr,
+        // The worker draws a frame or two after the panel changes size. Drawing
+        // with spare room means a growing panel uncovers finished picture, not
+        // an empty strip, and small size changes need no new canvas at all.
+        const room = v => Math.ceil((v + GPU_SPARE) / GPU_SPARE) * GPU_SPARE;
+        state.gpu.render(room(ctx.canvas.width),room(ctx.canvas.height),z*dpr,
           (state.view.panX-scene.view.panX*z)*dpr,(state.view.panY-scene.view.panY*z)*dpr);
 
       } catch(error) {
@@ -1565,7 +1570,10 @@
   // panel is watched by a ResizeObserver and shares the app's keyboard.
   function bindHostChrome(host) {
     if (host.kind === 'dock') {
-      if (!state.observer) state.observer = new ResizeObserver(() => refresh(true));
+      // Paint inside the callback: it runs after layout and before the frame is
+      // shown, so a splitter drag never shows the moved panel with last frame's
+      // picture. A rAF paint would land one frame late and make the view shake.
+      if (!state.observer) state.observer = new ResizeObserver(() => refresh(true, false, true));
       state.observer.disconnect();
       state.observer.observe(host.box);
       return;
