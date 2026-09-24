@@ -1196,6 +1196,12 @@ button:disabled { cursor: default; }
    translated name makes the row taller. Building textures still fill their side. */
 .paletteThumbUnit { height: 44px; align-self: center; }
 .paletteThumbUnit img { object-fit: contain; object-position: center bottom; padding: 3px; }
+.paletteUnitBadge {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 2px solid #151515;
+  font: 700 12px/1 var(--font-ui);
+}
 .paletteItemName { min-width: 0; align-self: end; overflow-wrap: anywhere; white-space: normal; font-size: 14px; }
 .paletteItemMeta { grid-column: 2; align-self: start; color: var(--text-muted); font: 11px var(--font-data); white-space: normal; direction: ltr; unicode-bidi: isolate; text-align: match-parent; }
 .selectedItemCard { padding: 9px; border-top: 1px solid var(--line); background: var(--surface-2); }

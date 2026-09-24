@@ -193,3 +193,19 @@ test('non-destructive connected selection can include a Keep while deletion stil
   assert.deepEqual(geometry.floodPlacementRefs(keep,[keep],p=>geometry.footprintRectsAtXY(p.type,p.x,p.y),()=>false,100,false),new Set(['keep']));
   assert.deepEqual(flood(keep,[keep]),new Set());
 });
+
+test('units without game art show a short name on a disc, Europeans blue and Arabians ochre', () => {
+  const categories = require('../config/aiv_categories.json');
+  const groups = categories.categories || categories;
+  for (const [faction, fill] of [['Europeans', '#3d6fb6'], ['Arabians', '#b8862f']]) {
+    for (const id of groups[faction]) {
+      const badge = palette.unitBadge(id);
+      assert.ok(badge, faction + ' ' + id);
+      assert.match(badge.text, /^[A-Za-z]{2,3}$/);
+      assert.equal(badge.fill, fill, faction + ' ' + id);
+    }
+  }
+  const texts = Array.from({ length: 21 }, (_, i) => palette.unitBadge(i + 1).text);
+  assert.equal(new Set(texts).size, 21, 'every unit has its own short name');
+  assert.equal(palette.unitBadge(61), null, 'buildings get no badge');
+});

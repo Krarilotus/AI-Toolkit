@@ -28,5 +28,17 @@
     if (!cached.names.has(type)) cached.names.set(type, i18n.t(`items:${type}`, { defaultValue: fallback }));
     return cached.names.get(type);
   }
-  return { colors, categoryStyle, itemName };
+  // Unit art belongs to the game and is not shipped. Without a connected game a
+  // unit shows as a disc with a short name, as in Firefly's AI Village editor.
+  const unitBadges = {
+    1: 'Oil', 2: 'Man', 3: 'Bal', 4: 'Tre', 5: 'FB', 6: 'Arc', 7: 'XB', 8: 'Spr', 9: 'Pik', 10: 'Mac', 11: 'Swd',
+    12: 'Kn', 13: 'Slv', 14: 'Sli', 15: 'Asn', 16: 'AA', 17: 'HA', 18: 'AS', 19: 'FT', 20: 'Brz', 21: 'Flg'
+  };
+  const arabians = new Set([5, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
+  function unitBadge(type) {
+    const text = unitBadges[Number(type)];
+    if (!text) return null;
+    return { text, fill: arabians.has(Number(type)) ? '#b8862f' : '#3d6fb6', ink: '#ffffff', edge: '#151515' };
+  }
+  return { colors, categoryStyle, itemName, unitBadge };
 });

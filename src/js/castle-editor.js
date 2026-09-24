@@ -2185,6 +2185,14 @@
         img.src = state.skins[thumbnailType];
         img.alt = '';
         thumb.appendChild(img);
+      } else if (isUnitType(Number(id)) && window.castlePalette.unitBadge(id)) {
+        const badge = window.castlePalette.unitBadge(id);
+        const disc = document.createElement('span');
+        disc.className = 'paletteUnitBadge';
+        disc.textContent = badge.text;
+        disc.style.background = badge.fill;
+        disc.style.color = badge.ink;
+        thumb.appendChild(disc);
       } else {
         thumb.textContent = id;
         thumb.style.background = stableColor(Number(id));
@@ -3277,6 +3285,8 @@
         ctx.fillRect(r.x, r.y, r.w, r.h);
         ctx.globalAlpha = alpha;
       }
+    } else if (isUnitType(type) && window.castlePalette.unitBadge(type)) {
+      drawUnitBadge(window.castlePalette.unitBadge(type), r);
     } else {
       ctx.fillStyle = stableColor(type);
       ctx.fillRect(r.x, r.y, r.w, r.h);
@@ -3291,6 +3301,26 @@
     drawItemName(type, r);
 
     ctx.restore();
+  }
+
+  // A disc filling the tile with the unit's short name; see castlePalette.unitBadge.
+  // Only writes to ctx: the worker's recording context cannot be read back.
+  function drawUnitBadge(badge, r) {
+    const radius = Math.max(1, Math.min(r.w, r.h) / 2 - 0.5);
+    ctx.beginPath();
+    ctx.arc(r.x + r.w / 2, r.y + r.h / 2, radius, 0, Math.PI * 2);
+    ctx.fillStyle = badge.fill;
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, radius / 8);
+    ctx.strokeStyle = badge.edge;
+    ctx.stroke();
+    const fontSize = Math.floor(radius * (badge.text.length > 2 ? 0.8 : 0.95));
+    if (fontSize < 5) return;
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = badge.ink;
+    ctx.fillText(badge.text, r.x + r.w / 2, r.y + r.h / 2 + 0.5, radius * 1.7);
   }
 
   let drawStyleCache = null;
