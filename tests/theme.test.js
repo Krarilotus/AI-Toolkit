@@ -263,3 +263,13 @@ test('the overviews share one frame like the build list, so their scrollbar runs
   assert.match(css, /:is\([^)]*\.castleBuildList, \.castleOverviewPanel, \.castleSidebarOverviews,[^)]*\) \{\s*--text-main/);
   assert.match(css, /\.castleSidebarOverviews > \.castleOverviewPanel \{ margin: 0; border: 0; border-image: none; background: transparent; \}/);
 });
+
+test('view toolbars keep their scrollbar room, so a splitter drag does not move the view below', () => {
+  const layout = fs.readFileSync(path.join(__dirname, '..', 'src', 'css', 'combined.css'), 'utf8');
+  const theme = fs.readFileSync(path.join(__dirname, '..', 'src', 'css', 'theme-components.css'), 'utf8');
+  const rule = layout.match(/\n\.isoViewControls \{([^}]*)\}/);
+  assert.ok(rule, '.isoViewControls rule');
+  assert.match(rule[1], /overflow-x: scroll;/);
+  assert.match(rule[1], /scrollbar-width: auto;/);
+  assert.match(theme, /\.isoViewControls::-webkit-scrollbar-track:horizontal:disabled \{ border-image: none; background: transparent; \}/);
+});

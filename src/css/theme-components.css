@@ -377,6 +377,9 @@ html[data-themed-scrollbars="true"] *::-webkit-scrollbar-corner {
   border: 0 solid transparent; border-width: 7px 0 0 8px;
   border-image: var(--texture-ornament) 7 8 / auto 0 0 auto / 0 round;
 }
+/* The view toolbars always keep their scrollbar's room; with nothing to
+   scroll it stays invisible, in every theme. */
+.isoViewControls::-webkit-scrollbar-track:horizontal:disabled { border-image: none; background: transparent; }
 
 /* Keep the real form control: labels, Tab, Space, checked and mixed semantics survive. */
 html[data-themed-checkboxes="true"] input[type="checkbox"] {

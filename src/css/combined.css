@@ -1272,9 +1272,13 @@ button:disabled { cursor: default; }
   flex: 0 1 auto;
   align-items: center;
   gap: 3px;
-  overflow-x: auto;
+  /* The scrollbar's room is always kept, so the tab row and the view below it
+     do not jump while a splitter drag makes the controls fit or overflow.
+     Its track only shows when there is something to scroll (theme-components.css). */
+  overflow-x: scroll;
   overflow-y: hidden;
-  scrollbar-width: thin;
+  scrollbar-width: auto;
+  scrollbar-color: auto;
 }
 .isoViewControls button {
   flex: none;
