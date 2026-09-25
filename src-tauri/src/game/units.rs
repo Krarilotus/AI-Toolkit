@@ -118,7 +118,7 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
     let graphics = resolve_graphics(root)?;
     let revision = hash(
         format!(
-            "unit-previews-v3:{}:{}",
+            "unit-previews-v4:{}:{}",
             graphics.revision,
             include_str!("unit_poses.rs")
         )
@@ -143,7 +143,10 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
     let sources =
         SOURCES
             .iter()
-            .map(|&(id, name, rider)| (id.to_string(), name, rider, Some(0), poses::idle_pose(id)))
+            .map(|&(id, name, rider)| {
+                let (thumbnail, idle) = (poses::thumbnail_pose(id), poses::idle_pose(id));
+                (id.to_string(), name, rider, thumbnail, idle)
+            })
             .chain(poses::LORD_POSES.iter().map(|&(key, name, frame)| {
                 (key.to_owned(), name, None, None, Some((frame, None)))
             }));
@@ -166,13 +169,13 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
             }
         };
         for (idle, frame, rider_frame) in thumbnail
-            .map(|frame| (false, frame, rider.map(|_| 0)))
+            .map(|(frame, rider)| (false, frame, rider))
             .into_iter()
             .chain(idle_pose.map(|(frame, rider)| (true, frame, rider)))
         {
-            // Stationary objects can use the same phase as their thumbnail.
+            // Most idle poses already face the viewer and are their thumbnail.
             // Share its native anchor and PNG instead of decoding it twice.
-            if idle && frame == 0 && rider_frame == rider.map(|_| 0) {
+            if idle && thumbnail == Some((frame, rider_frame)) {
                 if let Some(sprite) = sprites.get(&key) {
                     idle_sprites.insert(key.clone(), sprite.clone());
                     continue;
@@ -350,6 +353,22 @@ mod tests {
             assert_ne!(expected.rgba, decode(&body, 0).unwrap().rgba);
         }
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn troop_thumbnails_face_the_viewer() {
+        // Direction 0 is the walking sheets' first stride and shows a troop's
+        // back; engines, braziers and flags have no front to hide.
+        for &(id, _, rider) in SOURCES {
+            let (frame, top) = poses::thumbnail_pose(id).unwrap();
+            assert_eq!(top.is_some(), rider.is_some(), "marker {id}");
+            if !matches!(id, 2..=5 | 20 | 21) {
+                assert_ne!(frame, 0, "marker {id}");
+            }
+        }
+        assert_eq!(poses::thumbnail_pose(6), Some((645, None)));
+        assert_eq!(poses::thumbnail_pose(12), Some((260, Some(428))));
+        assert_eq!(poses::thumbnail_pose(17), poses::idle_pose(17));
     }
 
     #[test]
