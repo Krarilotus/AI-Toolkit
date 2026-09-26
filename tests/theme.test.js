@@ -133,6 +133,21 @@ test('native theme changes and detached windows share the same pack', async () =
   assert.match(links[0].href, /\/src\/css\/theme-detached.css$/);
 });
 
+test('UCP keeps bold for the workspace tabs and headings only', async () => {
+  const env = environment(); const theme = createController(env); await theme.init();
+  assert.equal(env.document.documentElement.dataset.controlWeight, 'bold');
+  await env.callbacks.theme('ucp');
+  assert.equal(manifest('ucp').controlWeight, 'regular');
+  assert.equal(env.document.documentElement.dataset.controlWeight, 'regular');
+  const css = fs.readFileSync(path.join(__dirname, '../src/css/theme-components.css'), 'utf8');
+  const rule = css.match(/html\[data-control-weight="regular"\] :is\(([^{]*)\{\s*font-weight: 400;/);
+  assert.ok(rule, 'regular-weight rule exists');
+  assert.match(rule[1], /\bbutton\b/);
+  assert.match(rule[1], /:not\(\.workspaceTab\)/);
+  // A toolbar dropdown's summary is a button; section summaries are headings.
+  assert.doesNotMatch(rule[1].replace('.toolbarMenu > summary', ''), /\bsummary\b|\bh[1-6]\b/, 'headings stay bold');
+});
+
 test('optional role art never hides functional controls in a minimal custom-style pack', async () => {
   const env = environment(), originalFetch = env.fetch;
   env.fetch = async url => {

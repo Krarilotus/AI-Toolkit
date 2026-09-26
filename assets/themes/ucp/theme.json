@@ -6,6 +6,7 @@
   "extends": "default",
   "variables": "variables.css",
   "colorScheme": "dark",
+  "controlWeight": "regular",
   "textures": {
     "control": {
       "file": "textures/button_ucp.png",

@@ -234,6 +234,14 @@ html[data-themed-fields="true"] select option {
 html[data-themed-fields="true"] :is(input, textarea)::placeholder { color: var(--component-input-placeholder); opacity: 1; }
 html[data-themed-fields="true"] select:disabled { opacity: .55; }
 
+/* Serif bold reads heavy on buttons (Monsterfish, #6). A pack with regular
+   control weight keeps bold for the workspace tabs and for headings only;
+   headings inside a button, like an AI's name in the library, keep theirs. */
+html[data-control-weight="regular"] :is(button, select, input, textarea, .toolbarMenu > summary, .metricRow strong,
+  .populationBreakdown strong, .castleSaveNotice, .castleGroupsDialog, #castleSelectModeLabel, .compactToggle):not(.workspaceTab) {
+  font-weight: 400;
+}
+
 /* Categories retain their domain colours; hover must never replace the face
    while retaining category-colour text (white on beige was unreadable). */
 html[data-themed-controls="true"] .castlePanel .paletteCategoryButton {
