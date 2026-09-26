@@ -84,6 +84,20 @@
     });
   }
 
+  // The palette's mini previews: each building's picture as the connected
+  // game draws it. Bundled catalogue pictures are not shipped, so without a
+  // game there is nothing to hand out and the palette keeps its icons.
+  async function buildingPreviews() {
+    const catalogue = await loadCatalogue();
+    if (!catalogue?.assetRevision) return {};
+    const previews = {};
+    for (const [type, entry] of Object.entries(catalogue.gegenstaende || {})) {
+      if (entry?.bild && entry.sx != null && entry.breite > 0 && entry.hoehe > 0)
+        previews[type] = { url: entry.bild, x: entry.sx, y: entry.sy, w: entry.breite, h: entry.hoehe };
+    }
+    return previews;
+  }
+
   async function reloadGameAssets() {
     catalogueRequest = null;
     state.catalogue = null;
@@ -1736,7 +1750,7 @@
 
   window.isoView = { init, openWindow, closeWindow, mountDock, unmount, refresh, paint, fit, isMounted, panFromKey,
                      findControl: id => state.controls?.querySelector(`#${id}`),
-                     setGameMap, setGameMapKeep, hasGameMap, gameMapInfo, reloadGameAssets,
+                     setGameMap, setGameMapKeep, hasGameMap, gameMapInfo, reloadGameAssets, buildingPreviews,
                      viewRotation, turnView, currentRotation,
                      setMapTiles, hasMapTiles, analysisTerrain, setMapLoadError,
                      // Fuer das Pruefgeruest: wo die Kamera steht und welche Marken liegen.

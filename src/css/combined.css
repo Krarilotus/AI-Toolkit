@@ -1196,6 +1196,8 @@ button:disabled { cursor: default; }
    translated name makes the row taller. Building textures still fill their side. */
 .paletteThumbUnit { height: 44px; align-self: center; }
 .paletteThumbUnit img { object-fit: contain; object-position: center bottom; padding: 3px; }
+/* Game building pictures are isometric sprites, not tiles: show them whole. */
+.paletteThumbSprite img { object-fit: contain; object-position: center bottom; padding: 2px; }
 .paletteUnitBadge {
   width: 36px; height: 36px; border-radius: 50%;
   display: grid; place-items: center;

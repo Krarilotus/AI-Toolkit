@@ -149,6 +149,7 @@
     skins: {},
     customSkinTypes: new Set(),
     skinImages: {},
+    buildingPreviews: {},
     dragFrameIndexes: [],
     buildSelectionAnchor: null,
     renderPending: false,
@@ -2180,7 +2181,14 @@
       thumb.className = isUnitType(Number(id)) ? 'paletteThumb paletteThumbUnit' : 'paletteThumb';
       const sequence = lineSequence(Number(id));
       const thumbnailType = String(sequence[0] ?? id);
-      if (state.skins[thumbnailType]) {
+      const gamePreview = !state.customSkinTypes.has(thumbnailType) && state.buildingPreviews[thumbnailType];
+      if (gamePreview) {
+        thumb.classList.add('paletteThumbSprite');
+        const img = document.createElement('img');
+        img.src = gamePreview;
+        img.alt = '';
+        thumb.appendChild(img);
+      } else if (state.skins[thumbnailType]) {
         const img = document.createElement('img');
         img.src = state.skins[thumbnailType];
         img.alt = '';
@@ -2515,6 +2523,48 @@
     renderPalette();
     updateSelectedItemInfo();
     scheduleDraw();
+    loadBuildingPreviews();
+  }
+
+  // Palette mini previews cut from the connected game's building pictures,
+  // which the 2.5D view has already extracted. Custom skins still win, and
+  // the bundled icons stay the fallback when no game is connected.
+  const BUILDING_PREVIEW_PX = 96;
+  let buildingPreviewRequest = 0;
+  async function loadBuildingPreviews() {
+    const request = ++buildingPreviewRequest;
+    const sources = await Promise.resolve(window.isoView?.buildingPreviews?.()).catch(() => null) || {};
+    const pages = new Map();
+    const page = url => {
+      if (!pages.has(url)) pages.set(url, new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+      }));
+      return pages.get(url);
+    };
+    const previews = {};
+    for (const [type, source] of Object.entries(sources)) {
+      if (isUnitType(Number(type))) continue;
+      try {
+        const img = await page(source.url);
+        const scale = Math.min(1, BUILDING_PREVIEW_PX / Math.max(source.w, source.h));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(source.w * scale));
+        canvas.height = Math.max(1, Math.round(source.h * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, source.x, source.y, source.w, source.h, 0, 0, canvas.width, canvas.height);
+        previews[type] = canvas.toDataURL();
+      } catch (error) {
+        console.warn(`Building preview ${type} unavailable:`, error);
+      }
+      if (request !== buildingPreviewRequest) return;
+    }
+    state.buildingPreviews = previews;
+    if (Object.keys(previews).length) renderPalette();
   }
 
   async function setSkin() {
@@ -3936,6 +3986,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     updateMapControls();
     ensureMapTiles();
+    loadBuildingPreviews();
   });
 
   document.querySelectorAll('.castleTool').forEach(btn => btn.addEventListener('click', () => setTool(btn.dataset.tool)));
