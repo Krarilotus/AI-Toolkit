@@ -2013,6 +2013,9 @@ html.dockResizing * { user-select: none !important; }
   background: var(--surface-2);
 }
 #characterWorkspace .characterSidebar summary { font-size: 1.1rem; }
+/* Themes may enlarge the sidebar's text without widening the bar: each card
+   keeps the bar's width, so text wraps and the bar scrolls instead. */
+#characterWorkspace .characterSidebar > * { zoom: var(--component-sidebar-text-zoom); }
 #characterWorkspace .characterSidebar details > summary { border-bottom: 0; }
 #characterWorkspace .characterSidebar details[open] > summary { border-bottom: 1px solid var(--line); }
 #characterWorkspace .characterSidebar details:not([open]) > summary::after { content: '+'; }
@@ -2034,6 +2037,19 @@ html.dockResizing * { user-select: none !important; }
 .workspaceTabs .releaseUpdateButton { flex-shrink: 0; align-self: center; margin-bottom: 5px; padding: 4px 8px; font-size: 11px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-soft); -webkit-app-region: no-drag; }
 .workspaceTabs .releaseUpdateButton.releaseCurrent { background: var(--semantic-status-success-surface); color: var(--semantic-status-on-success); border-color: var(--valid); }
 .workspaceTabs .releaseUpdateButton.releaseAvailable { background: var(--semantic-status-warning-surface); color: var(--semantic-status-on-warning); border-color: var(--accent-strong); }
+/* Interface zoom: a compact "- 100 % +" group beside the update button. */
+.workspaceTabs .uiZoomControls {
+  display: flex; flex-shrink: 0; align-self: center; margin-bottom: 5px;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); overflow: hidden;
+}
+.workspaceTabs .uiZoomControls[hidden] { display: none; }
+.workspaceTabs .uiZoomControls button {
+  min-width: 22px; min-height: 0; padding: 3px 6px; border: 0; border-radius: 0;
+  background: var(--surface-2); color: var(--text-soft); font: 11px/1.2 var(--font-ui);
+  -webkit-app-region: no-drag;
+}
+.workspaceTabs .uiZoomControls .uiZoomValue { min-width: 46px; border-inline: 1px solid var(--line-strong); font-family: var(--font-data); }
+.workspaceTabs .uiZoomControls button:hover { background: var(--surface-3); color: var(--text-main); }
 .workspaceTabs .releaseUpdateButton:hover:not(:disabled) { filter: brightness(1.15); }
 .workspaceTabs .releaseUpdateButton:focus-visible { outline: 2px solid var(--text-main); outline-offset: 2px; }
 

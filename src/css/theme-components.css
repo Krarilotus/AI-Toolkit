@@ -63,7 +63,7 @@ html[data-themed-controls="true"] .castleToolbar > .toolbarGroup + .toolbarGroup
 
 /* UCP's bevelled commands use an actual 8px border, so the frame cannot paint
    over the label. Flat menu/list/icon controls deliberately have another role. */
-html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where(.paletteCategoryButton, .paletteItem, .ucpAiListItem, .titlebarMenus button, .castlePieMenu button, .workspaceTab, .windowControl, .releaseUpdateButton, .buildStepControls button, .areaTabs button, .isoViewControls button, #isoWindowDockBtn, .infoButton, .helpButton, .helpBtn, .castleOverviewInfoButton, .editorCardToggle, #castleBrushMinus, #castleBrushPlus)) {
+html[data-themed-controls="true"] :is(button, .castleToolbar summary):not(:where(.paletteCategoryButton, .paletteItem, .ucpAiListItem, .titlebarMenus button, .castlePieMenu button, .workspaceTab, .windowControl, .releaseUpdateButton, .uiZoomControls button, .buildStepControls button, .areaTabs button, .isoViewControls button, #isoWindowDockBtn, .infoButton, .helpButton, .helpBtn, .castleOverviewInfoButton, .editorCardToggle, #castleBrushMinus, #castleBrushPlus)) {
 
   border: var(--texture-control-width) solid transparent;
   border-image: var(--texture-control) var(--texture-control-slice) / var(--texture-control-width) / 0 stretch;
