@@ -231,7 +231,7 @@ html[data-themed-fields="true"] select option {
   background: var(--component-select-option-surface);
   color: var(--component-select-option-content);
 }
-html[data-themed-fields="true"] :is(input, textarea)::placeholder { color: var(--component-panel-muted); opacity: 1; }
+html[data-themed-fields="true"] :is(input, textarea)::placeholder { color: var(--component-input-placeholder); opacity: 1; }
 html[data-themed-fields="true"] select:disabled { opacity: .55; }
 
 /* Categories retain their domain colours; hover must never replace the face

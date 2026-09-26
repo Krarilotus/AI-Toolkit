@@ -189,9 +189,12 @@ test('UCP keeps dark shell tokens distinct from framed paper and original reorde
   const pack = JSON.parse(fs.readFileSync(path.join(directory, 'ucp/tokens.json'), 'utf8'));
   assert.equal(pack.primitive.color.ink.$value.hex, '#212529');
   assert.equal(pack.component.panel.surface.$value.hex, '#e4dbc3');
-  assert.equal(pack.component.panel.content.$value.hex, '#292720');
-  assert.equal(pack.component.input.content.$value, '{component.panel.content}');
-  // Numbers wear the same light field as text on paper, not a dark inlay.
+  // Darker ink on the paper for contrast (Monsterfish, issue #6).
+  assert.equal(pack.component.panel.content.$value.hex, '#1f1d18');
+  // Fields follow the UCP3 GUI: a warm brown box with light text on the paper.
+  assert.equal(pack.component.input.surface.$value, '#9c6528');
+  assert.equal(pack.component.input.content.$value, '#fbf5e1');
+  // Numbers wear the same field as text, not a different inlay.
   assert.equal(pack.component.value.content.$value, '{component.input.content}');
   assert.equal(pack.component.value.surface.$value, '{component.input.surface}');
   assert.equal(manifest('ucp').textures.value.file, manifest('ucp').textures.input.file);
