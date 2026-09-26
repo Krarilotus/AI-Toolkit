@@ -106,6 +106,7 @@
   --component-toolbar-command-frame: none;
   --component-toolbar-command-hover: #30383b;
   --component-toolbar-command-selected: #39372b;
+  --component-sidebar-text-zoom: 1.15; /** Scale of the text inside the character sidebar; the bar keeps its width. */
   --semantic-surface-app: var(--primitive-color-ink);
   --semantic-surface-deep: var(--primitive-color-deep);
   --semantic-surface-panel: var(--primitive-color-slate1);

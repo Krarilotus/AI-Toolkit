@@ -1467,6 +1467,7 @@ export type TranslationKey =
   | "native:zoom_in"
   | "native:zoom_out"
   | "native:reset_zoom"
+  | "native:interface_zoom"
   | "nativeErrors:an_ai_with_that_folder_id_already_exists"
   | "nativeErrors:castle_already_exists"
   | "nativeErrors:castle_file_does_not_exist_in_this_ai"

@@ -43,6 +43,11 @@
       <option value="Schlossgespensty/AI-Toolkit" data-i18n="interface:official_releases">Official releases</option>
     </select>
     <button id="releaseUpdateButton" class="releaseUpdateButton" type="button" aria-live="polite" title="Check official releases" data-i18n-attrs="title=interface:check_official_releases" data-i18n="interface:check_updates">Check updates</button>
+    <div id="uiZoomControls" class="uiZoomControls" role="group" aria-label="Interface zoom" data-i18n-attrs="aria-label=native:interface_zoom" hidden>
+      <button type="button" data-ui-zoom="-1" title="Zoom out" aria-label="Zoom out" data-i18n-attrs="title=native:zoom_out;aria-label=native:zoom_out">&minus;</button>
+      <button type="button" data-ui-zoom="0" class="uiZoomValue" title="Actual size" data-i18n-attrs="title=native:reset_zoom">100&nbsp;%</button>
+      <button type="button" data-ui-zoom="1" title="Zoom in" aria-label="Zoom in" data-i18n-attrs="title=native:zoom_in;aria-label=native:zoom_in">+</button>
+    </div>
     <span id="workspaceStatus" class="workspaceStatus" data-i18n="interface:ucp_ai_library">UCP AI Library</span>
     <span class="appIdentity" aria-hidden="true"><span>AI</span> Toolkit</span>
     <div id="windowControls" class="windowControls" role="group" aria-label="Window controls" data-i18n-attrs="aria-label=shell:window_controls" hidden>
