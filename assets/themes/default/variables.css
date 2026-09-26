@@ -160,6 +160,7 @@
   --component-number-stepper-border: var(--semantic-border-normal);
   --component-number-stepper-content: var(--semantic-content-main);
   --component-toolbar-command-border: var(--semantic-border-normal);
+  --component-input-placeholder: var(--component-panel-muted);
   --component-select-chrome-surface: var(--semantic-surface-chrome);
   --component-select-chrome-content: var(--semantic-content-on-chrome);
   --component-select-option-surface: var(--semantic-surface-chrome);
