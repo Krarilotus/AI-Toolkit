@@ -320,6 +320,98 @@ test('a free-standing crenel is always the single merlon, a row keeps the checke
   assert.equal(bild(10, 90), 'ra_klotz', 'x + y ungerade');
 });
 
+// Gemessen in den Kreuzzug-Karten des Spiels, siehe geo.variantFor.
+function zinnenMitForm() {
+  const b = (name, sx = 0) => ({ bild: name, breite: 30, hoehe: 135, sx, sy: 0 });
+  const paar = name => ({ klotz: b(name + '_klotz'), scharte: b(name + '_scharte') });
+  const reihe = name => ({ klotz: Array.from({length: 16}, () => b(name + '_klotz')), scharte: Array.from({length: 16}, () => b(name + '_scharte')) });
+  return { kacheln: 1, mauer: { hoehe: 98, zinne: true, laengs: reihe('l'), quer: reihe('q'),
+    rand: { laengs: paar('rl'), quer: paar('rq'), allein: paar('ra') },
+    form: { ende: b('ende'), ecken: { px_my: b('e128'), px_py: b('e129'), mx_py: b('e130'), mx_my: b('e131') },
+      schraeg: Array.from({length: 8}, (_, i) => b('s' + (303 + i))), steil: [b('s312'), b('s311')], flach: b('flach') } } };
+}
+
+test('crenels follow the game: ends, corners and both diagonals get their own pieces', () => {
+  const zinne = zinnenMitForm();
+  const felder = new Set();
+  const mauerAn = (gx, gy) => felder.has(gx + ':' + gy) ? zinne.mauer : null;
+  // Kartenfeld = Ansichtsfeld, damit die Zahlen mit der Messung uebereinstimmen.
+  const lage = (gx, gy) => ({ x: gx, y: gy });
+  const bild = (gx, gy) => geometry.variantFor(zinne, gx, gy, mauerAn, null, lage).bild;
+  for (const gx of [165, 166, 167, 168]) felder.add(gx + ':187');
+  assert.equal(bild(165, 187), 'ende', 'das Ende einer Reihe ist der hohe Endklotz');
+  assert.equal(bild(166, 187), 'l_klotz', 'x + y ungerade: Klotz');
+  assert.equal(bild(167, 187), 'l_scharte', 'x + y gerade: Scharte');
+  felder.clear(); ['10:10', '11:10', '10:9'].forEach(f => felder.add(f));
+  assert.equal(bild(10, 10), 'e128', 'Ecke mit Nachbarn bei x+1 und y-1');
+  // Waagrecht schraeg (x+1, y-1), x + y = 352: Zinnen von vorn, 303 + (y & 7).
+  felder.clear(); for (let i = 0; i < 4; i++) felder.add((160 + i) + ':' + (192 - i));
+  assert.equal(bild(160, 192), 's303');
+  assert.equal(bild(161, 191), 's310');
+  felder.clear(); for (let i = 0; i < 3; i++) felder.add((160 + i) + ':' + (193 - i));
+  assert.equal(bild(161, 192), 'flach', 'x + y ungerade: nur der Wehrgang');
+  // Senkrecht schraeg (x+1, y+1): Winkelzinnen nach y.
+  felder.clear(); for (let i = 0; i < 3; i++) felder.add((20 + i) + ':' + (30 + i));
+  assert.equal(bild(21, 31), 's311', 'y ungerade');
+  assert.equal(bild(22, 32), 's312', 'y gerade');
+});
+
+test('crenel pieces the game did not supply fall back to the old pictures', () => {
+  const zinne = zinnenMitForm();
+  zinne.mauer.form.ende = { bild: 'ende', breite: 30, hoehe: 143 };
+  const felder = new Set(['10:89', '11:89']);
+  const mauerAn = (gx, gy) => felder.has(gx + ':' + gy) ? zinne.mauer : null;
+  assert.notEqual(geometry.variantFor(zinne, 10, 89, mauerAn).bild, 'ende', 'ohne Atlasplatz kein neues Stueck');
+});
+
+test('the crenel checkerboard belongs to the map tile, not to the turned view', () => {
+  const zinne = zinnenMitForm();
+  const felder = new Set();
+  const mauerAn = (gx, gy) => felder.has(gx + ':' + gy) ? zinne.mauer : null;
+  for (const gx of [9, 10, 11, 12]) felder.add(gx + ':50');
+  // Dieselbe Karte, zwei Drehungen der Ansicht: das Feld (10,50) der Ansicht
+  // ist einmal das Kartenfeld (10,50) und einmal (49,10).
+  const bild = lage => geometry.variantFor(zinne, 10, 50, mauerAn, null, lage).bild;
+  assert.equal(bild(() => ({ x: 11, y: 50 })), 'l_klotz');
+  assert.equal(bild(() => ({ x: 10, y: 50 })), 'l_scharte');
+});
+
+test('towers and gatehouses carry a wall through, ordinary buildings do not', () => {
+  const b = name => ({ bild: name, breite: 30, hoehe: 108 });
+  const reihe = name => ({ klotz: Array.from({length: 16}, () => b(name)) });
+  const mauer = { hoehe: 90, laengs: reihe('laengs'), quer: reihe('quer'),
+    rand: { laengs: { klotz: b('rl') }, quer: { klotz: b('rq') }, allein: { klotz: b('ra') } } };
+  const wand = { kacheln: 1, mauer };
+  const turm = { aiv: 30, kacheln: 3 }, haus = { aiv: 61, kacheln: 3 };
+  const items = [{ gx: 10, gy: 10, entry: wand, tiles: 1 }, { gx: 11, gy: 10, entry: wand, tiles: 1 }];
+  const mitTurm = geometry.wallLookup([...items, { gx: 12, gy: 9, entry: turm, tiles: 3 }]);
+  const mitHaus = geometry.wallLookup([...items, { gx: 12, gy: 9, entry: haus, tiles: 3 }]);
+  assert.equal(geometry.variantFor(wand, 11, 10, mitTurm).bild, 'laengs', 'die Mauer laeuft in den Turm');
+  assert.equal(geometry.variantFor(wand, 11, 10, mitHaus).bild, 'ra', 'am Haus endet sie');
+});
+
+test('a diagonal wall fills its gaps with half a wall tile, T junctions and towers do not', () => {
+  const flach = { bild: 'ra', breite: 30, hoehe: 108 };
+  const mauer = { hoehe: 90, rand: { allein: { klotz: flach } } };
+  const wand = { kacheln: 1, mauer };
+  const felder = (...liste) => liste.map(([gx, gy]) => ({ gx, gy, tiles: 1, entry: wand }));
+  const fugen = items => geometry.mauerFugen(items, geometry.wallLookup(items))
+    .map(f => `${f.gx},${f.gy},${f.halb}`).sort();
+  // Waagrecht schraeg: (10,10) und (11,9) - Luecken (11,10) vorn und (10,9) hinten.
+  assert.deepEqual(fugen(felder([10, 10], [11, 9])), ['10,9,unten', '11,10,oben']);
+  // Senkrecht schraeg: (10,10) und (11,11).
+  assert.deepEqual(fugen(felder([10, 10], [11, 11])), ['10,11,rechts', '11,10,links']);
+  // Innenecke einer T-Kreuzung: keine Fuge.
+  assert.deepEqual(fugen(felder([10, 10], [11, 10], [11, 11])), []);
+  // Neben einem Turm keine.
+  const turm = { gx: 11, gy: 11, tiles: 1, entry: { aiv: 30, kacheln: 1 } };
+  assert.deepEqual(geometry.mauerFugen([...felder([10, 10]), turm], geometry.wallLookup([...felder([10, 10]), turm])), []);
+  // Der Ausschnitt: die untere Haelfte beginnt auf der Mauer, lift ueber der Bodenmitte.
+  assert.deepEqual(geometry.fugenAusschnitt(flach, 'unten', 90), [0, 10, 30, 98]);
+  assert.deepEqual(geometry.fugenAusschnitt(flach, 'oben', 90), [0, 0, 30, 100]);
+  assert.deepEqual(geometry.fugenAusschnitt(flach, 'links', 90), [0, 0, 15, 108]);
+});
+
 test('every drawn item carries the key the editor uses for its selection', () => {
   const dokument = { frames: [
     { itemType: 20, tilePositionOfsets: [2030, 2031] },
@@ -354,7 +446,7 @@ test('a crenellated wall alternates merlon and embrasure, tile by tile', () => {
   // Und das Zeichnen benutzt die gewaehlte Fassung, nicht mehr den Eintrag.
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
   const malen = script.slice(script.indexOf('function drawSprite'), script.indexOf('function drawDiamond'));
-  assert.match(malen, /const variant = geo\.variantFor\(sprite, gx, gy, mauerAn, hoeheAn\)/);
+  assert.match(malen, /const variant = geo\.variantFor\(sprite, gx, gy, mauerAn, hoeheAn, state\.lageAn\)/);
   assert.match(malen, /image\(variant\.bild\)/);
   assert.match(malen, /geo\.spriteRect\(variant, gx, gy/);
 });
