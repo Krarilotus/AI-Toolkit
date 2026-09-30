@@ -2370,18 +2370,60 @@
       row.addEventListener('dragend', () => {
         state.dragFrameIndexes = [];
         for (const candidate of els.buildList.querySelectorAll('.buildStep')) candidate.classList.remove('dragging');
-      });
-      row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
-      row.addEventListener('drop', e => {
-        e.preventDefault();
-        const dragged = state.dragFrameIndexes.length
-          ? state.dragFrameIndexes
-          : String(e.dataTransfer.getData('text/plain')).split(',').map(Number);
-        moveBuildSteps(dragged, fi);
+        endBuildListDrag();
       });
       els.buildList.appendChild(row);
     });
     window.toolkitI18n.applyTextDirection(els.buildList);
+  }
+
+  // Ziehen in der Schrittliste. Waehrend eines Ziehens kommt kein Mausrad an,
+  // und der eingebaute Rand-Bildlauf ist nur ein paar Punkte breit - bei
+  // langen Listen kam man so kaum ans Ziel. Darum: oben und unten je eine
+  // Zone, die umso schneller rollt, je naeher der Zeiger am Rand ist, und
+  // eine Linie, die zeigt, wo der Block landet (obere oder untere Haelfte
+  // einer Zeile, unter der letzten Zeile ans Ende).
+  const DRAG_SCROLL_ZONE = 56, DRAG_SCROLL_MAX = 22;
+
+  function buildDropGap(event) {
+    const row = event.target.closest?.('.buildStep');
+    if (row && els.buildList.contains(row)) {
+      const rect = row.getBoundingClientRect();
+      return Number(row.dataset.index) + (event.clientY > rect.top + rect.height / 2 ? 1 : 0);
+    }
+    return frames().length;
+  }
+
+  function showBuildDropGap(gap) {
+    if (state.buildDropGap === gap) return;
+    state.buildDropGap = gap;
+    for (const row of els.buildList.querySelectorAll('.dropBefore, .dropAfter')) row.classList.remove('dropBefore', 'dropAfter');
+    if (gap == null) return;
+    const last = frames().length - 1;
+    const row = els.buildList.querySelector(`.buildStep[data-index="${gap < frames().length ? gap : last}"]`);
+    row?.classList.add(gap < frames().length ? 'dropBefore' : 'dropAfter');
+  }
+
+  function dragScrollStep() {
+    if (!state.buildDragScroll) { state.buildDragScrollFrame = null; return; }
+    els.buildList.scrollTop += state.buildDragScroll;
+    state.buildDragScrollFrame = requestAnimationFrame(dragScrollStep);
+  }
+
+  function updateBuildDragScroll(clientY) {
+    const rect = els.buildList.getBoundingClientRect();
+    const zone = Math.min(DRAG_SCROLL_ZONE, rect.height / 4);
+    const fromTop = clientY - rect.top, fromBottom = rect.bottom - clientY;
+    let speed = 0;
+    if (fromTop < zone) speed = -Math.ceil(DRAG_SCROLL_MAX * (1 - Math.max(0, fromTop) / zone));
+    else if (fromBottom < zone) speed = Math.ceil(DRAG_SCROLL_MAX * (1 - Math.max(0, fromBottom) / zone));
+    state.buildDragScroll = speed;
+    if (speed && !state.buildDragScrollFrame) state.buildDragScrollFrame = requestAnimationFrame(dragScrollStep);
+  }
+
+  function endBuildListDrag() {
+    state.buildDragScroll = 0;
+    showBuildDropGap(null);
   }
 
   function scrollToActiveBuildStep(viewport) {
@@ -2447,7 +2489,9 @@
   // Ein gesperrter Bauschritt wird nicht umgehaengt - aber er haelt die anderen
   // auch nicht mehr auf. Wer fuenf waehlt und einen davon gesperrt hat, bewegt
   // vier. Die eine Stelle fuer beide Wege, Pfeile wie Ziehen.
-  function moveBuildSteps(indexes, targetIndex) {
+  // targetIndex: auf diesen Schritt (Pfeile). gap: in diese Luecke, wie die
+  // Einfuegelinie beim Ziehen sie zeigt.
+  function moveBuildSteps(indexes, targetIndex, gap = null) {
     if (!indexes.length) return false;
     const beweglich = unlockedFrameIndexes(indexes);
     if (!beweglich.length) {
@@ -2456,7 +2500,9 @@
     }
     const festgehalten = indexes.length - beweglich.length;
     pushUndo();
-    const result = geometry.moveBuildSteps(frames(), beweglich, targetIndex);
+    const result = gap != null
+      ? geometry.moveBuildStepsToGap(frames(), beweglich, gap)
+      : geometry.moveBuildSteps(frames(), beweglich, targetIndex);
     if (!result.moved) {
       state.undo.pop();
       return false;
@@ -4193,6 +4239,25 @@
   window.addEventListener('blur', closeBuildContextMenu);
   window.addEventListener('resize', closeBuildContextMenu);
   els.buildList.addEventListener('scroll', closeBuildContextMenu);
+  els.buildList.addEventListener('dragover', event => {
+    if (!state.dragFrameIndexes?.length) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    updateBuildDragScroll(event.clientY);
+    showBuildDropGap(buildDropGap(event));
+  });
+  els.buildList.addEventListener('dragleave', event => {
+    if (!els.buildList.contains(event.relatedTarget)) endBuildListDrag();
+  });
+  els.buildList.addEventListener('drop', event => {
+    event.preventDefault();
+    const gap = state.buildDropGap ?? buildDropGap(event);
+    const dragged = state.dragFrameIndexes?.length
+      ? state.dragFrameIndexes
+      : String(event.dataTransfer.getData('text/plain')).split(',').map(Number);
+    endBuildListDrag();
+    moveBuildSteps(dragged, null, gap);
+  });
   els.buildList.addEventListener('scroll', () => {
     const top=els.buildList.scrollTop,height=els.buildList.clientHeight;
     if(state.buildListViewport?.top===top&&state.buildListViewport?.height===height)return;
