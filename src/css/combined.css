@@ -1455,6 +1455,20 @@ button:disabled { cursor: default; }
 .buildStep.future:hover { color: var(--text-soft); background: var(--surface-2); }
 .buildStep.future.selected { color: var(--text-soft); background: var(--accent-soft); }
 .buildStep.dragging { opacity: .45; }
+/* Where a dragged block will land. Rows paint-contain themselves
+   (content-visibility), so the line sits inside the row's own edge. */
+.buildStep { position: relative; }
+.buildStep:is(.dropBefore, .dropAfter)::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.buildStep.dropBefore::after { top: 0; }
+.buildStep.dropAfter::after { bottom: 0; }
 /* Ein gesperrter Bauschritt: sichtbar, aber nicht anzufassen. */
 .buildStep.locked { cursor: default; box-shadow: inset 3px 0 0 var(--text-muted); }
 .buildStep.locked .buildIndex::before { content: '🔒'; font-size: 9px; }
