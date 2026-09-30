@@ -232,16 +232,69 @@
     return { ...gewaehlt, kacheln: sprite.kacheln };
   }
 
-  function variantFor(sprite, gx, gy, mauerAn, hoeheAn) {
+  // Zinnen, nachgemessen am 28.09.2026 in den Kreuzzug-Karten des Spiels
+  // (crusaders_mission*.map: Ebene 1001 haelt das gemalte Bild, 1003 die
+  // Logik) - 780 Zinnenfelder:
+  //
+  //  - In einer Reihe: Klotz (tile_land3 120-127), wo x + y DER KARTE
+  //    ungerade ist, sonst Scharte (112-119) - 346 von 348 Feldern. Das
+  //    Schachbrett haengt am Kartenfeld, nicht an der Ansicht: mit C gedreht
+  //    bleibt jede Zinne, wie sie war.
+  //  - Das Ende einer Reihe ist immer der hohe Endklotz (132), eine Ecke eines
+  //    der vier Eckstuecke (128-131).
+  //  - Schraeg und auf dem Schirm waagrecht (Nachbar bei x+1,y-1): Zinnen von
+  //    vorn gesehen (303-310, Nummer 303 + (y & 7)), aber nur, wo x + y
+  //    gerade ist - sonst zeigt die ganze Linie bloss den Wehrgang.
+  //  - Schraeg und senkrecht (x+1,y+1): die Winkelzinnen, 311 bei ungeradem
+  //    y, sonst 312.
+  //
+  // lageAn(gx, gy) liefert das Kartenfeld { x, y }. Ohne Karte gilt das Feld
+  // des Bauplans in Editor-Zaehlung - dieselbe Phase wie bisher.
+  function editorLage(gx, gy) {
+    return { x: gx, y: (GRID - 1) - gy };
+  }
+
+  const achtel = v => ((v % 8) + 8) % 8;
+
+  // Nur Stuecke, die das Spiel geliefert hat (sx aus dem Atlas), werden
+  // benutzt; fehlt eines, bleibt es beim alten Bild.
+  const nutzbar = teil => (teil && Number.isFinite(teil.sx)) ? teil : null;
+
+  function zinnenForm(mauer, gx, gy, mauerAn, lage) {
+    const form = mauer.form;
+    const zinne = (dx, dy) => {
+      const nachbar = mauerAn(gx + dx, gy + dy);
+      return !!nachbar && (nachbar.zinne || nachbar.turm);
+    };
+    const mx = zinne(-1, 0), px = zinne(1, 0), my = zinne(0, -1), py = zinne(0, 1);
+    const zahl = mx + px + my + py;
+    if (zahl === 1) return nutzbar(form.ende);
+    if (zahl === 2 && (mx || px) && (my || py))
+      return nutzbar(form.ecken && form.ecken[(px ? 'px' : 'mx') + '_' + (py ? 'py' : 'my')]);
+    if (zahl > 0) return null;
+    if (zinne(1, -1) || zinne(-1, 1)) {
+      if ((lage.x + lage.y) % 2 !== 0) return nutzbar(form.flach);
+      return nutzbar(form.schraeg && form.schraeg[achtel(lage.y)]);
+    }
+    if (zinne(1, 1) || zinne(-1, -1)) return nutzbar(form.steil && form.steil[achtel(lage.y) % 2]);
+    return nutzbar(form.ende);
+  }
+
+  function variantFor(sprite, gx, gy, mauerAn, hoeheAn, lageAn) {
     if (!sprite) return sprite;
     if (sprite.treppe) return treppenFassung(sprite, gx, gy, hoeheAn);
-    const y = (GRID - 1) - gy;
-    const klotz = (((gx + y) % 2) + 2) % 2 === 1;
+    const lage = typeof lageAn === 'function' ? lageAn(gx, gy) : editorLage(gx, gy);
+    const klotz = (((lage.x + lage.y) % 2) + 2) % 2 === 1;
+    const y = lage.y;
     const mauer = sprite.mauer;
     if (!mauer) {
       if (!sprite.wechselBild || klotz) return sprite;
       return { bild: sprite.wechselBild, breite: sprite.wechselBreite,
                hoehe: sprite.wechselHoehe, kacheln: sprite.kacheln };
+    }
+    if (mauer.zinne && mauer.form && typeof mauerAn === 'function') {
+      const form = zinnenForm(mauer, gx, gy, mauerAn, lage);
+      if (form) return { ...form, kacheln: sprite.kacheln };
     }
     const welche = (klotz || !mauer.rand.allein.scharte) ? 'klotz' : 'scharte';
     let gewaehlt = mauer.rand.allein[welche];
@@ -267,14 +320,96 @@
 
   // Nachschlagewerk fuer die Regel oben: welches Feld traegt eine Mauer.
   // Aus den Gegenstaenden, die ohnehin schon eingesammelt sind.
+  //
+  // Tuerme und Torhaeuser zaehlen mit: das Spiel fuehrt ihre Felder als
+  // L_WALL (0x100), und eine Mauer, die an einen Turm stoesst, laeuft in ihn
+  // hinein statt mit einem freistehenden Pfeiler zu enden (gemessen in
+  // denselben Karten: Mauer zwischen Mauer und Turm -> laengs/quer). Andere
+  // Gebaeude zaehlen nicht. Die AIV-Nummern: Tuerme 30-34, Torhaeuser 40-43.
+  const MAUER_ANSCHLUSS = new Set([30, 31, 32, 33, 34, 40, 41, 42, 43]);
+  const TURM = Object.freeze({ turm: true, hoehe: Infinity });
+
   function wallLookup(items, extra) {
     const felder = new Map();
-    const eintragen = (gx, gy, entry) => {
-      if (entry && entry.mauer) felder.set(gx + ':' + gy, entry.mauer);
+    const eintragen = (item) => {
+      const entry = item.entry;
+      if (!entry) return;
+      if (entry.mauer) { felder.set(item.gx + ':' + item.gy, entry.mauer); return; }
+      if (!MAUER_ANSCHLUSS.has(entry.aiv)) return;
+      const n = item.tiles || entry.kacheln || 1;
+      for (let dx = 0; dx < n; dx++) for (let dy = 0; dy < n; dy++) {
+        const schluessel = (item.gx + dx) + ':' + (item.gy + dy);
+        if (!felder.has(schluessel)) felder.set(schluessel, TURM);
+      }
     };
-    for (const item of items || []) eintragen(item.gx, item.gy, item.entry);
-    for (const item of extra || []) eintragen(item.gx, item.gy, item.entry);
+    for (const item of items || []) eintragen(item);
+    for (const item of extra || []) eintragen(item);
     return (gx, gy) => felder.get(gx + ':' + gy) || null;
+  }
+
+  // Eine schraege Mauer ist im Spiel ein durchgehendes Band, keine Kette von
+  // Kloetzen, die sich an den Ecken beruehren: in die beiden Luecken zwischen
+  // zwei schraeg benachbarten Mauerfeldern setzt es je eine halbe Mauer
+  // (Ebene 1009 der Karten: ein flaches Mauerstueck auf dem Bodenfeld). Die
+  // halbe Kachel ist die, deren Kanten an die beiden Mauern stossen - das
+  // Band hat so gerade Kanten.
+  //
+  // Keine Fuge, wo die andere Luecke selbst dieselbe Mauer traegt (die
+  // Innenecke einer T- oder L-Kreuzung), und keine neben Tuermen - beides so
+  // in den Karten. Eine doppelte Mauer (Zinnen vorn, Wehrgang dahinter) fuellt
+  // ihre Luecken dagegen, denn dort ist das Nachbarfeld eine ANDERE Mauer.
+  //
+  // Zurueck kommen Felder { gx, gy, halb, teil, lift }; halb ist die Ecke der
+  // Kachel, an der die Mauern liegen: 'links', 'rechts', 'oben', 'unten'.
+  function mauerFugen(items, mauerAn) {
+    const fugen = [];
+    if (typeof mauerAn !== 'function') return fugen;
+    const belegt = new Set();
+    for (const item of items || []) {
+      const n = item.tiles || 1;
+      for (let dx = 0; dx < n; dx++) for (let dy = 0; dy < n; dy++) belegt.add((item.gx + dx) + ':' + (item.gy + dy));
+    }
+    const gesehen = new Set();
+    for (const item of items || []) {
+      const mauer = item.entry && item.entry.mauer;
+      if (!mauer) continue;
+      const teil = mauer.zinne ? nutzbar(mauer.form && mauer.form.flach) : (mauer.rand && mauer.rand.allein.klotz);
+      if (!teil) continue;
+      for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        if (mauerAn(item.gx + dx, item.gy + dy) !== mauer) continue;
+        const luecken = [[item.gx + dx, item.gy], [item.gx, item.gy + dy]];
+        luecken.forEach(([fx, fy], i) => {
+          const [ox, oy] = luecken[1 - i];
+          if (belegt.has(fx + ':' + fy) || mauerAn(fx, fy) || mauerAn(ox, oy) === mauer) return;
+          // Die beiden Mauern liegen bei (fx + sx, fy) und (fx, fy + sy).
+          const sx = (i === 0 ? item.gx : item.gx + dx) - fx;
+          const sy = (i === 0 ? item.gy + dy : item.gy) - fy;
+          const halb = sx < 0 ? (sy > 0 ? 'links' : 'oben') : (sy < 0 ? 'rechts' : 'unten');
+          const schluessel = fx + ':' + fy + ':' + halb;
+          if (gesehen.has(schluessel)) return;
+          gesehen.add(schluessel);
+          fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil, lift: mauer.hoehe });
+        });
+      }
+    }
+    return fugen;
+  }
+
+  // Der Ausschnitt eines Mauerbildes, der die halbe Kachel zeigt, in
+  // Bildpunkten [x, y, breite, hoehe]. Links/rechts teilt die senkrechte
+  // Mitte. Die obere Haelfte endet am Boden auf Hoehe der Kachelmitte, die
+  // untere beginnt oben auf der Mauer auf Hoehe der Mitte - lift darueber.
+  function fugenAusschnitt(teil, halb, lift) {
+    const b = teil.breite, h = teil.hoehe, mitte = Math.round(b / 2), boden = h - HALF_H;
+    switch (halb) {
+      case 'links': return [0, 0, mitte, h];
+      case 'rechts': return [mitte, 0, b - mitte, h];
+      case 'oben': return [0, 0, b, boden];
+      default: {
+        const oben = Math.max(0, boden - lift);
+        return [0, oben, b, h - oben];
+      }
+    }
   }
 
   // Wie hoch ein Feld ist und was darauf steht - fuer die Treppenregel oben.
@@ -799,6 +934,7 @@
            gridFromOffset, offsetFromGrid, isoPoint,
            tileFromPoint, editorTileFromPoint,
            depth, byDepth, renderOrder, spriteRect, groundTextureScale, variantFor, wallLookup, hoehenLookup,
+           mauerFugen, fugenAusschnitt,
            collectItems, collectPlates, troopAnchors, attachDrawbridges, buildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
            mapTileForGrid, mapTileForView, viewTileForMap,

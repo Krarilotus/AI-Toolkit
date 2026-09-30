@@ -597,7 +597,96 @@
      "laengs": "Platz = x & 15",
      "quer": "Platz = y & 15",
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
-     "krone": "Klotz bei x+y ungerade, sonst Scharte"
+     "krone": "Klotz bei x+y ungerade, sonst Scharte",
+     "form": "Ende 132, Ecken 128-131, schraeg waagrecht 303-310 (y & 7, nur x + y gerade, sonst flach), schraeg senkrecht 312/311 (y & 1) - gemessen in crusaders_mission*.map"
+    },
+    "form": {
+     "ende": {
+      "bild": "mauer_26_ende.png",
+      "breite": 30,
+      "hoehe": 143
+     },
+     "ecken": {
+      "px_my": {
+       "bild": "mauer_26_ecke_px_my.png",
+       "breite": 30,
+       "hoehe": 136
+      },
+      "px_py": {
+       "bild": "mauer_26_ecke_px_py.png",
+       "breite": 30,
+       "hoehe": 132
+      },
+      "mx_py": {
+       "bild": "mauer_26_ecke_mx_py.png",
+       "breite": 30,
+       "hoehe": 135
+      },
+      "mx_my": {
+       "bild": "mauer_26_ecke_mx_my.png",
+       "breite": 30,
+       "hoehe": 136
+      }
+     },
+     "schraeg": [
+      {
+       "bild": "mauer_26_schraeg_0.png",
+       "breite": 30,
+       "hoehe": 147
+      },
+      {
+       "bild": "mauer_26_schraeg_1.png",
+       "breite": 30,
+       "hoehe": 134
+      },
+      {
+       "bild": "mauer_26_schraeg_2.png",
+       "breite": 30,
+       "hoehe": 146
+      },
+      {
+       "bild": "mauer_26_schraeg_3.png",
+       "breite": 30,
+       "hoehe": 132
+      },
+      {
+       "bild": "mauer_26_schraeg_4.png",
+       "breite": 30,
+       "hoehe": 144
+      },
+      {
+       "bild": "mauer_26_schraeg_5.png",
+       "breite": 30,
+       "hoehe": 132
+      },
+      {
+       "bild": "mauer_26_schraeg_6.png",
+       "breite": 30,
+       "hoehe": 145
+      },
+      {
+       "bild": "mauer_26_schraeg_7.png",
+       "breite": 30,
+       "hoehe": 132
+      }
+     ],
+     "steil": [
+      {
+       "bild": "mauer_26_steil_tief.png",
+       "breite": 30,
+       "hoehe": 134
+      },
+      {
+       "bild": "mauer_26_steil_hoch.png",
+       "breite": 30,
+       "hoehe": 144
+      }
+     ],
+     "flach": {
+      "bild": "mauer_26_flach.png",
+      "breite": 30,
+      "hoehe": 116
+     }
     }
    },
    "wechselBild": "mauer_26_ra_scharte.png",
@@ -990,7 +1079,96 @@
      "laengs": "Platz = x & 15",
      "quer": "Platz = y & 15",
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
-     "krone": "Klotz bei x+y ungerade, sonst Scharte"
+     "krone": "Klotz bei x+y ungerade, sonst Scharte",
+     "form": "Ende 132, Ecken 128-131, schraeg waagrecht 303-310 (y & 7, nur x + y gerade, sonst flach), schraeg senkrecht 312/311 (y & 1) - gemessen in crusaders_mission*.map"
+    },
+    "form": {
+     "ende": {
+      "bild": "mauer_35_ende.png",
+      "breite": 30,
+      "hoehe": 113
+     },
+     "ecken": {
+      "px_my": {
+       "bild": "mauer_35_ecke_px_my.png",
+       "breite": 30,
+       "hoehe": 106
+      },
+      "px_py": {
+       "bild": "mauer_35_ecke_px_py.png",
+       "breite": 30,
+       "hoehe": 102
+      },
+      "mx_py": {
+       "bild": "mauer_35_ecke_mx_py.png",
+       "breite": 30,
+       "hoehe": 105
+      },
+      "mx_my": {
+       "bild": "mauer_35_ecke_mx_my.png",
+       "breite": 30,
+       "hoehe": 106
+      }
+     },
+     "schraeg": [
+      {
+       "bild": "mauer_35_schraeg_0.png",
+       "breite": 30,
+       "hoehe": 117
+      },
+      {
+       "bild": "mauer_35_schraeg_1.png",
+       "breite": 30,
+       "hoehe": 104
+      },
+      {
+       "bild": "mauer_35_schraeg_2.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_35_schraeg_3.png",
+       "breite": 30,
+       "hoehe": 102
+      },
+      {
+       "bild": "mauer_35_schraeg_4.png",
+       "breite": 30,
+       "hoehe": 114
+      },
+      {
+       "bild": "mauer_35_schraeg_5.png",
+       "breite": 30,
+       "hoehe": 102
+      },
+      {
+       "bild": "mauer_35_schraeg_6.png",
+       "breite": 30,
+       "hoehe": 115
+      },
+      {
+       "bild": "mauer_35_schraeg_7.png",
+       "breite": 30,
+       "hoehe": 102
+      }
+     ],
+     "steil": [
+      {
+       "bild": "mauer_35_steil_tief.png",
+       "breite": 30,
+       "hoehe": 104
+      },
+      {
+       "bild": "mauer_35_steil_hoch.png",
+       "breite": 30,
+       "hoehe": 114
+      }
+     ],
+     "flach": {
+      "bild": "mauer_35_flach.png",
+      "breite": 30,
+      "hoehe": 86
+     }
     }
    },
    "wechselBild": "mauer_35_ra_scharte.png",

@@ -612,7 +612,7 @@
         return true;
       }
     }
-    const variant = geo.variantFor(sprite, gx, gy, mauerAn, hoeheAn);
+    const variant = geo.variantFor(sprite, gx, gy, mauerAn, hoeheAn, state.lageAn);
     const img = image(variant.bild);
     if (!img || !img.complete || !img.naturalWidth) return false;
     const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, bauHoehe(gx, gy, tiles));
@@ -620,6 +620,32 @@
       ctx.drawImage(img, variant.sx, variant.sy, variant.breite, variant.hoehe, rect.x, rect.y, rect.w, rect.h);
     } else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
     return true;
+  }
+
+  // Die halbe Mauer in der Luecke einer schraegen Mauer (geo.mauerFugen):
+  // dasselbe Bild wie ein Mauerfeld, nur der Ausschnitt der halben Kachel.
+  function drawFuge(ctx, fuge) {
+    const teil = fuge.teil, img = image(teil.bild);
+    if (!img || !img.complete || !img.naturalWidth) return;
+    const rect = geo.spriteRect(teil, fuge.gx, fuge.gy, 1, state.view, bauHoehe(fuge.gx, fuge.gy, 1));
+    const [x, y, w, h] = geo.fugenAusschnitt(teil, fuge.halb, fuge.lift);
+    const k = rect.w / teil.breite;
+    ctx.drawImage(img, (teil.sx || 0) + x, (teil.sy || 0) + y, w, h, rect.x + x * k, rect.y + y * k, w * k, h * k);
+  }
+
+  // Welches Kartenfeld unter einem Feld der Ansicht liegt - das Schachbrett
+  // der Zinnen haengt daran (geo.variantFor). Ohne Karte der Bauplan selbst.
+  function zinnenLage() {
+    const keep = gameMap() ? currentKeep() : null;
+    const drehung = viewRotation();
+    if (keep) return (gx, gy) => {
+      const feld = geo.mapTileForView(gx, gy, keep, drehung);
+      return { x: feld.mx, y: feld.my };
+    };
+    return (gx, gy) => {
+      const welt = geo.unrotateGrid(gx, gy, drehung);
+      return { x: welt.gx, y: geo.GRID - 1 - welt.gy };
+    };
   }
 
   function drawDiamond(ctx, gx, gy, tiles, fill, stroke) {
@@ -1047,9 +1073,12 @@
     // beide, genau wie im Spiel (siehe geo.variantFor).
     const hoeheAn = geo.hoehenLookup(items);
     state.hoeheAn = hoeheAn;
+    state.lageAn = zinnenLage();
+    // Die Fugen schraeger Mauern - je Luecke ein Bild, also kaum Arbeit.
+    const fugen = geo.mauerFugen(items, mauerAn).map(fuge => ({ ...fuge, layer: 2, draw: target => drawFuge(target, fuge) }));
 
     let missing = 0;
-    const buildingSprites = [...plates.map(plate => ({ ...plate, entry: plate.sprite, layer: 1 })), ...items].flatMap(item => {
+    const buildingSprites = [...plates.map(plate => ({ ...plate, entry: plate.sprite, layer: 1 })), ...items, ...fugen].flatMap(item => {
       const parts = geo.buildingParts(item);
       if (!parts) return [item];
       // Load all components before switching away from the complete fallback.
