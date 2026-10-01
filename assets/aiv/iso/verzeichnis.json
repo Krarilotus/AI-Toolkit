@@ -209,50 +209,6 @@
      "quer": "Platz = y & 15",
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
      "krone": "immer flach"
-    },
-    "form": {
-     "fronten": [
-      {
-       "bild": "mauer_25_front_0.png",
-       "breite": 30,
-       "hoehe": 108
-      },
-      {
-       "bild": "mauer_25_front_1.png",
-       "breite": 30,
-       "hoehe": 108
-      },
-      {
-       "bild": "mauer_25_front_2.png",
-       "breite": 30,
-       "hoehe": 108
-      },
-      {
-       "bild": "mauer_25_front_3.png",
-       "breite": 30,
-       "hoehe": 108
-      },
-      {
-       "bild": "mauer_25_front_4.png",
-       "breite": 30,
-       "hoehe": 108
-      },
-      {
-       "bild": "mauer_25_front_5.png",
-       "breite": 30,
-       "hoehe": 108
-      },
-      {
-       "bild": "mauer_25_front_6.png",
-       "breite": 30,
-       "hoehe": 108
-      },
-      {
-       "bild": "mauer_25_front_7.png",
-       "breite": 30,
-       "hoehe": 108
-      }
-     ]
     }
    }
   },
@@ -730,49 +686,7 @@
       "bild": "mauer_26_flach.png",
       "breite": 30,
       "hoehe": 116
-     },
-     "fronten": [
-      {
-       "bild": "mauer_26_front_0.png",
-       "breite": 30,
-       "hoehe": 116
-      },
-      {
-       "bild": "mauer_26_front_1.png",
-       "breite": 30,
-       "hoehe": 116
-      },
-      {
-       "bild": "mauer_26_front_2.png",
-       "breite": 30,
-       "hoehe": 116
-      },
-      {
-       "bild": "mauer_26_front_3.png",
-       "breite": 30,
-       "hoehe": 116
-      },
-      {
-       "bild": "mauer_26_front_4.png",
-       "breite": 30,
-       "hoehe": 116
-      },
-      {
-       "bild": "mauer_26_front_5.png",
-       "breite": 30,
-       "hoehe": 116
-      },
-      {
-       "bild": "mauer_26_front_6.png",
-       "breite": 30,
-       "hoehe": 116
-      },
-      {
-       "bild": "mauer_26_front_7.png",
-       "breite": 30,
-       "hoehe": 116
-      }
-     ]
+     }
     }
    },
    "wechselBild": "mauer_26_ra_scharte.png",
@@ -1254,49 +1168,7 @@
       "bild": "mauer_35_flach.png",
       "breite": 30,
       "hoehe": 86
-     },
-     "fronten": [
-      {
-       "bild": "mauer_35_front_0.png",
-       "breite": 30,
-       "hoehe": 86
-      },
-      {
-       "bild": "mauer_35_front_1.png",
-       "breite": 30,
-       "hoehe": 86
-      },
-      {
-       "bild": "mauer_35_front_2.png",
-       "breite": 30,
-       "hoehe": 86
-      },
-      {
-       "bild": "mauer_35_front_3.png",
-       "breite": 30,
-       "hoehe": 86
-      },
-      {
-       "bild": "mauer_35_front_4.png",
-       "breite": 30,
-       "hoehe": 86
-      },
-      {
-       "bild": "mauer_35_front_5.png",
-       "breite": 30,
-       "hoehe": 86
-      },
-      {
-       "bild": "mauer_35_front_6.png",
-       "breite": 30,
-       "hoehe": 86
-      },
-      {
-       "bild": "mauer_35_front_7.png",
-       "breite": 30,
-       "hoehe": 86
-      }
-     ]
+     }
     }
    },
    "wechselBild": "mauer_35_ra_scharte.png",
@@ -1511,50 +1383,6 @@
      "quer": "Platz = y & 15",
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
      "krone": "immer flach"
-    },
-    "form": {
-     "fronten": [
-      {
-       "bild": "mauer_46_front_0.png",
-       "breite": 30,
-       "hoehe": 78
-      },
-      {
-       "bild": "mauer_46_front_1.png",
-       "breite": 30,
-       "hoehe": 78
-      },
-      {
-       "bild": "mauer_46_front_2.png",
-       "breite": 30,
-       "hoehe": 78
-      },
-      {
-       "bild": "mauer_46_front_3.png",
-       "breite": 30,
-       "hoehe": 78
-      },
-      {
-       "bild": "mauer_46_front_4.png",
-       "breite": 30,
-       "hoehe": 78
-      },
-      {
-       "bild": "mauer_46_front_5.png",
-       "breite": 30,
-       "hoehe": 78
-      },
-      {
-       "bild": "mauer_46_front_6.png",
-       "breite": 30,
-       "hoehe": 78
-      },
-      {
-       "bild": "mauer_46_front_7.png",
-       "breite": 30,
-       "hoehe": 78
-      }
-     ]
     }
    }
   },
@@ -44412,6 +44240,166 @@
      }
     ]
    ]
+  }
+ },
+ "mauerSchraegen": {
+  "quelle": "anim_castle.gm1; Auswahl updateGfxLayer 0x00509180, Platz renderMap 0x004e8cf0",
+  "bilder": {
+   "45": {
+    "bild": "schraege_45.png",
+    "breite": 15,
+    "hoehe": 17
+   },
+   "46": {
+    "bild": "schraege_46.png",
+    "breite": 30,
+    "hoehe": 10
+   },
+   "47": {
+    "bild": "schraege_47.png",
+    "breite": 15,
+    "hoehe": 17
+   },
+   "48": {
+    "bild": "schraege_48.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "49": {
+    "bild": "schraege_49.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "50": {
+    "bild": "schraege_50.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "51": {
+    "bild": "schraege_51.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "52": {
+    "bild": "schraege_52.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "53": {
+    "bild": "schraege_53.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "54": {
+    "bild": "schraege_54.png",
+    "breite": 32,
+    "hoehe": 100
+   },
+   "55": {
+    "bild": "schraege_55.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "56": {
+    "bild": "schraege_56.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "57": {
+    "bild": "schraege_57.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "58": {
+    "bild": "schraege_58.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "59": {
+    "bild": "schraege_59.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "60": {
+    "bild": "schraege_60.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "61": {
+    "bild": "schraege_61.png",
+    "breite": 32,
+    "hoehe": 99
+   },
+   "62": {
+    "bild": "schraege_62.png",
+    "breite": 32,
+    "hoehe": 130
+   },
+   "63": {
+    "bild": "schraege_63.png",
+    "breite": 32,
+    "hoehe": 130
+   },
+   "64": {
+    "bild": "schraege_64.png",
+    "breite": 32,
+    "hoehe": 130
+   },
+   "65": {
+    "bild": "schraege_65.png",
+    "breite": 32,
+    "hoehe": 130
+   },
+   "66": {
+    "bild": "schraege_66.png",
+    "breite": 32,
+    "hoehe": 130
+   },
+   "67": {
+    "bild": "schraege_67.png",
+    "breite": 32,
+    "hoehe": 130
+   },
+   "68": {
+    "bild": "schraege_68.png",
+    "breite": 31,
+    "hoehe": 130
+   },
+   "69": {
+    "bild": "schraege_69.png",
+    "breite": 31,
+    "hoehe": 117
+   },
+   "70": {
+    "bild": "schraege_70.png",
+    "breite": 31,
+    "hoehe": 130
+   },
+   "71": {
+    "bild": "schraege_71.png",
+    "breite": 31,
+    "hoehe": 117
+   },
+   "72": {
+    "bild": "schraege_72.png",
+    "breite": 32,
+    "hoehe": 130
+   },
+   "73": {
+    "bild": "schraege_73.png",
+    "breite": 31,
+    "hoehe": 117
+   },
+   "74": {
+    "bild": "schraege_74.png",
+    "breite": 31,
+    "hoehe": 130
+   },
+   "75": {
+    "bild": "schraege_75.png",
+    "breite": 34,
+    "hoehe": 117
+   }
   }
  }
 }

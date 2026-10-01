@@ -622,24 +622,15 @@
     return true;
   }
 
-  // Die halbe Mauer in der Luecke einer schraegen Mauer (geo.mauerFugen):
-  // dasselbe Bild wie ein Mauerfeld, nur der Ausschnitt der halben Kachel.
-  function drawFuge(ctx, fuge) {
-    const teil = fuge.teil, img = image(teil.bild);
+  // Eine Abschraegung schraeger Mauern (geo.mauerSchraegen): das Bild des
+  // Spiels, an der Nordecke der Kachel abgesetzt wie in renderMap.
+  function drawSchraege(ctx, schraege) {
+    const bild = schraege.bild, img = image(bild.bild);
     if (!img || !img.complete || !img.naturalWidth) return;
-    const { gx, gy } = fuge.bei || fuge;
-    const rect = geo.spriteRect(teil, gx, gy, 1, state.view, bauHoehe(gx, gy, 1));
-    const [x, y, w, h] = geo.fugenAusschnitt(teil, fuge.halb, fuge.lift);
-    const k = rect.w / teil.breite;
-    // Bilder sind 30 breit, ein Feld 32: die flache Frontwand fuellt die
-    // ganze Breite, sonst bleibt zwischen zwei Feldern eine Fuge stehen.
-    const rand = fuge.flach ? k : 0;
-    const malen = (dy, hoehe) => ctx.drawImage(img, (teil.sx || 0) + x, (teil.sy || 0) + y, w, hoehe,
-      rect.x + x * k - rand, rect.y + dy * k, w * k + 2 * rand, hoehe * k);
-    // Die Brustwehr vor Zinnen reicht eine halbe Kachel hoeher als der
-    // Wehrgang: ihre obersten Zeilen noch einmal, darueber gesetzt.
-    if (fuge.halb === 'brust') malen(y - geo.BRUST, Math.min(geo.BRUST, h));
-    malen(y, h);
+    const [x, y] = geo.isoPoint(schraege.gx, schraege.gy, state.view, bauHoehe(schraege.gx, schraege.gy, 1));
+    const k = state.view.zoom;
+    ctx.drawImage(img, bild.sx || 0, bild.sy || 0, bild.breite, bild.hoehe,
+      x + (schraege.dx - 16) * k, y + schraege.dy * k, bild.breite * k, bild.hoehe * k);
   }
 
   // Welches Kartenfeld unter einem Feld der Ansicht liegt - das Schachbrett
@@ -1083,8 +1074,9 @@
     const hoeheAn = geo.hoehenLookup(items);
     state.hoeheAn = hoeheAn;
     state.lageAn = zinnenLage();
-    // Die Fugen schraeger Mauern - je Luecke ein Bild, also kaum Arbeit.
-    const fugen = geo.mauerFugen(items, mauerAn).map(fuge => ({ ...fuge, layer: fuge.layer ?? 2, draw: target => drawFuge(target, fuge) }));
+    // Die Abschraegungen schraeger Mauern - je Luecke ein Bild des Spiels.
+    const fugen = geo.mauerSchraegen(items, mauerAn, state.lageAn, state.catalogue?.mauerSchraegen?.bilder)
+      .map(schraege => ({ ...schraege, layer: 2, draw: target => drawSchraege(target, schraege) }));
     // Werkstaetten an einer Mauer bekommen das Pultdach (geo.anlehnRichtung).
     const anlehnFelder = geo.anlehnFelder(items);
     const mitDach = item => item.entry?.anlehnLayouts
