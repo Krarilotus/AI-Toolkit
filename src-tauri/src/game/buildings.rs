@@ -63,6 +63,50 @@ impl Sources {
         }
     }
 }
+/// A workshop with a whole side against a wall gets a lean-to roof. Its GM1
+/// range keeps eight such versions directly before the normal building, one
+/// block of 16 pictures per direction: updateBuildingGraphicsLayer
+/// (0x00506370) adds direction * size * size, and the normal roof is
+/// direction 8. The layouts are derived here from the normal one, so the
+/// catalogue only marks which buildings have them.
+fn add_lean_to_layouts(catalogue: &mut Value, parts: &Value) {
+    let Some(entries) = catalogue["gegenstaende"].as_object_mut() else {
+        return;
+    };
+    for entry in entries.values_mut() {
+        if entry["anlehnen"] != Value::Bool(true) {
+            continue;
+        }
+        let Some(layout) = entry["partsLayouts"].get(0).and_then(Value::as_array).cloned() else {
+            continue;
+        };
+        let size = entry["kacheln"].as_i64().unwrap_or(4);
+        let variants = (0..8i64)
+            .map(|direction| {
+                layout
+                    .iter()
+                    .map(|part| -> Option<Value> {
+                        let source = &parts[&format!("{},{}", part["sx"], part["sy"])];
+                        let file = source["file"].as_str()?;
+                        let index = source["index"].as_i64()? + size * size * (direction - 8);
+                        if index < 0 {
+                            return None;
+                        }
+                        Some(json!({
+                            "gx": part["gx"],
+                            "gy": part["gy"],
+                            "bild": format!("anlehn:{file}:{index}"),
+                        }))
+                    })
+                    .collect::<Option<Vec<_>>>()
+                    .map(Value::from)
+            })
+            .collect::<Option<Vec<_>>>();
+        if let Some(variants) = variants {
+            entry["anlehnLayouts"] = Value::from(variants);
+        }
+    }
+}
 /// Cached extracted artwork. Every pixel comes from the selected installation.
 /// Metadata and layout mappings contain no game image bytes.
 pub fn load_building_assets(root: &Path, cache_root: &Path, resource_root: &Path) -> Result<Value> {
@@ -75,7 +119,7 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
     let catalogue_bytes = read(&resource_root.join("assets/aiv/iso/verzeichnis.json"))?;
     let parts_bytes = read(&resource_root.join("config/iso-source-parts.json"))?;
     let walls_bytes = read(&resource_root.join("config/iso-wall-sources.json"))?;
-    let mut identity = b"native-building-assets-2".to_vec();
+    let mut identity = b"native-building-assets-3".to_vec();
     identity.extend(sources.graphics.revision.as_bytes());
     identity.extend(&catalogue_bytes);
     identity.extend(&parts_bytes);
@@ -97,6 +141,7 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
         serde_json::from_slice(&catalogue_bytes).map_err(|e| e.to_string())?;
     let parts: Value = serde_json::from_slice(&parts_bytes).map_err(|e| e.to_string())?;
     let walls: Value = serde_json::from_slice(&walls_bytes).map_err(|e| e.to_string())?;
+    add_lean_to_layouts(&mut catalogue, &parts);
     let mut pictures = Vec::new();
     let mut indices = HashMap::<String, usize>::new();
     fn visit(
@@ -137,6 +182,13 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
                 if filename.starts_with("killing_pits_") || filename.starts_with("pitch_ditches_") {
                     if let Some((name, index)) = filename.trim_end_matches(".png").rsplit_once('_')
                     {
+                        if let Ok(index) = index.parse::<usize>() {
+                            source = json!({"file":name,"index":index});
+                        }
+                    }
+                }
+                if let Some(rest) = filename.strip_prefix("anlehn:") {
+                    if let Some((name, index)) = rest.rsplit_once(':') {
                         if let Ok(index) = index.parse::<usize>() {
                             source = json!({"file":name,"index":index});
                         }
@@ -318,4 +370,25 @@ pub fn read_resource_icons(root: &Path) -> Result<Value> {
         );
     }
     Ok(Value::Object(icons))
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lean_to_layouts_are_the_eight_blocks_before_the_normal_building() {
+        let parts = json!({"1,1": {"file": "tile_workshops", "index": 128}, "33,1": {"file": "tile_workshops", "index": 143}});
+        let mut catalogue = json!({"gegenstaende": {
+            "50": {"kacheln": 4, "anlehnen": true, "partsLayouts": [[
+                {"gx": 3, "gy": 3, "bild": "building-parts.png", "sx": 1, "sy": 1},
+                {"gx": 0, "gy": 0, "bild": "building-parts.png", "sx": 33, "sy": 1}]]},
+            "51": {"kacheln": 3, "partsLayouts": [[{"gx": 0, "gy": 0, "bild": "building-parts.png", "sx": 1, "sy": 1}]]}
+        }});
+        add_lean_to_layouts(&mut catalogue, &parts);
+        let lean = catalogue["gegenstaende"]["50"]["anlehnLayouts"].as_array().unwrap();
+        assert_eq!(lean.len(), 8);
+        assert_eq!(lean[0][0], json!({"gx": 3, "gy": 3, "bild": "anlehn:tile_workshops:0"}));
+        assert_eq!(lean[7][1]["bild"], "anlehn:tile_workshops:127");
+        assert!(catalogue["gegenstaende"]["51"].get("anlehnLayouts").is_none(), "only marked buildings");
+    }
 }

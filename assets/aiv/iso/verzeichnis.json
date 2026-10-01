@@ -1572,7 +1572,8 @@
       "sy": 1
      }
     ]
-   ]
+   ],
+   "anlehnen": true
   },
   "51": {
    "name": "Holzfaellerhuette",
@@ -26419,7 +26420,8 @@
       "sy": 461
      }
     ]
-   ]
+   ],
+   "anlehnen": true
   },
   "76": {
    "name": "Brauerei",
@@ -26607,7 +26609,8 @@
       "sy": 461
      }
     ]
-   ]
+   ],
+   "anlehnen": true
   },
   "77": {
    "name": "Marktplatz",
@@ -27569,7 +27572,8 @@
       "sy": 787
      }
     ]
-   ]
+   ],
+   "anlehnen": true
   },
   "83": {
    "name": "Schmiede",
@@ -27757,7 +27761,8 @@
       "sy": 787
      }
     ]
-   ]
+   ],
+   "anlehnen": true
   },
   "84": {
    "name": "Ruestungsschmied",
@@ -27945,7 +27950,8 @@
       "sy": 787
      }
     ]
-   ]
+   ],
+   "anlehnen": true
   },
   "85": {
    "name": "Gerberei",
@@ -28133,7 +28139,8 @@
       "sy": 787
      }
     ]
-   ]
+   ],
+   "anlehnen": true
   },
   "86": {
    "name": "Soeldnerposten",

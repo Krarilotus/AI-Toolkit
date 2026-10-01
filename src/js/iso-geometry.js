@@ -538,7 +538,54 @@
     });
   }
 
+  // Werkstaetten mit Pultdach. Steht eine Werkstatt mit einer ganzen Seite an
+  // einer Mauer, lehnt das Spiel ihr Dach dagegen - nachgelesen in
+  // determineBuildingPlacementRotation (0x004fa000): je Seite werden die vier
+  // Nachbarfelder gezaehlt, die L_WALL (0x100) tragen und weder Torhaus
+  // (0x800) noch 0x2 sind - Mauern, Zinnen, Treppen, Tuerme. Nur volle Seiten
+  // zaehlen, zwei volle Seiten ueber Eck gehen vor einer einzelnen:
+  //   -y und -x -> 7, -y und +x -> 1, +y und -x -> 5, +y und +x -> 3,
+  //   sonst -y -> 0, +x -> 2, +y -> 4, -x -> 6, und ohne Mauer 8 (das Dach).
+  // Das Bild ist Richtung minus Blickdrehung (updateBuildingGraphicsLayer);
+  // diese Ansicht rechnet ohnehin im gedrehten Raster, also gilt die Richtung
+  // hier direkt.
+  const ANLEHN_TUERME = new Set([30, 31, 32, 33, 34]);
+
+  function anlehnFelder(items) {
+    const felder = new Set();
+    for (const item of items || []) {
+      const entry = item.entry;
+      if (!entry || !(entry.mauer || entry.treppe || ANLEHN_TUERME.has(entry.aiv))) continue;
+      const n = item.tiles || entry.kacheln || 1;
+      for (let dx = 0; dx < n; dx++) for (let dy = 0; dy < n; dy++) felder.add((item.gx + dx) + ':' + (item.gy + dy));
+    }
+    return felder;
+  }
+
+  function anlehnRichtung(item, felder) {
+    const n = item.tiles || item.entry?.kacheln || 4;
+    const voll = (feld) => {
+      for (let i = 0; i < n; i++) if (!felder.has(feld(i))) return false;
+      return true;
+    };
+    const my = voll(i => (item.gx + i) + ':' + (item.gy - 1));
+    const px = voll(i => (item.gx + n) + ':' + (item.gy + i));
+    const py = voll(i => (item.gx + i) + ':' + (item.gy + n));
+    const mx = voll(i => (item.gx - 1) + ':' + (item.gy + i));
+    if (my && mx) return 7;
+    if (my && px) return 1;
+    if (py && mx) return 5;
+    if (py && px) return 3;
+    if (my) return 0;
+    if (px) return 2;
+    if (py) return 4;
+    if (mx) return 6;
+    return null;
+  }
+
   function buildingParts(item) {
+    const anlehnung = Number.isInteger(item.anlehnung) ? item.entry?.anlehnLayouts?.[item.anlehnung] : null;
+    if (anlehnung?.length) return anlehnung.map(part => ({ ...part, gx: item.gx + part.gx, gy: item.gy + part.gy, tiles: 1 }));
     const layouts = item.entry?.partsLayouts;
     if (!layouts?.length) return null;
     const parts = layouts[(item.layoutIndex || 0) % layouts.length];
@@ -934,7 +981,7 @@
            gridFromOffset, offsetFromGrid, isoPoint,
            tileFromPoint, editorTileFromPoint,
            depth, byDepth, renderOrder, spriteRect, groundTextureScale, variantFor, wallLookup, hoehenLookup,
-           mauerFugen, fugenAusschnitt,
+           mauerFugen, fugenAusschnitt, anlehnFelder, anlehnRichtung,
            collectItems, collectPlates, troopAnchors, attachDrawbridges, buildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
            mapTileForGrid, mapTileForView, viewTileForMap,

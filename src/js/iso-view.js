@@ -1076,10 +1076,14 @@
     state.lageAn = zinnenLage();
     // Die Fugen schraeger Mauern - je Luecke ein Bild, also kaum Arbeit.
     const fugen = geo.mauerFugen(items, mauerAn).map(fuge => ({ ...fuge, layer: 2, draw: target => drawFuge(target, fuge) }));
+    // Werkstaetten an einer Mauer bekommen das Pultdach (geo.anlehnRichtung).
+    const anlehnFelder = geo.anlehnFelder(items);
+    const mitDach = item => item.entry?.anlehnLayouts
+      ? { ...item, anlehnung: geo.anlehnRichtung(item, anlehnFelder) } : item;
 
     let missing = 0;
     const buildingSprites = [...plates.map(plate => ({ ...plate, entry: plate.sprite, layer: 1 })), ...items, ...fugen].flatMap(item => {
-      const parts = geo.buildingParts(item);
+      const parts = geo.buildingParts(mitDach(item));
       if (!parts) return [item];
       // Load all components before switching away from the complete fallback.
       const loaded = parts.map(part => image(part.bild));

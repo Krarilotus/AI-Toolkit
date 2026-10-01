@@ -31,7 +31,7 @@ function scene(fire = false, clearable = false) {
   const context = vm.createContext({state, document: {getElementById: () => ({checked: fire}), createElement: () => ({width: 0, height: 0, getContext: () => mask})}, window: {castleGameData: {flammability: {Hovel: 1}}, castleCostData: {buildings: {54: {balance: 'Hovel'}}}, castleEditor: {getActiveBuildStep: () => 1}},
     currentDocument: () => null, turnedTiles: value => value, zinnenLage: () => null, drawFuge() {},
     geo: {GRID: 100, collectItems: () => items, attachDrawbridges: value => value,
-      collectPlates: () => [], wallLookup: value => value.length, hoehenLookup: () => null, mauerFugen: () => [],
+      collectPlates: () => [], wallLookup: value => value.length, hoehenLookup: () => null, mauerFugen: () => [], anlehnFelder: () => new Set(), anlehnRichtung: () => null,
       buildingParts: () => null, isoPoint: (x, y) => [x, y],
       renderOrder: (a, b) => a.gy - b.gy || a.gx - b.gx || (a.layer ?? 2) - (b.layer ?? 2)},
     paintMapTiles() {
