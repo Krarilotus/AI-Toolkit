@@ -617,26 +617,36 @@
     if (!img || !img.complete || !img.naturalWidth) return false;
     const hebung = bauHoehe(gx, gy, tiles);
     const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, hebung);
-    if (sprite.mauer) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, hebung, sprite.mauer.hoehe - 24);
+    if (sprite.mauer) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, wallFootDepth(gx, gy), sprite.mauer.hoehe - 24);
     if (Number.isFinite(variant.sx) && Number.isFinite(variant.sy)) {
       ctx.drawImage(img, variant.sx, variant.sy, variant.breite, variant.hoehe, rect.x, rect.y, rect.w, rect.h);
     } else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
     return true;
   }
 
-  // Eine Mauer auf erhoehtem Gelaende reicht im Spiel bis ganz hinunter: ihr
-  // Pfeiler deckt die Klippe ihres eigenen Feldes, und die tieferen Felder
-  // davor - Boden, Fluss - werden spaeter gemalt und verdecken den Rest. Der
-  // untere Teil des Bildes (ein Stueck Mauer samt Fuss) wird darum so oft
-  // tiefer wiederholt, wie das Feld ueber dem Grund liegt. Gemalt vor dem Bild
-  // selbst; auf flachem Grund kostet es nichts.
-  function drawWallFoot(ctx, img, bild, x, y, k, tiefe, band) {
-    if (!(tiefe > 0) || !(band > 0)) return;
+  // Eine Mauer auf erhoehtem Gelaende reicht im Spiel hinunter bis auf den
+  // Boden davor: ihr Pfeiler deckt die Klippe ihres eigenen Feldes. Die linke
+  // Flaeche trifft den Nachbarn bei +y, die rechte den bei +x - jede Haelfte
+  // geht genau so weit hinunter, wie dieser Nachbar tiefer liegt, und keinen
+  // Punkt weiter (am Kartenrand und an Plateaukanten verdeckt sonst nichts
+  // den Rest). Der untere Teil des Bildes, ein Stueck Mauer samt Fuss, wird
+  // dafuer tiefer wiederholt; das letzte Stueck sitzt genau auf dem Boden.
+  // Auf flachem Grund kostet es nichts.
+  function wallFootDepth(gx, gy) {
+    const eigen = bodenHoehe(gx, gy);
+    return [Math.max(0, eigen - bodenHoehe(gx, gy + 1)), Math.max(0, eigen - bodenHoehe(gx + 1, gy))];
+  }
+
+  function drawWallFoot(ctx, img, bild, x, y, k, [links, rechts], band) {
+    if (!(band > 0) || !(links > 0 || rechts > 0)) return;
     const quelle = Math.max(0, bild.hoehe - band - 16);
-    const stueck = bild.hoehe - quelle;
-    for (let n = Math.ceil(tiefe / band); n >= 1; n--) {
-      ctx.drawImage(img, (bild.sx || 0), (bild.sy || 0) + quelle, bild.breite, stueck,
-        x, y + (quelle + n * band) * k, bild.breite * k, stueck * k);
+    const stueck = bild.hoehe - quelle, mitte = Math.round(bild.breite / 2);
+    for (const [von, breite, tiefe] of [[0, mitte, links], [mitte, bild.breite - mitte, rechts]]) {
+      for (let n = Math.ceil(tiefe / band); n >= 1; n--) {
+        const versatz = Math.min(n * band, tiefe);
+        ctx.drawImage(img, (bild.sx || 0) + von, (bild.sy || 0) + quelle, breite, stueck,
+          x + von * k, y + (quelle + versatz) * k, breite * k, stueck * k);
+      }
     }
   }
 
@@ -648,7 +658,7 @@
     const [x, y] = geo.isoPoint(schraege.gx, schraege.gy, state.view, bauHoehe(schraege.gx, schraege.gy, 1));
     const k = state.view.zoom;
     const links = x + (schraege.dx - 16) * k, oben = y + schraege.dy * k;
-    if (schraege.art === 'vorn') drawWallFoot(ctx, img, bild, links, oben, k, bauHoehe(schraege.gx, schraege.gy, 1), 60);
+    if (schraege.art === 'vorn') drawWallFoot(ctx, img, bild, links, oben, k, wallFootDepth(schraege.gx, schraege.gy), 60);
     ctx.drawImage(img, bild.sx || 0, bild.sy || 0, bild.breite, bild.hoehe, links, oben, bild.breite * k, bild.hoehe * k);
   }
 

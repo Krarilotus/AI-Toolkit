@@ -1121,7 +1121,7 @@ test('die Hoehe kommt aus derselben Quelle wie der Boden', () => {
   assert.match(iso, /geo\.tileFromPoint\(px, py, state\.view, bodenHoehe\)/);
 });
 
-test('a wall on raised ground reaches down over the cliff of its own tile', () => {
+test('a wall on raised ground reaches down to the ground in front, and not further', () => {
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
   const start = script.indexOf('  function drawWallFoot(');
   const quelle = script.slice(start, script.indexOf('// Eine Abschraegung schraeger Mauern', start));
@@ -1129,12 +1129,17 @@ test('a wall on raised ground reaches down over the cliff of its own tile', () =
   const draws = [];
   const ctx = { drawImage: (...args) => draws.push(args) };
   const bild = { sx: 0, sy: 0, breite: 30, hoehe: 108 };
-  drawWallFoot(ctx, {}, bild, 100, 50, 1, 0, 66);
+  drawWallFoot(ctx, {}, bild, 100, 50, 1, [0, 0], 66);
   assert.equal(draws.length, 0, 'auf flachem Grund nichts');
-  drawWallFoot(ctx, {}, bild, 100, 50, 1, 100, 66);
-  assert.equal(draws.length, 2, '100 Punkte Gelaende: zweimal ein Stueck von 66');
-  // Jedes Stueck ist der Fuss des Bildes, um ein Band tiefer gesetzt.
-  assert.deepEqual(draws.map(d => d[6]).sort((a, b) => a - b), [50 + 26 + 66, 50 + 26 + 132]);
-  assert.match(script, /if \(sprite\.mauer\) drawWallFoot\(/, 'jede Mauer');
+  // Links 100 Punkte tiefer, rechts 40: links zwei Stuecke, rechts eins.
+  drawWallFoot(ctx, {}, bild, 100, 50, 1, [100, 40], 66);
+  const links = draws.filter(d => d[1] === 0), rechts = draws.filter(d => d[1] === 15);
+  assert.equal(links.length, 2);
+  assert.equal(rechts.length, 1);
+  // Das letzte Stueck endet genau auf dem Boden: Fuss bei 108 + Tiefe.
+  const unten = d => d[6] + d[8] - 50;
+  assert.equal(Math.max(...links.map(unten)), 108 + 100);
+  assert.equal(Math.max(...rechts.map(unten)), 108 + 40);
+  assert.match(script, /if \(sprite\.mauer\) drawWallFoot\([^;]*wallFootDepth\(gx, gy\)/, 'jede Mauer');
   assert.match(script, /if \(schraege\.art === 'vorn'\) drawWallFoot\(/, 'und die Wand vor einer Schraege');
 });
