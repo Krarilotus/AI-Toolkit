@@ -149,6 +149,10 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
             })
             .chain(poses::LORD_POSES.iter().map(|&(key, name, frame)| {
                 (key.to_owned(), name, None, None, Some((frame, None)))
+            }))
+            .chain(std::iter::once(poses::MONK_POSE).map(|(key, name, frame)| {
+                let pose = Some((frame, None));
+                (key.to_owned(), name, None, pose, pose)
             }));
     for (key, name, rider, thumbnail, idle_pose) in sources {
         // Thumbnail and idle pose share the same file/palette decode. Mounted
@@ -265,7 +269,7 @@ mod tests {
             bytes[sizes + i * 4..sizes + i * 4 + 4].copy_from_slice(&2u32.to_le_bytes());
             bytes[heads + i * 16..heads + i * 16 + 2].copy_from_slice(&1u16.to_le_bytes());
             bytes[heads + i * 16 + 2..heads + i * 16 + 4].copy_from_slice(&1u16.to_le_bytes());
-            bytes[data_at + i * 2..data_at + i * 2 + 2].copy_from_slice(&[0, i as u8 + 1]);
+            bytes[data_at + i * 2..data_at + i * 2 + 2].copy_from_slice(&[0, (i as u8).wrapping_add(1)]);
         }
         bytes
     }
@@ -369,6 +373,19 @@ mod tests {
         assert_eq!(poses::thumbnail_pose(6), Some((645, None)));
         assert_eq!(poses::thumbnail_pose(12), Some((260, Some(428))));
         assert_eq!(poses::thumbnail_pose(17), poses::idle_pose(17));
+    }
+
+    #[test]
+    fn the_monk_has_a_thumbnail_without_an_aiv_marker() {
+        let root = fixture("monk");
+        let (key, name, frame) = poses::MONK_POSE;
+        fs::write(root.join("gm").join(format!("{name}.gm1")), indexed_body(frame + 1)).unwrap();
+        let assets = load_unit_sprites(&root, &root.join("cache")).unwrap();
+        assert_eq!(assets.sprites.len(), 1);
+        let thumbnail = &assets.sprites[key];
+        assert_eq!((thumbnail.source.as_str(), thumbnail.frame), (name, frame));
+        assert_eq!(&assets.idle_sprites[key], thumbnail, "one decode for both");
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

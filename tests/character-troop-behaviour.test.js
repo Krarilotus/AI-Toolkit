@@ -60,10 +60,12 @@ test('starting troops show as picture tiles with their count, game sprite or let
  const [picture,name,input]=tile.children;
  assert.equal(input.value,5);assert.equal(input.attributes['aria-label'],'EuropArcher');
  assert.equal(picture.children[0].textContent,'Arc','letter badge until game art arrives');
- resolveSkins({skins:{6:'asset://units/archer.png'}});await new Promise(r=>setTimeout(r,0));
+ resolveSkins({skins:{6:'asset://units/archer.png','unit-monk':'asset://units/monk.png'}});await new Promise(r=>setTimeout(r,0));
  assert.equal(picture.children[0].tagName,'IMG');assert.equal(picture.children[0].src,'asset://units/archer.png');
  const monk=vm.runInContext('createUnitTile("Monk",0,{})',context);
- assert.equal(monk.children[0].children[0].textContent,'Mon','units without art or badge show their name');
+ assert.equal(monk.children[0].children[0].textContent,'Mon','without art or badge the name shows first');
+ await new Promise(r=>setTimeout(r,0));
+ assert.equal(monk.children[0].children[0].src,'asset://units/monk.png','the monk has no marker, only its own key');
  assert.ok(!monk.classList.contains('characterUnitRowStart'));
 });
 

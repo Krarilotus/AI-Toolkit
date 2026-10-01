@@ -11,6 +11,12 @@ pub const LORD_POSES: &[(&str, &str, usize)] = &[
     ("lord-arab", "body_saladin", 40),
 ];
 
+// Monks have no AIV marker either; the character's starting troops show one.
+// body_fighting_monk 384-415 is the standing loop facing the viewer, and 400
+// shows the cross on the chest. Picked from the frames, not yet checked
+// against the game's update routine.
+pub const MONK_POSE: (&str, &str, usize) = ("unit-monk", "body_fighting_monk", 400);
+
 // Palette thumbnails face the viewer. Direction 0 turns a troop's back to the
 // camera; direction 4 faces down-left like the classic editor icons. Walking
 // sheets store `phase * 8 + direction`, so frame 4 is the first such stride.
