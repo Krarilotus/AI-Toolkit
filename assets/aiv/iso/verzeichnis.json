@@ -209,6 +209,13 @@
      "quer": "Platz = y & 15",
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
      "krone": "immer flach"
+    },
+    "form": {
+     "front": {
+      "bild": "mauer_25_front.png",
+      "breite": 30,
+      "hoehe": 108
+     }
     }
    }
   },
@@ -684,6 +691,11 @@
      ],
      "flach": {
       "bild": "mauer_26_flach.png",
+      "breite": 30,
+      "hoehe": 116
+     },
+     "front": {
+      "bild": "mauer_26_front.png",
       "breite": 30,
       "hoehe": 116
      }
@@ -1168,6 +1180,11 @@
       "bild": "mauer_35_flach.png",
       "breite": 30,
       "hoehe": 86
+     },
+     "front": {
+      "bild": "mauer_35_front.png",
+      "breite": 30,
+      "hoehe": 86
      }
     }
    },
@@ -1383,6 +1400,13 @@
      "quer": "Platz = y & 15",
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
      "krone": "immer flach"
+    },
+    "form": {
+     "front": {
+      "bild": "mauer_46_front.png",
+      "breite": 30,
+      "hoehe": 78
+     }
     }
    }
   },

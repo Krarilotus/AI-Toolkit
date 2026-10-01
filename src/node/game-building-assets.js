@@ -34,11 +34,13 @@ function gameBuildingAssets(root, cacheRoot) {
   function decode(source) {
     const top = gm.decodePart(stock(source.file, source.index), source.index, source.palette ?? null);
     if (source.pillar === undefined) return top;
-    const pillar = gm.pillarPicture(stock('tile_walls', source.pillar), source.pillar, source.lift);
+    const pillar = gm.pillarPicture(stock('tile_walls', source.pillar), source.pillar, source.lift, source.flat === true);
     if (!pillar) throw new Error('Unsupported wall pillar texture.');
     const height = top.height + source.lift, rgba = Buffer.alloc(top.width * height * 4);
-    gm.composite(rgba, top.width, height, pillar.rgba, pillar.width, pillar.height, 0, pillar.dy - top.dy);
-    gm.composite(rgba, top.width, height, top.rgba, top.width, top.height, 0, 0);
+    // A flat face covers the front half of its top: it stands on the W-E line.
+    const layers = [[pillar, 0, pillar.dy - top.dy], [top, 0, 0]];
+    if (source.flat === true) layers.reverse();
+    for (const [picture, x, y] of layers) gm.composite(rgba, top.width, height, picture.rgba, picture.width, picture.height, x, y);
     return {...top, height, rgba};
   }
   function visit(value) {
