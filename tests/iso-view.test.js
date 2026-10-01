@@ -412,6 +412,30 @@ test('a diagonal wall fills its gaps with half a wall tile, T junctions and towe
   assert.deepEqual(geometry.fugenAusschnitt(flach, 'links', 90), [0, 0, 15, 108]);
 });
 
+test('a workshop with a whole side against a wall gets the lean-to roof the game picks', () => {
+  const wand = { kacheln: 1, mauer: { hoehe: 90 } };
+  const treppe = { kacheln: 1, treppe: { hoehe: 0 } };
+  const torhaus = { aiv: 40, kacheln: 5 };
+  const lean = Array.from({ length: 8 }, (_, k) => [{ gx: 0, gy: 0, bild: 'dach' + k }]);
+  const werkstatt = { gx: 10, gy: 10, tiles: 4, entry: { kacheln: 4, anlehnLayouts: lean, partsLayouts: [[{ gx: 0, gy: 0, bild: 'normal' }]] } };
+  const reihe = (entry, punkte) => punkte.map(([gx, gy]) => ({ gx, gy, tiles: 1, entry }));
+  const seite = { my: [0, 1, 2, 3].map(i => [10 + i, 9]), px: [0, 1, 2, 3].map(i => [14, 10 + i]),
+                  py: [0, 1, 2, 3].map(i => [10 + i, 14]), mx: [0, 1, 2, 3].map(i => [9, 10 + i]) };
+  const richtung = (...items) => geometry.anlehnRichtung(werkstatt, geometry.anlehnFelder(items.flat()));
+  assert.equal(richtung(), null, 'frei stehend: das normale Dach');
+  assert.equal(richtung(reihe(wand, seite.my)), 0);
+  assert.equal(richtung(reihe(wand, seite.px)), 2);
+  assert.equal(richtung(reihe(wand, seite.py)), 4);
+  assert.equal(richtung(reihe(wand, seite.mx)), 6);
+  assert.equal(richtung(reihe(wand, seite.my), reihe(wand, seite.mx)), 7, 'ueber Eck geht vor');
+  assert.equal(richtung(reihe(wand, seite.py), reihe(wand, seite.px)), 3);
+  assert.equal(richtung(reihe(wand, seite.my.slice(0, 3))), null, 'nur volle Seiten zaehlen');
+  assert.equal(richtung(reihe(wand, seite.my.slice(0, 3)), reihe(treppe, seite.my.slice(3))), 0, 'Treppe und Mauer zusammen');
+  assert.equal(richtung({ gx: 10, gy: 5, tiles: 5, entry: torhaus }), null, 'ein Torhaus zaehlt nicht');
+  assert.equal(geometry.buildingParts({ ...werkstatt, anlehnung: 2 })[0].bild, 'dach2');
+  assert.equal(geometry.buildingParts({ ...werkstatt, anlehnung: null })[0].bild, 'normal');
+});
+
 test('every drawn item carries the key the editor uses for its selection', () => {
   const dokument = { frames: [
     { itemType: 20, tilePositionOfsets: [2030, 2031] },
