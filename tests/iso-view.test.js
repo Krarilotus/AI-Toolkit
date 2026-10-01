@@ -1116,7 +1116,25 @@ test('die Hoehe kommt aus derselben Quelle wie der Boden', () => {
   // sein Bild sitzt (spriteRect).
   const bau = iso.slice(iso.indexOf('function bauHoehe'), iso.indexOf('function drawDiamond'));
   assert.match(bau, /bodenHoehe\(gx \+ \(tiles \|\| 1\) - 1, gy \+ \(tiles \|\| 1\) - 1\)/);
-  assert.match(bau, /geo\.spriteRect\(variant, gx, gy, tiles, state\.view, bauHoehe\(gx, gy, tiles\)\)/);
+  assert.match(bau, /const hebung = bauHoehe\(gx, gy, tiles\);[\s\S]*geo\.spriteRect\(variant, gx, gy, tiles, state\.view, hebung\)/);
   // Und die Maus rechnet die Hoehe zurueck, sonst klickt man daneben.
   assert.match(iso, /geo\.tileFromPoint\(px, py, state\.view, bodenHoehe\)/);
+});
+
+test('a wall on raised ground reaches down over the cliff of its own tile', () => {
+  const script = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
+  const start = script.indexOf('  function drawWallFoot(');
+  const quelle = script.slice(start, script.indexOf('// Eine Abschraegung schraeger Mauern', start));
+  const drawWallFoot = new Function(`${quelle}; return drawWallFoot;`)();
+  const draws = [];
+  const ctx = { drawImage: (...args) => draws.push(args) };
+  const bild = { sx: 0, sy: 0, breite: 30, hoehe: 108 };
+  drawWallFoot(ctx, {}, bild, 100, 50, 1, 0, 66);
+  assert.equal(draws.length, 0, 'auf flachem Grund nichts');
+  drawWallFoot(ctx, {}, bild, 100, 50, 1, 100, 66);
+  assert.equal(draws.length, 2, '100 Punkte Gelaende: zweimal ein Stueck von 66');
+  // Jedes Stueck ist der Fuss des Bildes, um ein Band tiefer gesetzt.
+  assert.deepEqual(draws.map(d => d[6]).sort((a, b) => a - b), [50 + 26 + 66, 50 + 26 + 132]);
+  assert.match(script, /if \(sprite\.mauer\) drawWallFoot\(/, 'jede Mauer');
+  assert.match(script, /if \(schraege\.art === 'vorn'\) drawWallFoot\(/, 'und die Wand vor einer Schraege');
 });

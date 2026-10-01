@@ -615,11 +615,29 @@
     const variant = geo.variantFor(sprite, gx, gy, mauerAn, hoeheAn, state.lageAn);
     const img = image(variant.bild);
     if (!img || !img.complete || !img.naturalWidth) return false;
-    const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, bauHoehe(gx, gy, tiles));
+    const hebung = bauHoehe(gx, gy, tiles);
+    const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, hebung);
+    if (sprite.mauer) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, hebung, sprite.mauer.hoehe - 24);
     if (Number.isFinite(variant.sx) && Number.isFinite(variant.sy)) {
       ctx.drawImage(img, variant.sx, variant.sy, variant.breite, variant.hoehe, rect.x, rect.y, rect.w, rect.h);
     } else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
     return true;
+  }
+
+  // Eine Mauer auf erhoehtem Gelaende reicht im Spiel bis ganz hinunter: ihr
+  // Pfeiler deckt die Klippe ihres eigenen Feldes, und die tieferen Felder
+  // davor - Boden, Fluss - werden spaeter gemalt und verdecken den Rest. Der
+  // untere Teil des Bildes (ein Stueck Mauer samt Fuss) wird darum so oft
+  // tiefer wiederholt, wie das Feld ueber dem Grund liegt. Gemalt vor dem Bild
+  // selbst; auf flachem Grund kostet es nichts.
+  function drawWallFoot(ctx, img, bild, x, y, k, tiefe, band) {
+    if (!(tiefe > 0) || !(band > 0)) return;
+    const quelle = Math.max(0, bild.hoehe - band - 16);
+    const stueck = bild.hoehe - quelle;
+    for (let n = Math.ceil(tiefe / band); n >= 1; n--) {
+      ctx.drawImage(img, (bild.sx || 0), (bild.sy || 0) + quelle, bild.breite, stueck,
+        x, y + (quelle + n * band) * k, bild.breite * k, stueck * k);
+    }
   }
 
   // Eine Abschraegung schraeger Mauern (geo.mauerSchraegen): das Bild des
@@ -629,8 +647,9 @@
     if (!img || !img.complete || !img.naturalWidth) return;
     const [x, y] = geo.isoPoint(schraege.gx, schraege.gy, state.view, bauHoehe(schraege.gx, schraege.gy, 1));
     const k = state.view.zoom;
-    ctx.drawImage(img, bild.sx || 0, bild.sy || 0, bild.breite, bild.hoehe,
-      x + (schraege.dx - 16) * k, y + schraege.dy * k, bild.breite * k, bild.hoehe * k);
+    const links = x + (schraege.dx - 16) * k, oben = y + schraege.dy * k;
+    if (schraege.art === 'vorn') drawWallFoot(ctx, img, bild, links, oben, k, bauHoehe(schraege.gx, schraege.gy, 1), 60);
+    ctx.drawImage(img, bild.sx || 0, bild.sy || 0, bild.breite, bild.hoehe, links, oben, bild.breite * k, bild.hoehe * k);
   }
 
   // Welches Kartenfeld unter einem Feld der Ansicht liegt - das Schachbrett
