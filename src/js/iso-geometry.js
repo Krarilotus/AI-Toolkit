@@ -404,14 +404,15 @@
           gesehen.add(schluessel);
           const lift = mauer.hoehe;
           if (halb !== 'oben') { fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil, lift }); return; }
-          // Vorn zwei Teile: die flache Wand gehoert vor die Mauer, das
-          // Wehrgang-Dreieck darueber aber HINTER die beiden Mauerfelder -
-          // sonst malt es ueber den Fuss ihrer Zinnen. Es wird darum mit der
-          // Tiefe des Nachbarn bei -x einsortiert, eine Schicht vor ihm.
+          // Vorn: die flache Wand mit dem Wehrgang-Dreieck darueber. Das
+          // Dreieck liegt genau auf den Seitenflaechen der beiden Mauerfelder
+          // und muss nach ihnen gemalt werden - sonst bleiben einzelne Kacheln
+          // mit Kerben dazwischen. Vor ZINNEN gibt es aber keinen Wehrgang:
+          // dort bilden die Frontzinnen die Kante, und die Wand reicht als
+          // Brustwehr bis an ihren Fuss ('brust').
           const front = nutzbar(fronten[achtel(fx)]);
-          const vorn = front || teil;
-          fugen.push({ gx: fx - 1, gy: fy, tiles: 1, layer: 1, halb: 'dach', teil: vorn, lift, bei: { gx: fx, gy: fy } });
-          fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil: vorn, lift, flach: !!front });
+          fugen.push({ gx: fx, gy: fy, tiles: 1, halb: front && mauer.zinne ? 'brust' : 'oben',
+                       teil: front || teil, lift, flach: !!front });
         });
       }
     }
@@ -422,15 +423,17 @@
   // Bildpunkten [x, y, breite, hoehe]. Links/rechts teilt die senkrechte
   // Mitte. Die obere Haelfte endet am Boden auf Hoehe der Kachelmitte, die
   // untere beginnt oben auf der Mauer auf Hoehe der Mitte - lift darueber.
-  // Die obere teilt sich noch einmal an dieser Linie: 'dach' ist das
-  // Dreieck darueber, 'oben' die Wand darunter.
+  // 'brust' ist die obere ohne das Wehrgang-Dreieck, nur die Wand - die
+  // Zeichnung zieht sie um eine halbe Kachel hoeher (BRUST).
+  const BRUST = HALF_H;
+
   function fugenAusschnitt(teil, halb, lift) {
     const b = teil.breite, h = teil.hoehe, mitte = Math.round(b / 2), boden = h - HALF_H;
     switch (halb) {
       case 'links': return [0, 0, mitte, h];
       case 'rechts': return [mitte, 0, b - mitte, h];
-      case 'dach': return [0, 0, b, Math.max(0, boden - lift)];
-      case 'oben': {
+      case 'oben': return [0, 0, b, boden];
+      case 'brust': {
         const oben = Math.max(0, boden - lift);
         return [0, oben, b, boden - oben];
       }
@@ -1012,7 +1015,7 @@
            gridFromOffset, offsetFromGrid, isoPoint,
            tileFromPoint, editorTileFromPoint,
            depth, byDepth, renderOrder, spriteRect, groundTextureScale, variantFor, wallLookup, hoehenLookup,
-           mauerFugen, fugenAusschnitt, anlehnFelder, anlehnRichtung,
+           mauerFugen, fugenAusschnitt, BRUST, anlehnFelder, anlehnRichtung,
            collectItems, collectPlates, troopAnchors, attachDrawbridges, buildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
            mapTileForGrid, mapTileForView, viewTileForMap,
