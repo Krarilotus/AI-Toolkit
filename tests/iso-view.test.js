@@ -411,14 +411,7 @@ test('a diagonal wall fills its gaps with half a wall tile, T junctions and towe
   const fugen = items => geometry.mauerFugen(items, geometry.wallLookup(items))
     .map(f => `${f.gx},${f.gy},${f.halb}`).sort();
   // Waagrecht schraeg: (10,10) und (11,9) - Luecken (11,10) vorn und (10,9) hinten.
-  assert.deepEqual(fugen(felder([10, 10], [11, 9])), ['10,10,dach', '10,9,unten', '11,10,oben']);
-  // Das Wehrgang-Dreieck vorn wird mit dem Mauerfeld bei -x einsortiert, eine
-  // Schicht davor, aber an der Luecke gezeichnet: sonst malt es ueber den Fuss
-  // der Zinnen dahinter.
-  const dach = geometry.mauerFugen(felder([10, 10], [11, 9]), geometry.wallLookup(felder([10, 10], [11, 9]))).find(f => f.halb === 'dach');
-  assert.deepEqual([dach.gx, dach.gy, dach.layer, dach.bei], [10, 10, 1, { gx: 11, gy: 10 }]);
-  assert.ok(geometry.renderOrder(dach, { gx: 10, gy: 10, tiles: 1 }) < 0, 'vor der Mauer bei -x');
-  assert.ok(geometry.renderOrder(dach, { gx: 11, gy: 9, tiles: 1 }) < 0, 'und vor der bei -y');
+  assert.deepEqual(fugen(felder([10, 10], [11, 9])), ['10,9,unten', '11,10,oben']);
   // Senkrecht schraeg: (10,10) und (11,11).
   assert.deepEqual(fugen(felder([10, 10], [11, 11])), ['10,11,rechts', '11,10,links']);
   // Innenecke einer T-Kreuzung: keine Fuge.
@@ -428,8 +421,8 @@ test('a diagonal wall fills its gaps with half a wall tile, T junctions and towe
   assert.deepEqual(geometry.mauerFugen([...felder([10, 10]), turm], geometry.wallLookup([...felder([10, 10]), turm])), []);
   // Der Ausschnitt: die untere Haelfte beginnt auf der Mauer, lift ueber der Bodenmitte.
   assert.deepEqual(geometry.fugenAusschnitt(flach, 'unten', 90), [0, 10, 30, 98]);
-  assert.deepEqual(geometry.fugenAusschnitt(flach, 'dach', 90), [0, 0, 30, 10]);
-  assert.deepEqual(geometry.fugenAusschnitt(flach, 'oben', 90), [0, 10, 30, 90]);
+  assert.deepEqual(geometry.fugenAusschnitt(flach, 'oben', 90), [0, 0, 30, 100], 'Wehrgang-Dreieck und Wand');
+  assert.deepEqual(geometry.fugenAusschnitt(flach, 'brust', 90), [0, 10, 30, 90], 'nur die Wand');
   assert.deepEqual(geometry.fugenAusschnitt(flach, 'links', 90), [0, 0, 15, 108]);
 });
 
@@ -467,6 +460,10 @@ test('the bevel in front of a diagonal wall is a flat face, and each run axis ha
   const items = [[10, 10], [11, 9]].map(([gx, gy]) => ({ gx, gy, tiles: 1, entry: wand }));
   const fugen = geometry.mauerFugen(items, geometry.wallLookup(items));
   assert.equal(fugen.find(f => f.halb === 'oben').teil.bild, 'front', 'vorn eine flache Wand');
+  // Vor Zinnen kein Wehrgang: dort steht die Wand als Brustwehr.
+  const zinnen = { kacheln: 1, mauer: { ...wand.mauer, zinne: true, form: { fronten: Array(8).fill(front), flach: front } } };
+  const reihe = [[10, 10], [11, 9]].map(([gx, gy]) => ({ gx, gy, tiles: 1, entry: zinnen }));
+  assert.equal(geometry.mauerFugen(reihe, geometry.wallLookup(reihe)).find(f => f.gx === 11 && f.gy === 10).halb, 'brust');
   assert.equal(fugen.find(f => f.halb === 'unten').teil.bild, 'ra', 'hinten bleibt das Mauerstueck');
   // updateGfxLayer: laengs 120-123 / 112-115, quer 124-127 / 116-119.
   const quellen = require(path.join(root, 'config', 'iso-wall-sources.json'));

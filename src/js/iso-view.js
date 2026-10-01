@@ -634,7 +634,12 @@
     // Bilder sind 30 breit, ein Feld 32: die flache Frontwand fuellt die
     // ganze Breite, sonst bleibt zwischen zwei Feldern eine Fuge stehen.
     const rand = fuge.flach ? k : 0;
-    ctx.drawImage(img, (teil.sx || 0) + x, (teil.sy || 0) + y, w, h, rect.x + x * k - rand, rect.y + y * k, w * k + 2 * rand, h * k);
+    const malen = (dy, hoehe) => ctx.drawImage(img, (teil.sx || 0) + x, (teil.sy || 0) + y, w, hoehe,
+      rect.x + x * k - rand, rect.y + dy * k, w * k + 2 * rand, hoehe * k);
+    // Die Brustwehr vor Zinnen reicht eine halbe Kachel hoeher als der
+    // Wehrgang: ihre obersten Zeilen noch einmal, darueber gesetzt.
+    if (fuge.halb === 'brust') malen(y - geo.BRUST, Math.min(geo.BRUST, h));
+    malen(y, h);
   }
 
   // Welches Kartenfeld unter einem Feld der Ansicht liegt - das Schachbrett
