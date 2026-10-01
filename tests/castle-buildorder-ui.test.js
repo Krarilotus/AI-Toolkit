@@ -590,3 +590,10 @@ test('dragging in the step list scrolls at the edges and shows where the block l
   assert.match(css, /\.buildStep\.dropBefore::after/);
   assert.match(css, /\.buildStep\.dropAfter::after/);
 });
+
+test('the native window leaves drag and drop to the page, so steps can be dragged', () => {
+  // Tauri's own file-drop handler swallows HTML drag events in WebView2 on
+  // Windows: the cursor shows "not allowed" and nothing can be dropped.
+  const config = require(path.join(root, 'src-tauri', 'tauri.conf.json'));
+  assert.equal(config.app.windows[0].dragDropEnabled, false);
+});
