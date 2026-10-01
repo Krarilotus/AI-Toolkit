@@ -344,12 +344,21 @@ test('crenels follow the game: ends, corners and both diagonals get their own pi
   assert.equal(bild(167, 187), 'l_scharte', 'x + y gerade: Scharte');
   felder.clear(); ['10:10', '11:10', '10:9'].forEach(f => felder.add(f));
   assert.equal(bild(10, 10), 'e128', 'Ecke mit Nachbarn bei x+1 und y-1');
+  felder.add('9:10');
+  assert.equal(bild(10, 10), 'ende', 'eine T-Kreuzung ist der hohe Klotz');
+  // Eine Mauer neben der Reihe zaehlt nicht mit (nur L_CRENEL) - und sie
+  // darf die Zaehlung nicht verderben (frueher NaN, dann ueberall der Klotz).
+  felder.clear(); for (const gx of [165, 166, 167, 168]) felder.add(gx + ':187');
+  const wand = { hoehe: 90, zinne: false };
+  const mitWand = (gx, gy) => felder.has(gx + ':' + gy) ? zinne.mauer : gy === 188 ? wand : null;
+  assert.equal(geometry.variantFor(zinne, 166, 187, mitWand, null, lage).bild, 'l_klotz');
+  assert.equal(geometry.variantFor(zinne, 167, 187, mitWand, null, lage).bild, 'l_scharte');
   // Waagrecht schraeg (x+1, y-1), x + y = 352: Zinnen von vorn, 303 + (y & 7).
   felder.clear(); for (let i = 0; i < 4; i++) felder.add((160 + i) + ':' + (192 - i));
   assert.equal(bild(160, 192), 's303');
   assert.equal(bild(161, 191), 's310');
   felder.clear(); for (let i = 0; i < 3; i++) felder.add((160 + i) + ':' + (193 - i));
-  assert.equal(bild(161, 192), 'flach', 'x + y ungerade: nur der Wehrgang');
+  assert.equal(bild(161, 192), 's303', 'auch bei ungeradem x + y wechseln die Zinnen');
   // Senkrecht schraeg (x+1, y+1): Winkelzinnen nach y.
   felder.clear(); for (let i = 0; i < 3; i++) felder.add((20 + i) + ':' + (30 + i));
   assert.equal(bild(21, 31), 's311', 'y ungerade');
@@ -441,6 +450,23 @@ test('a workshop with a whole side against a wall gets the lean-to roof the game
     'Stufe 1 bis 5 tragen 0x800 und zaehlen nicht');
   assert.equal(geometry.buildingParts({ ...werkstatt, anlehnung: 2 })[0].bild, 'dach2');
   assert.equal(geometry.buildingParts({ ...werkstatt, anlehnung: null })[0].bild, 'normal');
+});
+
+test('the bevel in front of a diagonal wall is a flat face, and each run axis has its own crenels', () => {
+  const flach = { bild: 'ra', breite: 30, hoehe: 108 };
+  const front = { bild: 'front', breite: 30, hoehe: 108, sx: 0, sy: 0 };
+  const wand = { kacheln: 1, mauer: { hoehe: 90, rand: { allein: { klotz: flach } }, form: { front } } };
+  const items = [[10, 10], [11, 9]].map(([gx, gy]) => ({ gx, gy, tiles: 1, entry: wand }));
+  const fugen = geometry.mauerFugen(items, geometry.wallLookup(items));
+  assert.equal(fugen.find(f => f.halb === 'oben').teil.bild, 'front', 'vorn eine flache Wand');
+  assert.equal(fugen.find(f => f.halb === 'unten').teil.bild, 'ra', 'hinten bleibt das Mauerstueck');
+  // updateGfxLayer: laengs 120-123 / 112-115, quer 124-127 / 116-119.
+  const quellen = require(path.join(root, 'config', 'iso-wall-sources.json'));
+  assert.equal(quellen['mauer_26_l05_klotz.png'].index, 121);
+  assert.equal(quellen['mauer_26_l05_scharte.png'].index, 113);
+  assert.equal(quellen['mauer_26_q05_klotz.png'].index, 125);
+  assert.equal(quellen['mauer_26_q05_scharte.png'].index, 117);
+  assert.equal(quellen['mauer_25_front.png'].flat, true);
 });
 
 test('every drawn item carries the key the editor uses for its selection', () => {

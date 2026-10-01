@@ -50,13 +50,21 @@ impl Sources {
         let top = self.file(name, index)?.part(index, palette)?;
         if let Some(pillar) = s["pillar"].as_u64() {
             let lift = s["lift"].as_u64().ok_or("Invalid wall lift")? as usize;
+            let flat = s["flat"].as_bool() == Some(true);
             let strip = self
                 .file("tile_walls", pillar as usize)?
-                .pillar(pillar as usize, lift)?
+                .wall_face(pillar as usize, lift, flat)?
                 .ok_or("Unsupported wall pillar")?;
             let mut out = Picture::empty(top.width, top.height + lift, top.dx, top.dy);
-            composite(&mut out, &strip, 0, strip.dy - top.dy);
-            composite(&mut out, &top, 0, 0);
+            // A flat face covers the front half of its top: it stands on the
+            // W-E line of the tile.
+            if flat {
+                composite(&mut out, &top, 0, 0);
+                composite(&mut out, &strip, 0, strip.dy - top.dy);
+            } else {
+                composite(&mut out, &strip, 0, strip.dy - top.dy);
+                composite(&mut out, &top, 0, 0);
+            }
             Ok(out)
         } else {
             Ok(top)

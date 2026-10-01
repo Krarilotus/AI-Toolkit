@@ -240,11 +240,17 @@
   //    ungerade ist, sonst Scharte (112-119) - 346 von 348 Feldern. Das
   //    Schachbrett haengt am Kartenfeld, nicht an der Ansicht: mit C gedreht
   //    bleibt jede Zinne, wie sie war.
-  //  - Das Ende einer Reihe ist immer der hohe Endklotz (132), eine Ecke eines
-  //    der vier Eckstuecke (128-131).
+  //  - Gelesen in updateGfxLayer (0x00509180): eine gerade Reihe hat je Achse
+  //    eigene Bilder (laengs 120-123/112-115, quer 124-127/116-119, dazu eine
+  //    Zufallsvariante & 3 - siehe config/iso-wall-sources.json). Zaehlt eine
+  //    Zinne nur Zinnen als Nachbarn (L_CRENEL 0x200), keine Mauern.
+  //  - Ein Ende, eine T-Kreuzung, alles ausser Reihe und Ecke ist der hohe
+  //    Endklotz (132), eine Ecke eines der vier Eckstuecke (128-131).
   //  - Schraeg und auf dem Schirm waagrecht (Nachbar bei x+1,y-1): Zinnen von
-  //    vorn gesehen (303-310, Nummer 303 + (y & 7)), aber nur, wo x + y
-  //    gerade ist - sonst zeigt die ganze Linie bloss den Wehrgang.
+  //    vorn gesehen (303-310, Nummer 303 + (y & 7)), so wechseln sie Feld fuer
+  //    Feld hoch und niedrig. (Die Karten zeigen bei ungeradem x + y auch
+  //    Linien nur mit Wehrgang; welche Bedingung das Spiel dafuer prueft, steckt
+  //    in Bits, die hier nicht bekannt sind - durchgezogen flach sah falsch aus.)
   //  - Schraeg und senkrecht (x+1,y+1): die Winkelzinnen, 311 bei ungeradem
   //    y, sonst 312.
   //
@@ -264,18 +270,14 @@
     const form = mauer.form;
     const zinne = (dx, dy) => {
       const nachbar = mauerAn(gx + dx, gy + dy);
-      return !!nachbar && (nachbar.zinne || nachbar.torhaus);
+      return !!(nachbar && (nachbar.zinne || nachbar.torhaus));
     };
     const mx = zinne(-1, 0), px = zinne(1, 0), my = zinne(0, -1), py = zinne(0, 1);
     const zahl = mx + px + my + py;
-    if (zahl === 1) return nutzbar(form.ende);
-    if (zahl === 2 && (mx || px) && (my || py))
-      return nutzbar(form.ecken && form.ecken[(px ? 'px' : 'mx') + '_' + (py ? 'py' : 'my')]);
-    if (zahl > 0) return null;
-    if (zinne(1, -1) || zinne(-1, 1)) {
-      if ((lage.x + lage.y) % 2 !== 0) return nutzbar(form.flach);
-      return nutzbar(form.schraeg && form.schraeg[achtel(lage.y)]);
-    }
+    if (zahl === 2 && ((mx && px) || (my && py))) return null;
+    if (zahl === 2) return nutzbar(form.ecken && form.ecken[(px ? 'px' : 'mx') + '_' + (py ? 'py' : 'my')]);
+    if (zahl > 0) return nutzbar(form.ende);
+    if (zinne(1, -1) || zinne(-1, 1)) return nutzbar(form.schraeg && form.schraeg[achtel(lage.y)]);
     if (zinne(1, 1) || zinne(-1, -1)) return nutzbar(form.steil && form.steil[achtel(lage.y) % 2]);
     return nutzbar(form.ende);
   }
@@ -384,6 +386,8 @@
       if (!mauer) continue;
       const teil = mauer.zinne ? nutzbar(mauer.form && mauer.form.flach) : (mauer.rand && mauer.rand.allein.klotz);
       if (!teil) continue;
+      // Vor einer waagrechten Schraege steht eine flache Wand, keine Kante.
+      const front = nutzbar(mauer.form && mauer.form.front);
       for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
         if (mauerAn(item.gx + dx, item.gy + dy) !== mauer) continue;
         const luecken = [[item.gx + dx, item.gy], [item.gx, item.gy + dy]];
@@ -397,7 +401,7 @@
           const schluessel = fx + ':' + fy + ':' + halb;
           if (gesehen.has(schluessel)) return;
           gesehen.add(schluessel);
-          fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil, lift: mauer.hoehe });
+          fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil: (halb === 'oben' && front) || teil, lift: mauer.hoehe });
         });
       }
     }
