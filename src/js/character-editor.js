@@ -366,7 +366,9 @@ if (val !== input.value) {
 // as in the castle palette: game sprites, else the letter badge.
 const START_TROOP_UNITS = {
   ArabArcher: 16, Slave: 13, Slinger: 14, Assassin: 15, HorseArcher: 17, ArabSwordsman: 18, FireThrower: 19,
-  EuropArcher: 6, Spearman: 8, Maceman: 10, Crossbowman: 7, Pikeman: 9, Swordsman: 11, Knight: 12, Engineer: 1
+  EuropArcher: 6, Spearman: 8, Maceman: 10, Crossbowman: 7, Pikeman: 9, Swordsman: 11, Knight: 12, Engineer: 1,
+  // No AIV marker: the monk's picture is extracted under its own key.
+  Monk: 'unit-monk'
 };
 let unitSkinRequest = null;
 function unitSkins() {
