@@ -264,7 +264,7 @@
     const form = mauer.form;
     const zinne = (dx, dy) => {
       const nachbar = mauerAn(gx + dx, gy + dy);
-      return !!nachbar && (nachbar.zinne || nachbar.turm);
+      return !!nachbar && (nachbar.zinne || nachbar.torhaus);
     };
     const mx = zinne(-1, 0), px = zinne(1, 0), my = zinne(0, -1), py = zinne(0, 1);
     const zahl = mx + px + my + py;
@@ -321,13 +321,17 @@
   // Nachschlagewerk fuer die Regel oben: welches Feld traegt eine Mauer.
   // Aus den Gegenstaenden, die ohnehin schon eingesammelt sind.
   //
-  // Tuerme und Torhaeuser zaehlen mit: das Spiel fuehrt ihre Felder als
-  // L_WALL (0x100), und eine Mauer, die an einen Turm stoesst, laeuft in ihn
-  // hinein statt mit einem freistehenden Pfeiler zu enden (gemessen in
-  // denselben Karten: Mauer zwischen Mauer und Turm -> laengs/quer). Andere
-  // Gebaeude zaehlen nicht. Die AIV-Nummern: Tuerme 30-34, Torhaeuser 40-43.
-  const MAUER_ANSCHLUSS = new Set([30, 31, 32, 33, 34, 40, 41, 42, 43]);
-  const TURM = Object.freeze({ turm: true, hoehe: Infinity });
+  // Wer im Spiel als Mauernachbar zaehlt, entscheidet allein der Logik-
+  // Layer: isWallConnectionHeightValid (0x004f8840) verlangt L_WALL (0x100),
+  // nicht 0x2, und hoechstens 16 Punkte weniger Hoehe. L_WALL setzen
+  // placeDefensiveStructureTile (0x005034a0) auf jedes Mauer-, Zinnen- und
+  // Treppenfeld - Treppen mit ihrer Stufenhoehe 80 bis 0 - und
+  // placeGatehouseSmall/Large (0x00507420/0x00507560) auf jedes Feld eines
+  // Torhauses, 90 hoch. Tuerme NICHT: placeTower (0x00507130) setzt nur
+  // 0x400 und 0x10000000. Eine Mauer laeuft also in ein Torhaus hinein, endet
+  // vor einem Turm aber mit ihrem Pfeiler. AIV-Nummern der Torhaeuser: 40-43.
+  const TORHAEUSER = new Set([40, 41, 42, 43]);
+  const TORHAUS = Object.freeze({ torhaus: true, hoehe: 90 });
 
   function wallLookup(items, extra) {
     const felder = new Map();
@@ -335,11 +339,16 @@
       const entry = item.entry;
       if (!entry) return;
       if (entry.mauer) { felder.set(item.gx + ':' + item.gy, entry.mauer); return; }
-      if (!MAUER_ANSCHLUSS.has(entry.aiv)) return;
+      if (entry.treppe) {
+        const schluessel = item.gx + ':' + item.gy;
+        if (!felder.has(schluessel)) felder.set(schluessel, { treppe: true, hoehe: entry.treppe.hoehe });
+        return;
+      }
+      if (!TORHAEUSER.has(entry.aiv)) return;
       const n = item.tiles || entry.kacheln || 1;
       for (let dx = 0; dx < n; dx++) for (let dy = 0; dy < n; dy++) {
         const schluessel = (item.gx + dx) + ':' + (item.gy + dy);
-        if (!felder.has(schluessel)) felder.set(schluessel, TURM);
+        if (!felder.has(schluessel)) felder.set(schluessel, TORHAUS);
       }
     };
     for (const item of items || []) eintragen(item);
@@ -541,21 +550,23 @@
   // Werkstaetten mit Pultdach. Steht eine Werkstatt mit einer ganzen Seite an
   // einer Mauer, lehnt das Spiel ihr Dach dagegen - nachgelesen in
   // determineBuildingPlacementRotation (0x004fa000): je Seite werden die vier
-  // Nachbarfelder gezaehlt, die L_WALL (0x100) tragen und weder Torhaus
-  // (0x800) noch 0x2 sind - Mauern, Zinnen, Treppen, Tuerme. Nur volle Seiten
+  // Nachbarfelder gezaehlt, die L_WALL (0x100) tragen und weder 0x800 noch
+  // 0x2. Das sind Mauern, Zinnen, Torhaeuser und von den Treppen nur Stufe 6:
+  // Stufe 1 bis 5 bekommen in placeDefensiveStructureTile zusaetzlich 0x800,
+  // Tuerme haben gar kein L_WALL (siehe wallLookup). Nur volle Seiten
   // zaehlen, zwei volle Seiten ueber Eck gehen vor einer einzelnen:
   //   -y und -x -> 7, -y und +x -> 1, +y und -x -> 5, +y und +x -> 3,
   //   sonst -y -> 0, +x -> 2, +y -> 4, -x -> 6, und ohne Mauer 8 (das Dach).
   // Das Bild ist Richtung minus Blickdrehung (updateBuildingGraphicsLayer);
   // diese Ansicht rechnet ohnehin im gedrehten Raster, also gilt die Richtung
   // hier direkt.
-  const ANLEHN_TUERME = new Set([30, 31, 32, 33, 34]);
+  const lehntAn = entry => !!(entry.mauer || entry.treppe?.hoehe === 0 || TORHAEUSER.has(entry.aiv));
 
   function anlehnFelder(items) {
     const felder = new Set();
     for (const item of items || []) {
       const entry = item.entry;
-      if (!entry || !(entry.mauer || entry.treppe || ANLEHN_TUERME.has(entry.aiv))) continue;
+      if (!entry || !lehntAn(entry)) continue;
       const n = item.tiles || entry.kacheln || 1;
       for (let dx = 0; dx < n; dx++) for (let dy = 0; dy < n; dy++) felder.add((item.gx + dx) + ':' + (item.gy + dy));
     }

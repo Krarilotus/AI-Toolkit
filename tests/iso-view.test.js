@@ -376,18 +376,22 @@ test('the crenel checkerboard belongs to the map tile, not to the turned view', 
   assert.equal(bild(() => ({ x: 10, y: 50 })), 'l_scharte');
 });
 
-test('towers and gatehouses carry a wall through, ordinary buildings do not', () => {
+test('gatehouses and stairs carry a wall through, towers and other buildings do not', () => {
   const b = name => ({ bild: name, breite: 30, hoehe: 108 });
   const reihe = name => ({ klotz: Array.from({length: 16}, () => b(name)) });
   const mauer = { hoehe: 90, laengs: reihe('laengs'), quer: reihe('quer'),
     rand: { laengs: { klotz: b('rl') }, quer: { klotz: b('rq') }, allein: { klotz: b('ra') } } };
   const wand = { kacheln: 1, mauer };
-  const turm = { aiv: 30, kacheln: 3 }, haus = { aiv: 61, kacheln: 3 };
+  const torhaus = { aiv: 40, kacheln: 5 }, turm = { aiv: 30, kacheln: 3 }, haus = { aiv: 61, kacheln: 3 };
   const items = [{ gx: 10, gy: 10, entry: wand, tiles: 1 }, { gx: 11, gy: 10, entry: wand, tiles: 1 }];
-  const mitTurm = geometry.wallLookup([...items, { gx: 12, gy: 9, entry: turm, tiles: 3 }]);
-  const mitHaus = geometry.wallLookup([...items, { gx: 12, gy: 9, entry: haus, tiles: 3 }]);
-  assert.equal(geometry.variantFor(wand, 11, 10, mitTurm).bild, 'laengs', 'die Mauer laeuft in den Turm');
-  assert.equal(geometry.variantFor(wand, 11, 10, mitHaus).bild, 'ra', 'am Haus endet sie');
+  const mit = (entry, tiles = entry.kacheln) => geometry.wallLookup([...items, { gx: 12, gy: 9, entry, tiles }]);
+  assert.equal(geometry.variantFor(wand, 11, 10, mit(torhaus)).bild, 'laengs', 'die Mauer laeuft ins Torhaus');
+  assert.equal(geometry.variantFor(wand, 11, 10, mit(turm)).bild, 'ra', 'Tuerme tragen kein L_WALL: dort endet sie');
+  assert.equal(geometry.variantFor(wand, 11, 10, mit(haus)).bild, 'ra', 'am Haus auch');
+  const stufe = hoehe => ({ kacheln: 1, treppe: { hoehe } });
+  const treppe = hoehe => geometry.wallLookup([...items, { gx: 12, gy: 10, entry: stufe(hoehe), tiles: 1 }]);
+  assert.equal(geometry.variantFor(wand, 11, 10, treppe(80)).bild, 'laengs', 'die oberste Stufe traegt die Mauer weiter');
+  assert.equal(geometry.variantFor(wand, 11, 10, treppe(48)).bild, 'ra', 'mehr als 16 tiefer nicht');
 });
 
 test('a diagonal wall fills its gaps with half a wall tile, T junctions and towers do not', () => {
@@ -431,7 +435,10 @@ test('a workshop with a whole side against a wall gets the lean-to roof the game
   assert.equal(richtung(reihe(wand, seite.py), reihe(wand, seite.px)), 3);
   assert.equal(richtung(reihe(wand, seite.my.slice(0, 3))), null, 'nur volle Seiten zaehlen');
   assert.equal(richtung(reihe(wand, seite.my.slice(0, 3)), reihe(treppe, seite.my.slice(3))), 0, 'Treppe und Mauer zusammen');
-  assert.equal(richtung({ gx: 10, gy: 5, tiles: 5, entry: torhaus }), null, 'ein Torhaus zaehlt nicht');
+  assert.equal(richtung({ gx: 10, gy: 5, tiles: 5, entry: torhaus }), 0, 'ein Torhaus traegt L_WALL und zaehlt');
+  assert.equal(richtung({ gx: 10, gy: 5, tiles: 5, entry: { aiv: 31, kacheln: 5 } }), null, 'ein Turm nicht');
+  assert.equal(richtung(reihe(wand, seite.my.slice(0, 3)), reihe({ kacheln: 1, treppe: { hoehe: 16 } }, seite.my.slice(3))), null,
+    'Stufe 1 bis 5 tragen 0x800 und zaehlen nicht');
   assert.equal(geometry.buildingParts({ ...werkstatt, anlehnung: 2 })[0].bild, 'dach2');
   assert.equal(geometry.buildingParts({ ...werkstatt, anlehnung: null })[0].bild, 'normal');
 });
