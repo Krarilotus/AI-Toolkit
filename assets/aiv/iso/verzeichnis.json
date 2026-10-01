@@ -211,11 +211,48 @@
      "krone": "immer flach"
     },
     "form": {
-     "front": {
-      "bild": "mauer_25_front.png",
-      "breite": 30,
-      "hoehe": 108
-     }
+     "fronten": [
+      {
+       "bild": "mauer_25_front_0.png",
+       "breite": 30,
+       "hoehe": 108
+      },
+      {
+       "bild": "mauer_25_front_1.png",
+       "breite": 30,
+       "hoehe": 108
+      },
+      {
+       "bild": "mauer_25_front_2.png",
+       "breite": 30,
+       "hoehe": 108
+      },
+      {
+       "bild": "mauer_25_front_3.png",
+       "breite": 30,
+       "hoehe": 108
+      },
+      {
+       "bild": "mauer_25_front_4.png",
+       "breite": 30,
+       "hoehe": 108
+      },
+      {
+       "bild": "mauer_25_front_5.png",
+       "breite": 30,
+       "hoehe": 108
+      },
+      {
+       "bild": "mauer_25_front_6.png",
+       "breite": 30,
+       "hoehe": 108
+      },
+      {
+       "bild": "mauer_25_front_7.png",
+       "breite": 30,
+       "hoehe": 108
+      }
+     ]
     }
    }
   },
@@ -694,11 +731,48 @@
       "breite": 30,
       "hoehe": 116
      },
-     "front": {
-      "bild": "mauer_26_front.png",
-      "breite": 30,
-      "hoehe": 116
-     }
+     "fronten": [
+      {
+       "bild": "mauer_26_front_0.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_26_front_1.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_26_front_2.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_26_front_3.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_26_front_4.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_26_front_5.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_26_front_6.png",
+       "breite": 30,
+       "hoehe": 116
+      },
+      {
+       "bild": "mauer_26_front_7.png",
+       "breite": 30,
+       "hoehe": 116
+      }
+     ]
     }
    },
    "wechselBild": "mauer_26_ra_scharte.png",
@@ -1181,11 +1255,48 @@
       "breite": 30,
       "hoehe": 86
      },
-     "front": {
-      "bild": "mauer_35_front.png",
-      "breite": 30,
-      "hoehe": 86
-     }
+     "fronten": [
+      {
+       "bild": "mauer_35_front_0.png",
+       "breite": 30,
+       "hoehe": 86
+      },
+      {
+       "bild": "mauer_35_front_1.png",
+       "breite": 30,
+       "hoehe": 86
+      },
+      {
+       "bild": "mauer_35_front_2.png",
+       "breite": 30,
+       "hoehe": 86
+      },
+      {
+       "bild": "mauer_35_front_3.png",
+       "breite": 30,
+       "hoehe": 86
+      },
+      {
+       "bild": "mauer_35_front_4.png",
+       "breite": 30,
+       "hoehe": 86
+      },
+      {
+       "bild": "mauer_35_front_5.png",
+       "breite": 30,
+       "hoehe": 86
+      },
+      {
+       "bild": "mauer_35_front_6.png",
+       "breite": 30,
+       "hoehe": 86
+      },
+      {
+       "bild": "mauer_35_front_7.png",
+       "breite": 30,
+       "hoehe": 86
+      }
+     ]
     }
    },
    "wechselBild": "mauer_35_ra_scharte.png",
@@ -1402,11 +1513,48 @@
      "krone": "immer flach"
     },
     "form": {
-     "front": {
-      "bild": "mauer_46_front.png",
-      "breite": 30,
-      "hoehe": 78
-     }
+     "fronten": [
+      {
+       "bild": "mauer_46_front_0.png",
+       "breite": 30,
+       "hoehe": 78
+      },
+      {
+       "bild": "mauer_46_front_1.png",
+       "breite": 30,
+       "hoehe": 78
+      },
+      {
+       "bild": "mauer_46_front_2.png",
+       "breite": 30,
+       "hoehe": 78
+      },
+      {
+       "bild": "mauer_46_front_3.png",
+       "breite": 30,
+       "hoehe": 78
+      },
+      {
+       "bild": "mauer_46_front_4.png",
+       "breite": 30,
+       "hoehe": 78
+      },
+      {
+       "bild": "mauer_46_front_5.png",
+       "breite": 30,
+       "hoehe": 78
+      },
+      {
+       "bild": "mauer_46_front_6.png",
+       "breite": 30,
+       "hoehe": 78
+      },
+      {
+       "bild": "mauer_46_front_7.png",
+       "breite": 30,
+       "hoehe": 78
+      }
+     ]
     }
    }
   },

@@ -386,8 +386,9 @@
       if (!mauer) continue;
       const teil = mauer.zinne ? nutzbar(mauer.form && mauer.form.flach) : (mauer.rand && mauer.rand.allein.klotz);
       if (!teil) continue;
-      // Vor einer waagrechten Schraege steht eine flache Wand, keine Kante.
-      const front = nutzbar(mauer.form && mauer.form.front);
+      // Vor einer waagrechten Schraege steht eine flache Wand, keine Kante -
+      // in acht Steinmustern, damit sich nicht jedes Feld gleich wiederholt.
+      const fronten = (mauer.form && mauer.form.fronten) || [];
       for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
         if (mauerAn(item.gx + dx, item.gy + dy) !== mauer) continue;
         const luecken = [[item.gx + dx, item.gy], [item.gx, item.gy + dy]];
@@ -401,7 +402,16 @@
           const schluessel = fx + ':' + fy + ':' + halb;
           if (gesehen.has(schluessel)) return;
           gesehen.add(schluessel);
-          fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil: (halb === 'oben' && front) || teil, lift: mauer.hoehe });
+          const lift = mauer.hoehe;
+          if (halb !== 'oben') { fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil, lift }); return; }
+          // Vorn zwei Teile: die flache Wand gehoert vor die Mauer, das
+          // Wehrgang-Dreieck darueber aber HINTER die beiden Mauerfelder -
+          // sonst malt es ueber den Fuss ihrer Zinnen. Es wird darum mit der
+          // Tiefe des Nachbarn bei -x einsortiert, eine Schicht vor ihm.
+          const front = nutzbar(fronten[achtel(fx)]);
+          const vorn = front || teil;
+          fugen.push({ gx: fx - 1, gy: fy, tiles: 1, layer: 1, halb: 'dach', teil: vorn, lift, bei: { gx: fx, gy: fy } });
+          fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil: vorn, lift, flach: !!front });
         });
       }
     }
@@ -412,12 +422,18 @@
   // Bildpunkten [x, y, breite, hoehe]. Links/rechts teilt die senkrechte
   // Mitte. Die obere Haelfte endet am Boden auf Hoehe der Kachelmitte, die
   // untere beginnt oben auf der Mauer auf Hoehe der Mitte - lift darueber.
+  // Die obere teilt sich noch einmal an dieser Linie: 'dach' ist das
+  // Dreieck darueber, 'oben' die Wand darunter.
   function fugenAusschnitt(teil, halb, lift) {
     const b = teil.breite, h = teil.hoehe, mitte = Math.round(b / 2), boden = h - HALF_H;
     switch (halb) {
       case 'links': return [0, 0, mitte, h];
       case 'rechts': return [mitte, 0, b - mitte, h];
-      case 'oben': return [0, 0, b, boden];
+      case 'dach': return [0, 0, b, Math.max(0, boden - lift)];
+      case 'oben': {
+        const oben = Math.max(0, boden - lift);
+        return [0, oben, b, boden - oben];
+      }
       default: {
         const oben = Math.max(0, boden - lift);
         return [0, oben, b, h - oben];
