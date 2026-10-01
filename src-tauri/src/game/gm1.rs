@@ -149,12 +149,6 @@ impl Gm1 {
         Ok(p)
     }
     pub fn pillar(&self, index: usize, lift: usize) -> Result<Option<Picture>> {
-        self.wall_face(index, lift, false)
-    }
-    /// flat: one wall face seen straight on - the bevel in front of a
-    /// diagonal wall. No V skew, and only the sunlit left half of the
-    /// texture, repeated.
-    pub fn wall_face(&self, index: usize, lift: usize, flat: bool) -> Result<Option<Picture>> {
         let (e, raw) = self.raw(index)?;
         let rows = e.height.saturating_sub(7);
         if self.kind != 5 || e.width != 30 || rows == 0 || raw.len() < rows * 60 {
@@ -163,9 +157,8 @@ impl Gm1 {
         let mut p = Picture::empty(30, lift + 7, 0, 9);
         for y in 0..lift {
             for x in 0..30 {
-                let column = if flat { x % 15 } else { x };
-                let rgb = colour(u16le(raw, ((y % rows) * 30 + column) * 2)?);
-                let skew = if flat { 0 } else { (x / 2).min((29 - x) / 2) };
+                let rgb = colour(u16le(raw, ((y % rows) * 30 + x) * 2)?);
+                let skew = (x / 2).min((29 - x) / 2);
                 put(&mut p.rgba, 30, lift + 7, x as i32, (y + skew) as i32, rgb)
             }
         }

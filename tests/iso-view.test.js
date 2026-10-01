@@ -358,7 +358,7 @@ test('crenels follow the game: ends, corners and both diagonals get their own pi
   assert.equal(bild(160, 192), 's303');
   assert.equal(bild(161, 191), 's310');
   felder.clear(); for (let i = 0; i < 3; i++) felder.add((160 + i) + ':' + (193 - i));
-  assert.equal(bild(161, 192), 's303', 'auch bei ungeradem x + y wechseln die Zinnen');
+  assert.equal(bild(161, 192), 'flach', 'x + y ungerade: nur der Wehrgang, wie in den Karten');
   // Senkrecht schraeg (x+1, y+1): Winkelzinnen nach y.
   felder.clear(); for (let i = 0; i < 3; i++) felder.add((20 + i) + ':' + (30 + i));
   assert.equal(bild(21, 31), 's311', 'y ungerade');
@@ -403,29 +403,6 @@ test('gatehouses and stairs carry a wall through, towers and other buildings do 
   assert.equal(geometry.variantFor(wand, 11, 10, treppe(48)).bild, 'ra', 'mehr als 16 tiefer nicht');
 });
 
-test('a diagonal wall fills its gaps with half a wall tile, T junctions and towers do not', () => {
-  const flach = { bild: 'ra', breite: 30, hoehe: 108 };
-  const mauer = { hoehe: 90, rand: { allein: { klotz: flach } } };
-  const wand = { kacheln: 1, mauer };
-  const felder = (...liste) => liste.map(([gx, gy]) => ({ gx, gy, tiles: 1, entry: wand }));
-  const fugen = items => geometry.mauerFugen(items, geometry.wallLookup(items))
-    .map(f => `${f.gx},${f.gy},${f.halb}`).sort();
-  // Waagrecht schraeg: (10,10) und (11,9) - Luecken (11,10) vorn und (10,9) hinten.
-  assert.deepEqual(fugen(felder([10, 10], [11, 9])), ['10,9,unten', '11,10,oben']);
-  // Senkrecht schraeg: (10,10) und (11,11).
-  assert.deepEqual(fugen(felder([10, 10], [11, 11])), ['10,11,rechts', '11,10,links']);
-  // Innenecke einer T-Kreuzung: keine Fuge.
-  assert.deepEqual(fugen(felder([10, 10], [11, 10], [11, 11])), []);
-  // Neben einem Turm keine.
-  const turm = { gx: 11, gy: 11, tiles: 1, entry: { aiv: 30, kacheln: 1 } };
-  assert.deepEqual(geometry.mauerFugen([...felder([10, 10]), turm], geometry.wallLookup([...felder([10, 10]), turm])), []);
-  // Der Ausschnitt: die untere Haelfte beginnt auf der Mauer, lift ueber der Bodenmitte.
-  assert.deepEqual(geometry.fugenAusschnitt(flach, 'unten', 90), [0, 10, 30, 98]);
-  assert.deepEqual(geometry.fugenAusschnitt(flach, 'oben', 90), [0, 0, 30, 100], 'Wehrgang-Dreieck und Wand');
-  assert.deepEqual(geometry.fugenAusschnitt(flach, 'brust', 90), [0, 10, 30, 90], 'nur die Wand');
-  assert.deepEqual(geometry.fugenAusschnitt(flach, 'links', 90), [0, 0, 15, 108]);
-});
-
 test('a workshop with a whole side against a wall gets the lean-to roof the game picks', () => {
   const wand = { kacheln: 1, mauer: { hoehe: 90 } };
   const treppe = { kacheln: 1, treppe: { hoehe: 0 } };
@@ -453,27 +430,54 @@ test('a workshop with a whole side against a wall gets the lean-to roof the game
   assert.equal(geometry.buildingParts({ ...werkstatt, anlehnung: null })[0].bild, 'normal');
 });
 
-test('the bevel in front of a diagonal wall is a flat face, and each run axis has its own crenels', () => {
-  const flach = { bild: 'ra', breite: 30, hoehe: 108 };
-  const front = { bild: 'front', breite: 30, hoehe: 108, sx: 0, sy: 0 };
-  const wand = { kacheln: 1, mauer: { hoehe: 90, rand: { allein: { klotz: flach } }, form: { fronten: Array(8).fill(front) } } };
-  const items = [[10, 10], [11, 9]].map(([gx, gy]) => ({ gx, gy, tiles: 1, entry: wand }));
-  const fugen = geometry.mauerFugen(items, geometry.wallLookup(items));
-  assert.equal(fugen.find(f => f.halb === 'oben').teil.bild, 'front', 'vorn eine flache Wand');
-  // Vor Zinnen kein Wehrgang: dort steht die Wand als Brustwehr.
-  const zinnen = { kacheln: 1, mauer: { ...wand.mauer, zinne: true, form: { fronten: Array(8).fill(front), flach: front } } };
-  const reihe = [[10, 10], [11, 9]].map(([gx, gy]) => ({ gx, gy, tiles: 1, entry: zinnen }));
-  assert.equal(geometry.mauerFugen(reihe, geometry.wallLookup(reihe)).find(f => f.gx === 11 && f.gy === 10).halb, 'brust');
-  assert.equal(fugen.find(f => f.halb === 'unten').teil.bild, 'ra', 'hinten bleibt das Mauerstueck');
-  // updateGfxLayer: laengs 120-123 / 112-115, quer 124-127 / 116-119.
+test('diagonal walls get the game bevels: a gabled wall in front, triangles elsewhere', () => {
+  // updateGfxLayer (0x00509180) und renderMap (0x004e8cf0), siehe geo.mauerSchraegen.
+  const bilder = {};
+  for (let i = 45; i <= 75; i++) bilder[i] = { bild: 'b' + i, breite: i < 48 ? 15 : 32, hoehe: i < 48 ? 17 : i < 62 ? 99 : 130, sx: 0, sy: 0 };
+  const wand = { kacheln: 1, mauer: { hoehe: 90 } };
+  const zinne = { kacheln: 1, mauer: { hoehe: 98, zinne: true } };
+  const felder = (entry, ...liste) => liste.map(([gx, gy]) => ({ gx, gy, tiles: 1, entry }));
+  const lage = (gx, gy) => ({ x: gx, y: gy });
+  const schraegen = items => geometry.mauerSchraegen(items, geometry.wallLookup(items), lage, bilder);
+  const art = items => schraegen(items).map(s => `${s.gx},${s.gy},${s.art},${s.bild.bild}`).sort();
+  // Waagrecht schraeg: vorn die Wand mit Giebel, hinten das Dreieck 46.
+  assert.deepEqual(art(felder(wand, [10, 10], [11, 9])), ['10,9,hinten,b46', '11,10,vorn,b49'], 'Paritaet (x ^ y) & 1 = 1');
+  // Senkrecht schraeg: links 45 und rechts 47, keine Wand.
+  assert.deepEqual(art(felder(wand, [10, 10], [11, 11])), ['10,11,rechts,b47', '11,10,links,b45']);
+  // Eine Linie: in der Mitte 61 - (y & 7), an den Enden 52/53 bzw. 50/51
+  // (+ Paritaet); die Luecken vorn liegen bei (11,10), (12,9), (13,8).
+  const linie = felder(wand, [10, 10], [11, 9], [12, 8], [13, 7]);
+  const vorn = schraegen(linie).filter(s => s.art === 'vorn').sort((a, b) => a.gx - b.gx).map(s => s.bild.bild);
+  assert.deepEqual(vorn, ['b51', 'b60', 'b53']);
+  // Vor Zinnen die Wand mit Brustwehr (+14).
+  assert.equal(schraegen(felder(zinne, [10, 10], [11, 9])).find(s => s.art === 'vorn').bild.bild, 'b63');
+  // Platz: die Wand endet 98 unter ihrem Giebel, der auf der Mauerhoehe sitzt.
+  const front = schraegen(felder(wand, [10, 10], [11, 9])).find(s => s.art === 'vorn');
+  assert.deepEqual([front.dx, front.dy], [0, 98 - 99 - 90]);
+  // Auch eine Innenecke wird abgeschraegt - wie im Spiel; nur wenn die
+  // Diagonalen dahinter voll sind, nicht.
+  assert.deepEqual(art(felder(wand, [10, 10], [11, 10], [11, 11])), ['10,11,rechts,b47'], 'Innenecke');
+  const voll = felder(wand, [11, 10], [10, 11], [9, 11], [11, 11], [11, 9]);
+  assert.deepEqual(art(voll).filter(a => a.startsWith('10,10,')), [], 'Diagonalen voll');
+  // Keine neben einer Treppe oder neben einem Turm.
+  const turm = { gx: 11, gy: 11, tiles: 1, entry: { aiv: 30, kacheln: 1 } };
+  assert.deepEqual(art([...felder(wand, [10, 10]), turm]), []);
+  const stufe = { gx: 9, gy: 9, tiles: 1, entry: { kacheln: 1, treppe: { hoehe: 48 } } };
+  assert.deepEqual(art([...felder(wand, [10, 10], [11, 9]), stufe]).filter(a => a.startsWith('10,9')), [], 'Treppe daneben');
+  // Ohne Spielbilder nichts.
+  assert.deepEqual(geometry.mauerSchraegen(felder(wand, [10, 10], [11, 9]), geometry.wallLookup(felder(wand, [10, 10], [11, 9])), lage, null), []);
+});
+
+test('the catalogue maps every bevel to anim_castle and each run axis to its own crenels', () => {
   const quellen = require(path.join(root, 'config', 'iso-wall-sources.json'));
+  for (let i = 45; i <= 75; i++) assert.deepEqual(quellen[`schraege_${i}.png`], { file: 'anim_castle', index: i, sprite: true });
+  // updateGfxLayer: laengs 120-123 / 112-115, quer 124-127 / 116-119.
   assert.equal(quellen['mauer_26_l05_klotz.png'].index, 121);
   assert.equal(quellen['mauer_26_l05_scharte.png'].index, 113);
   assert.equal(quellen['mauer_26_q05_klotz.png'].index, 125);
   assert.equal(quellen['mauer_26_q05_scharte.png'].index, 117);
-  assert.equal(quellen['mauer_25_front_0.png'].flat, true);
-  assert.notEqual(quellen['mauer_25_front_0.png'].pillar, quellen['mauer_25_front_1.png'].pillar, 'wechselnde Steine');
-  assert.equal(fugen.find(f => f.halb === 'oben').flach, true, 'die Frontwand wird auf volle Feldbreite gezogen');
+  const katalog = require(path.join(root, 'assets', 'aiv', 'iso', 'verzeichnis.json'));
+  assert.equal(katalog.mauerSchraegen.bilder[61].bild, 'schraege_61.png');
 });
 
 test('every drawn item carries the key the editor uses for its selection', () => {

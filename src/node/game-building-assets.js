@@ -32,15 +32,19 @@ function gameBuildingAssets(root, cacheRoot) {
     return read(fallback);
   }
   function decode(source) {
+    if (source.sprite === true) {
+      // Plain pictures (anim_castle: the bevels of diagonal walls) keep their own origin.
+      const file = stock(source.file, source.index), entry = file.pictures[source.index];
+      const raw = file.buffer.subarray(file.picturesAt + entry.offset, file.picturesAt + entry.offset + entry.size);
+      return {width: entry.width, height: entry.height, dx: 0, dy: 0, rgba: gm.tgxToRgba(raw, entry.width, entry.height, null)};
+    }
     const top = gm.decodePart(stock(source.file, source.index), source.index, source.palette ?? null);
     if (source.pillar === undefined) return top;
-    const pillar = gm.pillarPicture(stock('tile_walls', source.pillar), source.pillar, source.lift, source.flat === true);
+    const pillar = gm.pillarPicture(stock('tile_walls', source.pillar), source.pillar, source.lift);
     if (!pillar) throw new Error('Unsupported wall pillar texture.');
     const height = top.height + source.lift, rgba = Buffer.alloc(top.width * height * 4);
-    // A flat face covers the front half of its top: it stands on the W-E line.
-    const layers = [[pillar, 0, pillar.dy - top.dy], [top, 0, 0]];
-    if (source.flat === true) layers.reverse();
-    for (const [picture, x, y] of layers) gm.composite(rgba, top.width, height, picture.rgba, picture.width, picture.height, x, y);
+    gm.composite(rgba, top.width, height, pillar.rgba, pillar.width, pillar.height, 0, pillar.dy - top.dy);
+    gm.composite(rgba, top.width, height, top.rgba, top.width, top.height, 0, 0);
     return {...top, height, rgba};
   }
   function visit(value) {

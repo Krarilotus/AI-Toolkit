@@ -58,7 +58,7 @@ function gm1(count, pillar=false, color=0x7c00) {
 }
 test('building assets run in a worker, share concurrent loads and invalidate after a texture changes', async t => {
   const {root,write}=fixture(t), counts=new Map();
-  for(const s of [...sources,...walls,{file:'tile_sea8',index:332},{file:'killing_pits',index:0},{file:'pitch_ditches',index:3},...walls.map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
+  for(const s of [...sources,...walls,{file:'tile_sea8',index:332},{file:'killing_pits',index:0},{file:'pitch_ditches',index:3},...walls.filter(s=>s.pillar!==undefined).map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
   for(const [name,count] of counts)write(`gm/${name}.gm1`,gm1(count,name==='tile_walls'));
   const cache=path.join(root,'cache');
   const first=loadGameBuildingAssets(root,cache);

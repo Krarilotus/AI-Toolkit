@@ -111,17 +111,15 @@ function upperTilePicture(entry, raw) {
 // Crusader BlitMapImageWithVerticalClip (0x453b00): each pair of pixels
 // follows the diamond's lower edge, at y offsets 0..7..0. GM1 type 5
 // stores straight rows; they are not a rectangular screen-space bitmap.
-// flat: one wall face seen straight on - the bevel in front of a diagonal
-// wall. No V skew, and only the sunlit left half of the texture, repeated.
-function pillarPicture(file, index, lift, flat = false) {
+function pillarPicture(file, index, lift) {
   const entry = file.pictures[index];
   const rows = (entry?.height || 0) - 7;
   if (!entry || file.buffer.readUInt32LE(20) !== 5 || entry.width !== 30 || rows < 1 || entry.size < rows * 60) return null;
   const height = lift + 7, rgba = Buffer.alloc(30 * height * 4);
   const raw = file.buffer.subarray(file.picturesAt + entry.offset, file.picturesAt + entry.offset + entry.size);
   for (let y = 0; y < lift; y++) for (let x = 0; x < 30; x++) {
-    const rgb = colourOf(raw.readUInt16LE(((y % rows) * 30 + (flat ? x % 15 : x)) * 2));
-    const skew = flat ? 0 : Math.min(x >> 1, (29 - x) >> 1);
+    const rgb = colourOf(raw.readUInt16LE(((y % rows) * 30 + x) * 2));
+    const skew = Math.min(x >> 1, (29 - x) >> 1);
     const at = ((y + skew) * 30 + x) * 4;
     rgba[at] = rgb[0]; rgba[at+1] = rgb[1]; rgba[at+2] = rgb[2]; rgba[at+3] = 255;
   }

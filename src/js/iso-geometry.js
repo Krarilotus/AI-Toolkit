@@ -247,10 +247,9 @@
   //  - Ein Ende, eine T-Kreuzung, alles ausser Reihe und Ecke ist der hohe
   //    Endklotz (132), eine Ecke eines der vier Eckstuecke (128-131).
   //  - Schraeg und auf dem Schirm waagrecht (Nachbar bei x+1,y-1): Zinnen von
-  //    vorn gesehen (303-310, Nummer 303 + (y & 7)), so wechseln sie Feld fuer
-  //    Feld hoch und niedrig. (Die Karten zeigen bei ungeradem x + y auch
-  //    Linien nur mit Wehrgang; welche Bedingung das Spiel dafuer prueft, steckt
-  //    in Bits, die hier nicht bekannt sind - durchgezogen flach sah falsch aus.)
+  //    vorn gesehen (303-310, Nummer 303 + (y & 7)), wo x + y gerade ist,
+  //    sonst nur der Wehrgang - so in den Karten des Spiels. Die Brustwehr davor
+  //    traegt die Abschraegung (mauerSchraegen).
   //  - Schraeg und senkrecht (x+1,y+1): die Winkelzinnen, 311 bei ungeradem
   //    y, sonst 312.
   //
@@ -277,7 +276,10 @@
     if (zahl === 2 && ((mx && px) || (my && py))) return null;
     if (zahl === 2) return nutzbar(form.ecken && form.ecken[(px ? 'px' : 'mx') + '_' + (py ? 'py' : 'my')]);
     if (zahl > 0) return nutzbar(form.ende);
-    if (zinne(1, -1) || zinne(-1, 1)) return nutzbar(form.schraeg && form.schraeg[achtel(lage.y)]);
+    if (zinne(1, -1) || zinne(-1, 1)) {
+      if ((lage.x + lage.y) % 2 !== 0) return nutzbar(form.flach);
+      return nutzbar(form.schraeg && form.schraeg[achtel(lage.y)]);
+    }
     if (zinne(1, 1) || zinne(-1, -1)) return nutzbar(form.steil && form.steil[achtel(lage.y) % 2]);
     return nutzbar(form.ende);
   }
@@ -358,90 +360,89 @@
     return (gx, gy) => felder.get(gx + ':' + gy) || null;
   }
 
-  // Eine schraege Mauer ist im Spiel ein durchgehendes Band, keine Kette von
-  // Kloetzen, die sich an den Ecken beruehren: in die beiden Luecken zwischen
-  // zwei schraeg benachbarten Mauerfeldern setzt es je eine halbe Mauer
-  // (Ebene 1009 der Karten: ein flaches Mauerstueck auf dem Bodenfeld). Die
-  // halbe Kachel ist die, deren Kanten an die beiden Mauern stossen - das
-  // Band hat so gerade Kanten.
+  // Die Abschraegung schraeger Mauern - so, wie das Spiel sie macht
+  // (Stronghold Crusader 1.41, gelesen am 01.10.2026):
   //
-  // Keine Fuge, wo die andere Luecke selbst dieselbe Mauer traegt (die
-  // Innenecke einer T- oder L-Kreuzung), und keine neben Tuermen - beides so
-  // in den Karten. Eine doppelte Mauer (Zinnen vorn, Wehrgang dahinter) fuellt
-  // ihre Luecken dagegen, denn dort ist das Nachbarfeld eine ANDERE Mauer.
+  // updateGfxLayer (0x00509180), fuer jedes LEERE Feld: eine Maske der acht
+  // Nachbarn mit L_WALL (0x100, ohne 0x2) - Mauern, Zinnen, Treppen,
+  // Torhaeuser. Genau zwei rechtwinklige gerade Nachbarn ergeben eine
+  // Richtung; sind dazu bestimmte Diagonalen voll, oder liegt eine Treppe
+  // (0x800) daneben, keine. Hoehe ist das Minimum der beiden Nachbarn und der
+  // Diagonale zwischen ihnen. Die Richtung ist ein Bild aus anim_castle.gm1:
   //
-  // Zurueck kommen Felder { gx, gy, halb, teil, lift }; halb ist die Ecke der
-  // Kachel, an der die Mauern liegen: 'links', 'rechts', 'oben', 'unten'.
-  function mauerFugen(items, mauerAn) {
-    const fugen = [];
-    if (typeof mauerAn !== 'function') return fugen;
+  //   Mauern bei -x und -y (vorn)    eine ganze Wand mit Giebel, 48-61; liegt
+  //                                  die naechste Abschraegung derselben Linie
+  //                                  links UND rechts: 61 - (y & 7), sonst die
+  //                                  Enden 50-53 bzw. 48/49. Sind beide
+  //                                  Nachbarn Zinnen, die Wand mit Zinnen +14.
+  //   Mauern bei +y und +x (hinten)  nur das Dreieck auf dem Wehrgang, 46
+  //   Mauern bei -x und +y (links)   das halbe Dreieck, 45
+  //   Mauern bei +x und -y (rechts)  das halbe Dreieck, 47
+  //
+  // renderMap (0x004e8cf0) setzt sie am Feld ab: x vom linken Rand der
+  // Kachel, y von ihrer Nordecke am Boden, minus der Hoehe; die Wand endet
+  // 98 Punkte unter ihrem Giebel, das hintere Dreieck sitzt 7 tiefer, das
+  // linke 1 hoeher, das rechte 16 weiter rechts.
+  //
+  // Das Spiel rechnet im Raster der Ansicht (die Bildnummer folgt der
+  // Drehung), diese Ansicht ebenso; Paritaeten zaehlen auf dem Kartenfeld.
+  const SCHRAEG_NACHBARN = [[-1, -1, 0x01], [-1, 0, 0x02], [-1, 1, 0x04], [0, 1, 0x08],
+                            [1, 1, 0x10], [1, 0, 0x20], [1, -1, 0x40], [0, -1, 0x80]];
+  const SCHRAEG_RICHTUNG = {
+    0x28: { art: 'hinten', felder: [[1, 0], [0, 1], [1, 1]], voll: 0x54 },
+    0x0a: { art: 'links', felder: [[-1, 0], [0, 1], [-1, 1]], voll: 0x15 },
+    0x82: { art: 'vorn', felder: [[-1, 0], [0, -1], [-1, -1]], voll: 0x45 },
+    0xa0: { art: 'rechts', felder: [[1, 0], [0, -1], [1, -1]], voll: 0 }
+  };
+
+  function mauerSchraegen(items, mauerAn, lageAn, bilder) {
+    const schraegen = [];
+    if (typeof mauerAn !== 'function' || !bilder) return schraegen;
     const belegt = new Set();
     for (const item of items || []) {
       const n = item.tiles || 1;
       for (let dx = 0; dx < n; dx++) for (let dy = 0; dy < n; dy++) belegt.add((item.gx + dx) + ':' + (item.gy + dy));
     }
-    const gesehen = new Set();
+    const lage = typeof lageAn === 'function' ? lageAn : editorLage;
+    const kandidaten = new Map();
     for (const item of items || []) {
-      const mauer = item.entry && item.entry.mauer;
-      if (!mauer) continue;
-      const teil = mauer.zinne ? nutzbar(mauer.form && mauer.form.flach) : (mauer.rand && mauer.rand.allein.klotz);
-      if (!teil) continue;
-      // Vor einer waagrechten Schraege steht eine flache Wand, keine Kante -
-      // in acht Steinmustern, damit sich nicht jedes Feld gleich wiederholt.
-      const fronten = (mauer.form && mauer.form.fronten) || [];
-      for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-        if (mauerAn(item.gx + dx, item.gy + dy) !== mauer) continue;
-        const luecken = [[item.gx + dx, item.gy], [item.gx, item.gy + dy]];
-        luecken.forEach(([fx, fy], i) => {
-          const [ox, oy] = luecken[1 - i];
-          if (belegt.has(fx + ':' + fy) || mauerAn(fx, fy) || mauerAn(ox, oy) === mauer) return;
-          // Die beiden Mauern liegen bei (fx + sx, fy) und (fx, fy + sy).
-          const sx = (i === 0 ? item.gx : item.gx + dx) - fx;
-          const sy = (i === 0 ? item.gy + dy : item.gy) - fy;
-          const halb = sx < 0 ? (sy > 0 ? 'links' : 'oben') : (sy < 0 ? 'rechts' : 'unten');
-          const schluessel = fx + ':' + fy + ':' + halb;
-          if (gesehen.has(schluessel)) return;
-          gesehen.add(schluessel);
-          const lift = mauer.hoehe;
-          if (halb !== 'oben') { fugen.push({ gx: fx, gy: fy, tiles: 1, halb, teil, lift }); return; }
-          // Vorn: die flache Wand mit dem Wehrgang-Dreieck darueber. Das
-          // Dreieck liegt genau auf den Seitenflaechen der beiden Mauerfelder
-          // und muss nach ihnen gemalt werden - sonst bleiben einzelne Kacheln
-          // mit Kerben dazwischen. Vor ZINNEN gibt es aber keinen Wehrgang:
-          // dort bilden die Frontzinnen die Kante, und die Wand reicht als
-          // Brustwehr bis an ihren Fuss ('brust').
-          const front = nutzbar(fronten[achtel(fx)]);
-          fugen.push({ gx: fx, gy: fy, tiles: 1, halb: front && mauer.zinne ? 'brust' : 'oben',
-                       teil: front || teil, lift, flach: !!front });
-        });
+      if (!mauerAn(item.gx, item.gy)) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const gx = item.gx + dx, gy = item.gy + dy, schluessel = gx + ':' + gy;
+        if (belegt.has(schluessel) || kandidaten.has(schluessel)) continue;
+        let maske = 0, treppe = false;
+        for (const [nx, ny, bit] of SCHRAEG_NACHBARN) {
+          const nachbar = mauerAn(gx + nx, gy + ny);
+          if (!nachbar) continue;
+          maske |= bit;
+          if (nachbar.treppe && nachbar.hoehe > 0) treppe = true;
+        }
+        const richtung = SCHRAEG_RICHTUNG[maske & 0xaa];
+        if (!richtung || treppe || (richtung.voll && (maske & richtung.voll) === richtung.voll)) continue;
+        const [a, b, c] = richtung.felder.map(([fx, fy]) => mauerAn(gx + fx, gy + fy));
+        const hoehe = Math.min(a.hoehe, b.hoehe, c ? c.hoehe : b.hoehe);
+        if (!(hoehe > 0) || !Number.isFinite(hoehe)) continue;
+        kandidaten.set(schluessel, { gx, gy, art: richtung.art, hoehe, zinnen: !!(a.zinne && b.zinne) });
       }
     }
-    return fugen;
-  }
-
-  // Der Ausschnitt eines Mauerbildes, der die halbe Kachel zeigt, in
-  // Bildpunkten [x, y, breite, hoehe]. Links/rechts teilt die senkrechte
-  // Mitte. Die obere Haelfte endet am Boden auf Hoehe der Kachelmitte, die
-  // untere beginnt oben auf der Mauer auf Hoehe der Mitte - lift darueber.
-  // 'brust' ist die obere ohne das Wehrgang-Dreieck, nur die Wand - die
-  // Zeichnung zieht sie um eine halbe Kachel hoeher (BRUST).
-  const BRUST = HALF_H;
-
-  function fugenAusschnitt(teil, halb, lift) {
-    const b = teil.breite, h = teil.hoehe, mitte = Math.round(b / 2), boden = h - HALF_H;
-    switch (halb) {
-      case 'links': return [0, 0, mitte, h];
-      case 'rechts': return [mitte, 0, b - mitte, h];
-      case 'oben': return [0, 0, b, boden];
-      case 'brust': {
-        const oben = Math.max(0, boden - lift);
-        return [0, oben, b, boden - oben];
+    const vorn = (gx, gy) => kandidaten.get(gx + ':' + gy)?.art === 'vorn';
+    for (const s of kandidaten.values()) {
+      let nummer = { hinten: 46, links: 45, rechts: 47 }[s.art];
+      let dx = s.art === 'rechts' ? 16 : 0;
+      let dy = s.art === 'hinten' ? 7 : s.art === 'links' ? -1 : 0;
+      if (s.art === 'vorn') {
+        const { x, y } = lage(s.gx, s.gy);
+        const p = (x ^ y) & 1;
+        const links = vorn(s.gx - 1, s.gy + 1), rechts = vorn(s.gx + 1, s.gy - 1);
+        nummer = links && rechts ? 61 - achtel(y) : links ? 52 + p : rechts ? 50 + p : 48 + p;
+        if (s.zinnen) nummer += 14;
       }
-      default: {
-        const oben = Math.max(0, boden - lift);
-        return [0, oben, b, h - oben];
-      }
+      const bild = nutzbar(bilder[nummer]);
+      if (!bild) continue;
+      if (s.art === 'vorn') dy = 98 - bild.hoehe;
+      schraegen.push({ gx: s.gx, gy: s.gy, tiles: 1, art: s.art, bild, dx, dy: dy - s.hoehe });
     }
+    return schraegen;
   }
 
   // Wie hoch ein Feld ist und was darauf steht - fuer die Treppenregel oben.
@@ -1015,7 +1016,7 @@
            gridFromOffset, offsetFromGrid, isoPoint,
            tileFromPoint, editorTileFromPoint,
            depth, byDepth, renderOrder, spriteRect, groundTextureScale, variantFor, wallLookup, hoehenLookup,
-           mauerFugen, fugenAusschnitt, BRUST, anlehnFelder, anlehnRichtung,
+           mauerSchraegen, anlehnFelder, anlehnRichtung,
            collectItems, collectPlates, troopAnchors, attachDrawbridges, buildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
            mapTileForGrid, mapTileForView, viewTileForMap,
