@@ -484,11 +484,13 @@ function cactusPicture(type, rng) {
 }
 
 // The native tree updaters select picture 148 for timber trees in Space
-// (0x004F260A), hide shrubs/apple trees, and retain cactus pictures.
+// (0x004F260A), hide shrubs, and retain cactus pictures. The editor keeps
+// orchard positions visible with the original apple stump (picture 101).
 function treeViewPicture(tree, flat = false) {
   if (flat) {
     if (tree.type >= 1 && tree.type <= 4) return 148;
-    if ((tree.type >= 5 && tree.type <= 10) || tree.type === 15) return 0;
+    if (tree.type === 15) return 101;
+    if (tree.type >= 5 && tree.type <= 10) return 0;
   }
   return tree.picture;
 }
@@ -986,7 +988,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, ['flat-view-6', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
+    return cachedAtlas(cacheRoot, ['flat-view-7', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }

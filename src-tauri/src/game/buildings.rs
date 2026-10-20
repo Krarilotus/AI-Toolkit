@@ -128,7 +128,7 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
     let catalogue_bytes = read(&resource_root.join("assets/aiv/iso/verzeichnis.json"))?;
     let parts_bytes = read(&resource_root.join("config/iso-source-parts.json"))?;
     let walls_bytes = read(&resource_root.join("config/iso-wall-sources.json"))?;
-    let mut identity = b"native-building-assets-4".to_vec();
+    let mut identity = b"native-building-assets-5".to_vec();
     identity.extend(sources.graphics.revision.as_bytes());
     identity.extend(&catalogue_bytes);
     identity.extend(&parts_bytes);
@@ -212,14 +212,24 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
                 if let Some(index) = object.get("nativePit").and_then(Value::as_u64) {
                     source = json!({"file":"killing_pits","index":index});
                 }
+                let apple_stump = filename
+                    .strip_prefix("native-apple-stump:")
+                    .and_then(|v| v.parse::<usize>().ok());
+                if let Some(palette) = apple_stump {
+                    source = json!({"file":"tree_apple","index":100,"palette":palette});
+                }
                 if matches!(
                     source["file"].as_str(),
                     Some("tile_farmland" | "tree_apple")
                 ) {
                     object.insert("flatField".into(), json!(true));
                 }
-                if source["file"] == "tree_apple" {
-                    object.insert("flatHidden".into(), json!(true));
+                if source["file"] == "tree_apple" && apple_stump.is_none() {
+                    let palette = source["palette"].as_u64().unwrap_or(0);
+                    object.insert(
+                        "flatSprite".into(),
+                        json!({"bild":format!("native-apple-stump:{palette}")}),
+                    );
                 }
                 if source["file"] == "tile_land3" {
                     let index = if matches!(source["index"].as_u64(), Some(134 | 136)) {

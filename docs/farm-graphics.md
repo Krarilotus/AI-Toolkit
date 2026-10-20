@@ -27,7 +27,10 @@ The first four dairy records are cow destinations, not fence graphics.
 the result of `getRubbleGraphicStageForDamageLevel` (`0x004FA460`). Wheat and
 hops have separate growth-state tile selectors. Apple creation calls
 `placeAppleTree` (`0x004F3560`); its initial frame comes from `Tree_1_A`, using
-the original `tree_apple.gm1` origin and palette.
+the original `tree_apple.gm1` origin and palette. `placeApplefarm` reserves a
+10x10 footprint, as does the dairy farm. The editor constants, native AIV
+templates, plan skin and all four component layouts use that boundary; canopy
+pixels may extend beyond it.
 
 The AIV does not contain the world's random layer, crop age, cow positions or
 existing per-player farm layout counters. These are **initial-state previews**:
@@ -39,8 +42,11 @@ Space retains the complete farmland parts, including the camera-specific dairy
 fence corners. Field cells have no BuildingLayer ID, so the native flat building
 substitution does not replace or crop them (`renderMap`, `0x004E98C7` and
 `0x004E9C23`). Cropping their last sixteen rows loses their joins and native
-origins. Orchard objects follow the apple-tree flat rule and disappear instead
-of leaving a strip of canopy (`0x004F26AB`).
+origins. Space shows each orchard position with the original apple stump
+(`tree_apple.gm1`, zero-based picture 100), retaining its full pixels, palette
+and origin. This is an editor visibility choice: the game apple-tree updater
+sets its animation frame to zero in flat mode. Normal view retains the complete
+tree; Space does not crop a strip from its canopy.
 
 ## Drawbridges
 

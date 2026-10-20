@@ -129,12 +129,12 @@ test('cactus picture selection clamps each variety and rejects non-cactus types'
   assert.equal(internals.cactusPicture(2, 3), 0, 'ein Baum ist kein Kaktus - da wird nichts geraten');
 });
 
-test('Space selects timber stumps, hides shrubs and retains cactus pictures',()=>{
+test('Space selects timber and orchard stumps, hides shrubs and retains cactus pictures',()=>{
  const {treeViewPicture}=require('../src/node/game-map').internals;
  for(let type=0;type<20;type++) {
   const tree={type,picture:12,originX:58,originY:150,palette:3};
   assert.equal(treeViewPicture(tree),12,'normal view retains the saved frame');
-  const expected=type>=1&&type<=4?148:(type>=5&&type<=10)||type===15?0:12;
+  const expected=type>=1&&type<=4?148:type===15?101:type>=5&&type<=10?0:12;
   assert.equal(treeViewPicture(tree,true),expected);
   assert.deepEqual(tree,{type,picture:12,originX:58,originY:150,palette:3},'view selection does not alter map data');
  }

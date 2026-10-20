@@ -58,8 +58,14 @@ function gm1(count, pillar=false, color=0x7c00) {
 }
 test('building assets run in a worker, share concurrent loads and invalidate after a texture changes', async t => {
   const {root,write}=fixture(t), counts=new Map();
-  for(const s of [...sources,...walls,{file:'tile_flatties',index:45},{file:'tile_sea8',index:332},{file:'killing_pits',index:15},{file:'pitch_ditches',index:3},...walls.filter(s=>s.pillar!==undefined).map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
+  for(const s of [...sources,...walls,{file:'tree_apple',index:100},{file:'tile_flatties',index:45},{file:'tile_sea8',index:332},{file:'killing_pits',index:15},{file:'pitch_ditches',index:3},...walls.filter(s=>s.pillar!==undefined).map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
   for(const [name,count] of counts)write(`gm/${name}.gm1`,gm1(count,name==='tile_walls'));
+  const apple=fs.readFileSync(path.join(root,'gm/tree_apple.gm1'));
+  for(let i=0;i<256;i++)apple.writeUInt16LE(0x7c00,88+2*512+i*2);
+  apple.writeUInt16LE(0x03e0,88+2*512+2*2);
+  // Distinguish zero-based stump picture 100 from the normal tree picture 0.
+  apple.set([0,2,0x80],5208+counts.get('tree_apple')*24+100*512);
+  write('gm/tree_apple.gm1',apple);
   const cache=path.join(root,'cache');
   const first=loadGameBuildingAssets(root,cache);
   assert.equal(loadGameBuildingAssets(root,cache),first);
@@ -76,7 +82,11 @@ test('building assets run in a worker, share concurrent loads and invalidate aft
   assert.deepEqual(pit.pitVariants.map(p=>p.nativePit),[8,9,10,11,12,13,14,15]);
   assert.ok(pit.pitVariants.every(p=>p.bild===part.bild&&p.sx!=null&&p.sy!=null));
   const orchard=result.gegenstaende[72].cameraPartsLayouts.flat(2);
-  assert.ok(orchard.filter(p=>p.flatField).every(p=>p.flatHidden===true),'orchard trees are hidden only in Space');
+  const orchardTrees=orchard.filter(p=>p.flatField);
+  assert.equal(orchardTrees.length,32,'all eight trees survive in each camera');
+  assert.ok(orchardTrees.every(p=>p.flatSprite?.bild===part.bild),'orchard stumps are decoded into the native atlas');
+  assert.deepEqual(pixelAtPart(orchardTrees[0].flatSprite),[0,255,0,255]);
+  assert.deepEqual(pixelAtPart(orchardTrees[0]),[255,0,0,255],'normal orchard keeps its original frame');
   const dairy=result.gegenstaende[73].cameraPartsLayouts.flat(2);
   assert.ok(dairy.filter(p=>p.flatField).every(p=>!p.flatHidden),'native fence tiles remain visible');
   const again=await loadGameBuildingAssets(root,cache);
