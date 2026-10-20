@@ -33,8 +33,20 @@ High and low crenellations use the complete native flat tiles 36–39, including
 their upper artwork, rather than a sixteen-pixel crop of the normal wall sprite
 (`renderMap` at `0x004E99AD` / `0x004EBCC6`). Their variation uses RandomLayer.
 Each hut gets one centre symbol. Moats retain their native water/edge artwork.
+Campgrounds, training grounds and the oil-smelter campfire use their linked
+native building types (51, 53, 55–59). Those negative texture groups retain
+their native ground artwork; they are not stockpile floors. Farm fields and
+dairy fences retain their complete native parts and camera-specific corner
+artwork. Orchard trees are hidden in Space, following the apple-tree updater,
+instead of leaving a sixteen-pixel slice of their canopy.
 The saved map has its own flat atlas, including native flat rock tiles and
-preplaced building floors. Timber trees retain their native stump (picture 148)
+preplaced building floors. Flat building types come from BuildingLayer (1012)
+and the building records (1013, 812-byte stride, type at +210), matching
+`renderMap` at `0x004E98C7`. BuildingWasLayer (1049) is only a compatibility
+fallback when these records are missing: it can omit keep doors and scenario
+decorations, and store the parent type on attached grounds. Surviving cells of
+partial preplaced buildings resolve through their building ID individually.
+Timber trees retain their native stump (picture 148)
 with the saved species, palette and origin; shrubs and apple trees are hidden,
 and cacti retain their native pictures. These are the game's tree-updater rules
 at `0x004F260A`, `0x004F26AB` and `0x004F28BC`. Flat tile substitutions happen

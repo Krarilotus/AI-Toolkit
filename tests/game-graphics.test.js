@@ -75,6 +75,10 @@ test('building assets run in a worker, share concurrent loads and invalidate aft
   assert.equal(pit.nativePit,8,'the sidebar uses a completed pit');
   assert.deepEqual(pit.pitVariants.map(p=>p.nativePit),[8,9,10,11,12,13,14,15]);
   assert.ok(pit.pitVariants.every(p=>p.bild===part.bild&&p.sx!=null&&p.sy!=null));
+  const orchard=result.gegenstaende[72].cameraPartsLayouts.flat(2);
+  assert.ok(orchard.filter(p=>p.flatField).every(p=>p.flatHidden===true),'orchard trees are hidden only in Space');
+  const dairy=result.gegenstaende[73].cameraPartsLayouts.flat(2);
+  assert.ok(dairy.filter(p=>p.flatField).every(p=>!p.flatHidden),'native fence tiles remain visible');
   const again=await loadGameBuildingAssets(root,cache);
   assert.deepEqual(again,result);
   const moat=Object.values(result.gegenstaende[106].moatVariants);

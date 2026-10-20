@@ -220,6 +220,32 @@ test('Space uses native texture banks and preserves sparse farm parts instead of
   assert.equal(geo.flatBuildingParts({...farm,entry:{flatBuilding:{group:-1}}},tiles,()=>0).length,0);
 });
 
+test('Space retains connected native field/fence artwork and hides orchard trees',()=>{
+ const tiles=Array.from({length:46},(_,i)=>({bild:'flat',sx:i*32}));
+ const fence={gx:3,gy:2,bild:'native-fence',sx:11,sy:13,breite:44,hoehe:32,dx:-15,dy:-16,flatField:true};
+ const tree={gx:8,gy:7,bild:'apple-tree',breite:120,hoehe:100,flatField:true,flatHidden:true};
+ const item={gx:10,gy:20,tiles:11,entry:{flatBuilding:{building:32,group:3},partsLayouts:[[{gx:0,gy:0},fence,tree]]}};
+ const parts=geo.flatBuildingParts(item,tiles,()=>0);
+ assert.deepEqual(parts.find(p=>p.bild==='native-fence'),{...fence,gx:13,gy:22,tiles:1},'source rectangle, upper pixels and offsets survive unchanged');
+ assert.equal(parts.some(p=>p.bild==='apple-tree'),false);
+ assert.equal(parts.filter(p=>p.bild==='flat').length,1,'tree/field cells cannot become extra hut cells');
+});
+
+test('Space uses native camp and training-ground types instead of stockpile textures',()=>{
+ const catalogue=require('../assets/aiv/iso/verzeichnis.json');
+ const expected={61:[55,10],86:[57,58,56],87:[57,58,56],88:[53],89:[59],180:[51]};
+ const context=vm.createContext({state:{catalogue},geo,flatRandomAt:()=>0});
+ vm.runInContext(source.slice(source.indexOf('  function flatSceneParts('),source.indexOf('  function structureLowering(')),context);
+ for(const [id,types] of Object.entries(expected))for(const [index,type] of types.entries()) {
+  const plate=catalogue.gegenstaende[id].platten[index];
+  assert.equal(plate.flatBuilding.building,type);
+  assert.equal(plate.flatBuilding.group,catalogue.flatViewGroups[type]);
+  if(type===10)continue;
+  const item={entry:plate,gx:20,gy:30,tiles:plate.kacheln};
+  assert.deepEqual(JSON.parse(JSON.stringify(context.flatSceneParts(item))),geo.buildingParts(item),'negative native groups preserve original attached-ground parts');
+ }
+});
+
 test('Space placement preview draws the same native parts at the flat datum', () => {
   const draws=[],parts=[{bild:'flat',gx:4,gy:5},{bild:'flat',gx:5,gy:5}];
   const context=vm.createContext({state:{flatView:true},flatSceneParts:()=>parts,
