@@ -1930,7 +1930,7 @@
       const first = JSON.parse(localStorage.getItem('aiv.castleToolShortcuts.v1') || 'null');
       const savedCamera = JSON.parse(localStorage.getItem(CAMERA_STORAGE_KEY) || 'null');
       const cameraKeys = camera.directions.flatMap(direction => savedCamera?.[direction] ? [savedCamera[direction], `shift+${savedCamera[direction]}`] : []);
-      state.toolShortcuts = saved ? validateToolShortcuts(saved)
+      state.toolShortcuts = saved ? validateToolShortcuts(shortcutConfig.upgrade(saved, cameraKeys, false))
         : previous ? shortcutConfig.upgrade(previous, cameraKeys)
         : shortcutConfig.migrate(first);
       // Untouched defaults stay unsaved, so a later change of defaults reaches them.
@@ -3906,11 +3906,6 @@
       if (kachelnLaufen !== request) return;      // inzwischen andere Karte oder neuer Ladevorgang
       if (await window.isoView.setMapTiles(vorrat) === false) return;
       if (kachelnLaufen !== request) return;
-      if (vorrat.nativeError) {
-        kachelnLaufen = null;
-        setStatus(() => tr("castle:map_loaded_rotation_unavailable_value", { nativeError: vorrat.nativeError }));
-        return;
-      }
       setStatus(() => tr("castle:whole_map_value_ready_value_different_tiles", { name: vorrat.name, kacheln: vorrat.kacheln })
                 + (vorrat.fehlend ? ' · ' + tr('feedback:missing_sprites', {count:vorrat.fehlend}) : ''));
     } catch (error) {
@@ -4356,8 +4351,13 @@
     if (action === 'deselect') return clearSelectionAndItem();
     if (action === 'overlays') { overlayMenu.open = !overlayMenu.open; return; }
     if (action === 'rotateLeft' || action === 'rotateRight') {
-      const result = window.isoView?.turnView?.(action === 'rotateLeft' ? -1 : 1);
-      if (result === null) setStatus(() => tr("castle:map_rotation_needs_the_game_generated_camera_layers_wait_for_loading_to_"));
+      window.isoView?.turnView?.(action === 'rotateLeft' ? -1 : 1);
+      return;
+    }
+    if (action === 'flatView' || action === 'peekView') {
+      if (!window.isoView?.isMounted?.()) return;
+      if (action === 'flatView') window.isoView.toggleFlatView();
+      else window.isoView.beginPeek(event);
       return;
     }
     const id = shortcutConfig.actions.find(([key]) => key === action)?.[3];

@@ -80,6 +80,24 @@ test('custom copy/cut/paste keys use the shared clipboard, including detached-vi
   assert.deepEqual(h.calls, ['copy', 'castle-clipboard-changed', 'cut', 'castle-clipboard-changed', 'castle-prepare-paste', 'paste']);
 });
 
+test('Space and held V dispatch only in a mounted 2.5D view and support custom bindings', () => {
+  const h=renderer();
+  const view=h.context.window.isoView;
+  view.isMounted=()=>true;
+  view.toggleFlatView=()=>h.calls.push('flat');
+  view.beginPeek=event=>h.calls.push(event.key);
+  h.key(' '); h.key(' ',{repeat:true}); h.key('v'); h.key('v',{repeat:true});
+  assert.deepEqual(h.calls,['flat','v']);
+  h.key(' ',{target:{tagName:'INPUT'}});
+  view.isMounted=()=>false;
+  h.key(' ');h.key('v');
+  assert.deepEqual(h.calls,['flat','v']);
+  h.context.state.toolShortcuts=shortcuts.validate({...shortcuts.defaults,flatView:['alt+b'],peekView:['alt+j']});
+  view.isMounted=()=>true;
+  h.key(' ');h.key('v');h.key('b',{altKey:true});h.key('j',{altKey:true});
+  assert.deepEqual(h.calls,['flat','v','flat','j']);
+});
+
 test('File/Edit menu labels use custom bindings without changing other workspaces', () => {
   const context = {castleShortcuts: shortcuts, sendToFocused() {}};
   vm.createContext(context);
