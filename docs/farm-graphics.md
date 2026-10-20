@@ -38,11 +38,14 @@ layout order assumes a fresh castle; the running game supplies actual growth,
 animation and randomness. Orchard trees are complete tree sprites, not enlarged
 hut images. Farm parts currently use the default artwork view.
 
-Space retains the complete farmland parts, including the camera-specific dairy
-fence corners. Field cells have no BuildingLayer ID, so the native flat building
-substitution does not replace or crop them (`renderMap`, `0x004E98C7` and
-`0x004E9C23`). Cropping their last sixteen rows loses their joins and native
-origins. Space shows each orchard position with the original apple stump
+Normal view retains the complete farmland parts, including camera-specific dairy
+fence corners. Crop and fence cells belong to the parent farm in BuildingLayer:
+`placeWheatfarm` (`0x00514F30`), `placeHopfarm` (`0x005151C0`) and
+`placeDairyfarm` (`0x005154D0`) assign the ID outside the hut too. Space therefore
+replaces these sparse cells with plain farm ground (flat tile 30) or dairy ground
+(28), following `renderMap` at `0x004E98C7`/`0x004E9918`. It does not retain tall
+posts/crops or fill the entire placement square. The single centre symbol stays
+on the 3x3 hut. Space shows each orchard position with the original apple stump
 (`tree_apple.gm1`, zero-based picture 100), retaining its full pixels, palette
 and origin. This is an editor visibility choice: the game apple-tree updater
 sets its animation frame to zero in flat mode. Normal view retains the complete

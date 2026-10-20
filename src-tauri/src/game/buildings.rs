@@ -128,7 +128,7 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
     let catalogue_bytes = read(&resource_root.join("assets/aiv/iso/verzeichnis.json"))?;
     let parts_bytes = read(&resource_root.join("config/iso-source-parts.json"))?;
     let walls_bytes = read(&resource_root.join("config/iso-wall-sources.json"))?;
-    let mut identity = b"native-building-assets-5".to_vec();
+    let mut identity = b"native-building-assets-6".to_vec();
     identity.extend(sources.graphics.revision.as_bytes());
     identity.extend(&catalogue_bytes);
     identity.extend(&parts_bytes);
@@ -223,6 +223,17 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
                     Some("tile_farmland" | "tree_apple")
                 ) {
                     object.insert("flatField".into(), json!(true));
+                }
+                // Native farm placement assigns crop/fence cells the parent
+                // building ID. Only the hut centre gets a symbol in Space.
+                if source["file"] == "tile_farmland" {
+                    if let Some(index) = source["index"].as_u64().filter(|i| *i <= 60) {
+                        let flat = if index >= 55 { 28 } else { 30 };
+                        object.insert(
+                            "flatSprite".into(),
+                            json!({"bild":format!("native-flat:{flat}")}),
+                        );
+                    }
                 }
                 if source["file"] == "tree_apple" && apple_stump.is_none() {
                     let palette = source["palette"].as_u64().unwrap_or(0);

@@ -656,8 +656,8 @@
     const centreX = Math.floor((Math.min(...hut.map(p=>p.gx))+Math.max(...hut.map(p=>p.gx)))/2);
     const centreY = Math.floor((Math.min(...hut.map(p=>p.gy))+Math.max(...hut.map(p=>p.gy)))/2);
     return positions.flatMap(part => {
-      // Field cells have no BuildingLayer ID: renderMap retains their native
-      // farmland tiles/uppers. Orchard positions use the original apple stump.
+      // Crop/fence cells share their farm's BuildingLayer ID and flat ground.
+      // Keep their sparse layout; orchard positions use the apple stump.
       if (part.flatField) return [{...(part.flatSprite || part),gx:part.gx,gy:part.gy,tiles:1}];
       const random = randomAt(part.gx,part.gy);
       const index = flatTileIndex(item.entry?.flatBuilding, random, (item.frameIndex||0)+(item.offsetIndex||0)+1,

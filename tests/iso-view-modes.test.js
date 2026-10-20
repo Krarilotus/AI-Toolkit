@@ -220,14 +220,17 @@ test('Space uses native texture banks and preserves sparse farm parts instead of
   assert.equal(geo.flatBuildingParts({...farm,entry:{flatBuilding:{group:-1}}},tiles,()=>0).length,0);
 });
 
-test('Space retains connected native field/fence artwork and substitutes orchard stumps',()=>{
+test('Space substitutes farm ground and orchard stumps without changing normal parts',()=>{
  const tiles=Array.from({length:46},(_,i)=>({bild:'flat',sx:i*32}));
- const fence={gx:3,gy:2,bild:'native-fence',sx:11,sy:13,breite:44,hoehe:32,dx:-15,dy:-16,flatField:true};
+ const ground={bild:'dairy-ground',sx:11,sy:13,breite:30,hoehe:16,dx:-15,dy:0};
+ const fence={gx:3,gy:2,bild:'native-fence',sx:31,sy:33,breite:44,hoehe:32,dx:-15,dy:-16,flatField:true,flatSprite:ground};
  const stump={bild:'apple-stump',sx:1,sy:2,breite:185,hoehe:185,dx:-87,dy:-114};
  const tree={gx:8,gy:7,bild:'apple-tree',breite:120,hoehe:100,flatField:true,flatSprite:stump};
  const item={gx:10,gy:20,tiles:10,entry:{flatBuilding:{building:32,group:3},partsLayouts:[[{gx:0,gy:0},fence,tree]]}};
  const parts=geo.flatBuildingParts(item,tiles,()=>0);
- assert.deepEqual(parts.find(p=>p.bild==='native-fence'),{...fence,gx:13,gy:22,tiles:1},'source rectangle, upper pixels and offsets survive unchanged');
+ assert.equal(parts.some(p=>p.bild==='native-fence'),false,'Space replaces the full fence, rather than cropping it');
+ assert.deepEqual(parts.find(p=>p.bild==='dairy-ground'),{...ground,gx:13,gy:22,tiles:1});
+ assert.deepEqual(geo.buildingParts(item).find(p=>p.bild==='native-fence'),{...fence,gx:13,gy:22,tiles:1},'normal source pixels and offsets survive unchanged');
  assert.equal(parts.some(p=>p.bild==='apple-tree'),false);
  assert.deepEqual(parts.find(p=>p.bild==='apple-stump'),{...stump,gx:18,gy:27,tiles:1},'stump uses native pixels/origin at the orchard position');
  assert.equal(parts.filter(p=>p.bild==='flat').length,1,'tree/field cells cannot become extra hut cells');
