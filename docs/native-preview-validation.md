@@ -17,7 +17,15 @@ synthetic graphics fixture includes all 46 flat tiles. Rust formatting is clean.
 The Windows installer test yields during cleanup while the restarted fixture
 executable releases its files, and verifies the temporary cleanup path.
 
-Local validation: **630 JavaScript tests pass; 74 Rust tests pass**, with the
+The renderer follow-up moves i18next preparation into the shared postinstall
+path, rather than depending on a prior native build. Its isolated smoke fixture
+uses English explicitly, supplies offline release responses, awaits atlas loads
+and checks the current saved-map rotation contract. The hidden local smoke run
+passes with no stderr or renderer errors, 3,605 component atlas draws, seven
+reachable worker routes and four native camera directions plus restoration.
+A browser bootstrap regression check covers the prepared translation scripts.
+
+Local validation: **631 JavaScript tests pass; 74 Rust tests pass**, with the
 game-data integration fixture intentionally ignored. Strict locales, desktop
 TypeScript, package policy, workflow YAML and Rust formatting checks pass.
 
