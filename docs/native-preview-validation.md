@@ -3,6 +3,36 @@
 Windows x64, updated 20 October 2026. Native compilation/tests also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Native flat-view artwork: snapshot-native-44a269c2
+
+Snapshot source `44a269ca788ce1145a1f04cab17b11ab0d413654` replaces the
+generated Space footprint diamonds with the selected game's native flat tiles,
+including sparse farm parts, stairs and wall roofs. Placement/move previews
+use the same parts. Terrain and troops share the native 8-pixel flat datum.
+See [mapping provenance and runtime variant limits](iso-view-modes.md).
+
+**115 focused JavaScript checks and four Rust map-reader checks pass.** Node and
+the packaged native app decode all 46 flat tiles with matching dimensions and
+no missing-art warnings. Their 320,000-byte GreekSea RandomLayer rasters match
+byte-for-byte (SHA-256
+`f33487c669d90f06de02656694b039908f073e7ac52dbe9191cae66f084c28d5`).
+
+Packaged visual checks used the unchanged 998-step Gatekeeper/Kratoloros castle
+on GreekSea in normal, V, rotated V, Space and rotated Space modes. Space uses
+textured tile parts; V preserves native artwork proportions. Normal and restored
+viewport PNGs match byte-for-byte (SHA-256
+`b75501dc941d9a954bf299cf5ab8f08a425aee1a3b6c32b777cb04f9e9b4a893`).
+The castle document stayed unchanged, renderer error collection was empty and
+the isolated app exited cleanly. A separate packaged check confirmed V repeat,
+keyup/blur/remount/detach/dock persistence, second-press and button deactivation.
+The live app and profile were not changed.
+
+Portable: **7,430,371 bytes**; Setup: **6,769,743 bytes**. All **123 packaged
+images** retain their original bytes and all nine language catalogues are
+complete. Portable SHA-256:
+`295b20e131b19175009930575f475d0a071ffbf64c730a2be0572015ebe0715a`.
+Full suites and benchmarks were not rerun.
+
 ## Lowered-view height and footprint correction: 70723269
 
 Snapshot source `707232695a52934851afdc4c964319f5abde76cb` replaces the
