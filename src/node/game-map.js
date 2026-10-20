@@ -655,7 +655,7 @@ function buildTileAtlas(gfx, gameRoot, layers = {}) {
       if (entry && gm1.buffer.readUInt32LE(20) === 3) {
         const raw = gm1.buffer.subarray(gm1.picturesAt + entry.offset, gm1.picturesAt + entry.offset + entry.size);
         bild = diamondToRgba(raw.subarray(0, 512));
-        upperPictures[platz] = upperTilePicture(entry, raw);
+        upperPictures[platz] = layers.flat && !['tile_flatties','tile_sea8'].includes(found.name) ? null : upperTilePicture(entry, raw);
       }
     } catch { bild = null; }
     if (!bild) { fehlend += 1; return; }
@@ -824,6 +824,35 @@ function readMapSource(filePath, gameRoot) {
     keeps: findKeeps(readSection(buffer, directory, BUILDING_SECTION)) };
 }
 
+function flatMapGraphics(source, stock) {
+  const rules = require('../../assets/aiv/iso/verzeichnis.json');
+  const layer = number => { try { return readSection(source.buffer,source.directory,number); } catch { return null; } };
+  const types=layer(1049),ids=layer(1012),logic=layer(1003),misc=layer(1007),random=source.random;
+  const result=Buffer.from(source.gfx), flat=stock.files.find(f=>f.name==='tile_flatties');
+  if (!flat || !types || !logic) return result;
+  for(let tile=0;tile<MAP_TILES;tile++) {
+    const flags=logic.readUInt32LE(tile*4),type=types[tile],rng=random?.readUInt16LE(tile*2)||0;
+    let index=null, file=flat;
+    if(type>0 && !(flags&0x40000000)) {
+      const group=rules.flatViewGroups[type];
+      if(group===3) {
+        index=(({3:24,7:26,33:28})[type]??30)+Number(!!((misc?.readUInt16LE(tile*2)||0)&4));
+      }
+      else if(group>=0) index=group*8+((ids?.readUInt16LE(tile*2)||0)&1)*4+(rng&3);
+    } else if(flags&0x100) {
+      if(flags&0x800) {const source=pictureForValue(stock,result.readUInt16LE(tile*2));index=source?.name==='tile_land3'&&[134,136].includes(source.index)?42:40;}
+      else if(flags&0x200) index=36+(rng&3);
+    } else if(flags&0x80) {
+      const picture=pictureForValue(stock,result.readUInt16LE(tile*2));
+      const candidate=stock.files.find(f=>f.name===picture?.name);
+      index=rules.flatRockPictures[rng&3];
+      file=candidate?.count>index?candidate:stock.files.find(f=>f.name==='tile_rocks8');
+    }
+    if(index!==null && file?.count>index) result.writeUInt16LE(file.from+index+1,tile*2);
+  }
+  return result;
+}
+
 function buildMapTiles(source, nativeLayers = null) {
   const { known, root, buffer, directory, gfx, organisms, trees, pillars, keeps } = source;
   let heights = source.heights;
@@ -850,6 +879,7 @@ function buildMapTiles(source, nativeLayers = null) {
     hoehen: heightRaster
   }));
   const vorrat = cameras?.[0] || buildTileAtlas(groundOnly(gfx), root, { stock, organisms, trees, pillars, heights });
+  const flat = buildTileAtlas(flatMapGraphics(source,stock),root,{stock,flat:true});
   const flatRandom = Buffer.alloc(400*400*2);
   if (source.random?.length === MAP_TILES*2) for(let y=0;y<400;y++) {
     const [low,high]=rowRange(y),start=tileIndex(low,y)*2;
@@ -860,6 +890,7 @@ function buildMapTiles(source, nativeLayers = null) {
     path: known.path,
     pictureLayout: stock.layout,
     ...vorrat,
+    flat,
     flatRandom: flatRandom.toString('base64'),
     ...(cameras ? { cameras, nativeRenderer: true } : {}),
     // Hoehen in derselben Zaehlung wie die Plaetze: volles 400x400-Raster.
@@ -908,7 +939,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, ['flat-view-1', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
+    return cachedAtlas(cacheRoot, ['flat-view-2', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }
@@ -920,7 +951,7 @@ module.exports = {
   readMapTiles,
   readNativeMapTiles,
   // fuer die Tests und fuer Werkzeuge, die eine Karte ohne Electron lesen
-  internals: { readMapSource, buildMapTiles, resolveNativeMapTiles, replaceMapKeeps, pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
+  internals: { readMapSource, buildMapTiles, flatMapGraphics, resolveNativeMapTiles, replaceMapKeeps, pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
                readPictureStock, pictureForValue, choosePictureStock, pictureStock, readGm1, tgxToRgba, virtualToFile,
                readTrees, cactusPicture, TREE_STRIDE, FIRST_ROCK,

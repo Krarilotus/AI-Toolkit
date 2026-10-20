@@ -8,8 +8,11 @@ if(!['3bb0a8c1e72331b3a30a5aa93ed94beca0081b476b04c1960e26d5b45387ac5a','0d3d0d0
 const at=virtualToFile(bytes),integer=va=>bytes.readInt32LE(at(va));
 const filename=path.join(__dirname,'../assets/aiv/iso/verzeichnis.json');
 const catalogue=JSON.parse(fs.readFileSync(filename,'utf8'));
+const geometry=require('../src/js/castle-geometry');
 for(const [id,entry] of Object.entries(catalogue.gegenstaende)) {
  const type=Number(id);
+ const height=geometry.structureHeight(type);
+ if(height!==null)entry.structureHeight=height;
  if(type>=28&&type<=358&&type!==200) {
   const branch=bytes[at(0x4097e0)+type-28],target=integer(0x409670+branch*4),offset=at(target);
   if(bytes[offset]===0xb8) {
@@ -20,6 +23,8 @@ for(const [id,entry] of Object.entries(catalogue.gegenstaende)) {
  for(const plate of entry.platten||[])plate.flatBuilding={building:10,group:1};
 }
 catalogue.flatTiles=Array.from({length:46},(_,index)=>({bild:`native-flat:${index}`}));
+catalogue.flatViewGroups=Array.from({length:110},(_,type)=>integer(0xb44220+type*4));
+catalogue.flatRockPictures=[1,2,3,4].map(index=>integer(0xb485e8+index*4)-1);
 catalogue.flatViewSource={exeSHA256:sha,groups:'0x00B44220',selection:'0x004E9845 / 0x004EBBC4'};
 fs.writeFileSync(filename,JSON.stringify(catalogue,null,1)+'\n');
 console.log('Native flat-view metadata and 46 runtime tile references extracted');

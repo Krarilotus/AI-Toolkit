@@ -1768,4 +1768,9 @@ export type TranslationKey =
   | "viewport:esc_cancels"
   | "viewport:is_missing"
   | "viewport:flat_view"
-  | "viewport:lowered_view";
+  | "viewport:lowered_view"
+  | "viewport:refresh_map"
+  | "viewport:refresh_map_hint"
+  | "viewport:refreshing_map"
+  | "viewport:map_refreshed"
+  | "viewport:map_refresh_failed";

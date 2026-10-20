@@ -25,3 +25,8 @@ esc_cancels: ' · Échap pour annuler'
 is_missing: ' est absent'
 flat_view: 'Vue à plat'
 lowered_view: 'Vue abaissée'
+refresh_map: "Actualiser la carte"
+refresh_map_hint: "Recharger la carte sélectionnée depuis le disque : {{path}}"
+refreshing_map: "Actualisation de la carte…"
+map_refreshed: "Carte actualisée : {{name}}"
+map_refresh_failed: "Impossible d’actualiser la carte : {{message}}"

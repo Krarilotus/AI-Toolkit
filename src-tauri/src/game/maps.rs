@@ -520,6 +520,86 @@ fn replace_keeps(gfx: &mut [u8], keeps: &[Value], desert: u16) {
         }
     }
 }
+fn flat_graphics(map: &MapFile, gfx: &[u8], stock: &Stock, rules: &Value) -> Result<Vec<u8>> {
+    let mut result = gfx.to_vec();
+    let Some(flat) = stock.entries.iter().find(|e| e.name == "tile_flatties") else {
+        return Ok(result);
+    };
+    let Some(types) = map.section(1049)?.filter(|v| v.len() == TILES) else {
+        return Ok(result);
+    };
+    let Some(logic) = map.section(1003)?.filter(|v| v.len() == TILES * 4) else {
+        return Ok(result);
+    };
+    let ids = map.section(1012)?.filter(|v| v.len() == TILES * 2);
+    let misc = map.section(1007)?.filter(|v| v.len() == TILES * 2);
+    let random = map.section(1008)?.filter(|v| v.len() == TILES * 2);
+    for tile in 0..TILES {
+        let flags = u32le(&logic, tile * 4)?;
+        let typ = types[tile] as usize;
+        let rng = random
+            .as_ref()
+            .map_or(0, |v| u16le(v, tile * 2).unwrap_or(0)) as usize;
+        let mut index = None;
+        let mut file = flat;
+        if typ > 0 && flags & 0x40000000 == 0 {
+            match rules["flatViewGroups"][typ].as_i64() {
+                Some(3) => {
+                    let first = match typ {
+                        3 => 24,
+                        7 => 26,
+                        33 => 28,
+                        _ => 30,
+                    };
+                    let symbol =
+                        misc.as_ref().map_or(0, |v| u16le(v, tile * 2).unwrap_or(0)) & 4 != 0;
+                    index = Some(first + usize::from(symbol));
+                }
+                Some(group) if group >= 0 => {
+                    let id = ids.as_ref().map_or(0, |v| u16le(v, tile * 2).unwrap_or(0));
+                    index = Some(group as usize * 8 + (id as usize & 1) * 4 + (rng & 3));
+                }
+                _ => {}
+            }
+        } else if flags & 0x100 != 0 {
+            if flags & 0x800 != 0 {
+                let source = stock.picture(u16le(gfx, tile * 2)?);
+                index = Some(if matches!(source, Some(("tile_land3", 134 | 136))) {
+                    42
+                } else {
+                    40
+                });
+            } else if flags & 0x200 != 0 {
+                index = Some(36 + (rng & 3));
+            }
+        } else if flags & 0x80 != 0 {
+            if let Some(picture) = rules["flatRockPictures"][rng & 3].as_u64() {
+                let picture = picture as usize;
+                let source = stock.picture(u16le(gfx, tile * 2)?).map(|p| p.0);
+                if let Some(rock) = stock
+                    .entries
+                    .iter()
+                    .find(|e| Some(e.name.as_str()) == source && e.count > picture)
+                    .or_else(|| {
+                        stock
+                            .entries
+                            .iter()
+                            .find(|e| e.name == "tile_rocks8" && e.count > picture)
+                    })
+                {
+                    file = rock;
+                    index = Some(picture);
+                }
+            }
+        }
+        if let Some(index) = index.filter(|i| *i < file.count) {
+            let value = (file.from + index + 1) as u16;
+            result[tile * 2..tile * 2 + 2].copy_from_slice(&value.to_le_bytes());
+        }
+    }
+    Ok(result)
+}
+
 fn build_atlas(
     gfx: &[u8],
     height: Option<&[u8]>,
@@ -529,6 +609,7 @@ fn build_atlas(
     stock: &Stock,
     files: &mut Files,
     atlas_cache: &Path,
+    flat: bool,
 ) -> Result<Value> {
     let mut slots = HashMap::new();
     let mut values = Vec::new();
@@ -551,7 +632,12 @@ fn build_atlas(
                 return None;
             }
             let (e, raw) = gm.raw(index).ok()?;
-            Some((diamond(raw).ok()?, upper(e, raw).ok()?))
+            let up = if flat && !matches!(name, "tile_flatties" | "tile_sea8") {
+                None
+            } else {
+                upper(e, raw).ok()?
+            };
+            Some((diamond(raw).ok()?, up))
         });
         if let Some((p, up)) = picture {
             composite(
@@ -709,7 +795,7 @@ fn extract_map_tiles(
             map.section(1045).ok().flatten().as_deref() == Some(capture.base_heights.as_slice())
         });
     let identity = format!(
-        "rust-map-atlas-5:{}:{}:{}",
+        "rust-map-atlas-6:{}:{}:{}",
         hash(&map.bytes),
         graphics.revision,
         capture.as_ref().map_or("saved", |c| c.revision.as_str())
@@ -762,6 +848,7 @@ fn extract_map_tiles(
         .find(|e| e.name == "tile_land8" && e.count > 0)
         .ok_or("Game desert terrain graphics missing")?;
     let desert = (desert.from + 1) as u16;
+    let flat_base = gfx.clone();
     let mut value = if let Some(capture) = capture {
         let mut cameras = Vec::new();
         for (mut camera, pillars) in capture.cameras {
@@ -775,6 +862,7 @@ fn extract_map_tiles(
                 &stock,
                 &mut files,
                 &atlas_cache,
+                false,
             )?);
         }
         let mut value = cameras[0].clone();
@@ -792,8 +880,25 @@ fn extract_map_tiles(
             &stock,
             &mut files,
             &atlas_cache,
+            false,
         )?
     };
+    let rules: Value = serde_json::from_slice(&read(
+        &resource_root.join("assets/aiv/iso/verzeichnis.json"),
+    )?)
+    .map_err(|e| e.to_string())?;
+    let flat = flat_graphics(&map, &flat_base, &stock, &rules)?;
+    value["flat"] = build_atlas(
+        &flat,
+        None,
+        None,
+        None,
+        &[],
+        &stock,
+        &mut files,
+        &atlas_cache,
+        true,
+    )?;
     value = with_map_identity(value, &known, path);
     let mut flat_random = vec![0u16; EDGE * EDGE];
     if let Some(random) = map.section(1008)?.filter(|v| v.len() == TILES * 2) {
