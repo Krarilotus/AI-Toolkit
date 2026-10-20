@@ -46,7 +46,9 @@
     panStart: null,
     drawing: false,
     hover: null,
-    controls: null
+    controls: null,
+    flatView: false,
+    peekView: false
   };
 
   // ---------------------------------------------------------- sprites
@@ -172,6 +174,7 @@
 
   // Terrain height in native image pixels, shared by sprites and picking.
   function bodenHoehe(gx, gy) {
+    if (state.flatView || state.peekView) return 0;
     // The full-map atlas takes precedence over paintGround. It already lifts
     // terrain tiles; sprites and picking must use those same heights.
     const atlas = vorrat();
@@ -321,10 +324,10 @@
   function viewRotation() { return handDrehung; }
 
   function turnView(richtung) {
-    if (gameMap() && !state.kachelVorrat?.cameras) {
-      setStatus(() => state.kachelVorrat?.nativeError
-        ? tr("viewport:rotation_unavailable") + state.kachelVorrat.nativeError
-        : tr("viewport:loading_camera_views"));
+    // Saved atlases are indexed in world coordinates too. Native camera
+    // layers improve directional artwork, but are not needed to turn tiles.
+    if (gameMap() && !hasMapTiles()) {
+      setStatus(() => state.mapLoadError || tr("viewport:loading_map"));
       return null;
     }
     const schritt = Number(richtung) < 0 ? -VIERTEL : VIERTEL;
@@ -346,6 +349,45 @@
     handDrehung = (((handDrehung + schritt) % 8) + 8) % 8;
     paint();
     return handDrehung;
+  }
+
+  function setViewMode(mode, enabled) {
+    const key = mode === 'peek' ? 'peekView' : 'flatView';
+    const value = Boolean(enabled);
+    if (state[key] === value) return;
+    // Preserve the world tile at the centre when its displayed height changes.
+    const target = surface();
+    const pivotKey = () => [target?.width,target?.height,state.view.zoom,state.view.panX,
+      state.view.panY,kartenSchluessel(),viewRotation()].join('/');
+    const wasLowered = state.flatView || state.peekView;
+    const focus = target && geo.tileFromPoint(target.width / 2, target.height / 2, state.view, bodenHoehe, false);
+    const before = focus ? bodenHoehe(focus.gx, focus.gy) : 0;
+    const restoreHeight = wasLowered && state.loweredPivot?.key === pivotKey() ? state.loweredPivot.height : null;
+    state[key] = value;
+    const lowered = state.flatView || state.peekView;
+    if (focus && wasLowered !== lowered) {
+      state.view.panY += ((restoreHeight ?? bodenHoehe(focus.gx, focus.gy)) - before) * state.view.zoom;
+      state.loweredPivot = lowered ? {key:pivotKey(),height:before} : null;
+    }
+    state.rotationPivot = null;
+    const button = state.controls?.querySelector('#castleIsoFlatBtn');
+    button?.setAttribute('aria-pressed', String(state.flatView));
+    refresh();
+  }
+
+  function toggleFlatView() { setViewMode('flat', !state.flatView); }
+
+  function releasePeek(event) {
+    if (!state.peekView || (event?.type === 'keyup' && event.code !== state.peekKeyCode && event.key !== state.peekKey)) return;
+    state.peekKeyCode = state.peekKey = null;
+    setViewMode('peek', false);
+  }
+
+  function beginPeek(event) {
+    if (!isMounted()) return;
+    state.peekKeyCode = event?.code;
+    state.peekKey = event?.key;
+    setViewMode('peek', true);
   }
 
   function currentRotation() {
@@ -454,7 +496,6 @@
     releaseMapImages();
     state.kachelVorrat = stock;
     state.mapLoadError = null;
-    if (!cameras) handDrehung = 0;
     refresh();
     return true;
   }
@@ -514,7 +555,8 @@
         if (feld < 0) continue;
         const platz = v.plaetze[feld];
         if (platz === 0xffff) continue;
-        const hebung = (v.hoehen ? v.hoehen[feld] : 0) * state.view.zoom;
+        const lowered = state.flatView || state.peekView;
+        const hebung = (lowered ? 0 : v.hoehen?.[feld] || 0) * state.view.zoom;
         const [px, py] = geo.isoPoint(gx, gy, state.view, 0);
         // The game advances 32 pixels between tiles on a screen row, but
         // a GM1 diamond contains only 30 pixels. Do not stretch those pixels
@@ -524,7 +566,7 @@
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
         const cliffImage = v.upperImages?.[cliff?.page || 0] || v.upperImage;
         state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
-        if (cliff && cliffImage?.complete && cliffImage.naturalWidth) {
+        if (!lowered && cliff && cliffImage?.complete && cliffImage.naturalWidth) {
           target.drawImage(cliffImage, cliff.x, cliff.y, cliff.width, cliff.height,
             tileLeft, py - hebung + cliff.dy * state.view.zoom,
             tileWidth, cliff.height * state.view.zoom);
@@ -535,23 +577,23 @@
         }});
         const upper = v.upperEntries[platz];
         const upperImage = v.upperImages?.[upper?.page || 0] || v.upperImage;
-        if (upper && upperImage?.complete && upperImage.naturalWidth) {
+        if (!state.flatView && upper && upperImage?.complete && upperImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(upperImage, upper.x, upper.y, upper.width, upper.height,
-              tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
-              upper.width * scaleX, upper.height * scaleY);
+              tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY * (state.peekView ? .2 : 1),
+              upper.width * scaleX, upper.height * scaleY * (state.peekView ? .2 : 1));
           }});
         }
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
         const treeImage = v.upperImages?.[treePicture?.page || 0] || v.upperImage;
-        if (treePicture && treeImage?.complete && treeImage.naturalWidth) {
+        if (!state.flatView && treePicture && treeImage?.complete && treeImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(treeImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
-              tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
-              treePicture.width * scaleX, treePicture.height * scaleY);
+              tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY * (state.peekView ? .2 : 1),
+              treePicture.width * scaleX, treePicture.height * scaleY * (state.peekView ? .2 : 1));
           }});
         }
         gemalt += 1;
@@ -598,11 +640,32 @@
   function drawNativePart(ctx, part, img, lift) {
     const [x, y] = geo.isoPoint(part.gx, part.gy, state.view, lift);
     const z = state.view.zoom;
+    const scaleY = state.peekView ? .2 : 1;
     ctx.drawImage(img, part.sx, part.sy, part.breite, part.hoehe,
-      x + part.dx * z, y + part.dy * z, part.breite * z, part.hoehe * z);
+      x + part.dx * z, y + part.dy * z * scaleY, part.breite * z, part.hoehe * z * scaleY);
   }
 
   function drawSprite(ctx, sprite, gx, gy, tiles, mauerAn, hoeheAn, layoutIndex = 0) {
+    if (state.flatView) {
+      // Use an image command so foundations work in both the GPU scene and
+      // the Canvas recorder, which deliberately exposes drawImage only.
+      state.flatImages ||= new Map();
+      let foundation = state.flatImages.get(tiles);
+      if (!foundation) {
+        foundation = document.createElement('canvas');
+        foundation.width = tiles * 32; foundation.height = tiles * 16;
+        const c = foundation.getContext('2d'), w = foundation.width, h = foundation.height;
+        c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w, h / 2);
+        c.lineTo(w / 2, h); c.lineTo(0, h / 2); c.closePath();
+        c.fillStyle = '#ad976e'; c.fill();
+        c.strokeStyle = '#3e3527'; c.lineWidth = 1; c.stroke();
+        state.flatImages.set(tiles, foundation);
+      }
+      const [x,y] = geo.isoPoint(gx,gy,state.view);
+      ctx.drawImage(foundation, x - tiles * 16 * state.view.zoom, y,
+        foundation.width * state.view.zoom, foundation.height * state.view.zoom);
+      return true;
+    }
     const parts = geo.buildingParts({ entry: sprite, gx, gy, layoutIndex });
     if (parts) {
       const loaded = new Map(parts.map(part => [part.bild, image(part.bild)]));
@@ -617,7 +680,12 @@
     if (!img || !img.complete || !img.naturalWidth) return false;
     const hebung = bauHoehe(gx, gy, tiles);
     const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, hebung);
-    if (sprite.mauer) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, wallFootDepth(gx, gy), sprite.mauer.hoehe - 24);
+    if (sprite.mauer && !state.peekView) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, wallFootDepth(gx, gy), sprite.mauer.hoehe - 24);
+    if (state.peekView) {
+      const [, base] = geo.isoPoint(gx + tiles, gy + tiles, state.view);
+      rect.y = base + (rect.y - base) * .2;
+      rect.h *= .2;
+    }
     if (Number.isFinite(variant.sx) && Number.isFinite(variant.sy)) {
       ctx.drawImage(img, variant.sx, variant.sy, variant.breite, variant.hoehe, rect.x, rect.y, rect.w, rect.h);
     } else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
@@ -750,7 +818,7 @@
     }
     if (state.gpuRequested && !state.gpu && !state.gpuFailed) return;
     if (!state.fitted) { state.view = geo.fitView(width, height); state.fitted = true; }
-    const key = [currentRotation(), kartenSchluessel()].join('/');
+    const key = [currentRotation(), kartenSchluessel(), !!state.flatView, !!state.peekView].join('/');
     const cache = state.sceneCache;
     const fireEnabled = fireOverlayVisible();
     if (!cache || state.sceneDirty || cache.fireEnabled !== fireEnabled || cache.key !== key || cache.stock !== state.kachelVorrat) {
@@ -816,7 +884,8 @@
     const toolId=editor?.getTool?.();
     const tool = toolId ? tr('shortcuts:'+toolId,{defaultValue:toolId}) : '—';
     setStatus(() => items.length + tr("viewport:items") + (missing ? ', ' + missing + tr("viewport:without_a_sprite") : '') +
-              tr("viewport:tool") + tool + mapStatus() + tr("viewport:middle_drag_pans_right_click_clears_camera_controls_match_map"));
+              tr("viewport:tool") + tool + (state.flatView ? ' · ' + tr('viewport:flat_view') : state.peekView ? ' · ' + tr('shortcuts:peekView') : '') +
+              mapStatus() + tr("viewport:middle_drag_pans_right_click_clears_camera_controls_match_map"));
   }
 
   let fireLayer=null;
@@ -848,12 +917,12 @@
       if(route.path.length) {
         ctx.beginPath();
         route.path.forEach((tile,i)=>{
-          const p=turn(tile),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(tile.height||0));
+          const p=turn(tile),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(state.flatView ? 0 : (tile.height||0)*(state.peekView ? .2 : 1)));
           if(i)ctx.lineTo(...xy);else ctx.moveTo(...xy);
         });ctx.stroke();
       }
       if(route.entry) {
-        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(route.entry.height||0));
+        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(state.flatView ? 0 : (route.entry.height||0)*(state.peekView ? .2 : 1)));
         ctx.beginPath();ctx.arc(...xy,3.5,0,Math.PI*2);
         ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
         ctx.save();ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();ctx.restore();
@@ -1016,7 +1085,7 @@
       state.troopDocument = doc;
     }
     if (!state.troopMarkers.length) return [];
-    const context = [currentRotation(),state.view.panX,state.view.panY].join('/');
+    const context = [currentRotation(),state.view.panX,state.view.panY,!!state.flatView,!!state.peekView].join('/');
     if (state.unitTerrain !== state.mapSceneryCommands || state.unitContext !== context
         || state.unitCommands.size >= state.unitCommandLimit) {
       state.unitCommands.clear();
@@ -1038,7 +1107,8 @@
       return support(tile.gx,tile.gy);
     });
     const commands = [], cache = state.unitCommands;
-    for (const {marker,gx,gy,elevation} of layout) {
+    for (const {marker,gx,gy,elevation: roofHeight} of layout) {
+      const elevation = state.flatView ? 0 : state.peekView ? roofHeight * .2 : roofHeight;
       const tile = geo.rotateGrid(gx,gy,1,rotation);
       const pose = state.unitAssets.idleSprites?.[marker.type];
       let img;
@@ -1112,7 +1182,9 @@
       ? { ...item, anlehnung: geo.anlehnRichtung(item, anlehnFelder) } : item;
 
     let missing = 0;
-    const buildingSprites = [...plates.map(plate => ({ ...plate, entry: plate.sprite, layer: 1 })), ...items, ...fugen].flatMap(item => {
+    const buildingSprites = [...plates.map(plate => ({ ...plate, entry: plate.sprite, layer: 1 })), ...items,
+      ...(state.flatView || state.peekView ? [] : fugen)].flatMap(item => {
+      if (state.flatView) return [item];
       const parts = geo.buildingParts(mitDach(item));
       if (!parts) return [item];
       // Load all components before switching away from the complete fallback.
@@ -1662,6 +1734,7 @@
       // fires this after the panel has taken over, and clearing the host
       // then would leave the panel blank.
       if (state.host !== host) return;
+      releasePeek();
       parkControls();
       state.host = null;
       state.panning = false;
@@ -1679,6 +1752,8 @@
       editor.handleKey(event);
       refresh(true);
     });
+    win.addEventListener('keyup', releasePeek);
+    win.addEventListener('blur', () => releasePeek());
   }
 
   // ------------------------------------------------------------- hosts
@@ -1710,6 +1785,7 @@
   function closeWindow() {
     const host = state.host;
     if (!host || host.kind !== 'window') return;
+    releasePeek();
     state.host = null;
     try { if (host.win && !host.win.closed) host.win.close(); } catch { /* already gone */ }
   }
@@ -1717,6 +1793,7 @@
   function unmount() {
     const host = state.host;
     if (!host || host.kind !== 'dock') return;
+    releasePeek();
     if (state.observer) state.observer.disconnect();
     state.host = null;
   }
@@ -1804,6 +1881,9 @@
     // view is shown, this file only knows how to be shown.
     bindSurface(document.getElementById('isoDockCanvas'));
     state.controls = document.getElementById('castleIsoControls');
+    state.controls?.querySelector('#castleIsoFlatBtn')?.addEventListener('click', toggleFlatView);
+    window.addEventListener('keyup', releasePeek);
+    window.addEventListener('blur', () => releasePeek());
     window.castleEditor?.addChangeListener?.(editorChanged);
     window.addEventListener('character-population-changed', troopCharacterChanged);
     troopCharacterChanged();
@@ -1814,10 +1894,10 @@
   window.isoView = { init, openWindow, closeWindow, mountDock, unmount, refresh, paint, fit, isMounted, panFromKey,
                      findControl: id => state.controls?.querySelector(`#${id}`),
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo, reloadGameAssets, buildingPreviews,
-                     viewRotation, turnView, currentRotation,
+                     viewRotation, turnView, currentRotation, toggleFlatView, beginPeek, releasePeek,
                      setMapTiles, hasMapTiles, analysisTerrain, setMapLoadError,
                      // Fuer das Pruefgeruest: wo die Kamera steht und welche Marken liegen.
-                     viewInfo: () => ({ ...state.view, rotation: currentRotation(), hand: viewRotation() }),
+                     viewInfo: () => ({ ...state.view, rotation: currentRotation(), hand: viewRotation(), flat: state.flatView, peek: state.peekView }),
                      startPlaceMarks };
 
   window.toolkitI18n?.onChange(() => {

@@ -1690,6 +1690,8 @@ export type TranslationKey =
   | "shortcuts:cameraSpeed"
   | "shortcuts:invalidCamera"
   | "shortcuts:assigned"
+  | "shortcuts:flatView"
+  | "shortcuts:peekView"
   | "updates:checking_updates"
   | "updates:up_to_date"
   | "updates:no_published_builds"
@@ -1756,4 +1758,5 @@ export type TranslationKey =
   | "viewport:no_window_open_one_from_the_toolbar"
   | "viewport:add_as_a_tab_here"
   | "viewport:esc_cancels"
-  | "viewport:is_missing";
+  | "viewport:is_missing"
+  | "viewport:flat_view";
