@@ -3,6 +3,44 @@
 Windows x64, updated 20 October 2026. Native compilation/tests also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Map refresh, anchored V and complete flat scenery: 84fd8a8b
+
+Source `84fd8a8b7b2f303cac49a5ca266dbe9a3dc961ea` adds a compact refresh-arrow
+button next to Game map. Its tooltip identifies the exact file. Reload commits
+metadata and both terrain atlases after image decoding, preserves the selected
+player/start, camera and view modes, and keeps the old map on failure.
+
+V now leaves the map and camera anchored while shortening wall, stair, tower,
+gate and keep columns above their original ground. Space uses a separate saved-map
+flat atlas, including the preplaced dungeon and native flat rock pictures. Each
+woodcutter/hunter/farm hut gets one centre symbol. Farm fields stay flat and moats
+retain their native water/edge artwork.
+
+**636 JavaScript tests and 74 Rust tests pass**, with the game-data integration
+fixture intentionally ignored. Strict locale checks pass for all nine catalogues
+at 1,749 messages each; TypeScript, package policy and Rust formatting pass. The
+isolated renderer smoke passes without stderr or renderer errors.
+
+Packaged native checks used an owned map copy: replacing GreekSea with A Friend
+Indeed at the same path changed the loaded starts, retained player 2, zoom, pan,
+camera direction and Space/V state, and left the castle unchanged. An invalid
+file retained the prior map/tiles, re-enabled refresh, and succeeded after retry.
+The test used a separate game folder/profile and left the live map files untouched.
+
+Gatekeeper/Kratoloros's 998-step castle was checked in normal, V, rotated V,
+Space and rotated Space modes. V's pan/zoom are identical to normal. Normal and
+restored viewport PNGs remain byte-identical (SHA-256
+`b75501dc941d9a954bf299cf5ab8f08a425aee1a3b6c32b777cb04f9e9b4a893`).
+Node and Rust's 320,000-byte flat tile rasters match (SHA-256
+`acbdc2b4fb1ee7289bcfe06327eac0ec8c1c7e0449c3489ae69f062a98f1db39`).
+The native rules flatten all 25 dungeon tiles and 3,447 rocky tiles in GreekSea.
+All six hut/farm types produce exactly one marker. Both isolated native runs
+reported no renderer errors and exited with code 0.
+
+Portable: **7,435,528 bytes**; Setup: **6,772,065 bytes**. All **123 packaged
+images** retain their original bytes. Portable SHA-256:
+`71b1b4a9deef74c0936fec5eb2022867a2645c14671b834c241834af7fa3168a`.
+
 ## CI consolidation and fixture repair
 
 The automatic Native CI workflow now runs shared editor tests, translations,
