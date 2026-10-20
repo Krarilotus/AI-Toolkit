@@ -21,7 +21,10 @@ their upper artwork, rather than a sixteen-pixel crop of the normal wall sprite
 (`renderMap` at `0x004E99AD` / `0x004EBCC6`). Their variation uses RandomLayer.
 Each hut gets one centre symbol. Moats retain their native water/edge artwork.
 The saved map has its own flat atlas, including native flat rock tiles and
-preplaced building floors; tree sprites and raised scenery are omitted.
+preplaced building floors. Timber trees retain their native stump (picture 148)
+with the saved species, palette and origin; shrubs and apple trees are hidden,
+and cacti retain their native pictures. These are the game's tree-updater rules
+at `0x004F260A`, `0x004F26AB` and `0x004F28BC`. Raised scenery is omitted.
 
 The compact Flat view button exposes the state. V toggles lowered structures:
 terrain, cliffs, trees and the camera stay fixed. Supported walls, stairs,

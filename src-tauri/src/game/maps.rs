@@ -450,11 +450,22 @@ fn stock(gfx: &[u8], files: &mut Files, resources: &Path) -> Result<Stock> {
 #[derive(Clone)]
 struct Tree {
     picture: usize,
+    typ: u16,
     gm_id: i32,
     palette: i32,
     x: i32,
     y: i32,
     alive: bool,
+}
+impl Tree {
+    fn view_picture(&self, flat: bool) -> usize {
+        // Native tree updaters: 0x004F260A / 0x004F26AB / 0x004F28BC.
+        match (flat, self.typ) {
+            (true, 1..=4) => 148,
+            (true, 5..=10 | 15) => 0,
+            _ => self.picture,
+        }
+    }
 }
 fn trees(bytes: Option<Vec<u8>>) -> Result<Vec<Tree>> {
     let Some(bytes) = bytes else {
@@ -482,6 +493,7 @@ fn trees(bytes: Option<Vec<u8>>) -> Result<Vec<Tree>> {
             };
             Ok(Tree {
                 picture: picture as usize,
+                typ,
                 gm_id: u16le(b, 4)? as i16 as i32,
                 palette: u32le(b, 8)? as i32,
                 x: u16le(b, 0xc)? as i16 as i32,
@@ -724,28 +736,32 @@ fn build_atlas(
                 if id == 0 || id >= 2000 {
                     continue;
                 }
-                let Some(t) = trees.get(id).filter(|t| t.alive && t.picture > 0) else {
+                let Some(t) = trees.get(id).filter(|t| t.alive) else {
                     continue;
                 };
+                let picture = t.view_picture(flat);
+                if picture == 0 {
+                    continue;
+                }
                 let Some(file) = stock
                     .entries
                     .iter()
-                    .find(|f| f.gm_id == t.gm_id && t.picture <= f.count)
+                    .find(|f| f.gm_id == t.gm_id && picture <= f.count)
                 else {
                     continue;
                 };
-                let key = format!("{}/{}/{}", file.name, t.picture, t.palette);
+                let key = format!("{}/{}/{}", file.name, picture, t.palette);
                 let index = if let Some(index) = tree_indices.get(&key) {
                     *index
                 } else {
                     let gm = files.file(&file.name)?;
-                    let entry = &gm.entries[t.picture - 1];
+                    let entry = &gm.entries[picture - 1];
                     let palette = if (0..10).contains(&t.palette) {
                         t.palette as usize
                     } else {
                         entry.palette
                     };
-                    let picture = gm.sprite(t.picture - 1, Some(palette))?;
+                    let picture = gm.sprite(picture - 1, Some(palette))?;
                     let i = uppers.len();
                     uppers.push(Some(picture));
                     tree_indices.insert(key, i);
@@ -795,7 +811,7 @@ fn extract_map_tiles(
             map.section(1045).ok().flatten().as_deref() == Some(capture.base_heights.as_slice())
         });
     let identity = format!(
-        "rust-map-atlas-6:{}:{}:{}",
+        "rust-map-atlas-7:{}:{}:{}",
         hash(&map.bytes),
         graphics.revision,
         capture.as_ref().map_or("saved", |c| c.revision.as_str())
@@ -892,8 +908,8 @@ fn extract_map_tiles(
         &flat,
         None,
         None,
-        None,
-        &[],
+        organisms.as_deref(),
+        &trees,
         &stock,
         &mut files,
         &atlas_cache,
@@ -927,6 +943,26 @@ fn extract_map_tiles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn flat_trees_use_native_stumps_without_altering_saved_frames() {
+        let mut bytes = vec![0; 20 * 156];
+        for typ in 0..20u16 {
+            let tree = &mut bytes[typ as usize * 156..(typ as usize + 1) * 156];
+            tree[..4].copy_from_slice(&12u32.to_le_bytes());
+            tree[0x46..0x48].copy_from_slice(&typ.to_le_bytes());
+        }
+        let trees = trees(Some(bytes)).unwrap();
+        for tree in &trees {
+            assert_eq!(tree.view_picture(false), 12);
+            let expected = match tree.typ {
+                1..=4 => 148,
+                5..=10 | 15 => 0,
+                _ => 12,
+            };
+            assert_eq!(tree.view_picture(true), expected);
+            assert_eq!(tree.picture, 12);
+        }
+    }
     #[test]
     fn diamond_has_exactly_80400_tiles() {
         let mut seen = vec![false; TILES];
