@@ -154,3 +154,13 @@ test('Space uses native texture banks and preserves sparse farm parts instead of
   assert.equal(parts[4].bild,'field-atlas');
   assert.equal(geo.flatBuildingParts({...farm,entry:{flatBuilding:{group:-1}}},tiles,()=>0).length,0);
 });
+
+test('Space placement preview draws the same native parts at the flat datum', () => {
+  const draws=[],parts=[{bild:'flat',gx:4,gy:5},{bild:'flat',gx:5,gy:5}];
+  const context=vm.createContext({state:{flatView:true},flatSceneParts:()=>parts,
+    image:()=>({complete:true,naturalWidth:30}),bauHoehe:()=>8,
+    drawNativePart:(ctx,part,img,lift)=>draws.push([part,lift])});
+  vm.runInContext(source.slice(source.indexOf('  function drawSprite('),source.indexOf('  function wallFootDepth(')),context);
+  assert.equal(context.drawSprite({}, {},4,5,2),true);
+  assert.deepEqual(draws.map(([part,lift])=>[part.gx,part.gy,lift]),[[4,5,8],[5,5,8]]);
+});
