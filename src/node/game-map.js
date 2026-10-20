@@ -813,13 +813,14 @@ function readMapSource(filePath, gameRoot) {
   if (!gfx || gfx.length !== MAP_TILES * 2) throw new Error('This map carries no terrain layer (section 1001).');
   let heights = null;
   try { heights = readSection(buffer, directory, HEIGHT_SECTION); } catch { heights = null; }
-  let organisms = null, trees = null, pillars = null;
+  let organisms = null, trees = null, pillars = null, random = null;
+  try { random = readSection(buffer, directory, 1008); } catch { random = null; }
   try { pillars = readSection(buffer, directory, PILLAR_SECTION); } catch { pillars = null; }
   try {
     organisms = readSection(buffer, directory, ORGANISM_SECTION);
     trees = readTrees(readSection(buffer, directory, TREES_SECTION));
   } catch { organisms = null; trees = null; }
-  return { known, root, buffer, directory, gfx, heights, organisms, trees, pillars,
+  return { known, root, buffer, directory, gfx, heights, organisms, trees, pillars, random,
     keeps: findKeeps(readSection(buffer, directory, BUILDING_SECTION)) };
 }
 
@@ -849,11 +850,17 @@ function buildMapTiles(source, nativeLayers = null) {
     hoehen: heightRaster
   }));
   const vorrat = cameras?.[0] || buildTileAtlas(groundOnly(gfx), root, { stock, organisms, trees, pillars, heights });
+  const flatRandom = Buffer.alloc(400*400*2);
+  if (source.random?.length === MAP_TILES*2) for(let y=0;y<400;y++) {
+    const [low,high]=rowRange(y),start=tileIndex(low,y)*2;
+    source.random.copy(flatRandom,(y*400+low)*2,start,start+(high-low+1)*2);
+  }
   return {
     name: known.name,
     path: known.path,
     pictureLayout: stock.layout,
     ...vorrat,
+    flatRandom: flatRandom.toString('base64'),
     ...(cameras ? { cameras, nativeRenderer: true } : {}),
     // Hoehen in derselben Zaehlung wie die Plaetze: volles 400x400-Raster.
     hoehen: heightRaster
@@ -901,7 +908,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, [parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
+    return cachedAtlas(cacheRoot, ['flat-view-1', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }

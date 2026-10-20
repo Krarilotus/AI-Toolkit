@@ -21,10 +21,10 @@
   const HALF_H = 8;
 
   // Crusader updateShowHiLayerOrResetChangedLayer (0x00501A20), lowered target:
-  // every native height h tends to (h >> 2) + 1. Flat view tends to zero.
+  // every native height h tends to (h >> 2) + 1. Flat view uses an 8px datum.
   // Only elevations change; the 32x16 footprint and sprite pixels do not.
   function viewHeight(height, flat = false, lowered = false) {
-    if (flat) return 0;
+    if (flat) return 8;
     const value = Math.max(0, Number(height) || 0);
     return lowered ? Math.floor(value / 4) + 1 : value;
   }
@@ -636,6 +636,32 @@
     return parts.map(part => ({ ...part, gx: item.gx + part.gx, gy: item.gy + part.gy, tiles: 1 }));
   }
 
+  // renderMap 0x4e98c7..0x4e9956: native type -> texture group, instance
+  // parity -> one of two banks, RandomLayer low bits -> tile variation.
+  function flatTileIndex(building, random, instance = 0) {
+    if (!building || building.group < 0) return null;
+    if (building.group === 3) {
+      const first = ({3:24,7:26,33:28})[building.building] ?? 30;
+      return first + ((random >> 2) & 1);
+    }
+    return building.group * 8 + (instance & 1) * 4 + (random & 3);
+  }
+
+  function flatBuildingParts(item, tiles, randomAt) {
+    const native = buildingParts(item);
+    const positions = native || Array.from({length:item.tiles*item.tiles},(_,i)=>({
+      gx:item.gx+i%item.tiles,gy:item.gy+Math.floor(i/item.tiles)
+    }));
+    return positions.flatMap(part => {
+      if (part.flatField) return [{...part,tiles:1}];
+      const random = randomAt(part.gx,part.gy);
+      const index = flatTileIndex(item.entry?.flatBuilding, random, (item.frameIndex||0)+(item.offsetIndex||0)+1);
+      const sprite = tiles?.[index];
+      if (!sprite?.bild || index === null) return [];
+      return [{...sprite,gx:part.gx,gy:part.gy,tiles:1}];
+    });
+  }
+
   // updateGfxLayer 0x509180, TerrainDefinedData+0x1d64 (7 byte pairs).
   // Coordinates are already camera-rotated. Use the unshadowed bank (light=0).
   const MOAT_DIRECTIONS = [[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]];
@@ -1026,7 +1052,7 @@
            tileFromPoint, editorTileFromPoint,
            depth, byDepth, renderOrder, spriteRect, groundTextureScale, viewHeight, variantFor, wallLookup, hoehenLookup,
            mauerSchraegen, anlehnFelder, anlehnRichtung,
-           collectItems, collectPlates, troopAnchors, attachDrawbridges, buildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
+           collectItems, collectPlates, troopAnchors, attachDrawbridges, buildingParts, flatTileIndex, flatBuildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
            mapTileForGrid, mapTileForView, viewTileForMap,
            mapTileHeight, keepAnchor, previewPointForMapTile, centreKeep,

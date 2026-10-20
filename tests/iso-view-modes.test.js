@@ -35,7 +35,7 @@ test('Space toggles flat view once and preserves camera position through an elev
   const original = {...state.view};
   context.toggleFlatView();
   assert.equal(state.flatView,true);
-  assert.equal(state.view.panY,original.panY-48);
+  assert.equal(state.view.panY,original.panY-40);
   context.setViewMode('flat',true);
   assert.equal(refreshes.length,1,'idempotent mode assignment does not rebuild the scene');
   context.toggleFlatView();
@@ -69,7 +69,7 @@ test('flat and peek heights share the same tile picking and keep the real height
   for(const mode of ['flatView','peekView']) {
     assert.equal(context.bodenHoehe(43,43),64);
     state[mode]=true;
-    const expected=mode==='peekView'?17:0;
+    const expected=mode==='peekView'?17:8;
     assert.equal(context.bodenHoehe(43,43),expected);
     const point=geo.isoPoint(43.5,43.5,state.view,expected);
     assert.deepEqual(geo.tileFromPoint(...point,state.view,context.bodenHoehe),{gx:43,gy:43});
@@ -81,13 +81,13 @@ test('flat and peek heights share the same tile picking and keep the real height
 test('lowered view uses the native height table, independently from flat view', () => {
   for(let height=0;height<256;height++) {
     assert.equal(geo.viewHeight(height,false,true),(height>>2)+1);
-    assert.equal(geo.viewHeight(height,true,true),0);
+    assert.equal(geo.viewHeight(height,true,true),8);
     assert.equal(geo.viewHeight(height),height);
   }
   const {state,context}=view(),original={...state.view};
   context.togglePeekView();
   context.toggleFlatView();
-  assert.equal(state.view.panY,original.panY-48);
+  assert.equal(state.view.panY,original.panY-40);
   context.toggleFlatView();
   assert.equal(state.view.panY,original.panY-35);
   context.togglePeekView();
@@ -137,17 +137,20 @@ test('V crops a wall pillar while preserving the full sixteen-pixel roof diamond
   assert.deepEqual(draws[0].slice(1),[4,6,30,38,-15,-39,30,38]);
 });
 
-test('flat foundations emit image commands for the shared Canvas/GPU recorder and reuse their bitmap', () => {
-  const state={flatView:true,view:{zoom:1,panX:0,panY:0}},draws=[];
-  const context=vm.createContext({state,geo,document:{createElement:()=>({getContext:()=>({
-    beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){},stroke(){}
-  })})}});
-  vm.runInContext(source.slice(source.indexOf('  function drawSprite('),source.indexOf('  function wallFootDepth(')),context);
-  const recorder={drawImage:(...args)=>draws.push(args)};
-  context.drawSprite(recorder,{},43,43,7);
-  context.drawSprite(recorder,{},51,43,7);
-  assert.equal(draws.length,2);
-  assert.equal(draws[0][0],draws[1][0]);
-  assert.equal(draws[0][3],224);
-  assert.equal(draws[0][4],112);
+test('Space uses native texture banks and preserves sparse farm parts instead of a square foundation', () => {
+  const tiles=Array.from({length:46},(_,i)=>({bild:'local-flat-atlas',sx:i*32,sy:0,breite:30,hoehe:16,dx:-15,dy:0}));
+  assert.equal(geo.flatTileIndex({building:41,group:0},3,1),7);
+  assert.equal(geo.flatTileIndex({building:10,group:1},2,0),10);
+  assert.equal(geo.flatTileIndex({building:12,group:2},1,1),21);
+  assert.equal(geo.flatTileIndex({building:3,group:3},4),25);
+  const farm={gx:10,gy:20,tiles:8,entry:{flatBuilding:{building:30,group:3},partsLayouts:[[
+    {gx:0,gy:0},{gx:1,gy:0},{gx:0,gy:1},{gx:1,gy:1},
+    {gx:7,gy:6,bild:'field-atlas',flatField:true,breite:30,hoehe:16}
+  ]]}};
+  const parts=geo.flatBuildingParts(farm,tiles,()=>0);
+  assert.equal(parts.length,5,'four hut cells plus one field, never an 8x8 square');
+  assert.deepEqual(parts.map(p=>[p.gx,p.gy]),[[10,20],[11,20],[10,21],[11,21],[17,26]]);
+  assert.equal(parts[0].bild,'local-flat-atlas');
+  assert.equal(parts[4].bild,'field-atlas');
+  assert.equal(geo.flatBuildingParts({...farm,entry:{flatBuilding:{group:-1}}},tiles,()=>0).length,0);
 });

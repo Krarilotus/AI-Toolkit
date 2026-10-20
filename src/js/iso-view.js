@@ -174,7 +174,7 @@
 
   // Terrain height in native image pixels, shared by sprites and picking.
   function bodenHoehe(gx, gy, native = false) {
-    if (state.flatView && !native) return 0;
+    if (state.flatView && !native) return 8;
     const height = value => native ? value : geo.viewHeight(value, state.flatView, state.peekView);
     // The full-map atlas takes precedence over paintGround. It already lifts
     // terrain tiles; sprites and picking must use those same heights.
@@ -487,7 +487,7 @@
       };
     }
     const cameras = daten.cameras?.length === 4 ? daten.cameras.map(cameraStock) : null;
-    const stock = { ...(cameras?.[0] || cameraStock(daten)), path: daten.path, cameras, nativeError: daten.nativeError };
+    const stock = { ...(cameras?.[0] || cameraStock(daten)), flatRandom:ausBase64(daten.flatRandom,Uint16Array), path: daten.path, cameras, nativeError: daten.nativeError };
     await Promise.all(pending);
     if (request !== mapTilesRequest || selected !== gameMap()) return false;
     releaseMapImages();
@@ -635,6 +635,32 @@
     return bodenHoehe(gx + (tiles || 1) - 1, gy + (tiles || 1) - 1);
   }
 
+  function flatRandomAt(gx, gy) {
+    const keep = currentKeep();
+    const tile = keep && gameMap() ? geo.mapTileForView(gx,gy,keep,viewRotation()) : null;
+    const random = state.kachelVorrat?.flatRandom;
+    if (tile && random?.length) return random[tile.my*KARTE_FELDER+tile.mx] || 0;
+    const world = geo.unrotateGrid(gx,gy,currentRotation());
+    return ((world.gx*13) ^ (world.gy*7)) >>> 0;
+  }
+
+  function flatSceneParts(item, mauerAn, hoeheAn) {
+    const entry = item.entry;
+    if (!entry) return [];
+    if (entry.mauer || entry.treppe) {
+      const variant = geo.variantFor(entry,item.gx,item.gy,mauerAn,hoeheAn,state.lageAn);
+      if (entry.treppe?.hoehe > 0) {
+        const sprite = state.catalogue?.flatTiles?.[variant.flatStair ?? 40];
+        return sprite?.bild ? [{...sprite,gx:item.gx,gy:item.gy,tiles:1}] : [];
+      }
+      const height = entry.mauer?.hoehe || 0;
+      // The native high-wall flat tile is its roof diamond without a pillar.
+      return [{...variant,gx:item.gx,gy:item.gy,tiles:1,breite:30,hoehe:16,dx:-15,dy:0,
+        sy:(variant.sy||0)+Math.max(0,variant.hoehe-height-16)}];
+    }
+    return geo.flatBuildingParts(item,state.catalogue?.flatTiles,flatRandomAt);
+  }
+
   function drawNativePart(ctx, part, img, lift) {
     const [x, y] = geo.isoPoint(part.gx, part.gy, state.view, lift);
     const z = state.view.zoom;
@@ -643,26 +669,8 @@
   }
 
   function drawSprite(ctx, sprite, gx, gy, tiles, mauerAn, hoeheAn, layoutIndex = 0) {
-    if (state.flatView) {
-      // Use an image command so foundations work in both the GPU scene and
-      // the Canvas recorder, which deliberately exposes drawImage only.
-      state.flatImages ||= new Map();
-      let foundation = state.flatImages.get(tiles);
-      if (!foundation) {
-        foundation = document.createElement('canvas');
-        foundation.width = tiles * 32; foundation.height = tiles * 16;
-        const c = foundation.getContext('2d'), w = foundation.width, h = foundation.height;
-        c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w, h / 2);
-        c.lineTo(w / 2, h); c.lineTo(0, h / 2); c.closePath();
-        c.fillStyle = '#ad976e'; c.fill();
-        c.strokeStyle = '#3e3527'; c.lineWidth = 1; c.stroke();
-        state.flatImages.set(tiles, foundation);
-      }
-      const [x,y] = geo.isoPoint(gx,gy,state.view);
-      ctx.drawImage(foundation, x - tiles * 16 * state.view.zoom, y,
-        foundation.width * state.view.zoom, foundation.height * state.view.zoom);
-      return true;
-    }
+    // Native flat parts are emitted by paintScene, one command per real tile.
+    if (state.flatView) return false;
     const parts = geo.buildingParts({ entry: sprite, gx, gy, layoutIndex });
     if (parts) {
       const loaded = new Map(parts.map(part => [part.bild, image(part.bild)]));
@@ -1117,7 +1125,7 @@
     });
     const commands = [], cache = state.unitCommands;
     for (const {marker,gx,gy,elevation: roofHeight} of layout) {
-      const elevation = state.flatView ? 0 : roofHeight;
+      const elevation = state.flatView ? 8 : roofHeight;
       const tile = geo.rotateGrid(gx,gy,1,rotation);
       const pose = state.unitAssets.idleSprites?.[marker.type];
       let img;
@@ -1193,8 +1201,7 @@
     let missing = 0;
     const buildingSprites = [...plates.map(plate => ({ ...plate, entry: plate.sprite, layer: 1 })), ...items,
       ...(state.flatView || state.peekView ? [] : fugen)].flatMap(item => {
-      if (state.flatView) return [item];
-      const parts = geo.buildingParts(mitDach(item));
+      const parts = state.flatView ? flatSceneParts(mitDach(item),mauerAn,hoeheAn) : geo.buildingParts(mitDach(item));
       if (!parts) return [item];
       // Load all components before switching away from the complete fallback.
       const loaded = parts.map(part => image(part.bild));

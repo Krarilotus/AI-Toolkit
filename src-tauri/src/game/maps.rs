@@ -709,7 +709,7 @@ fn extract_map_tiles(
             map.section(1045).ok().flatten().as_deref() == Some(capture.base_heights.as_slice())
         });
     let identity = format!(
-        "rust-map-atlas-4:{}:{}:{}",
+        "rust-map-atlas-5:{}:{}:{}",
         hash(&map.bytes),
         graphics.revision,
         capture.as_ref().map_or("saved", |c| c.revision.as_str())
@@ -795,6 +795,16 @@ fn extract_map_tiles(
         )?
     };
     value = with_map_identity(value, &known, path);
+    let mut flat_random = vec![0u16; EDGE * EDGE];
+    if let Some(random) = map.section(1008)?.filter(|v| v.len() == TILES * 2) {
+        for y in 0..400 {
+            let (a, b) = row_range(y);
+            for x in a..=b {
+                flat_random[(y * 400 + x) as usize] = u16le(&random, tile_index(x, y) * 2)?;
+            }
+        }
+    }
+    value["flatRandom"] = json!(b64(&u16_bytes(&flat_random)));
     value["pictureLayout"] = json!(stock.layout);
     value["assetRevision"] = json!(files.graphics.revision);
     // Saved-map decoding is a complete independent path, never a request to
