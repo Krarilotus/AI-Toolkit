@@ -562,6 +562,8 @@ function pathTerrain(buffer, directory) {
   const heights = readSection(buffer, directory, 1045) || readSection(buffer, directory, HEIGHT_SECTION);
   if (!logic || logic.length !== MAP_TILES*4) return null;
   const blocked = Buffer.alloc(400*400, 1), hardBlocked = Buffer.alloc(400*400,1), ground = Buffer.alloc(400*400), constructionLift = Buffer.alloc(400*400);
+  const buildFlags=Buffer.alloc(400*400*4);
+  for(let i=0;i<400*400;i++)buildFlags.writeUInt32LE(16,i*4);
   for(let y=0;y<400;y++) for(let x=0;x<400;x++) {
     const [left,right]=rowRange(y); if(x<left || x>right) continue;
     const tile=tileIndex(x,y);
@@ -569,10 +571,13 @@ function pathTerrain(buffer, directory) {
     const access=pathTileFlags(flags, organisms?.readUInt16LE(tile*2) || 0);
     blocked[y*400+x]=access.blocked;
     hardBlocked[y*400+x]=access.hardBlocked;
+    // Construction is independent of walking: omit vegetation, animals and
+    // saved structures, but retain water, marsh, rock, resources and borders.
+    buildFlags.writeUInt32LE((flags & 0xe03a00b1) >>> 0,(y*400+x)*4);
     ground[y*400+x]=heights?.[tile] || 0;
     constructionLift[y*400+x]=(flags & 8)?4:0;
   }
-  return {version:4,constructionLift:constructionLift.toString('base64'),fingerprint:nativeRendererInternals.sha(buffer),blocked:blocked.toString('base64'),hardBlocked:hardBlocked.toString('base64'),heights:ground.toString('base64')};
+  return {version:5,buildFlags:buildFlags.toString('base64'),constructionLift:constructionLift.toString('base64'),fingerprint:nativeRendererInternals.sha(buffer),blocked:blocked.toString('base64'),hardBlocked:hardBlocked.toString('base64'),heights:ground.toString('base64')};
 }
 
 function readGameMap(filePath, gameRoot) {

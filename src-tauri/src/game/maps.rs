@@ -267,6 +267,7 @@ impl MapFile {
         let mut hard = blocked.clone();
         let mut ground = vec![0; EDGE * EDGE];
         let mut lift = ground.clone();
+        let mut build_flags = vec![16u32; EDGE * EDGE];
         for y in 0..400 {
             let (a, b) = row_range(y);
             for x in a..=b {
@@ -281,6 +282,9 @@ impl MapFile {
                 blocked[target] =
                     (h || f & (128 | 4096 | 8192 | 131072 | 524288) != 0 || organism != 0) as u8;
                 hard[target] = h as u8;
+                // Permanent construction flags, excluding units, vegetation
+                // and pre-existing structures supplied by the AIV itself.
+                build_flags[target] = f & 0xe03a00b1;
                 ground[target] = heights
                     .as_ref()
                     .and_then(|v| v.get(i))
@@ -290,7 +294,7 @@ impl MapFile {
             }
         }
         Ok(
-            json!({"version":4,"constructionLift":b64(&lift),"fingerprint":hash(&self.bytes),"blocked":b64(&blocked),"hardBlocked":b64(&hard),"heights":b64(&ground)}),
+            json!({"version":5,"buildFlags":b64(&build_flags.iter().flat_map(|v|v.to_le_bytes()).collect::<Vec<_>>()),"constructionLift":b64(&lift),"fingerprint":hash(&self.bytes),"blocked":b64(&blocked),"hardBlocked":b64(&hard),"heights":b64(&ground)}),
         )
     }
 }

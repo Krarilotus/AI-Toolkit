@@ -492,6 +492,69 @@
     return geometry.footprintBounds(footprintRects(type, offset));
   }
 
+  let constructionCache = null;
+  function constructionContext() {
+    const terrain=window.isoView?.analysisTerrain?.();
+    if(!terrain?.buildFlags || !window.castleConstruction)return null;
+    if(!constructionCache || constructionCache.key!==terrain.key || constructionCache.revision!==state.documentRevision || constructionCache.constants!==state.constants) {
+      constructionCache={key:terrain.key,revision:state.documentRevision,constants:state.constants,terrain,positions:new Map(),placements:null};
+    }
+    return constructionCache;
+  }
+
+  function getConstructionWarningAtXY(type,x,y,context=constructionContext()) {
+    if(!context || isUnitType(type))return null;
+    const key=[type,x,y].join(':');
+    if(!context.positions.has(key)) {
+      const rects=footprintRectsAtXY(type,x,y);
+      const warning=window.castleConstruction.evaluate(type,rects,context.terrain,GRID);
+      // Hovering an entire map must not retain unbounded preview history.
+      if(context.positions.size>20000)context.positions.clear();
+      context.positions.set(key,warning ? {type,rects,warning} : null);
+    }
+    return context.positions.get(key);
+  }
+
+  function getConstructionWarnings() {
+    if(state.floorPlan)return [];
+    const context=constructionContext();
+    if(!context)return [];
+    if(!context.placements)context.placements=placementRefs().filter(p=>p.kind!=='unit').flatMap(p=>{
+      const {x,y}=offsetToXY(p.off),warning=getConstructionWarningAtXY(p.type,x,y,context);
+      return warning ? [{...warning,ref:p.ref,fi:p.fi}] : [];
+    });
+    const warnings=context.placements.filter(p=>(!Number.isInteger(state.insertionFrameIndex) || p.fi<=state.insertionFrameIndex)
+      && !(state.gesture==='move' && state.moveStartOffsets?.has(p.ref)));
+    if(state.gesture==='move')for(const [ref,off] of proposedMove() || []) {
+      const {x,y}=offsetToXY(off),warning=getConstructionWarningAtXY(refType(ref),x,y,context);
+      if(warning)warnings.push({...warning,ref});
+    }
+    return warnings;
+  }
+
+  function constructionWarningLabel(warning) {
+    return tr('castle:construction_blocked',{reasons:warning.reasons.map(reason=>tr('castle:construction_'+reason)).join(', ')});
+  }
+
+  function drawConstructionWarnings() {
+    if(state.floorPlan)return;
+    const warnings=getConstructionWarnings();
+    const preview=window.castleEditor?.getPlacementPreview?.();
+    for(const tile of preview?.tiles || []) {
+      const warning=getConstructionWarningAtXY(tile.itemType ?? preview.itemType,tile.x,tile.y);
+      if(warning)warnings.push(warning);
+    }
+    ctx.save();ctx.fillStyle='rgba(255,45,45,.25)';ctx.strokeStyle='#ff4545';ctx.lineWidth=2;
+    for(const placement of warnings)for(const rect of placement.rects) {
+      const r=screenRectForFootprintRect(rect);
+      if(r.x+r.w<0 || r.y+r.h<0 || r.x>state.canvasWidth || r.y>state.canvasHeight)continue;
+      ctx.fillRect(r.x,r.y,r.w,r.h);ctx.strokeRect(r.x,r.y,r.w,r.h);
+      ctx.beginPath();ctx.moveTo(r.x,r.y);ctx.lineTo(r.x+r.w,r.y+r.h);
+      ctx.moveTo(r.x+r.w,r.y);ctx.lineTo(r.x,r.y+r.h);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function countType(type, ignore = new Set()) {
     let count = 0;
     for (const p of placementRefs()) if (p.type === type && !ignore.has(p.ref)) count++;
@@ -3063,6 +3126,7 @@
       }
     }
 
+    drawConstructionWarnings();
     // Draw markers last so stacked sprites cannot cover their numbers or counts.
     if (!workerScene || proposed || getAnalysisOverlay(false).image || getAnalysisOverlay(false).routes.length) drawUnitMarkers(proposed);
 
@@ -3088,6 +3152,17 @@
   }
 
   function itemLabelAtTile(tile) {
+    const placementRef=tile && topmostRefAtTile(tile);
+    if(placementRef) {
+      const {x,y}=offsetToXY(refOffset(placementRef));
+      const blocked=getConstructionWarningAtXY(refType(placementRef),x,y);
+      if(blocked)return itemName(refType(placementRef))+' — '+constructionWarningLabel(blocked.warning);
+    }
+    if(tile && !placementRef && state.currentItemType!=null && isPlacementTool(state.tool)) {
+      const type=lineSequence(state.currentItemType)[0] ?? state.currentItemType;
+      const blocked=getConstructionWarningAtXY(type,tile.x,tile.y);
+      if(blocked)return itemName(type)+' — '+constructionWarningLabel(blocked.warning);
+    }
     if(tile && document.getElementById('castleShowRoutes')?.checked) {
       const routes=analysisCache.routes.filter(r=>r.entry?.x===tile.x && r.entry?.y===tile.y);
       if(routes.length)return routes.map(r=>`${r.name || itemName(r.type)}: ${r.workers} worker(s) - ${r.reason || 'entrance, '+Math.round(r.distance)+tr("castle:tiles_to_delivery_point")}`).join('; ');
@@ -4454,6 +4529,8 @@
     updateMapControls,
     reloadGameAssets,
     getAnalysisOverlay,
+    getConstructionWarnings,
+    getConstructionWarningAtXY,
     isScrubbing: () => !!state.scrubbing,
     chooseBlueprint,
     clearBlueprint,
