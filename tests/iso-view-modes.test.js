@@ -112,6 +112,21 @@ test('Space keeps native moat art instead of dropping its tiles',()=>{
  assert.equal(parts.length,1);assert.equal(parts[0].bild,'water');assert.equal(parts[0].nativeMoat,204);
 });
 
+test('Space uses complete native flat crenellations for high and low walls',()=>{
+ const catalogue=require('../assets/aiv/iso/verzeichnis.json');
+ const flatTiles=Array.from({length:46},(_,i)=>({bild:'native-flat',sx:i*32,sy:7,breite:30,hoehe:24,dx:-15,dy:-8}));
+ const state={catalogue:{flatTiles}};
+ let random=0;
+ const context=vm.createContext({state,geo,flatRandomAt:()=>random});
+ vm.runInContext(source.slice(source.indexOf('  function flatSceneParts('),source.indexOf('  function structureLowering(')),context);
+ for(const id of [26,35])for(random=0;random<8;random++) {
+  const parts=context.flatSceneParts({entry:catalogue.gegenstaende[id],gx:4,gy:5},()=>null,()=>null);
+  assert.equal(parts.length,1);
+  assert.deepEqual({...parts[0]},{...flatTiles[36+(random&3)],gx:4,gy:5,tiles:1},
+   'native tile and upper artwork survive intact, independent of wall height or neighbours');
+ }
+});
+
 test('V leaves terrain, cliffs, trees and scenery anchored at their normal heights', () => {
   const draws=[],image={complete:true,naturalWidth:100};
   const places=new Uint16Array(400*400).fill(0xffff);places[0]=0;

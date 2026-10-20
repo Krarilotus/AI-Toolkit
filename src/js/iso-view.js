@@ -665,6 +665,12 @@
     if (Number.isInteger(entry.nativeMoat) || entry.moatVariants || entry.flatBuilding?.group < 0) {
       return geo.buildingParts(item) || [{...entry,gx:item.gx,gy:item.gy,tiles:1}];
     }
+    if (entry.mauer?.zinne) {
+      // renderMap 0x004E99AD: L_CRENEL uses the dedicated flat tile,
+      // including its upper artwork, rather than a cropped normal wall roof.
+      const sprite = state.catalogue?.flatTiles?.[36 + (flatRandomAt(item.gx,item.gy) & 3)];
+      return sprite?.bild ? [{...sprite,gx:item.gx,gy:item.gy,tiles:1}] : [];
+    }
     if (entry.mauer || entry.treppe) {
       const variant = geo.variantFor(entry,item.gx,item.gy,mauerAn,hoeheAn,state.lageAn);
       if (entry.treppe?.hoehe > 0) {
