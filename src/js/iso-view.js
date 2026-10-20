@@ -175,7 +175,7 @@
   // Terrain height in native image pixels, shared by sprites and picking.
   function bodenHoehe(gx, gy, native = false) {
     if (state.flatView && !native) return 8;
-    const height = value => native ? value : geo.viewHeight(value, state.flatView, state.peekView);
+    const height = value => native ? value : geo.viewHeight(value, state.flatView);
     // The full-map atlas takes precedence over paintGround. It already lifts
     // terrain tiles; sprites and picking must use those same heights.
     const atlas = vorrat();
@@ -438,6 +438,7 @@
 
   function vorrat() {
     const stock = state.kachelVorrat;
+    if (state.flatView && stock?.flat) return stock.flat;
     return stock?.cameras?.[viewRotation() / 2] || stock || null;
   }
 
@@ -458,7 +459,7 @@
     return new Art(bytes.buffer);
   }
 
-  async function setMapTiles(daten) {
+  async function setMapTiles(daten, replacementMap = null) {
     const selected = gameMap();
     if (daten?.path && daten.path !== selected?.path) return false;
     const request = ++mapTilesRequest;
@@ -487,11 +488,25 @@
       };
     }
     const cameras = daten.cameras?.length === 4 ? daten.cameras.map(cameraStock) : null;
-    const stock = { ...(cameras?.[0] || cameraStock(daten)), flatRandom:ausBase64(daten.flatRandom,Uint16Array), path: daten.path, cameras, nativeError: daten.nativeError };
+    const flat = daten.flat ? cameraStock(daten.flat) : null;
+    const stock = { ...(cameras?.[0] || cameraStock(daten)), flat, flatRandom:ausBase64(daten.flatRandom,Uint16Array), path: daten.path, cameras, nativeError: daten.nativeError };
     await Promise.all(pending);
     if (request !== mapTilesRequest || selected !== gameMap()) return false;
+    if (replacementMap) {
+      const keeps = replacementMap.keeps || [], keep = selected.keeps?.[selected.keepIndex];
+      let index = keep?.player ? keeps.findIndex(next => next.player === keep.player) : -1;
+      if (index < 0 && keep) index = keeps.findIndex(next => next.x === keep.x && next.y === keep.y);
+      if (index < 0) index = Math.max(0,Math.min(keeps.length-1,selected.keepIndex || 0));
+      state.gameMap = {...selected,name:replacementMap.name,keeps,keepIndex:index,pathTerrain:replacementMap.pathTerrain || null};
+      rememberGameMap();
+      try { window.localStorage.setItem(MAP_POSITION_KEY,JSON.stringify({path:selected.path,index})); } catch {}
+      routeTerrainCache = null;
+      terrainRequest = null;
+      window.castleEditor?.extras?.scheduleDraw?.();
+    }
     releaseMapImages();
     state.kachelVorrat = stock;
+    state.hoehenSpanne = null;
     state.mapLoadError = null;
     refresh();
     return true;
@@ -552,7 +567,7 @@
         if (feld < 0) continue;
         const platz = v.plaetze[feld];
         if (platz === 0xffff) continue;
-        const displayHeight = geo.viewHeight(v.hoehen?.[feld] || 0, state.flatView, state.peekView);
+        const displayHeight = geo.viewHeight(v.hoehen?.[feld] || 0, state.flatView);
         const hebung = displayHeight * state.view.zoom;
         const [px, py] = geo.isoPoint(gx, gy, state.view, 0);
         // The game advances 32 pixels between tiles on a screen row, but
@@ -564,7 +579,7 @@
         const cliffImage = v.upperImages?.[cliff?.page || 0] || v.upperImage;
         state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
         if (!state.flatView && cliff && cliffImage?.complete && cliffImage.naturalWidth) {
-          const pillarHeight = state.peekView ? Math.min(cliff.height, displayHeight + 7) : cliff.height;
+          const pillarHeight = cliff.height;
           target.drawImage(cliffImage, cliff.x, cliff.y, cliff.width, pillarHeight,
             tileLeft, py - hebung + cliff.dy * state.view.zoom,
             tileWidth, pillarHeight * state.view.zoom);
@@ -575,7 +590,7 @@
         }});
         const upper = v.upperEntries[platz];
         const upperImage = v.upperImages?.[upper?.page || 0] || v.upperImage;
-        if (!state.flatView && upper && upperImage?.complete && upperImage.naturalWidth) {
+        if ((!state.flatView || state.kachelVorrat?.flat) && upper && upperImage?.complete && upperImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(upperImage, upper.x, upper.y, upper.width, upper.height,
@@ -647,6 +662,9 @@
   function flatSceneParts(item, mauerAn, hoeheAn) {
     const entry = item.entry;
     if (!entry) return [];
+    if (Number.isInteger(entry.nativeMoat) || entry.moatVariants || entry.flatBuilding?.group < 0) {
+      return geo.buildingParts(item) || [{...entry,gx:item.gx,gy:item.gy,tiles:1}];
+    }
     if (entry.mauer || entry.treppe) {
       const variant = geo.variantFor(entry,item.gx,item.gy,mauerAn,hoeheAn,state.lageAn);
       if (entry.treppe?.hoehe > 0) {
@@ -661,11 +679,18 @@
     return geo.flatBuildingParts(item,state.catalogue?.flatTiles,flatRandomAt);
   }
 
-  function drawNativePart(ctx, part, img, lift) {
+  function structureLowering(entry) {
+    const height = entry.structureHeight ?? entry.mauer?.hoehe ?? entry.treppe?.hoehe ?? 0;
+    return state.peekView && height>0 ? height-geo.viewHeight(height,false,true) : 0;
+  }
+
+  function drawNativePart(ctx, part, img, lift, lowering = 0) {
     const [x, y] = geo.isoPoint(part.gx, part.gy, state.view, lift);
     const z = state.view.zoom;
-    ctx.drawImage(img, part.sx, part.sy, part.breite, part.hoehe,
-      x + part.dx * z, y + part.dy * z, part.breite * z, part.hoehe * z);
+    const crop = Math.min(lowering,Math.max(0,-part.dy),Math.max(0,part.hoehe-16));
+    const height = part.hoehe-crop;
+    ctx.drawImage(img, part.sx, part.sy, part.breite, height,
+      x + part.dx * z, y + (part.dy+crop) * z, part.breite * z, height * z);
   }
 
   function drawSprite(ctx, sprite, gx, gy, tiles, mauerAn, hoeheAn, layoutIndex = 0) {
@@ -683,7 +708,7 @@
       const loaded = new Map(parts.map(part => [part.bild, image(part.bild)]));
       if ([...loaded.values()].every(img => img?.complete && img.naturalWidth)) {
         const lift = bauHoehe(gx, gy, tiles);
-        for (const part of parts.sort(geo.renderOrder)) drawNativePart(ctx, part, loaded.get(part.bild), lift);
+        for (const part of parts.sort(geo.renderOrder)) drawNativePart(ctx, part, loaded.get(part.bild), lift,structureLowering(sprite));
         return true;
       }
     }
@@ -695,8 +720,7 @@
     let sourceHeight = variant.hoehe;
     const wallHeight = sprite.mauer?.hoehe ?? sprite.treppe?.hoehe;
     if (state.peekView && wallHeight > 0) {
-      const ground = bodenHoehe(gx + tiles - 1, gy + tiles - 1, true);
-      const loweredWall = geo.viewHeight(ground + wallHeight, false, true) - geo.viewHeight(ground, false, true);
+      const loweredWall = geo.viewHeight(wallHeight, false, true);
       // Keep the native roof diamond/upper pixels; shorten only the pillar.
       // Scaling the complete bitmap also squashes its footprint into a line.
       sourceHeight -= wallHeight - loweredWall;
@@ -937,12 +961,12 @@
       if(route.path.length) {
         ctx.beginPath();
         route.path.forEach((tile,i)=>{
-          const p=turn(tile),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,geo.viewHeight(bodenHoehe(p.gx,p.gy,true)+(tile.height||0),state.flatView,state.peekView));
+          const p=turn(tile),height=tile.height||0,xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bodenHoehe(p.gx,p.gy)+(state.flatView?0:state.peekView&&height>0?geo.viewHeight(height,false,true):height));
           if(i)ctx.lineTo(...xy);else ctx.moveTo(...xy);
         });ctx.stroke();
       }
       if(route.entry) {
-        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,geo.viewHeight(bodenHoehe(p.gx,p.gy,true)+(route.entry.height||0),state.flatView,state.peekView));
+        const p=turn(route.entry),height=route.entry.height||0,xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bodenHoehe(p.gx,p.gy)+(state.flatView?0:state.peekView&&height>0?geo.viewHeight(height,false,true):height));
         ctx.beginPath();ctx.arc(...xy,3.5,0,Math.PI*2);
         ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
         ctx.save();ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();ctx.restore();
@@ -1113,9 +1137,7 @@
       state.unitContext = context;
     }
     const support = troops.supports(items, bodenHoehe, (item, height) => {
-      if (!state.peekView || !(item.entry?.mauer || item.entry?.treppe)) return height;
-      const ground = bodenHoehe(item.gx+item.tiles-1,item.gy+item.tiles-1,true);
-      return geo.viewHeight(ground+height,false,true)-geo.viewHeight(ground,false,true);
+      return state.peekView && height>0 ? geo.viewHeight(height,false,true) : height;
     });
     const rotation = currentRotation();
     const keep = items.find(item=>Number(item.itemType)===61);
@@ -1214,8 +1236,9 @@
       const loaded = parts.map(part => image(part.bild));
       if (!loaded.every(img => img?.complete && img.naturalWidth)) return [item];
       const lift = bauHoehe(item.gx, item.gy, item.tiles);
+      const lowering = state.flatView ? 0 : structureLowering(item.entry || {});
       return parts.map((part, index) => ({ ...part, itemType: item.itemType, layer: item.layer ?? 2, draw: target => {
-        drawNativePart(target, part, loaded[index], lift);
+        drawNativePart(target, part, loaded[index], lift,lowering);
       }}));
     });
     // Scenery is no longer flattened underneath every building. Each upper

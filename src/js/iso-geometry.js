@@ -638,11 +638,11 @@
 
   // renderMap 0x4e98c7..0x4e9956: native type -> texture group, instance
   // parity -> one of two banks, RandomLayer low bits -> tile variation.
-  function flatTileIndex(building, random, instance = 0) {
+  function flatTileIndex(building, random, instance = 0, symbol = false) {
     if (!building || building.group < 0) return null;
     if (building.group === 3) {
       const first = ({3:24,7:26,33:28})[building.building] ?? 30;
-      return first + ((random >> 2) & 1);
+      return first + Number(symbol);
     }
     return building.group * 8 + (instance & 1) * 4 + (random & 3);
   }
@@ -652,10 +652,14 @@
     const positions = native || Array.from({length:item.tiles*item.tiles},(_,i)=>({
       gx:item.gx+i%item.tiles,gy:item.gy+Math.floor(i/item.tiles)
     }));
+    const hut = positions.filter(part => !part.flatField);
+    const centreX = Math.floor((Math.min(...hut.map(p=>p.gx))+Math.max(...hut.map(p=>p.gx)))/2);
+    const centreY = Math.floor((Math.min(...hut.map(p=>p.gy))+Math.max(...hut.map(p=>p.gy)))/2);
     return positions.flatMap(part => {
-      if (part.flatField) return [{...part,tiles:1}];
+      if (part.flatField) return [{...part,sy:(part.sy||0)+Math.max(0,part.hoehe-16),hoehe:Math.min(16,part.hoehe),dy:0,tiles:1}];
       const random = randomAt(part.gx,part.gy);
-      const index = flatTileIndex(item.entry?.flatBuilding, random, (item.frameIndex||0)+(item.offsetIndex||0)+1);
+      const index = flatTileIndex(item.entry?.flatBuilding, random, (item.frameIndex||0)+(item.offsetIndex||0)+1,
+        part.gx===centreX && part.gy===centreY);
       const sprite = tiles?.[index];
       if (!sprite?.bild || index === null) return [];
       return [{...sprite,gx:part.gx,gy:part.gy,tiles:1}];

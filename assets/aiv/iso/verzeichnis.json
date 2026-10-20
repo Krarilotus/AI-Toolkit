@@ -210,7 +210,8 @@
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
      "krone": "immer flach"
     }
-   }
+   },
+   "structureHeight": 90
   },
   "26": {
    "name": "Zinnenmauer hoch",
@@ -1384,7 +1385,8 @@
      "rand": "ein Nachbar in x -> rand.laengs, einer in y -> rand.quer, keiner -> rand.allein",
      "krone": "immer flach"
     }
-   }
+   },
+   "structureHeight": 60
   },
   "50": {
    "name": "Bogenmacher",
@@ -4050,7 +4052,8 @@
    "flatBuilding": {
     "building": 41,
     "group": 0
-   }
+   },
+   "structureHeight": 92
   },
   "65": {
    "name": "Stall",
@@ -37925,7 +37928,8 @@
    "flatBuilding": {
     "building": 74,
     "group": 2
-   }
+   },
+   "structureHeight": 296
   },
   "111": {
    "name": "Verteidigungsturm",
@@ -38117,7 +38121,8 @@
    "flatBuilding": {
     "building": 75,
     "group": 0
-   }
+   },
+   "structureHeight": 148
   },
   "112": {
    "name": "Geschuetzturm",
@@ -38408,7 +38413,8 @@
    "flatBuilding": {
     "building": 76,
     "group": 0
-   }
+   },
+   "structureHeight": 180
   },
   "113": {
    "name": "Eckiger Turm",
@@ -38820,7 +38826,8 @@
    "flatBuilding": {
     "building": 77,
     "group": 0
-   }
+   },
+   "structureHeight": 192
   },
   "114": {
    "name": "Runder Turm",
@@ -39232,7 +39239,8 @@
    "flatBuilding": {
     "building": 78,
     "group": 0
-   }
+   },
+   "structureHeight": 192
   },
   "144": {
    "name": "Kleines Torhaus (Durchfahrt N-S)",
@@ -39523,7 +39531,8 @@
    "flatBuilding": {
     "building": 46,
     "group": 0
-   }
+   },
+   "structureHeight": 128
   },
   "145": {
    "name": "Kleines Torhaus (Durchfahrt O-W)",
@@ -39814,7 +39823,8 @@
    "flatBuilding": {
     "building": 46,
     "group": 0
-   }
+   },
+   "structureHeight": 128
   },
   "146": {
    "name": "Grosses Torhaus (Durchfahrt N-S)",
@@ -40369,7 +40379,8 @@
    "flatBuilding": {
     "building": 45,
     "group": 0
-   }
+   },
+   "structureHeight": 128
   },
   "147": {
    "name": "Grosses Torhaus (Durchfahrt O-W)",
@@ -40924,7 +40935,8 @@
    "flatBuilding": {
     "building": 45,
     "group": 0
-   }
+   },
+   "structureHeight": 128
   },
   "166": {
    "name": "Garten",
@@ -41950,7 +41962,8 @@
      "ohne": "kein hoeherer Nachbar -> allein (tile_land3#104, das flache Podest)",
      "quelle": "updateGfxLayer 0x00509180, Richtung 0/2/4/6 -> #134/#135/#136/#133"
     }
-   }
+   },
+   "structureHeight": 80
   },
   "182": {
    "name": "Treppe 2",
@@ -41993,7 +42006,8 @@
      "ohne": "kein hoeherer Nachbar -> allein (tile_land3#104, das flache Podest)",
      "quelle": "updateGfxLayer 0x00509180, Richtung 0/2/4/6 -> #134/#135/#136/#133"
     }
-   }
+   },
+   "structureHeight": 64
   },
   "183": {
    "name": "Treppe 3",
@@ -42036,7 +42050,8 @@
      "ohne": "kein hoeherer Nachbar -> allein (tile_land3#104, das flache Podest)",
      "quelle": "updateGfxLayer 0x00509180, Richtung 0/2/4/6 -> #134/#135/#136/#133"
     }
-   }
+   },
+   "structureHeight": 48
   },
   "184": {
    "name": "Treppe 4",
@@ -42079,7 +42094,8 @@
      "ohne": "kein hoeherer Nachbar -> allein (tile_land3#104, das flache Podest)",
      "quelle": "updateGfxLayer 0x00509180, Richtung 0/2/4/6 -> #134/#135/#136/#133"
     }
-   }
+   },
+   "structureHeight": 32
   },
   "185": {
    "name": "Treppe 5",
@@ -42122,7 +42138,8 @@
      "ohne": "kein hoeherer Nachbar -> allein (tile_land3#104, das flache Podest)",
      "quelle": "updateGfxLayer 0x00509180, Richtung 0/2/4/6 -> #134/#135/#136/#133"
     }
-   }
+   },
+   "structureHeight": 16
   },
   "186": {
    "name": "Treppe 6",
@@ -42145,7 +42162,8 @@
      "ohne": "kein hoeherer Nachbar -> allein (tile_land3#104, das flache Podest)",
      "quelle": "updateGfxLayer 0x00509180, Richtung 0/2/4/6 -> #134/#135/#136/#133"
     }
-   }
+   },
+   "structureHeight": 0
   },
   "301": {
    "name": "Jauchegrube",
@@ -44854,5 +44872,123 @@
   "exeSHA256": "0d3d0d0be90a41d0c07d02cb41e6edc3e399288d16039db5b666392660fbda34",
   "groups": "0x00B44220",
   "selection": "0x004E9845 / 0x004EBBC4"
- }
+ },
+ "flatViewGroups": [
+  0,
+  2,
+  2,
+  3,
+  2,
+  2,
+  2,
+  3,
+  2,
+  1,
+  1,
+  1,
+  2,
+  2,
+  2,
+  2,
+  2,
+  2,
+  2,
+  2,
+  2,
+  1,
+  2,
+  2,
+  1,
+  1,
+  2,
+  1,
+  2,
+  2,
+  3,
+  3,
+  3,
+  3,
+  2,
+  2,
+  1,
+  1,
+  1,
+  1,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  2,
+  2,
+  1,
+  2,
+  -1,
+  2,
+  -1,
+  2,
+  -1,
+  -1,
+  -1,
+  -1,
+  -1,
+  1,
+  1,
+  2,
+  2,
+  2,
+  2,
+  -1,
+  -1,
+  -1,
+  -1,
+  0,
+  0,
+  0,
+  0,
+  2,
+  0,
+  0,
+  0,
+  0,
+  0,
+  2,
+  2,
+  2,
+  2,
+  2,
+  2,
+  0,
+  0,
+  0,
+  0,
+  -1,
+  -1,
+  2,
+  2,
+  1,
+  2,
+  2,
+  2,
+  2,
+  1,
+  1,
+  1,
+  2,
+  2,
+  -1,
+  1,
+  1,
+  2,
+  1,
+  1
+ ],
+ "flatRockPictures": [
+  532,
+  536,
+  540,
+  464
+ ]
 }

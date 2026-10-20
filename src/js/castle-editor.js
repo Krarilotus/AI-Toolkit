@@ -3933,6 +3933,7 @@
   // Karte hat mehrere (in "A Friend Indeed" sechs), und erst er sagt, WO auf
   // der Karte das Dorf von 100x100 steht.
   const karteKnopf = document.getElementById('castleIsoMapBtn');
+  const karteAktualisieren = document.getElementById('castleIsoMapRefresh');
   const karteZurueck = document.getElementById('castleIsoMapReset');
   const karteBergfried = document.getElementById('castleIsoMapKeep');
   const karteDialog = document.getElementById('castleIsoMapDialog');
@@ -3941,10 +3942,16 @@
   const karteFehler = document.getElementById('castleIsoMapError');
   const karteAbbruch = document.getElementById('castleIsoMapCancel');
   let karteVorrat = null;   // einmal geholt, dann behalten
+  let mapRefreshRequest = null;
 
   function updateMapControls() {
     const info = window.isoView && window.isoView.gameMapInfo ? window.isoView.gameMapInfo() : null;
     if (karteZurueck) karteZurueck.hidden = !info;
+    if (karteAktualisieren) {
+      karteAktualisieren.disabled = !info?.path || !!mapRefreshRequest;
+      karteAktualisieren.setAttribute('aria-busy',String(!!mapRefreshRequest));
+      karteAktualisieren.title = info?.path ? tr('viewport:refresh_map_hint',{path:info.path}) : tr('viewport:refresh_map');
+    }
     if (!karteBergfried) return;
     // Der Wähler zeigt sich nur, wenn es etwas zu wählen gibt - bei einem
     // einzigen Startplatz gäbe es nichts zu tun.
@@ -4026,8 +4033,34 @@
   }
 
   let mapSelectionRequest = 0;
+  async function refreshGameMap() {
+    const view = window.isoView, info = view?.gameMapInfo();
+    if (!info?.path || mapRefreshRequest) return false;
+    const request = {selection:++mapSelectionRequest,path:info.path};
+    mapRefreshRequest = request;
+    kachelnLaufen = {path:info.path};
+    updateMapControls();
+    setStatus(() => tr('viewport:refreshing_map'));
+    const current = () => request.selection === mapSelectionRequest && view.gameMapInfo()?.path === request.path;
+    try {
+      const map = await window.electronAPI.loadGameMap(info.path);
+      if (!current()) return false;
+      const tiles = await window.electronAPI.loadMapTiles(info.path);
+      if (!current()) return false;
+      if (await view.setMapTiles(tiles,map) === false || !current()) return false;
+      setStatus(() => tr('viewport:map_refreshed',{name:map.name}));
+      return true;
+    } catch (error) {
+      if (current()) setStatus(() => tr('viewport:map_refresh_failed',{message:error.message}));
+      return false;
+    } finally {
+      if (mapRefreshRequest === request) { mapRefreshRequest = null; updateMapControls(); }
+    }
+  }
+
   async function chooseMap(entry) {
     const selection = ++mapSelectionRequest;
+    mapRefreshRequest = null;
     if (!window.isoView || !karteFehler) return;
     karteFehler.textContent = tr("castle:reading_the_map");
     try {
@@ -4071,6 +4104,7 @@
     if (karteFilter) karteFilter.focus();
   });
   if (karteFilter) karteFilter.addEventListener('input', () => renderMapList(karteFilter.value));
+  if (karteAktualisieren) karteAktualisieren.addEventListener('click', refreshGameMap);
   if (karteAbbruch) karteAbbruch.addEventListener('click', () => karteDialog?.close());
   if (karteBergfried) karteBergfried.addEventListener('change', () => {
     if (!window.isoView) return;
@@ -4085,6 +4119,7 @@
   if (karteZurueck) karteZurueck.addEventListener('click', () => {
     if (!window.isoView) return;
     mapSelectionRequest++;
+    mapRefreshRequest = null;
     window.isoView.setGameMap(null);
     kachelnLaufen = null;
     window.isoView.setMapTiles(null);
@@ -4528,6 +4563,7 @@
     // gehoert der Waehler nachgezogen.
     updateMapControls,
     reloadGameAssets,
+    refreshGameMap,
     getAnalysisOverlay,
     getConstructionWarnings,
     getConstructionWarningAtXY,

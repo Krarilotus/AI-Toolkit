@@ -11,7 +11,7 @@ function view() {
   const context = vm.createContext({state,geo,VIERTEL:2,handDrehung:0,
     surface:()=>({width:800,height:600}),gameMap:()=>({path:'saved.map'}),
     hasMapTiles:()=>true,kartenSchluessel:()=> 'saved.map#200,200',
-    bodenHoehe:()=>geo.viewHeight(48,state.flatView,state.peekView),
+    bodenHoehe:()=>geo.viewHeight(48,state.flatView),
     isMounted:()=>true,paint(){},refresh:()=>refreshes.push(true),
     setStatus:value=>statuses.push(value)});
   vm.runInContext(source.slice(source.indexOf('  function viewRotation()'), source.indexOf('  function currentRotation()')), context);
@@ -47,7 +47,7 @@ test('V toggles lowered view with an elevated round trip and retains the indepen
   const original = {...state.view};
   context.togglePeekView();
   assert.equal(state.peekView,true);
-  assert.equal(state.view.panY,original.panY-35);
+  assert.equal(state.view.panY,original.panY,'V never moves the terrain or camera');
   context.togglePeekView();
   assert.equal(state.peekView,false);
   assert.deepEqual(state.view,original);
@@ -69,7 +69,7 @@ test('flat and peek heights share the same tile picking and keep the real height
   for(const mode of ['flatView','peekView']) {
     assert.equal(context.bodenHoehe(43,43),64);
     state[mode]=true;
-    const expected=mode==='peekView'?17:8;
+    const expected=mode==='peekView'?64:8;
     assert.equal(context.bodenHoehe(43,43),expected);
     const point=geo.isoPoint(43.5,43.5,state.view,expected);
     assert.deepEqual(geo.tileFromPoint(...point,state.view,context.bodenHoehe),{gx:43,gy:43});
@@ -89,7 +89,7 @@ test('lowered view uses the native height table, independently from flat view', 
   context.toggleFlatView();
   assert.equal(state.view.panY,original.panY-40);
   context.toggleFlatView();
-  assert.equal(state.view.panY,original.panY-35);
+  assert.equal(state.view.panY,original.panY);
   context.togglePeekView();
   assert.deepEqual(state.view,original,'switching between lowered and flat preserves the centre');
 });
@@ -100,9 +100,19 @@ test('V preserves native building-part pixels and its isometric footprint', () =
   vm.runInContext(source.slice(source.indexOf('  function drawNativePart('),source.indexOf('  function drawSprite(')),context);
   context.drawNativePart({drawImage:(...args)=>calls.push(args)},{gx:0,gy:0,sx:4,sy:6,breite:30,hoehe:90,dx:-15,dy:-74},{},17);
   assert.deepEqual(calls[0].slice(1),[4,6,30,90,-30,-182,60,180]);
+  context.drawNativePart({drawImage:(...args)=>calls.push(args)},{gx:0,gy:0,sx:4,sy:6,breite:30,hoehe:90,dx:-15,dy:-74},{},64,67);
+  assert.deepEqual(calls[1].slice(1),[4,6,30,23,-30,-142,60,46],'lowering crops a column and leaves its 30x16 base at ground level');
 });
 
-test('lowered map keeps ground diamonds and scenery at native proportions and shortens cliff columns', () => {
+test('Space keeps native moat art instead of dropping its tiles',()=>{
+ const state={catalogue:{flatTiles:[]}},entry={nativeMoat:204,bild:'water',breite:30,hoehe:20,dx:-15,dy:-4};
+ const context=vm.createContext({state,geo,flatRandomAt:()=>0});
+ vm.runInContext(source.slice(source.indexOf('  function flatSceneParts('),source.indexOf('  function structureLowering(')),context);
+ const parts=context.flatSceneParts({entry,gx:2,gy:3},()=>null,()=>null);
+ assert.equal(parts.length,1);assert.equal(parts[0].bild,'water');assert.equal(parts[0].nativeMoat,204);
+});
+
+test('V leaves terrain, cliffs, trees and scenery anchored at their normal heights', () => {
   const draws=[],image={complete:true,naturalWidth:100};
   const places=new Uint16Array(400*400).fill(0xffff);places[0]=0;
   const heights=new Uint8Array(400*400);heights[0]=64;
@@ -120,7 +130,7 @@ test('lowered map keeps ground diamonds and scenery at native proportions and sh
   context.paintMapTiles(recorder,1,1);
   for(const item of state.mapScenery)item.draw(recorder);
   assert.equal(draws.length,4);
-  assert.deepEqual(draws[0].slice(1),[30,0,30,24,-15,-8,30,24]);
+  assert.deepEqual(draws[0].slice(1),[30,0,30,71,-15,-55,30,71]);
   assert.deepEqual(draws[1].slice(-2),[30,16]);
   assert.deepEqual(draws[2].slice(-2),[30,80]);
   assert.deepEqual(draws[3].slice(-2),[36,64]);
@@ -130,11 +140,11 @@ test('V crops a wall pillar while preserving the full sixteen-pixel roof diamond
   const state={peekView:true,view:{zoom:1,panX:0,panY:0}},draws=[];
   const variant={bild:'wall',breite:30,hoehe:106,sx:4,sy:6};
   const context=vm.createContext({state,geo:{...geo,variantFor:()=>variant},
-    image:()=>({complete:true,naturalWidth:30}),bodenHoehe:(_x,_y,native)=>native?64:17,
-    bauHoehe:()=>17,wallFootDepth:()=>[0,0],drawWallFoot(){}});
+    image:()=>({complete:true,naturalWidth:30}),bodenHoehe:()=>64,
+    bauHoehe:()=>64,wallFootDepth:()=>[0,0],drawWallFoot(){}});
   vm.runInContext(source.slice(source.indexOf('  function drawSprite('),source.indexOf('  function wallFootDepth(')),context);
   context.drawSprite({drawImage:(...args)=>draws.push(args)},{mauer:{hoehe:90}},0,0,1);
-  assert.deepEqual(draws[0].slice(1),[4,6,30,38,-15,-39,30,38]);
+  assert.deepEqual(draws[0].slice(1),[4,6,30,39,-15,-87,30,39]);
 });
 
 test('Space uses native texture banks and preserves sparse farm parts instead of a square foundation', () => {
@@ -142,7 +152,8 @@ test('Space uses native texture banks and preserves sparse farm parts instead of
   assert.equal(geo.flatTileIndex({building:41,group:0},3,1),7);
   assert.equal(geo.flatTileIndex({building:10,group:1},2,0),10);
   assert.equal(geo.flatTileIndex({building:12,group:2},1,1),21);
-  assert.equal(geo.flatTileIndex({building:3,group:3},4),25);
+  assert.equal(geo.flatTileIndex({building:3,group:3},4),24);
+  assert.equal(geo.flatTileIndex({building:3,group:3},4,0,true),25);
   const farm={gx:10,gy:20,tiles:8,entry:{flatBuilding:{building:30,group:3},partsLayouts:[[
     {gx:0,gy:0},{gx:1,gy:0},{gx:0,gy:1},{gx:1,gy:1},
     {gx:7,gy:6,bild:'field-atlas',flatField:true,breite:30,hoehe:16}
@@ -152,6 +163,7 @@ test('Space uses native texture banks and preserves sparse farm parts instead of
   assert.deepEqual(parts.map(p=>[p.gx,p.gy]),[[10,20],[11,20],[10,21],[11,21],[17,26]]);
   assert.equal(parts[0].bild,'local-flat-atlas');
   assert.equal(parts[4].bild,'field-atlas');
+  assert.equal(parts.filter(p=>p.sx===31*32).length,1,'exactly one farm marker, independent of tile RNG');
   assert.equal(geo.flatBuildingParts({...farm,entry:{flatBuilding:{group:-1}}},tiles,()=>0).length,0);
 });
 
