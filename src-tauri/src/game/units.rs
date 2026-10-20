@@ -140,20 +140,21 @@ fn extract_unit_sprites(root: &Path, cache_root: &Path) -> Result<UnitAssets> {
     let mut sprites: BTreeMap<String, UnitSprite> = BTreeMap::new();
     let mut idle_sprites = BTreeMap::new();
     let mut warnings = Vec::new();
-    let sources =
-        SOURCES
-            .iter()
-            .map(|&(id, name, rider)| {
-                let (thumbnail, idle) = (poses::thumbnail_pose(id), poses::idle_pose(id));
-                (id.to_string(), name, rider, thumbnail, idle)
-            })
-            .chain(poses::LORD_POSES.iter().map(|&(key, name, frame)| {
-                (key.to_owned(), name, None, None, Some((frame, None)))
-            }))
-            .chain(std::iter::once(poses::MONK_POSE).map(|(key, name, frame)| {
-                let pose = Some((frame, None));
-                (key.to_owned(), name, None, pose, pose)
-            }));
+    let sources = SOURCES
+        .iter()
+        .map(|&(id, name, rider)| {
+            let (thumbnail, idle) = (poses::thumbnail_pose(id), poses::idle_pose(id));
+            (id.to_string(), name, rider, thumbnail, idle)
+        })
+        .chain(
+            poses::LORD_POSES
+                .iter()
+                .map(|&(key, name, frame)| (key.to_owned(), name, None, None, Some((frame, None)))),
+        )
+        .chain(std::iter::once(poses::MONK_POSE).map(|(key, name, frame)| {
+            let pose = Some((frame, None));
+            (key.to_owned(), name, None, pose, pose)
+        }));
     for (key, name, rider, thumbnail, idle_pose) in sources {
         // Thumbnail and idle pose share the same file/palette decode. Mounted
         // troops also share their rider file; never read it once per output.
@@ -269,7 +270,8 @@ mod tests {
             bytes[sizes + i * 4..sizes + i * 4 + 4].copy_from_slice(&2u32.to_le_bytes());
             bytes[heads + i * 16..heads + i * 16 + 2].copy_from_slice(&1u16.to_le_bytes());
             bytes[heads + i * 16 + 2..heads + i * 16 + 4].copy_from_slice(&1u16.to_le_bytes());
-            bytes[data_at + i * 2..data_at + i * 2 + 2].copy_from_slice(&[0, (i as u8).wrapping_add(1)]);
+            bytes[data_at + i * 2..data_at + i * 2 + 2]
+                .copy_from_slice(&[0, (i as u8).wrapping_add(1)]);
         }
         bytes
     }
@@ -379,7 +381,11 @@ mod tests {
     fn the_monk_has_a_thumbnail_without_an_aiv_marker() {
         let root = fixture("monk");
         let (key, name, frame) = poses::MONK_POSE;
-        fs::write(root.join("gm").join(format!("{name}.gm1")), indexed_body(frame + 1)).unwrap();
+        fs::write(
+            root.join("gm").join(format!("{name}.gm1")),
+            indexed_body(frame + 1),
+        )
+        .unwrap();
         let assets = load_unit_sprites(&root, &root.join("cache")).unwrap();
         assert_eq!(assets.sprites.len(), 1);
         let thumbnail = &assets.sprites[key];

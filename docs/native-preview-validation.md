@@ -3,6 +3,24 @@
 Windows x64, updated 20 October 2026. Native compilation/tests also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## CI consolidation and fixture repair
+
+The automatic Native CI workflow now runs shared editor tests, translations,
+package policy, bridge types and the renderer smoke check once, followed by
+native tests/builds on Windows, Linux and macOS. The separate CI workflow was
+removed. Fork preview pushes rely on the upstream PR checks, avoiding duplicate
+push/PR runs; Markdown-only changes are excluded. Native preview packaging and
+publishing remain manual.
+
+The failing hover fixtures now provide construction-warning context, and the
+synthetic graphics fixture includes all 46 flat tiles. Rust formatting is clean.
+The Windows installer test yields during cleanup while the restarted fixture
+executable releases its files, and verifies the temporary cleanup path.
+
+Local validation: **630 JavaScript tests pass; 74 Rust tests pass**, with the
+game-data integration fixture intentionally ignored. Strict locales, desktop
+TypeScript, package policy, workflow YAML and Rust formatting checks pass.
+
 ## Native flat-view artwork: snapshot-native-44a269c2
 
 Snapshot source `44a269ca788ce1145a1f04cab17b11ab0d413654` replaces the

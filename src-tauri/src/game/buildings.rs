@@ -82,7 +82,11 @@ fn add_lean_to_layouts(catalogue: &mut Value, parts: &Value) {
         if entry["anlehnen"] != Value::Bool(true) {
             continue;
         }
-        let Some(layout) = entry["partsLayouts"].get(0).and_then(Value::as_array).cloned() else {
+        let Some(layout) = entry["partsLayouts"]
+            .get(0)
+            .and_then(Value::as_array)
+            .cloned()
+        else {
             continue;
         };
         let size = entry["kacheln"].as_i64().unwrap_or(4);
@@ -205,7 +209,10 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
                 {
                     source = json!({"file":"tile_flatties","index":index});
                 }
-                if matches!(source["file"].as_str(), Some("tile_farmland" | "tree_apple")) {
+                if matches!(
+                    source["file"].as_str(),
+                    Some("tile_farmland" | "tree_apple")
+                ) {
                     object.insert("flatField".into(), json!(true));
                 }
                 if source["file"] == "tile_land3" {
@@ -407,10 +414,20 @@ mod tests {
             "51": {"kacheln": 3, "partsLayouts": [[{"gx": 0, "gy": 0, "bild": "building-parts.png", "sx": 1, "sy": 1}]]}
         }});
         add_lean_to_layouts(&mut catalogue, &parts);
-        let lean = catalogue["gegenstaende"]["50"]["anlehnLayouts"].as_array().unwrap();
+        let lean = catalogue["gegenstaende"]["50"]["anlehnLayouts"]
+            .as_array()
+            .unwrap();
         assert_eq!(lean.len(), 8);
-        assert_eq!(lean[0][0], json!({"gx": 3, "gy": 3, "bild": "anlehn:tile_workshops:0"}));
+        assert_eq!(
+            lean[0][0],
+            json!({"gx": 3, "gy": 3, "bild": "anlehn:tile_workshops:0"})
+        );
         assert_eq!(lean[7][1]["bild"], "anlehn:tile_workshops:127");
-        assert!(catalogue["gegenstaende"]["51"].get("anlehnLayouts").is_none(), "only marked buildings");
+        assert!(
+            catalogue["gegenstaende"]["51"]
+                .get("anlehnLayouts")
+                .is_none(),
+            "only marked buildings"
+        );
     }
 }
