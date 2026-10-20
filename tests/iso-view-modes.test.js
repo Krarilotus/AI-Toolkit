@@ -42,21 +42,22 @@ test('Space toggles flat view once and preserves camera position through an elev
   assert.deepEqual(state.view,original);
 });
 
-test('held peek releases by physical key after modifiers change, or on blur, retaining Space state', () => {
+test('V toggles lowered view with an elevated round trip and retains the independent Space state', () => {
   const {state,context} = view();
-  context.toggleFlatView();
-  context.beginPeek({key:'v',code:'KeyV'});
-  context.releasePeek({type:'keyup',key:'Shift',code:'ShiftLeft'});
+  const original = {...state.view};
+  context.togglePeekView();
   assert.equal(state.peekView,true);
-  context.releasePeek({type:'keyup',key:'V',code:'KeyV',shiftKey:true});
+  assert.equal(state.view.panY,original.panY-48);
+  context.togglePeekView();
   assert.equal(state.peekView,false);
+  assert.deepEqual(state.view,original);
+  context.toggleFlatView();
+  context.togglePeekView();
+  context.togglePeekView();
   assert.equal(state.flatView,true);
-  context.beginPeek({key:'v',code:'KeyV'});
-  context.releasePeek();
-  assert.equal(state.peekView,false);
   context.isMounted=()=>false;
-  context.beginPeek({key:'v',code:'KeyV'});
-  assert.equal(state.peekView,false,'a hidden viewport cannot retain a held key');
+  context.togglePeekView();
+  assert.equal(state.peekView,false,'a hidden viewport does not consume its shortcut');
 });
 
 test('flat and peek heights share the same tile picking and keep the real height raster intact', () => {

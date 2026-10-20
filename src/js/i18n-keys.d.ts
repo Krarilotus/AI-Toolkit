@@ -1767,4 +1767,5 @@ export type TranslationKey =
   | "viewport:add_as_a_tab_here"
   | "viewport:esc_cancels"
   | "viewport:is_missing"
-  | "viewport:flat_view";
+  | "viewport:flat_view"
+  | "viewport:lowered_view";

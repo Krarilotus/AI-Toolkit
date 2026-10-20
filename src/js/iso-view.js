@@ -374,24 +374,17 @@
       state.loweredPivot = lowered ? {key:pivotKey(),height:before} : null;
     }
     state.rotationPivot = null;
-    const button = state.controls?.querySelector('#castleIsoFlatBtn');
-    button?.setAttribute('aria-pressed', String(state.flatView));
+    for (const [id, pressed] of [['castleIsoFlatBtn', state.flatView], ['castleIsoPeekBtn', state.peekView]]) {
+      state.controls?.querySelector(`#${id}`)?.setAttribute('aria-pressed', String(pressed));
+    }
     refresh();
   }
 
   function toggleFlatView() { setViewMode('flat', !state.flatView); }
 
-  function releasePeek(event) {
-    if (!state.peekView || (event?.type === 'keyup' && event.code !== state.peekKeyCode && event.key !== state.peekKey)) return;
-    state.peekKeyCode = state.peekKey = null;
-    setViewMode('peek', false);
-  }
-
-  function beginPeek(event) {
+  function togglePeekView() {
     if (!isMounted()) return;
-    state.peekKeyCode = event?.code;
-    state.peekKey = event?.key;
-    setViewMode('peek', true);
+    setViewMode('peek', !state.peekView);
   }
 
   function currentRotation() {
@@ -1762,7 +1755,6 @@
       // fires this after the panel has taken over, and clearing the host
       // then would leave the panel blank.
       if (state.host !== host) return;
-      releasePeek();
       parkControls();
       state.host = null;
       state.panning = false;
@@ -1780,8 +1772,6 @@
       editor.handleKey(event);
       refresh(true);
     });
-    win.addEventListener('keyup', releasePeek);
-    win.addEventListener('blur', () => releasePeek());
   }
 
   // ------------------------------------------------------------- hosts
@@ -1813,7 +1803,6 @@
   function closeWindow() {
     const host = state.host;
     if (!host || host.kind !== 'window') return;
-    releasePeek();
     state.host = null;
     try { if (host.win && !host.win.closed) host.win.close(); } catch { /* already gone */ }
   }
@@ -1821,7 +1810,6 @@
   function unmount() {
     const host = state.host;
     if (!host || host.kind !== 'dock') return;
-    releasePeek();
     if (state.observer) state.observer.disconnect();
     state.host = null;
   }
@@ -1910,8 +1898,7 @@
     bindSurface(document.getElementById('isoDockCanvas'));
     state.controls = document.getElementById('castleIsoControls');
     state.controls?.querySelector('#castleIsoFlatBtn')?.addEventListener('click', toggleFlatView);
-    window.addEventListener('keyup', releasePeek);
-    window.addEventListener('blur', () => releasePeek());
+    state.controls?.querySelector('#castleIsoPeekBtn')?.addEventListener('click', togglePeekView);
     window.castleEditor?.addChangeListener?.(editorChanged);
     window.addEventListener('character-population-changed', troopCharacterChanged);
     troopCharacterChanged();
@@ -1922,7 +1909,7 @@
   window.isoView = { init, openWindow, closeWindow, mountDock, unmount, refresh, paint, fit, isMounted, panFromKey,
                      findControl: id => state.controls?.querySelector(`#${id}`),
                      setGameMap, setGameMapKeep, hasGameMap, gameMapInfo, reloadGameAssets, buildingPreviews,
-                     viewRotation, turnView, currentRotation, toggleFlatView, beginPeek, releasePeek,
+                     viewRotation, turnView, currentRotation, toggleFlatView, togglePeekView,
                      setMapTiles, hasMapTiles, analysisTerrain, setMapLoadError,
                      // Fuer das Pruefgeruest: wo die Kamera steht und welche Marken liegen.
                      viewInfo: () => ({ ...state.view, rotation: currentRotation(), hand: viewRotation(), flat: state.flatView, peek: state.peekView }),

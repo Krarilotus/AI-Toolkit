@@ -23,7 +23,7 @@
     ['fire', "shortcuts:fire", 'f', 'castleShowFire'],
     ['gameMap', "shortcuts:gameMap", 'ctrl+m', 'castleIsoMapBtn'], ['resetMap', "shortcuts:resetMap", 'ctrl+shift+m', 'castleIsoMapReset'],
     ['rotateLeft', "shortcuts:rotateLeft", 'c'], ['rotateRight', "shortcuts:rotateRight", 'x'],
-    ['flatView', "shortcuts:flatView", 'space', 'castleIsoFlatBtn'], ['peekView', "shortcuts:peekView", 'v'],
+    ['flatView', "shortcuts:flatView", 'space', 'castleIsoFlatBtn'], ['peekView', "shortcuts:peekView", 'v', 'castleIsoPeekBtn'],
     ['saveAs', "shortcuts:saveAs", 'ctrl+shift+s'], ['undo', "shortcuts:undo", 'ctrl+z'], ['redo', "shortcuts:redo", 'ctrl+y'],
     ['copy', "shortcuts:copy", 'ctrl+c'], ['cut', "shortcuts:cut", 'ctrl+x'],
     ['exportDe', "shortcuts:exportDe", 'ctrl+shift+e', 'castleExportDeBtn'],

@@ -43,4 +43,4 @@ delete: L?schen
 undo: R?ckg?ngig
 redo: Wiederholen
 flatView: '2.5D: Flache Ansicht umschalten'
-peekView: '2.5D: Hinter die Szenerie schauen (halten)'
+peekView: '2.5D: Abgesenkte Ansicht umschalten'
