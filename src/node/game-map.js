@@ -464,6 +464,16 @@ function cactusPicture(type, rng) {
   }
 }
 
+// The native tree updaters select picture 148 for timber trees in Space
+// (0x004F260A), hide shrubs/apple trees, and retain cactus pictures.
+function treeViewPicture(tree, flat = false) {
+  if (flat) {
+    if (tree.type >= 1 && tree.type <= 4) return 148;
+    if ((tree.type >= 5 && tree.type <= 10) || tree.type === 15) return 0;
+  }
+  return tree.picture;
+}
+
 // Die Baumliste, Abschnitt 1014. Nur die Felder, die zum Zeichnen noetig sind.
 // Die Namen der Felder stammen aus der OpenSHC-Struktur "Tree" (156 Byte).
 function readTrees(section) {
@@ -726,13 +736,15 @@ function buildTileAtlas(gfx, gameRoot, layers = {}) {
       for (let mx = from; mx <= to; mx++) {
         const id = organisms.readUInt16LE(tileIndex(mx, my) * 2);
         const tree = id > 0 && id < FIRST_ROCK ? trees[id] : null;
-        if (!tree || !tree.alive || !tree.picture) continue;
+        if (!tree || !tree.alive) continue;
+        const pictureNumber = treeViewPicture(tree, layers.flat);
+        if (!pictureNumber) continue;
         const file = stock.byGmId.get(tree.gmId);
-        if (!file || tree.picture > file.count) continue;
-        const key = `${file.name}/${tree.picture}/${tree.palette}`;
+        if (!file || pictureNumber > file.count) continue;
+        const key = `${file.name}/${pictureNumber}/${tree.palette}`;
         let index = treePictures.get(key);
         if (index === undefined) {
-          const picture = treePicture(gameRoot, file.name, tree);
+          const picture = treePicture(gameRoot, file.name, {...tree,picture:pictureNumber});
           if (!picture) continue;
           index = upperPictures.length;
           upperPictures.push(picture);
@@ -879,7 +891,7 @@ function buildMapTiles(source, nativeLayers = null) {
     hoehen: heightRaster
   }));
   const vorrat = cameras?.[0] || buildTileAtlas(groundOnly(gfx), root, { stock, organisms, trees, pillars, heights });
-  const flat = buildTileAtlas(flatMapGraphics(source,stock),root,{stock,flat:true});
+  const flat = buildTileAtlas(flatMapGraphics(source,stock),root,{stock,flat:true,organisms,trees});
   const flatRandom = Buffer.alloc(400*400*2);
   if (source.random?.length === MAP_TILES*2) for(let y=0;y<400;y++) {
     const [low,high]=rowRange(y),start=tileIndex(low,y)*2;
@@ -939,7 +951,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, ['flat-view-2', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
+    return cachedAtlas(cacheRoot, ['flat-view-3', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }
@@ -954,7 +966,7 @@ module.exports = {
   internals: { readMapSource, buildMapTiles, flatMapGraphics, resolveNativeMapTiles, replaceMapKeeps, pathTileFlags, readPreview, previewPng, findDirectory, readSection, findKeeps, nameKeeps, keepOrientation,
                rowBase, rowRange, tileIndex,
                readPictureStock, pictureForValue, choosePictureStock, pictureStock, readGm1, tgxToRgba, virtualToFile,
-               readTrees, cactusPicture, TREE_STRIDE, FIRST_ROCK,
+               readTrees, cactusPicture, treeViewPicture, TREE_STRIDE, FIRST_ROCK,
                buildTileAtlas, diamondToRgba, upperTilePicture, packMapPictures, heldGm1, ATLAS_SPALTEN,
                PREVIEW_EDGE, MAP_TILES, BUILDING_SECTION, BUILDINGS_SECTION, STONE_KEEP, KEEP_EDGE,
                TILE_W, TILE_H, GFX_SECTION, ORGANISM_SECTION, TREES_SECTION,

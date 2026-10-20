@@ -601,7 +601,7 @@
         const tree = v.treeSprites.get(feld);
         const treePicture = tree && v.upperEntries[tree[2]];
         const treeImage = v.upperImages?.[treePicture?.page || 0] || v.upperImage;
-        if (!state.flatView && treePicture && treeImage?.complete && treeImage.naturalWidth) {
+        if ((!state.flatView || state.kachelVorrat?.flat) && treePicture && treeImage?.complete && treeImage.naturalWidth) {
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(treeImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,

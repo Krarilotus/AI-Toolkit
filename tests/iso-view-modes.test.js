@@ -162,6 +162,27 @@ test('V crops a wall pillar while preserving the full sixteen-pixel roof diamond
   assert.deepEqual(draws[0].slice(1),[4,6,30,39,-15,-87,30,39]);
 });
 
+test('Space draws the flat atlas stump at its native origin and hides legacy tree canopies',()=>{
+ const draws=[],image={complete:true,naturalWidth:256};
+ const places=new Uint16Array(400*400).fill(0xffff);places[0]=0;
+ const stock={bild:image,plaetze:places,hoehen:new Uint8Array(400*400).fill(64),kw:30,kh:16,spalten:64,
+  upperImages:[image],upperEntries:[null,{x:3,y:4,width:185,height:185}],treeSprites:new Map([[0,[0,0,1,-44,-144]]])};
+ const state={view:{zoom:1,panX:0,panY:0},flatView:true,kachelVorrat:{flat:stock}};
+ const context=vm.createContext({state,geo:{...geo,mapTileForView:(gx,gy)=>({mx:gx===0&&gy===0?0:-1,my:0})},
+  vorrat:()=>stock,gameMap:()=>({}),currentKeep:()=>({x:0,y:0}),viewRotation:()=>0,
+  KARTE_FELDER:400,MAP_MARGIN:5,kartenFeld:(x,y)=>x<0?-1:y*400+x,cacheTerrainCommands(){}});
+ vm.runInContext(source.slice(source.indexOf('  function paintMapTiles('),source.indexOf('  function paintGround(')),context);
+ const recorder={drawImage:(...args)=>draws.push(args)};
+ context.paintMapTiles(recorder,1,1);
+ for(const item of state.mapScenery)item.draw(recorder);
+ assert.equal(draws.length,2,'ground and stump are both present');
+ assert.deepEqual(draws[1].slice(1),[3,4,185,185,-59,-152,185,185],'the stump retains its native pixels and origin at flat height 8');
+ state.kachelVorrat={};draws.length=0;
+ context.paintMapTiles(recorder,1,1);
+ for(const item of state.mapScenery)item.draw(recorder);
+ assert.equal(draws.length,1,'a legacy atlas cannot bring tall tree sprites into Space');
+});
+
 test('Space uses native texture banks and preserves sparse farm parts instead of a square foundation', () => {
   const tiles=Array.from({length:46},(_,i)=>({bild:'local-flat-atlas',sx:i*32,sy:0,breite:30,hoehe:16,dx:-15,dy:0}));
   assert.equal(geo.flatTileIndex({building:41,group:0},3,1),7);
