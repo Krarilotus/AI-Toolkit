@@ -249,25 +249,28 @@
   let routeTerrainCache = null, terrainRequest = null;
   function analysisTerrain() {
     const map=gameMap(), keep=currentKeep();
-    if (map?.pathTerrain?.version !== 4 || !keep) {
+    if (map?.pathTerrain?.version !== 5 || !keep) {
       if(map?.path && terrainRequest !== map.path && window.electronAPI?.loadGameMap) {
         terrainRequest=map.path;
         window.electronAPI.loadGameMap(map.path).then(loaded=>{
           if(gameMap()!==map || !loaded.pathTerrain) return;
           map.pathTerrain=loaded.pathTerrain;rememberGameMap();
           window.castleEditor?.extras?.scheduleDraw?.();
+          refresh(true);
         }).catch(()=>{ /* Overlay reports castle-only terrain when unavailable. */ });
       }
       return null;
     }
     const key=JSON.stringify([map.path,keep,map.pathTerrain.fingerprint]);
-    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift};
+    if(routeTerrainCache?.map === map && routeTerrainCache.key === key) return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift,buildFlags:routeTerrainCache.buildFlags};
     const source=ausBase64(map.pathTerrain.blocked,Uint8Array);
     const hard=ausBase64(map.pathTerrain.hardBlocked,Uint8Array) || source;
     const heights=ausBase64(map.pathTerrain.heights,Uint8Array);
     const lifts=ausBase64(map.pathTerrain.constructionLift,Uint8Array);
+    const flags=ausBase64(map.pathTerrain.buildFlags,Uint32Array);
     const padding=5,edge=100+2*padding;
     const blocked=new Uint8Array(edge*edge), hardBlocked=new Uint8Array(edge*edge), ground=new Uint8Array(edge*edge), constructionLift=new Uint8Array(edge*edge);
+    const buildFlags=flags ? new Uint32Array(edge*edge) : null;
     for(let y=-padding;y<100+padding;y++) for(let x=-padding;x<100+padding;x++) {
       const index=(y+padding)*edge+x+padding;
       const rotated=geo.rotateGrid(x,99-y,1,keep.orientation);
@@ -275,11 +278,12 @@
       const valid=mx>=0 && my>=0 && mx<400 && my<400;
       blocked[index]=valid ? source[my*400+mx] : 1;
       hardBlocked[index]=valid ? hard[my*400+mx] : 1;
+      if(buildFlags)buildFlags[index]=valid ? flags[my*400+mx] : 16;
       ground[index]=valid ? heights[my*400+mx] : 0;
       constructionLift[index]=valid ? lifts[my*400+mx] : 0;
     }
-    routeTerrainCache={map,key,padding,blocked,hardBlocked,heights:ground,constructionLift};
-    return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift};
+    routeTerrainCache={map,key,padding,blocked,hardBlocked,heights:ground,constructionLift,buildFlags};
+    return {key:routeTerrainCache.key,padding:routeTerrainCache.padding,blocked:routeTerrainCache.blocked,hardBlocked:routeTerrainCache.hardBlocked,heights:routeTerrainCache.heights,constructionLift:routeTerrainCache.constructionLift,buildFlags};
   }
 
   function hasGameMap() { return Boolean(gameMap()); }
@@ -1425,8 +1429,32 @@
     if (state.hover) drawDiamond(ctx, state.hover.gx, state.hover.gy, 1, null, 'rgba(255,255,255,.5)');
     drawSelection(ctx, items);
     drawPreview(ctx);
+    drawConstructionWarnings(ctx);
     drawMarquee(ctx);
     drawStartPlaces(ctx);
+  }
+
+  function drawConstructionWarnings(ctx) {
+    const editor=window.castleEditor;
+    const warnings=editor?.getConstructionWarnings?.() || [];
+    const preview=editor?.getPlacementPreview?.();
+    for(const tile of preview?.tiles || []) {
+      const warning=editor.getConstructionWarningAtXY?.(tile.itemType ?? preview.itemType,tile.x,tile.y);
+      if(warning)warnings.push(warning);
+    }
+    if(!warnings.length)return;
+    ctx.save();ctx.fillStyle='rgba(255,45,45,.25)';ctx.strokeStyle='#ff4545';ctx.lineWidth=2;
+    for(const placement of warnings)for(const rect of placement.rects) {
+      const points=[[rect.left,99-rect.top],[rect.right+1,99-rect.top],[rect.right+1,100-rect.bottom],[rect.left,100-rect.bottom]];
+      const turned=points.map(([x,y])=>{const p=geo.rotateGrid(x-.5,y-.5,1,currentRotation());return {gx:p.gx+.5,gy:p.gy+.5};});
+      const lift=bodenHoehe(Math.floor(turned[0].gx),Math.floor(turned[0].gy));
+      const screen=turned.map(p=>geo.isoPoint(p.gx,p.gy,state.view,lift));
+      const width=state.host?.canvas?.clientWidth || Infinity,height=state.host?.canvas?.clientHeight || Infinity;
+      if(screen.every(([x])=>x<0) || screen.every(([x])=>x>width) || screen.every(([,y])=>y<0) || screen.every(([,y])=>y>height))continue;
+      ctx.beginPath();screen.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.moveTo(...screen[0]);ctx.lineTo(...screen[2]);ctx.moveTo(...screen[1]);ctx.lineTo(...screen[3]);ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // Wie hoch der Boden unter dem Dorf steigt, aus dem Kachelvorrat. Frueher
