@@ -514,7 +514,7 @@ test('a crenellated wall alternates merlon and embrasure, tile by tile', () => {
   // Und das Zeichnen benutzt die gewaehlte Fassung, nicht mehr den Eintrag.
   const script = fs.readFileSync(path.join(root, 'src', 'js', 'iso-view.js'), 'utf8');
   const malen = script.slice(script.indexOf('function drawSprite'), script.indexOf('function drawDiamond'));
-  assert.match(malen, /const variant = geo\.variantFor\(sprite, gx, gy, mauerAn, hoeheAn, state\.lageAn\)/);
+  assert.match(malen, /geo\.variantFor\(sprite, gx, gy, mauerAn, hoeheAn, state\.lageAn\)/);
   assert.match(malen, /image\(variant\.bild\)/);
   assert.match(malen, /geo\.spriteRect\(variant, gx, gy/);
 });

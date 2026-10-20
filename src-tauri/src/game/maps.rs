@@ -644,11 +644,9 @@ fn build_atlas(
                 return None;
             }
             let (e, raw) = gm.raw(index).ok()?;
-            let up = if flat && !matches!(name, "tile_flatties" | "tile_sea8") {
-                None
-            } else {
-                upper(e, raw).ok()?
-            };
+            // The native renderer retains the selected tile's TGX upper in
+            // Space too; restricting this to tile_sea8 drops newer shore banks.
+            let up = upper(e, raw).ok()?;
             Some((diamond(raw).ok()?, up))
         });
         if let Some((p, up)) = picture {
@@ -811,7 +809,7 @@ fn extract_map_tiles(
             map.section(1045).ok().flatten().as_deref() == Some(capture.base_heights.as_slice())
         });
     let identity = format!(
-        "rust-map-atlas-7:{}:{}:{}",
+        "rust-map-atlas-8:{}:{}:{}",
         hash(&map.bytes),
         graphics.revision,
         capture.as_ref().map_or("saved", |c| c.revision.as_str())

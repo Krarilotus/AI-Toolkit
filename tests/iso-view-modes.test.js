@@ -112,6 +112,23 @@ test('Space keeps native moat art instead of dropping its tiles',()=>{
  assert.equal(parts.length,1);assert.equal(parts[0].bild,'water');assert.equal(parts[0].nativeMoat,204);
 });
 
+test('placed killing pits use completed variants in normal and Space drawing',()=>{
+ const draws=[],variants=Array.from({length:8},(_,i)=>({bild:'completed-pit',nativePit:8+i,sx:i*32,sy:0,breite:30,hoehe:16,dx:-15,dy:0}));
+ const entry={bild:'open-pit',kacheln:1,flatBuilding:{group:-1},pitVariants:variants};
+ const state={view:{zoom:1,panX:0,panY:0}};
+ let random=0;
+ const context=vm.createContext({state,geo,flatRandomAt:()=>random,
+  image:()=>({complete:true,naturalWidth:256}),bauHoehe:()=>8});
+ vm.runInContext(source.slice(source.indexOf('  function flatSceneParts('),source.indexOf('  function structureLowering(')),context);
+ vm.runInContext(source.slice(source.indexOf('  function drawSprite('),source.indexOf('  function wallFootDepth(')),context);
+ for(random=0;random<16;random++) {
+  const parts=context.flatSceneParts({entry,gx:4,gy:5},()=>null,()=>null);
+  assert.equal(parts[0].nativePit,8+(random&7));
+  context.drawSprite({drawImage:(...args)=>draws.push(args)},entry,4,5,1);
+  assert.equal(draws.at(-1)[1],(random&7)*32,'normal/V draw the same completed bank');
+ }
+});
+
 test('Space uses complete native flat crenellations for high and low walls',()=>{
  const catalogue=require('../assets/aiv/iso/verzeichnis.json');
  const flatTiles=Array.from({length:46},(_,i)=>({bild:'native-flat',sx:i*32,sy:7,breite:30,hoehe:24,dx:-15,dy:-8}));

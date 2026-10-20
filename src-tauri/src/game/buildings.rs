@@ -209,6 +209,9 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
                 {
                     source = json!({"file":"tile_flatties","index":index});
                 }
+                if let Some(index) = object.get("nativePit").and_then(Value::as_u64) {
+                    source = json!({"file":"killing_pits","index":index});
+                }
                 if matches!(
                     source["file"].as_str(),
                     Some("tile_farmland" | "tree_apple")
