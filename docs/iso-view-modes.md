@@ -15,7 +15,10 @@ Space toggles flat view: terrain and troops use the game's constant 8-pixel
 datum, with no cliff pillars or overground scenery. Buildings use the selected
 installation's `tile_flatties.gm1` textures, selected by native building type,
 instead of generated footprint diamonds. Farm fields retain their sparse native
-layout, stairs use flat stair tiles, and walls retain their roof diamonds.
+layout, stairs use flat stair tiles, and plain walls retain their roof diamonds.
+High and low crenellations use the complete native flat tiles 36–39, including
+their upper artwork, rather than a sixteen-pixel crop of the normal wall sprite
+(`renderMap` at `0x004E99AD` / `0x004EBCC6`). Their variation uses RandomLayer.
 Each hut gets one centre symbol. Moats retain their native water/edge artwork.
 The saved map has its own flat atlas, including native flat rock tiles and
 preplaced building floors; tree sprites and raised scenery are omitted.
