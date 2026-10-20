@@ -669,8 +669,15 @@
   }
 
   function drawSprite(ctx, sprite, gx, gy, tiles, mauerAn, hoeheAn, layoutIndex = 0) {
-    // Native flat parts are emitted by paintScene, one command per real tile.
-    if (state.flatView) return false;
+    if (state.flatView) {
+      // Placement/move previews use the same native parts as the composed scene.
+      const parts = flatSceneParts({entry:sprite,gx,gy,tiles,layoutIndex},mauerAn,hoeheAn);
+      const loaded = parts.map(part => image(part.bild));
+      if (!loaded.every(img => img?.complete && img.naturalWidth)) return false;
+      const lift = bauHoehe(gx,gy,tiles);
+      parts.forEach((part,index) => drawNativePart(ctx,part,loaded[index],lift));
+      return true;
+    }
     const parts = geo.buildingParts({ entry: sprite, gx, gy, layoutIndex });
     if (parts) {
       const loaded = new Map(parts.map(part => [part.bild, image(part.bild)]));
