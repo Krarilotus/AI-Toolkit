@@ -388,7 +388,21 @@ function installedPictureStock(gameRoot, overrides = true) {
   return pictureStock(files, overrides ? 'installed' : 'capture');
 }
 
-function choosePictureStock(gfx, candidates, validPicture) {
+function shoreLayoutErrors(stock, gfx, logic, misc, logic2) {
+  if (logic?.length !== MAP_TILES*4 || misc?.length !== MAP_TILES*2 || logic2?.length !== MAP_TILES) return null;
+  let checked=0, errors=0;
+  for(let tile=0;tile<MAP_TILES;tile++) {
+    // updateGfxLayer 0x50CDBF: undecorated sea uses one of eight plain
+    // pictures in each 246-picture lighting bank, never a bank/corner tile.
+    if (!(logic.readUInt32LE(tile*4)&1) || (misc.readUInt16LE(tile*2)&0x3c0) || (logic2[tile]&8)) continue;
+    const picture=pictureForValue(stock,gfx.readUInt16LE(tile*2));
+    checked++;
+    if(picture?.name!=='tile_sea_new_01' || picture.index>=1476 || picture.index%246>=8) errors++;
+  }
+  return checked ? errors : null;
+}
+
+function choosePictureStock(gfx, candidates, validPicture, layers = {}) {
   const values = new Set();
   for (let at=0;at<gfx.length;at+=2) if (gfx.readUInt16LE(at)) values.add(gfx.readUInt16LE(at));
   const checked = candidates.map(stock => ({stock, invalid:[...values].filter(value => {
@@ -397,10 +411,15 @@ function choosePictureStock(gfx, candidates, validPicture) {
   }).length}));
   // Switch only on a fully valid alternative. In ambiguous/unsupported maps
   // preserve classic compatibility, rather than silently selecting a partial fit.
-  return checked.find(candidate => candidate.invalid === 0)?.stock || candidates[0];
+  const valid=checked.filter(candidate=>candidate.invalid===0);
+  // Some saved maps use the installed counter after GM slot 149; both
+  // layouts can point into valid terrain files. Check native sea semantics
+  // before falling back to the historical compatibility preference.
+  return valid.find(({stock})=>shoreLayoutErrors(stock,gfx,layers.logic,layers.misc,layers.logic2)===0)?.stock
+    || valid[0]?.stock || candidates[0];
 }
 
-function savedPictureStock(gameRoot, gfx) {
+function savedPictureStock(gameRoot, gfx, layers = {}) {
   const headers = new Map();
   return choosePictureStock(gfx, [readPictureStock(gameRoot), installedPictureStock(gameRoot)], picture => {
     if (!headers.has(picture.name)) {
@@ -409,7 +428,7 @@ function savedPictureStock(gameRoot, gfx) {
     }
     const header=headers.get(picture.name);
     return header.type === 3 && picture.index < header.count;
-  });
+  }, layers);
 }
 
 // Bildnummer aus dem GfxLayer -> Datei und Nummer darin. renderGM greift auf
@@ -883,7 +902,9 @@ function buildMapTiles(source, nativeLayers = null) {
   }
   // Resolve the desert tile through the executable's GM table, not a global
   // sprite number. tile_land8 picture 0 is a plain desert diamond.
-  const stock = nativeLayers ? installedPictureStock(root, false) : savedPictureStock(root, gfx);
+  const stock = nativeLayers ? installedPictureStock(root, false) : savedPictureStock(root, gfx, {
+    logic:readSection(buffer,directory,1003), misc:readSection(buffer,directory,1007), logic2:readSection(buffer,directory,1037)
+  });
   const desert = stock.files.find(file => file.name === 'tile_land8' && file.count);
   if (keeps.length && !desert) throw new Error('The game desert terrain graphics are missing.');
   const groundOnly = layer => replaceMapKeeps(layer, keeps, (desert?.from || 0) + 1);
@@ -893,7 +914,11 @@ function buildMapTiles(source, nativeLayers = null) {
     hoehen: heightRaster
   }));
   const vorrat = cameras?.[0] || buildTileAtlas(groundOnly(gfx), root, { stock, organisms, trees, pillars, heights });
-  const flat = buildTileAtlas(flatMapGraphics(source,stock),root,{stock,flat:true,organisms,trees});
+  const flatFor = layer => buildTileAtlas(flatMapGraphics({...source,gfx:layer},stock),root,{stock,flat:true,organisms,trees});
+  const flatCameras = nativeLayers?.cameras.map(layer=>flatFor(layer.gfx));
+  const flat = flatCameras?.[0] || flatFor(gfx);
+  const savedCamera=readSection(buffer,directory,1044);
+  const orientation=savedCamera?.length===4 ? savedCamera.readUInt32LE(0) : 0;
   const flatRandom = Buffer.alloc(400*400*2);
   if (source.random?.length === MAP_TILES*2) for(let y=0;y<400;y++) {
     const [low,high]=rowRange(y),start=tileIndex(low,y)*2;
@@ -905,6 +930,8 @@ function buildMapTiles(source, nativeLayers = null) {
     pictureLayout: stock.layout,
     ...vorrat,
     flat,
+    ...(flatCameras ? {flatCameras} : {}),
+    savedOrientation:[0,2,4,6].includes(orientation)?orientation:0,
     flatRandom: flatRandom.toString('base64'),
     ...(cameras ? { cameras, nativeRenderer: true } : {}),
     // Hoehen in derselben Zaehlung wie die Plaetze: volles 400x400-Raster.
@@ -953,7 +980,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, ['flat-view-4', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
+    return cachedAtlas(cacheRoot, ['flat-view-5', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }

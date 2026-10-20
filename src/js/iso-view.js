@@ -438,7 +438,7 @@
 
   function vorrat() {
     const stock = state.kachelVorrat;
-    if (state.flatView && stock?.flat) return stock.flat;
+    if (state.flatView && stock?.flat) return stock.flatCameras?.[viewRotation() / 2] || stock.flat;
     return stock?.cameras?.[viewRotation() / 2] || stock || null;
   }
 
@@ -488,8 +488,9 @@
       };
     }
     const cameras = daten.cameras?.length === 4 ? daten.cameras.map(cameraStock) : null;
-    const flat = daten.flat ? cameraStock(daten.flat) : null;
-    const stock = { ...(cameras?.[0] || cameraStock(daten)), flat, flatRandom:ausBase64(daten.flatRandom,Uint16Array), path: daten.path, cameras, nativeError: daten.nativeError };
+    const flatCameras = daten.flatCameras?.length === 4 ? daten.flatCameras.map(cameraStock) : null;
+    const flat = flatCameras?.[0] || (daten.flat ? cameraStock(daten.flat) : null);
+    const stock = { ...(cameras?.[0] || cameraStock(daten)), flat, flatCameras, flatRandom:ausBase64(daten.flatRandom,Uint16Array), path: daten.path, cameras, nativeError: daten.nativeError };
     await Promise.all(pending);
     if (request !== mapTilesRequest || selected !== gameMap()) return false;
     if (replacementMap) {
@@ -503,6 +504,12 @@
       routeTerrainCache = null;
       terrainRequest = null;
       window.castleEditor?.extras?.scheduleDraw?.();
+    }
+    // Saved GFX already faces section 1044's camera. Start in that direction
+    // instead of showing its banks backwards. Refresh retains the user's turn.
+    if (!state.kachelVorrat && [0,2,4,6].includes(daten.savedOrientation)) {
+      handDrehung = daten.savedOrientation;
+      state.rotationPivot = state.loweredPivot = null;
     }
     releaseMapImages();
     state.kachelVorrat = stock;

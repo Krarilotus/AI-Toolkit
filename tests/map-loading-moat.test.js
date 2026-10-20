@@ -46,6 +46,30 @@ test('failed atlas decode is reported and a later retry can succeed',async()=>{
  const retry=s.context.setMapTiles(payload());s.images[2].resolve();s.images[3].resolve();assert.equal(await retry,true);
 });
 
+test('initial terrain uses its saved camera while refresh preserves the chosen camera',async()=>{
+ const s=loader(),pending=s.context.setMapTiles({...payload(),savedOrientation:4});
+ assert.equal(s.context.handDrehung,0,'camera commits with decoded pixels');
+ s.images.forEach(image=>image.resolve());assert.equal(await pending,true);
+ assert.equal(s.context.handDrehung,4);
+ s.context.handDrehung=6;
+ const refresh=s.context.setMapTiles({...payload(),savedOrientation:2});
+ s.images.forEach(image=>image.resolve());await refresh;
+ assert.equal(s.context.handDrehung,6);
+});
+
+test('all four Space camera atlases commit atomically and follow camera selection',async()=>{
+ const s=loader(),pending=s.context.setMapTiles({...payload(),savedOrientation:4,flatCameras:[0,2,4,6].map(camera=>({atlas:'flat-'+camera,plaetze:'AA=='}))});
+ s.images.slice(0,-1).forEach(image=>image.resolve());await Promise.resolve();
+ assert.equal(s.state.kachelVorrat,undefined);
+ s.images.at(-1).resolve();await pending;
+ s.state.flatView=true;s.context.viewRotation=()=>s.context.handDrehung;
+ vm.runInContext(source.slice(source.indexOf('  function vorrat()'),source.indexOf('  function releaseMapImages()')),s.context);
+ for(const orientation of [0,2,4,6]) {
+  s.context.handDrehung=orientation;
+  assert.equal(s.context.vorrat().bild.src,'flat-'+orientation);
+ }
+});
+
 test('refresh commits metadata with decoded tiles and preserves the selected player after reordered starts',async()=>{
  const s=loader();s.state.gameMap={path:'map',keeps:[{player:1,x:10,y:10},{player:2,x:20,y:20}],keepIndex:1};
  s.state.view={panX:123,panY:456,zoom:2};s.state.peekView=true;s.state.hoehenSpanne={key:'stale'};
