@@ -1,7 +1,28 @@
 # Native preview validation
 
-Windows x64, 23 September 2026. Native compilation/tests now also pass on
+Windows x64, updated 20 October 2026. Native compilation/tests also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
+
+## Saved-map rotation and Space/V camera modes: c45391d1
+
+Published `snapshot-native-c45391d1`, built from
+`c45391d12e9dbef5543363639965d4f292c0271e` on the latest preview branch.
+X/C now use a loaded saved-map atlas without requiring historical engine camera
+captures. Space toggles flat building footprints and terrain; holding V provides
+a temporary lowered-scenery view. See [behavior and artwork limits](iso-view-modes.md).
+
+All **101 focused tests** pass. Canvas/GPU visual checks used GreekSea in all
+four directions. A fresh packaged native profile also loaded GreekSea with
+**zero camera captures** and accepted the atlas; dispatched Space/V/X/C,
+auto-repeat and shifted key release; retained the castle document byte-for-byte
+as JSON; reported no renderer errors; and closed cleanly. The live user profile
+was not changed. Full suites and performance benchmarks were not rerun.
+
+Portable: **7,424,766 bytes**; Setup: **6,765,128 bytes**. Packaging retained all
+**123 original images** byte-for-byte, and nine complete language catalogues.
+Portable SHA-256:
+`639c0532ec1f8e19783ae6df53dd134619dc1a20adbcbb00a681b4305e2dfbc9`.
+The published asset digest and the tagged copy in `D:\Downloads` match.
 
 ## Gate roofs, unit proportions and UCP toolbar polish: 6f18150b
 
