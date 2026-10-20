@@ -4432,7 +4432,7 @@
     if (action === 'flatView' || action === 'peekView') {
       if (!window.isoView?.isMounted?.()) return;
       if (action === 'flatView') window.isoView.toggleFlatView();
-      else window.isoView.beginPeek(event);
+      else window.isoView.togglePeekView();
       return;
     }
     const id = shortcutConfig.actions.find(([key]) => key === action)?.[3];
