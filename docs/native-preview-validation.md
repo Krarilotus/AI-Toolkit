@@ -31,6 +31,9 @@ Portable: **7,430,371 bytes**; Setup: **6,769,743 bytes**. All **123 packaged
 images** retain their original bytes and all nine language catalogues are
 complete. Portable SHA-256:
 `295b20e131b19175009930575f475d0a071ffbf64c730a2be0572015ebe0715a`.
+Published asset digests match the tagged portable and Setup copies in
+`D:\Downloads`. An isolated previous native build offers **Install
+snapshot-native-44a269c2** through **Experimental snapshot: Krarilotus**.
 Full suites and benchmarks were not rerun.
 
 ## Lowered-view height and footprint correction: 70723269
