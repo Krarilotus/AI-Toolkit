@@ -37,8 +37,9 @@ Campgrounds, training grounds and the oil-smelter campfire use their linked
 native building types (51, 53, 55–59). Those negative texture groups retain
 their native ground artwork; they are not stockpile floors. Farm fields and
 dairy fences retain their complete native parts and camera-specific corner
-artwork. Orchard trees are hidden in Space, following the apple-tree updater,
-instead of leaving a sixteen-pixel slice of their canopy.
+artwork. Orchard positions remain visible in Space as native apple stumps
+(one-based picture 101), instead of a sixteen-pixel slice of their canopy.
+This is an editor visibility choice; the native apple updater hides its sprite.
 The saved map has its own flat atlas, including native flat rock tiles and
 preplaced building floors. Flat building types come from BuildingLayer (1012)
 and the building records (1013, 812-byte stride, type at +210), matching
@@ -47,9 +48,9 @@ fallback when these records are missing: it can omit keep doors and scenario
 decorations, and store the parent type on attached grounds. Surviving cells of
 partial preplaced buildings resolve through their building ID individually.
 Timber trees retain their native stump (picture 148)
-with the saved species, palette and origin; shrubs and apple trees are hidden,
-and cacti retain their native pictures. These are the game's tree-updater rules
-at `0x004F260A`, `0x004F26AB` and `0x004F28BC`. Flat tile substitutions happen
+with the saved species, palette and origin; shrubs are hidden and cacti retain
+their native pictures. These follow the game's timber/shrub/cactus updaters.
+Saved apple trees use the same stump as AIV orchards. Flat tile substitutions happen
 before atlas decoding. The selected terrain tiles retain their TGX upper pixels
 and offsets, including extended shore banks such as `tile_sea_new_01`, following
 `renderMap` at `0x004E9C23`–`0x004E9C8F`. Cliff pillars remain hidden.

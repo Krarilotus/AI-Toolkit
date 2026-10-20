@@ -508,10 +508,12 @@ struct Tree {
 }
 impl Tree {
     fn view_picture(&self, flat: bool) -> usize {
-        // Native tree updaters: 0x004F260A / 0x004F26AB / 0x004F28BC.
+        // Native timber/shrub rules; editor orchards retain their positions
+        // using the original apple stump (picture 101).
         match (flat, self.typ) {
             (true, 1..=4) => 148,
-            (true, 5..=10 | 15) => 0,
+            (true, 5..=10) => 0,
+            (true, 15) => 101,
             _ => self.picture,
         }
     }
@@ -872,7 +874,7 @@ fn extract_map_tiles(
             map.section(1045).ok().flatten().as_deref() == Some(capture.base_heights.as_slice())
         });
     let identity = format!(
-        "rust-map-atlas-10:{}:{}:{}",
+        "rust-map-atlas-11:{}:{}:{}",
         hash(&map.bytes),
         graphics.revision,
         capture.as_ref().map_or("saved", |c| c.revision.as_str())
@@ -1153,7 +1155,8 @@ mod tests {
             assert_eq!(tree.view_picture(false), 12);
             let expected = match tree.typ {
                 1..=4 => 148,
-                5..=10 | 15 => 0,
+                5..=10 => 0,
+                15 => 101,
                 _ => 12,
             };
             assert_eq!(tree.view_picture(true), expected);

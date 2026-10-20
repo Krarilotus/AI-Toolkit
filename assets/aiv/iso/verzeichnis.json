@@ -18110,7 +18110,7 @@
   "72": {
    "name": "Apple Farm",
    "aiv": 71,
-   "kacheln": 11,
+   "kacheln": 10,
    "bild": "farm_72.png",
    "breite": 452,
    "hoehe": 281,
@@ -18502,7 +18502,7 @@
      [
       {
        "gx": 2,
-       "gy": 10,
+       "gy": 9,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18513,7 +18513,7 @@
       },
       {
        "gx": 1,
-       "gy": 10,
+       "gy": 9,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18524,7 +18524,7 @@
       },
       {
        "gx": 2,
-       "gy": 9,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18535,7 +18535,7 @@
       },
       {
        "gx": 0,
-       "gy": 10,
+       "gy": 9,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 46,
@@ -18546,7 +18546,7 @@
       },
       {
        "gx": 1,
-       "gy": 9,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18557,7 +18557,7 @@
       },
       {
        "gx": 2,
-       "gy": 8,
+       "gy": 7,
        "bild": "building-parts.png",
        "breite": 44,
        "hoehe": 57,
@@ -18568,7 +18568,7 @@
       },
       {
        "gx": 0,
-       "gy": 9,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 59,
@@ -18579,7 +18579,7 @@
       },
       {
        "gx": 1,
-       "gy": 8,
+       "gy": 7,
        "bild": "building-parts.png",
        "breite": 44,
        "hoehe": 75,
@@ -18590,7 +18590,7 @@
       },
       {
        "gx": 0,
-       "gy": 8,
+       "gy": 7,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 71,
@@ -18601,7 +18601,7 @@
       },
       {
        "gx": 1,
-       "gy": 5,
+       "gy": 4,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18612,7 +18612,7 @@
       },
       {
        "gx": 1,
-       "gy": 1,
+       "gy": 0,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18623,7 +18623,7 @@
       },
       {
        "gx": 5,
-       "gy": 9,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18634,7 +18634,7 @@
       },
       {
        "gx": 5,
-       "gy": 5,
+       "gy": 4,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18645,7 +18645,7 @@
       },
       {
        "gx": 5,
-       "gy": 1,
+       "gy": 0,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18656,7 +18656,7 @@
       },
       {
        "gx": 9,
-       "gy": 9,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18667,7 +18667,7 @@
       },
       {
        "gx": 9,
-       "gy": 5,
+       "gy": 4,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18678,7 +18678,7 @@
       },
       {
        "gx": 9,
-       "gy": 1,
+       "gy": 0,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18692,8 +18692,8 @@
     [
      [
       {
-       "gx": 10,
-       "gy": 10,
+       "gx": 9,
+       "gy": 9,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18703,8 +18703,8 @@
        "sy": 3777
       },
       {
-       "gx": 9,
-       "gy": 10,
+       "gx": 8,
+       "gy": 9,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18714,8 +18714,8 @@
        "sy": 3777
       },
       {
-       "gx": 10,
-       "gy": 9,
+       "gx": 9,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18725,8 +18725,8 @@
        "sy": 3777
       },
       {
-       "gx": 8,
-       "gy": 10,
+       "gx": 7,
+       "gy": 9,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 46,
@@ -18736,8 +18736,8 @@
        "sy": 3777
       },
       {
-       "gx": 9,
-       "gy": 9,
+       "gx": 8,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 16,
@@ -18747,8 +18747,8 @@
        "sy": 3777
       },
       {
-       "gx": 10,
-       "gy": 8,
+       "gx": 9,
+       "gy": 7,
        "bild": "building-parts.png",
        "breite": 44,
        "hoehe": 57,
@@ -18758,8 +18758,8 @@
        "sy": 3777
       },
       {
-       "gx": 8,
-       "gy": 9,
+       "gx": 7,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 59,
@@ -18769,8 +18769,8 @@
        "sy": 3777
       },
       {
-       "gx": 9,
-       "gy": 8,
+       "gx": 8,
+       "gy": 7,
        "bild": "building-parts.png",
        "breite": 44,
        "hoehe": 75,
@@ -18780,8 +18780,8 @@
        "sy": 3777
       },
       {
-       "gx": 8,
-       "gy": 8,
+       "gx": 7,
+       "gy": 7,
        "bild": "building-parts.png",
        "breite": 30,
        "hoehe": 71,
@@ -18791,8 +18791,8 @@
        "sy": 3777
       },
       {
-       "gx": 5,
-       "gy": 9,
+       "gx": 4,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18802,8 +18802,8 @@
        "sy": 3777
       },
       {
-       "gx": 1,
-       "gy": 9,
+       "gx": 0,
+       "gy": 8,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18813,8 +18813,8 @@
        "sy": 3777
       },
       {
-       "gx": 9,
-       "gy": 5,
+       "gx": 8,
+       "gy": 4,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18824,8 +18824,8 @@
        "sy": 3777
       },
       {
-       "gx": 5,
-       "gy": 5,
+       "gx": 4,
+       "gy": 4,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18835,8 +18835,8 @@
        "sy": 3777
       },
       {
-       "gx": 1,
-       "gy": 5,
+       "gx": 0,
+       "gy": 4,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18846,8 +18846,8 @@
        "sy": 3777
       },
       {
-       "gx": 9,
-       "gy": 1,
+       "gx": 8,
+       "gy": 0,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18857,8 +18857,8 @@
        "sy": 3777
       },
       {
-       "gx": 5,
-       "gy": 1,
+       "gx": 4,
+       "gy": 0,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18868,8 +18868,8 @@
        "sy": 3777
       },
       {
-       "gx": 1,
-       "gy": 1,
+       "gx": 0,
+       "gy": 0,
        "bild": "building-parts.png",
        "breite": 185,
        "hoehe": 185,
@@ -18883,7 +18883,7 @@
     [
      [
       {
-       "gx": 10,
+       "gx": 9,
        "gy": 2,
        "bild": "building-parts.png",
        "breite": 30,
@@ -18894,7 +18894,7 @@
        "sy": 3777
       },
       {
-       "gx": 9,
+       "gx": 8,
        "gy": 2,
        "bild": "building-parts.png",
        "breite": 30,
@@ -18905,7 +18905,7 @@
        "sy": 3777
       },
       {
-       "gx": 10,
+       "gx": 9,
        "gy": 1,
        "bild": "building-parts.png",
        "breite": 30,
@@ -18916,7 +18916,7 @@
        "sy": 3777
       },
       {
-       "gx": 8,
+       "gx": 7,
        "gy": 2,
        "bild": "building-parts.png",
        "breite": 30,
@@ -18927,7 +18927,7 @@
        "sy": 3777
       },
       {
-       "gx": 9,
+       "gx": 8,
        "gy": 1,
        "bild": "building-parts.png",
        "breite": 30,
@@ -18938,7 +18938,7 @@
        "sy": 3777
       },
       {
-       "gx": 10,
+       "gx": 9,
        "gy": 0,
        "bild": "building-parts.png",
        "breite": 44,
@@ -18949,7 +18949,7 @@
        "sy": 3777
       },
       {
-       "gx": 8,
+       "gx": 7,
        "gy": 1,
        "bild": "building-parts.png",
        "breite": 30,
@@ -18960,7 +18960,7 @@
        "sy": 3777
       },
       {
-       "gx": 9,
+       "gx": 8,
        "gy": 0,
        "bild": "building-parts.png",
        "breite": 44,
@@ -18971,7 +18971,7 @@
        "sy": 3777
       },
       {
-       "gx": 8,
+       "gx": 7,
        "gy": 0,
        "bild": "building-parts.png",
        "breite": 30,
@@ -18982,7 +18982,7 @@
        "sy": 3777
       },
       {
-       "gx": 9,
+       "gx": 8,
        "gy": 5,
        "bild": "building-parts.png",
        "breite": 185,
@@ -18993,7 +18993,7 @@
        "sy": 3777
       },
       {
-       "gx": 9,
+       "gx": 8,
        "gy": 9,
        "bild": "building-parts.png",
        "breite": 185,
@@ -19004,7 +19004,7 @@
        "sy": 3777
       },
       {
-       "gx": 5,
+       "gx": 4,
        "gy": 1,
        "bild": "building-parts.png",
        "breite": 185,
@@ -19015,7 +19015,7 @@
        "sy": 3777
       },
       {
-       "gx": 5,
+       "gx": 4,
        "gy": 5,
        "bild": "building-parts.png",
        "breite": 185,
@@ -19026,7 +19026,7 @@
        "sy": 3777
       },
       {
-       "gx": 5,
+       "gx": 4,
        "gy": 9,
        "bild": "building-parts.png",
        "breite": 185,
@@ -19037,7 +19037,7 @@
        "sy": 3777
       },
       {
-       "gx": 1,
+       "gx": 0,
        "gy": 1,
        "bild": "building-parts.png",
        "breite": 185,
@@ -19048,7 +19048,7 @@
        "sy": 3777
       },
       {
-       "gx": 1,
+       "gx": 0,
        "gy": 5,
        "bild": "building-parts.png",
        "breite": 185,
@@ -19059,7 +19059,7 @@
        "sy": 3777
       },
       {
-       "gx": 1,
+       "gx": 0,
        "gy": 9,
        "bild": "building-parts.png",
        "breite": 185,
