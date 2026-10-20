@@ -3,6 +3,27 @@
 Windows x64, updated 20 October 2026. Native compilation/tests also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Screenshot-friendly lowered-view toggle: 03a097db
+
+Published `snapshot-native-03a097db` changes V to a toggle and adds a pressed
+Lowered view button. Key release, focus loss, closing/reopening and
+docking/detaching retain the mode. This changes the interaction; the existing
+compressed-sprite rendering still needs comparison with the game's view.
+
+**19 focused shortcut/view-mode checks and strict locale checks pass.** A fresh
+packaged native profile loaded GreekSea and confirmed single activation despite
+key repeat, persistence after keyup/blur/remount/detach/dock, second-press and
+button deactivation, unchanged castle contents, no renderer errors and exit 0.
+The screenshot was captured after releasing V and dispatching focus loss.
+
+Portable: **7,429,011 bytes**; Setup: **6,767,616 bytes**. All **123 packaged
+images** retain their original bytes and all nine language catalogues are complete.
+Portable SHA-256:
+`a99e56a718d275284665833dfa3d184f23818a54f7f2fae49e08eb3b9d87d8c2`.
+Published asset digests match both tagged `D:\Downloads` copies. An isolated
+previous native build offered **Install snapshot-native-03a097db** through the
+Krarilotus fork source. Full suites and performance benchmarks were not rerun.
+
 ## Permanent terrain construction warnings: ac357d88
 
 Published `snapshot-native-ac357d88` adds red footprint fills, outlines and
