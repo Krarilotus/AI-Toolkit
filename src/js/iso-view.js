@@ -173,21 +173,22 @@
   }
 
   // Terrain height in native image pixels, shared by sprites and picking.
-  function bodenHoehe(gx, gy) {
-    if (state.flatView || state.peekView) return 0;
+  function bodenHoehe(gx, gy, native = false) {
+    if (state.flatView && !native) return 0;
+    const height = value => native ? value : geo.viewHeight(value, state.flatView, state.peekView);
     // The full-map atlas takes precedence over paintGround. It already lifts
     // terrain tiles; sprites and picking must use those same heights.
     const atlas = vorrat();
     if (atlas?.plaetze && atlas.bild?.complete && atlas.bild?.naturalWidth && gameMap()) {
       // Dieselbe Rechnung wie beim Malen des Grundes - anders schwebte ein
       // Bauwerk ueber seiner eigenen Kachel.
-      return geo.mapTileHeight(gx, gy, currentKeep(), atlas.hoehen, viewRotation());
+      return height(geo.mapTileHeight(gx, gy, currentKeep(), atlas.hoehen, viewRotation()));
     }
     const world = geo.unrotateGrid(gx, gy, viewRotation());
     const feld = state.hoehenFeld;
-    if (!feld) return 0;
+    if (!feld) return height(0);
     if (world.gx < 0 || world.gy < 0 || world.gx >= geo.GRID || world.gy >= geo.GRID) return 0;
-    return feld[world.gy * geo.GRID + world.gx] || 0;
+    return height(feld[world.gy * geo.GRID + world.gx] || 0);
   }
 
   function gameMap() {
@@ -363,15 +364,14 @@
     const target = surface();
     const pivotKey = () => [target?.width,target?.height,state.view.zoom,state.view.panX,
       state.view.panY,kartenSchluessel(),viewRotation()].join('/');
-    const wasLowered = state.flatView || state.peekView;
-    const focus = target && geo.tileFromPoint(target.width / 2, target.height / 2, state.view, bodenHoehe, false);
+    const previousPivot = state.loweredPivot?.key === pivotKey() ? state.loweredPivot : null;
+    const focus = previousPivot?.focus || (target && geo.tileFromPoint(target.width / 2, target.height / 2, state.view, bodenHoehe, false));
     const before = focus ? bodenHoehe(focus.gx, focus.gy) : 0;
-    const restoreHeight = wasLowered && state.loweredPivot?.key === pivotKey() ? state.loweredPivot.height : null;
     state[key] = value;
     const lowered = state.flatView || state.peekView;
-    if (focus && wasLowered !== lowered) {
-      state.view.panY += ((restoreHeight ?? bodenHoehe(focus.gx, focus.gy)) - before) * state.view.zoom;
-      state.loweredPivot = lowered ? {key:pivotKey(),height:before} : null;
+    if (focus) {
+      state.view.panY += (bodenHoehe(focus.gx, focus.gy) - before) * state.view.zoom;
+      state.loweredPivot = lowered ? {key:pivotKey(),focus} : null;
     }
     state.rotationPivot = null;
     for (const [id, pressed] of [['castleIsoFlatBtn', state.flatView], ['castleIsoPeekBtn', state.peekView]]) {
@@ -552,8 +552,8 @@
         if (feld < 0) continue;
         const platz = v.plaetze[feld];
         if (platz === 0xffff) continue;
-        const lowered = state.flatView || state.peekView;
-        const hebung = (lowered ? 0 : v.hoehen?.[feld] || 0) * state.view.zoom;
+        const displayHeight = geo.viewHeight(v.hoehen?.[feld] || 0, state.flatView, state.peekView);
+        const hebung = displayHeight * state.view.zoom;
         const [px, py] = geo.isoPoint(gx, gy, state.view, 0);
         // The game advances 32 pixels between tiles on a screen row, but
         // a GM1 diamond contains only 30 pixels. Do not stretch those pixels
@@ -563,10 +563,11 @@
         const cliff = v.upperEntries[(v.cliffSprites?.[feld] || 0) - 1];
         const cliffImage = v.upperImages?.[cliff?.page || 0] || v.upperImage;
         state.mapScenery.push({ isTerrain: true, gx, gy, tiles: 1, layer: 0, draw: (target = ctx) => {
-        if (!lowered && cliff && cliffImage?.complete && cliffImage.naturalWidth) {
-          target.drawImage(cliffImage, cliff.x, cliff.y, cliff.width, cliff.height,
+        if (!state.flatView && cliff && cliffImage?.complete && cliffImage.naturalWidth) {
+          const pillarHeight = state.peekView ? Math.min(cliff.height, displayHeight + 7) : cliff.height;
+          target.drawImage(cliffImage, cliff.x, cliff.y, cliff.width, pillarHeight,
             tileLeft, py - hebung + cliff.dy * state.view.zoom,
-            tileWidth, cliff.height * state.view.zoom);
+            tileWidth, pillarHeight * state.view.zoom);
         }
         target.drawImage(v.bild,
           (platz % v.spalten) * kw, Math.floor(platz / v.spalten) * kh, kw, kh,
@@ -578,8 +579,8 @@
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(upperImage, upper.x, upper.y, upper.width, upper.height,
-              tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY * (state.peekView ? .2 : 1),
-              upper.width * scaleX, upper.height * scaleY * (state.peekView ? .2 : 1));
+              tileLeft + upper.dx * scaleX, py - hebung + upper.dy * scaleY,
+              upper.width * scaleX, upper.height * scaleY);
           }});
         }
         const tree = v.treeSprites.get(feld);
@@ -589,8 +590,8 @@
           state.mapScenery.push({ isTerrain: true, clearable: true, gx, gy, tiles: 1, draw: (target = ctx) => {
             const scaleX = state.view.zoom, scaleY = state.view.zoom;
             target.drawImage(treeImage, treePicture.x, treePicture.y, treePicture.width, treePicture.height,
-              tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY * (state.peekView ? .2 : 1),
-              treePicture.width * scaleX, treePicture.height * scaleY * (state.peekView ? .2 : 1));
+              tileLeft + tree[3] * scaleX, py - hebung + tree[4] * scaleY,
+              treePicture.width * scaleX, treePicture.height * scaleY);
           }});
         }
         gemalt += 1;
@@ -637,9 +638,8 @@
   function drawNativePart(ctx, part, img, lift) {
     const [x, y] = geo.isoPoint(part.gx, part.gy, state.view, lift);
     const z = state.view.zoom;
-    const scaleY = state.peekView ? .2 : 1;
     ctx.drawImage(img, part.sx, part.sy, part.breite, part.hoehe,
-      x + part.dx * z, y + part.dy * z * scaleY, part.breite * z, part.hoehe * z * scaleY);
+      x + part.dx * z, y + part.dy * z, part.breite * z, part.hoehe * z);
   }
 
   function drawSprite(ctx, sprite, gx, gy, tiles, mauerAn, hoeheAn, layoutIndex = 0) {
@@ -677,15 +677,23 @@
     if (!img || !img.complete || !img.naturalWidth) return false;
     const hebung = bauHoehe(gx, gy, tiles);
     const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, hebung);
-    if (sprite.mauer) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, wallFootDepth(gx, gy), sprite.mauer.hoehe - 24);
-    if (state.peekView) {
-      const [, base] = geo.isoPoint(gx + tiles, gy + tiles, state.view);
-      rect.y = base + (rect.y - base) * .2;
-      rect.h *= .2;
+    let sourceHeight = variant.hoehe;
+    const wallHeight = sprite.mauer?.hoehe ?? sprite.treppe?.hoehe;
+    if (state.peekView && wallHeight > 0) {
+      const ground = bodenHoehe(gx + tiles - 1, gy + tiles - 1, true);
+      const loweredWall = geo.viewHeight(ground + wallHeight, false, true) - geo.viewHeight(ground, false, true);
+      // Keep the native roof diamond/upper pixels; shorten only the pillar.
+      // Scaling the complete bitmap also squashes its footprint into a line.
+      sourceHeight -= wallHeight - loweredWall;
+      rect.y += (variant.hoehe - sourceHeight) * state.view.zoom;
+      rect.h = sourceHeight * state.view.zoom;
     }
+    if (sprite.mauer) drawWallFoot(ctx, img, {...variant, hoehe:sourceHeight}, rect.x, rect.y, state.view.zoom,
+      wallFootDepth(gx, gy), state.peekView ? Math.max(1, sourceHeight - 24) : sprite.mauer.hoehe - 24);
     if (Number.isFinite(variant.sx) && Number.isFinite(variant.sy)) {
-      ctx.drawImage(img, variant.sx, variant.sy, variant.breite, variant.hoehe, rect.x, rect.y, rect.w, rect.h);
-    } else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+      ctx.drawImage(img, variant.sx, variant.sy, variant.breite, sourceHeight, rect.x, rect.y, rect.w, rect.h);
+    } else if (sourceHeight !== variant.hoehe) ctx.drawImage(img, 0, 0, variant.breite, sourceHeight, rect.x, rect.y, rect.w, rect.h);
+    else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
     return true;
   }
 
@@ -914,12 +922,12 @@
       if(route.path.length) {
         ctx.beginPath();
         route.path.forEach((tile,i)=>{
-          const p=turn(tile),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(state.flatView ? 0 : (tile.height||0)*(state.peekView ? .2 : 1)));
+          const p=turn(tile),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,geo.viewHeight(bodenHoehe(p.gx,p.gy,true)+(tile.height||0),state.flatView,state.peekView));
           if(i)ctx.lineTo(...xy);else ctx.moveTo(...xy);
         });ctx.stroke();
       }
       if(route.entry) {
-        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,bauHoehe(p.gx,p.gy,1)+(state.flatView ? 0 : (route.entry.height||0)*(state.peekView ? .2 : 1)));
+        const p=turn(route.entry),xy=geo.isoPoint(p.gx+.5,p.gy+.5,state.view,geo.viewHeight(bodenHoehe(p.gx,p.gy,true)+(route.entry.height||0),state.flatView,state.peekView));
         ctx.beginPath();ctx.arc(...xy,3.5,0,Math.PI*2);
         ctx.fillStyle=route.path.length?'#64e8ef':'#ff7167';ctx.fill();
         ctx.save();ctx.strokeStyle='#142a2e';ctx.lineWidth=1;ctx.stroke();ctx.restore();
@@ -1089,7 +1097,11 @@
       state.unitTerrain = state.mapSceneryCommands;
       state.unitContext = context;
     }
-    const support = troops.supports(items, bodenHoehe);
+    const support = troops.supports(items, bodenHoehe, (item, height) => {
+      if (!state.peekView || !(item.entry?.mauer || item.entry?.treppe)) return height;
+      const ground = bodenHoehe(item.gx+item.tiles-1,item.gy+item.tiles-1,true);
+      return geo.viewHeight(ground+height,false,true)-geo.viewHeight(ground,false,true);
+    });
     const rotation = currentRotation();
     const keep = items.find(item=>Number(item.itemType)===61);
     if (state.troopAnchorSource!==state.troopMarkers || state.troopAnchorKeep!==keep
@@ -1105,7 +1117,7 @@
     });
     const commands = [], cache = state.unitCommands;
     for (const {marker,gx,gy,elevation: roofHeight} of layout) {
-      const elevation = state.flatView ? 0 : state.peekView ? roofHeight * .2 : roofHeight;
+      const elevation = state.flatView ? 0 : roofHeight;
       const tile = geo.rotateGrid(gx,gy,1,rotation);
       const pose = state.unitAssets.idleSprites?.[marker.type];
       let img;

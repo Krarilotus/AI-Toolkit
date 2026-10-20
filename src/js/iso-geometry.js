@@ -20,6 +20,15 @@
   const HALF_W = 16;          // half a tile in game points
   const HALF_H = 8;
 
+  // Crusader updateShowHiLayerOrResetChangedLayer (0x00501A20), lowered target:
+  // every native height h tends to (h >> 2) + 1. Flat view tends to zero.
+  // Only elevations change; the 32x16 footprint and sprite pixels do not.
+  function viewHeight(height, flat = false, lowered = false) {
+    if (flat) return 0;
+    const value = Math.max(0, Number(height) || 0);
+    return lowered ? Math.floor(value / 4) + 1 : value;
+  }
+
   // GM1 ground is 30x16; the village grid is 32x16. Scaling both axes by
   // 32/30 made the ground drift vertically relative to sprites and picking.
   function groundTextureScale(zoom, width = 30, height = 16) {
@@ -1015,7 +1024,7 @@
   return { GRID, HALF_W, HALF_H, MAP_PREVIEW_EDGE, KEEP_TILE,
            gridFromOffset, offsetFromGrid, isoPoint,
            tileFromPoint, editorTileFromPoint,
-           depth, byDepth, renderOrder, spriteRect, groundTextureScale, variantFor, wallLookup, hoehenLookup,
+           depth, byDepth, renderOrder, spriteRect, groundTextureScale, viewHeight, variantFor, wallLookup, hoehenLookup,
            mauerSchraegen, anlehnFelder, anlehnRichtung,
            collectItems, collectPlates, troopAnchors, attachDrawbridges, buildingParts, moatPicture, resolveMoats, marqueeOutline, fitView,
            rotateGrid, unrotateGrid, keepOrientation, turnCameraView, cameraCanvasTransform,
