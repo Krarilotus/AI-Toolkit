@@ -36,8 +36,9 @@ Each hut gets one centre symbol. Moats retain their native water/edge artwork.
 Campgrounds, training grounds and the oil-smelter campfire use their linked
 native building types (51, 53, 55–59). Those negative texture groups retain
 their native ground artwork; they are not stockpile floors. Farm fields and
-dairy fences retain their complete native parts and camera-specific corner
-artwork. Orchard positions remain visible in Space as native apple stumps
+dairy fences use their parent building's plain flat ground tiles (30 and 28),
+keeping the sparse placement layout and one centre symbol on the hut. Normal
+view retains full crop/fence parts and camera-specific corners. Orchard positions remain visible in Space as native apple stumps
 (one-based picture 101), instead of a sixteen-pixel slice of their canopy.
 This is an editor visibility choice; the native apple updater hides its sprite.
 The saved map has its own flat atlas, including native flat rock tiles and

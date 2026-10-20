@@ -87,8 +87,22 @@ test('building assets run in a worker, share concurrent loads and invalidate aft
   assert.ok(orchardTrees.every(p=>p.flatSprite?.bild===part.bild),'orchard stumps are decoded into the native atlas');
   assert.deepEqual(pixelAtPart(orchardTrees[0].flatSprite),[0,255,0,255]);
   assert.deepEqual(pixelAtPart(orchardTrees[0]),[255,0,0,255],'normal orchard keeps its original frame');
-  const dairy=result.gegenstaende[73].cameraPartsLayouts.flat(2);
-  assert.ok(dairy.filter(p=>p.flatField).every(p=>!p.flatHidden),'native fence tiles remain visible');
+  const geo=require('../src/js/iso-geometry');
+  for(const [type,fieldCount,ground,symbol] of [[70,36,30,31],[71,24,30,31],[73,23,28,29]]) {
+    const entry=result.gegenstaende[type];
+    for(const layouts of entry.cameraPartsLayouts) for(const layout of layouts) {
+      const fields=layout.filter(p=>p.flatField);
+      assert.equal(fields.length,fieldCount);
+      assert.ok(fields.every(p=>p.flatSprite?.sx===result.flatTiles[ground].sx&&p.flatSprite?.sy===result.flatTiles[ground].sy));
+      const normal=geo.buildingParts({gx:10,gy:20,entry:{...entry,partsLayouts:[layout]}});
+      assert.equal(normal.length,fieldCount+9,'normal crop/fence components survive');
+      const flat=geo.flatBuildingParts({gx:10,gy:20,entry:{...entry,partsLayouts:[layout]}},result.flatTiles,()=>7);
+      assert.equal(flat.length,fieldCount+9,'Space follows the sparse hut and field/fence footprint');
+      assert.deepEqual(flat.map(p=>[p.gx,p.gy]),normal.map(p=>[p.gx,p.gy]));
+      assert.equal(flat.filter(p=>p.sx===result.flatTiles[symbol].sx&&p.sy===result.flatTiles[symbol].sy).length,1,'one symbol on the hut');
+      assert.ok(flat.every(p=>p.hoehe===16&&p.dy===0),'no tall posts or crops in Space');
+    }
+  }
   const again=await loadGameBuildingAssets(root,cache);
   assert.deepEqual(again,result);
   const moat=Object.values(result.gegenstaende[106].moatVariants);
