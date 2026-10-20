@@ -24,7 +24,16 @@ The saved map has its own flat atlas, including native flat rock tiles and
 preplaced building floors. Timber trees retain their native stump (picture 148)
 with the saved species, palette and origin; shrubs and apple trees are hidden,
 and cacti retain their native pictures. These are the game's tree-updater rules
-at `0x004F260A`, `0x004F26AB` and `0x004F28BC`. Raised scenery is omitted.
+at `0x004F260A`, `0x004F26AB` and `0x004F28BC`. Flat tile substitutions happen
+before atlas decoding. The selected terrain tiles retain their TGX upper pixels
+and offsets, including extended shore banks such as `tile_sea_new_01`, following
+`renderMap` at `0x004E9C23`–`0x004E9C8F`. Cliff pillars remain hidden.
+
+Placed killing pits use the completed covered bank (zero-based pictures 8–15)
+in normal, V and Space views and their placement previews. Saved map traps keep
+their saved graphics; their completed building records have construction state 0
+and one-based pictures 9–16 (`updateBuildingGraphicsLayer`, `0x005067F5`). AIV
+preview variation uses the map's RandomLayer; it approximates runtime allocation.
 
 The compact Flat view button exposes the state. V toggles lowered structures:
 terrain, cliffs, trees and the camera stay fixed. Supported walls, stairs,

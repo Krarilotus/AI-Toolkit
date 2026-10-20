@@ -662,6 +662,10 @@
   function flatSceneParts(item, mauerAn, hoeheAn) {
     const entry = item.entry;
     if (!entry) return [];
+    if (entry.pitVariants) {
+      const sprite = entry.pitVariants[flatRandomAt(item.gx,item.gy) & 7];
+      return sprite?.bild ? [{...sprite,gx:item.gx,gy:item.gy,tiles:1}] : [];
+    }
     if (Number.isInteger(entry.nativeMoat) || entry.moatVariants || entry.flatBuilding?.group < 0) {
       return geo.buildingParts(item) || [{...entry,gx:item.gx,gy:item.gy,tiles:1}];
     }
@@ -718,7 +722,7 @@
         return true;
       }
     }
-    const variant = geo.variantFor(sprite, gx, gy, mauerAn, hoeheAn, state.lageAn);
+    const variant = sprite.pitVariants?.[flatRandomAt(gx,gy) & 7] || geo.variantFor(sprite, gx, gy, mauerAn, hoeheAn, state.lageAn);
     const img = image(variant.bild);
     if (!img || !img.complete || !img.naturalWidth) return false;
     const hebung = bauHoehe(gx, gy, tiles);

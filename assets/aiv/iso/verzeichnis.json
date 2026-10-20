@@ -36036,7 +36036,42 @@
    "flatBuilding": {
     "building": 67,
     "group": -1
-   }
+   },
+   "nativePit": 8,
+   "pitVariants": [
+    {
+     "bild": "native-pit:8",
+     "nativePit": 8
+    },
+    {
+     "bild": "native-pit:9",
+     "nativePit": 9
+    },
+    {
+     "bild": "native-pit:10",
+     "nativePit": 10
+    },
+    {
+     "bild": "native-pit:11",
+     "nativePit": 11
+    },
+    {
+     "bild": "native-pit:12",
+     "nativePit": 12
+    },
+    {
+     "bild": "native-pit:13",
+     "nativePit": 13
+    },
+    {
+     "bild": "native-pit:14",
+     "nativePit": 14
+    },
+    {
+     "bild": "native-pit:15",
+     "nativePit": 15
+    }
+   ]
   },
   "99": {
    "name": "Pechgraben",

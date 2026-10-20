@@ -1,5 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { internals: { upperTilePicture, packMapPictures } } = require('../src/node/game-map');
 
 test('map upper graphics retain GM1 lift, half-tile offset and transparent pixels', () => {
@@ -11,6 +14,25 @@ test('map upper graphics retain GM1 lift, half-tile offset and transparent pixel
   assert.equal(picture.rgba[7], 0);
   assert.equal(picture.rgba[30 * 4 + 3], 0);
   assert.equal(upperTilePicture({ height: 16 }, Buffer.alloc(512)), null);
+});
+
+test('Space retains upper pixels and native offsets from extended shore and terrain banks',t=>{
+ const {buildTileAtlas,pictureStock,MAP_TILES}=require('../src/node/game-map').internals;
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'flat-shore-'));
+ t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ fs.mkdirSync(path.join(root,'gm'));
+ const raw=Buffer.concat([Buffer.alloc(512),Buffer.from([0,0xff,0x7f,0x80])]);
+ const bytes=Buffer.alloc(5232+raw.length);bytes.writeUInt32LE(1,12);bytes.writeUInt32LE(3,20);
+ bytes.writeUInt32LE(raw.length,5212);bytes.writeUInt16LE(30,5216);bytes.writeUInt16LE(2,5218);
+ bytes.writeUInt16LE(7,5226);bytes[5228]=3;raw.copy(bytes,5232);
+ const gfx=Buffer.alloc(MAP_TILES*2);gfx.writeUInt16LE(1);
+ for(const name of ['tile_sea_new_01','tile_land_macros']) {
+  fs.writeFileSync(path.join(root,'gm',name+'.gm1'),bytes);
+  const stock=pictureStock([{name,gmId:1,from:0,count:1}],'test');
+  const normal=buildTileAtlas(gfx,root,{stock}),flat=buildTileAtlas(gfx,root,{stock,flat:true});
+  assert.deepEqual(flat.upper,normal.upper,'Space retains the complete selected tile overlay');
+  assert.equal(flat.upper.entries[0].dx,14);assert.equal(flat.upper.entries[0].dy,-7);
+ }
 });
 
 test('map sprite packing preserves blank indices and separates tall sprites', () => {

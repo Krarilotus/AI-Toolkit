@@ -665,7 +665,9 @@ function buildTileAtlas(gfx, gameRoot, layers = {}) {
       if (entry && gm1.buffer.readUInt32LE(20) === 3) {
         const raw = gm1.buffer.subarray(gm1.picturesAt + entry.offset, gm1.picturesAt + entry.offset + entry.size);
         bild = diamondToRgba(raw.subarray(0, 512));
-        upperPictures[platz] = layers.flat && !['tile_flatties','tile_sea8'].includes(found.name) ? null : upperTilePicture(entry, raw);
+        // Flat substitutions happen before decoding. The selected tile keeps
+        // its native upper pixels, including the extended shoreline banks.
+        upperPictures[platz] = upperTilePicture(entry, raw);
       }
     } catch { bild = null; }
     if (!bild) { fehlend += 1; return; }
@@ -951,7 +953,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, ['flat-view-3', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
+    return cachedAtlas(cacheRoot, ['flat-view-4', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }

@@ -49,7 +49,7 @@ function gameBuildingAssets(root, cacheRoot) {
   }
   function visit(value) {
     if (!value || typeof value !== 'object') return;
-    const key = Number.isInteger(value.nativeMoat) ? `moat:${value.nativeMoat}` : value.bild === 'building-parts.png' ? `${value.sx},${value.sy}` : value.bild;
+    const key = Number.isInteger(value.nativePit) ? `pit:${value.nativePit}` : Number.isInteger(value.nativeMoat) ? `moat:${value.nativeMoat}` : value.bild === 'building-parts.png' ? `${value.sx},${value.sy}` : value.bild;
     let source = value.bild === 'building-parts.png' ? sourceParts[key] : wallSources[key];
     const single = /^(killing_pits|pitch_ditches)_(\d+)\.png$/.exec(value.bild || '');
     if (Number.isInteger(value.nativeMoat)) source = {file:'tile_sea8', index:value.nativeMoat};
@@ -58,6 +58,7 @@ function gameBuildingAssets(root, cacheRoot) {
     if (source?.file === 'tile_farmland' || source?.file === 'tree_apple') value.flatField = true;
     if (source?.file === 'tile_land3') value.flatStair = [134,136].includes(source.index) ? 42 : 40;
     if (single) source = {file: single[1], index: Number(single[2])};
+    if (Number.isInteger(value.nativePit)) source = {file:'killing_pits',index:value.nativePit};
     if (source) {
       let record = parts.get(key);
       if (!record) {

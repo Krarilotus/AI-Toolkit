@@ -23,6 +23,10 @@ for(const [id,entry] of Object.entries(catalogue.gegenstaende)) {
  for(const plate of entry.platten||[])plate.flatBuilding={building:10,group:1};
 }
 catalogue.flatTiles=Array.from({length:46},(_,index)=>({bild:`native-flat:${index}`}));
+// Finished killing pits use the covered bank, pictures 9–16 (one-based).
+// Keep the bundled fallback name; both hosts decode nativePit from the game.
+catalogue.gegenstaende['98'].nativePit=8;
+catalogue.gegenstaende['98'].pitVariants=Array.from({length:8},(_,i)=>({bild:`native-pit:${8+i}`,nativePit:8+i}));
 catalogue.flatViewGroups=Array.from({length:110},(_,type)=>integer(0xb44220+type*4));
 catalogue.flatRockPictures=[1,2,3,4].map(index=>integer(0xb485e8+index*4)-1);
 catalogue.flatViewSource={exeSHA256:sha,groups:'0x00B44220',selection:'0x004E9845 / 0x004EBBC4'};
