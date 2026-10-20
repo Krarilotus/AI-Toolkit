@@ -53,6 +53,10 @@ function gameBuildingAssets(root, cacheRoot) {
     let source = value.bild === 'building-parts.png' ? sourceParts[key] : wallSources[key];
     const single = /^(killing_pits|pitch_ditches)_(\d+)\.png$/.exec(value.bild || '');
     if (Number.isInteger(value.nativeMoat)) source = {file:'tile_sea8', index:value.nativeMoat};
+    const flat = /^native-flat:(\d+)$/.exec(value.bild || '');
+    if (flat) source = {file:'tile_flatties', index:Number(flat[1])};
+    if (source?.file === 'tile_farmland' || source?.file === 'tree_apple') value.flatField = true;
+    if (source?.file === 'tile_land3') value.flatStair = [134,136].includes(source.index) ? 42 : 40;
     if (single) source = {file: single[1], index: Number(single[2])};
     if (source) {
       let record = parts.get(key);

@@ -199,6 +199,23 @@ fn extract_building_assets(root: &Path, cache_root: &Path, resource_root: &Path)
                         }
                     }
                 }
+                if let Some(index) = filename
+                    .strip_prefix("native-flat:")
+                    .and_then(|v| v.parse::<usize>().ok())
+                {
+                    source = json!({"file":"tile_flatties","index":index});
+                }
+                if matches!(source["file"].as_str(), Some("tile_farmland" | "tree_apple")) {
+                    object.insert("flatField".into(), json!(true));
+                }
+                if source["file"] == "tile_land3" {
+                    let index = if matches!(source["index"].as_u64(), Some(134 | 136)) {
+                        42
+                    } else {
+                        40
+                    };
+                    object.insert("flatStair".into(), json!(index));
+                }
                 if !source.is_null() {
                     let index = if let Some(i) = indices.get(&key) {
                         *i

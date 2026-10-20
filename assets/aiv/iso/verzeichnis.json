@@ -1573,7 +1573,11 @@
      }
     ]
    ],
-   "anlehnen": true
+   "anlehnen": true,
+   "flatBuilding": {
+    "building": 12,
+    "group": 2
+   }
   },
   "51": {
    "name": "Holzfaellerhuette",
@@ -1684,7 +1688,11 @@
       "sy": 1
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 3,
+    "group": 3
+   }
   },
   "52": {
    "name": "Lagerplatz",
@@ -1971,7 +1979,11 @@
       "sy": 1
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 10,
+    "group": 1
+   }
   },
   "54": {
    "name": "Huette",
@@ -2159,7 +2171,11 @@
       "sy": 93
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 1,
+    "group": 2
+   }
   },
   "55": {
    "name": "Ochsenkarren",
@@ -2215,7 +2231,11 @@
       "sy": 93
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 4,
+    "group": 2
+   }
   },
   "56": {
    "name": "Steinbruch",
@@ -2623,7 +2643,11 @@
       "sy": 93
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 20,
+    "group": 2
+   }
   },
   "61": {
    "name": "Bergfried",
@@ -3182,7 +3206,11 @@
         "sy": 365
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     },
     {
      "dx": 7,
@@ -3469,7 +3497,11 @@
         "sy": 1
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     }
    ],
    "partsLayouts": [
@@ -4014,7 +4046,11 @@
       "sy": 245
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 41,
+    "group": 0
+   }
   },
   "65": {
    "name": "Stall",
@@ -4422,7 +4458,11 @@
       "sy": 461
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 35,
+    "group": 2
+   }
   },
   "70": {
    "name": "Wheat Farm",
@@ -14383,7 +14423,11 @@
       }
      ]
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 30,
+    "group": 3
+   }
   },
   "71": {
    "name": "Hop Farm",
@@ -18054,7 +18098,11 @@
       }
      ]
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 31,
+    "group": 3
+   }
   },
   "72": {
    "name": "Apple Farm",
@@ -19020,7 +19068,11 @@
       }
      ]
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 32,
+    "group": 3
+   }
   },
   "73": {
    "name": "Dairy Farm",
@@ -26121,7 +26173,11 @@
       }
      ]
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 33,
+    "group": 3
+   }
   },
   "74": {
    "name": "Muehle",
@@ -26232,7 +26288,11 @@
       "sy": 461
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 34,
+    "group": 2
+   }
   },
   "75": {
    "name": "Baeckerei",
@@ -26421,7 +26481,11 @@
      }
     ]
    ],
-   "anlehnen": true
+   "anlehnen": true,
+   "flatBuilding": {
+    "building": 17,
+    "group": 2
+   }
   },
   "76": {
    "name": "Brauerei",
@@ -26610,7 +26674,11 @@
      }
     ]
    ],
-   "anlehnen": true
+   "anlehnen": true,
+   "flatBuilding": {
+    "building": 18,
+    "group": 2
+   }
   },
   "77": {
    "name": "Marktplatz",
@@ -26897,7 +26965,11 @@
       "sy": 682
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 26,
+    "group": 2
+   }
   },
   "78": {
    "name": "Jaegerhuette",
@@ -27008,7 +27080,11 @@
       "sy": 682
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 7,
+    "group": 3
+   }
   },
   "80": {
    "name": "Kornspeicher",
@@ -27196,7 +27272,11 @@
       "sy": 682
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 19,
+    "group": 2
+   }
   },
   "81": {
    "name": "Waffenlager",
@@ -27384,7 +27464,11 @@
       "sy": 682
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 11,
+    "group": 1
+   }
   },
   "82": {
    "name": "Lanzenmacher",
@@ -27573,7 +27657,11 @@
      }
     ]
    ],
-   "anlehnen": true
+   "anlehnen": true,
+   "flatBuilding": {
+    "building": 14,
+    "group": 2
+   }
   },
   "83": {
    "name": "Schmiede",
@@ -27762,7 +27850,11 @@
      }
     ]
    ],
-   "anlehnen": true
+   "anlehnen": true,
+   "flatBuilding": {
+    "building": 13,
+    "group": 2
+   }
   },
   "84": {
    "name": "Ruestungsschmied",
@@ -27951,7 +28043,11 @@
      }
     ]
    ],
-   "anlehnen": true
+   "anlehnen": true,
+   "flatBuilding": {
+    "building": 15,
+    "group": 2
+   }
   },
   "85": {
    "name": "Gerberei",
@@ -28140,7 +28236,11 @@
      }
     ]
    ],
-   "anlehnen": true
+   "anlehnen": true,
+   "flatBuilding": {
+    "building": 16,
+    "group": 2
+   }
   },
   "86": {
    "name": "Soeldnerposten",
@@ -28435,7 +28535,11 @@
         "sy": 882
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     },
     {
      "dx": 0,
@@ -28722,7 +28826,11 @@
         "sy": 963
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     },
     {
      "dx": 5,
@@ -29009,7 +29117,11 @@
         "sy": 963
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     }
    ],
    "partsLayouts": [
@@ -29290,7 +29402,11 @@
       "sy": 882
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 8,
+    "group": 2
+   }
   },
   "87": {
    "name": "Kaserne",
@@ -29585,7 +29701,11 @@
         "sy": 882
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     },
     {
      "dx": 0,
@@ -29872,7 +29992,11 @@
         "sy": 963
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     },
     {
      "dx": 5,
@@ -30159,7 +30283,11 @@
         "sy": 963
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     }
    ],
    "partsLayouts": [
@@ -30440,7 +30568,11 @@
       "sy": 1061
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 9,
+    "group": 1
+   }
   },
   "88": {
    "name": "Ingenieursgilde",
@@ -30735,7 +30867,11 @@
         "sy": 1061
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     }
    ],
    "partsLayouts": [
@@ -31016,7 +31152,11 @@
       "sy": 1061
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 24,
+    "group": 1
+   }
   },
   "89": {
    "name": "Tunnelgraebergilde",
@@ -31311,7 +31451,11 @@
         "sy": 1158
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     }
    ],
    "partsLayouts": [
@@ -31592,7 +31736,11 @@
       "sy": 1158
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 25,
+    "group": 1
+   }
   },
   "90": {
    "name": "Eisenmine",
@@ -31780,7 +31928,11 @@
       "sy": 1158
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 5,
+    "group": 2
+   }
   },
   "91": {
    "name": "Pechgraeber",
@@ -31968,7 +32120,11 @@
       "sy": 1243
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 6,
+    "group": 2
+   }
   },
   "92": {
    "name": "Wirtshaus",
@@ -32255,7 +32411,11 @@
       "sy": 1243
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 22,
+    "group": 2
+   }
   },
   "93": {
    "name": "Apotheke",
@@ -32663,7 +32823,11 @@
       "sy": 1373
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 23,
+    "group": 2
+   }
   },
   "95": {
    "name": "Kapelle",
@@ -33071,7 +33235,11 @@
       "sy": 1373
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 36,
+    "group": 1
+   }
   },
   "96": {
    "name": "Kirche",
@@ -33974,7 +34142,11 @@
       "sy": 1639
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 37,
+    "group": 1
+   }
   },
   "97": {
    "name": "Kathedrale",
@@ -35845,7 +36017,11 @@
       "sy": 1986
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 38,
+    "group": 1
+   }
   },
   "98": {
    "name": "Fallgrube",
@@ -35853,7 +36029,11 @@
    "kacheln": 1,
    "bild": "killing_pits_0.png",
    "breite": 30,
-   "hoehe": 16
+   "hoehe": 16,
+   "flatBuilding": {
+    "building": 67,
+    "group": -1
+   }
   },
   "99": {
    "name": "Pechgraben",
@@ -35861,7 +36041,11 @@
    "kacheln": 1,
    "bild": "pitch_ditches_3.png",
    "breite": 30,
-   "hoehe": 16
+   "hoehe": 16,
+   "flatBuilding": {
+    "building": 68,
+    "group": -1
+   }
   },
   "105": {
    "name": "Zugbruecke",
@@ -37444,7 +37628,11 @@
      "breite": 186,
      "hoehe": 173
     }
-   ]
+   ],
+   "flatBuilding": {
+    "building": 49,
+    "group": 1
+   }
   },
   "106": {
    "name": "Wassergraben d",
@@ -37733,7 +37921,11 @@
       "sy": 2212
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 74,
+    "group": 2
+   }
   },
   "111": {
    "name": "Verteidigungsturm",
@@ -37921,7 +38113,11 @@
       "sy": 2212
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 75,
+    "group": 0
+   }
   },
   "112": {
    "name": "Geschuetzturm",
@@ -38208,7 +38404,11 @@
       "sy": 2544
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 76,
+    "group": 0
+   }
   },
   "113": {
    "name": "Eckiger Turm",
@@ -38616,7 +38816,11 @@
       "sy": 2544
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 77,
+    "group": 0
+   }
   },
   "114": {
    "name": "Runder Turm",
@@ -39024,7 +39228,11 @@
       "sy": 2770
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 78,
+    "group": 0
+   }
   },
   "144": {
    "name": "Kleines Torhaus (Durchfahrt N-S)",
@@ -39311,7 +39519,11 @@
       "sy": 2770
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 46,
+    "group": 0
+   }
   },
   "145": {
    "name": "Kleines Torhaus (Durchfahrt O-W)",
@@ -39598,7 +39810,11 @@
       "sy": 3019
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 46,
+    "group": 0
+   }
   },
   "146": {
    "name": "Grosses Torhaus (Durchfahrt N-S)",
@@ -40149,7 +40365,11 @@
       "sy": 3190
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 45,
+    "group": 0
+   }
   },
   "147": {
    "name": "Grosses Torhaus (Durchfahrt O-W)",
@@ -40700,7 +40920,11 @@
       "sy": 3190
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 45,
+    "group": 0
+   }
   },
   "166": {
    "name": "Garten",
@@ -40811,7 +41035,11 @@
       "sy": 3360
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 66,
+    "group": -1
+   }
   },
   "169": {
    "name": "Stadtgarten",
@@ -40999,7 +41227,11 @@
       "sy": 3360
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 66,
+    "group": -1
+   }
   },
   "175": {
    "name": "Maibaum",
@@ -41110,7 +41342,11 @@
       "sy": 3360
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 65,
+    "group": 2
+   }
   },
   "176": {
    "name": "Galgen",
@@ -41166,7 +41402,11 @@
       "sy": 3360
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 62,
+    "group": 2
+   }
   },
   "177": {
    "name": "Pranger",
@@ -41277,7 +41517,11 @@
       "sy": 3360
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 63,
+    "group": 2
+   }
   },
   "180": {
    "name": "Oelbrennerei",
@@ -41473,7 +41717,11 @@
         "sy": 3487
        }
       ]
-     ]
+     ],
+     "flatBuilding": {
+      "building": 10,
+      "group": 1
+     }
     }
    ],
    "partsLayouts": [
@@ -41655,7 +41903,11 @@
       "sy": 3360
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 28,
+    "group": 2
+   }
   },
   "181": {
    "name": "Treppe 1",
@@ -42180,7 +42432,11 @@
       "sy": 3487
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 91,
+    "group": -1
+   }
   },
   "305": {
    "name": "Scheiterhaufen",
@@ -42291,7 +42547,11 @@
       "sy": 3487
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 92,
+    "group": 2
+   }
   },
   "306": {
    "name": "Haengekaefig",
@@ -42347,7 +42607,11 @@
       "sy": 3487
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 93,
+    "group": 2
+   }
   },
   "307": {
    "name": "Verlies",
@@ -42634,7 +42898,11 @@
       "sy": 3614
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 94,
+    "group": 1
+   }
   },
   "308": {
    "name": "Streckbank",
@@ -42745,7 +43013,11 @@
       "sy": 3614
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 95,
+    "group": 2
+   }
   },
   "310": {
    "name": "Richtblock",
@@ -42856,7 +43128,11 @@
       "sy": 3614
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 97,
+    "group": 2
+   }
   },
   "311": {
    "name": "Tauchstuhl",
@@ -43143,7 +43419,11 @@
       "sy": 3693
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 98,
+    "group": 2
+   }
   },
   "312": {
    "name": "Hundezwinger",
@@ -43254,7 +43534,11 @@
       "sy": 3693
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 99,
+    "group": 1
+   }
   },
   "313": {
    "name": "Statue",
@@ -43310,7 +43594,11 @@
       "sy": 3693
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 100,
+    "group": 1
+   }
   },
   "318": {
    "name": "Schrein",
@@ -43366,7 +43654,11 @@
       "sy": 3693
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 101,
+    "group": 1
+   }
   },
   "324": {
    "name": "Tanzbaer",
@@ -43653,7 +43945,11 @@
       "sy": 882
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 103,
+    "group": 2
+   }
   },
   "327": {
    "name": "Grosser Teich",
@@ -43940,7 +44236,11 @@
       "sy": 3693
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 104,
+    "group": -1
+   }
   },
   "330": {
    "name": "Brunnen",
@@ -44051,7 +44351,11 @@
       "sy": 3693
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 27,
+    "group": 1
+   }
   },
   "342": {
    "name": "Wasserfass",
@@ -44239,7 +44543,11 @@
       "sy": 3777
      }
     ]
-   ]
+   ],
+   "flatBuilding": {
+    "building": 70,
+    "group": 0
+   }
   }
  },
  "mauerSchraegen": {
@@ -44401,5 +44709,150 @@
     "hoehe": 117
    }
   }
+ },
+ "flatTiles": [
+  {
+   "bild": "native-flat:0"
+  },
+  {
+   "bild": "native-flat:1"
+  },
+  {
+   "bild": "native-flat:2"
+  },
+  {
+   "bild": "native-flat:3"
+  },
+  {
+   "bild": "native-flat:4"
+  },
+  {
+   "bild": "native-flat:5"
+  },
+  {
+   "bild": "native-flat:6"
+  },
+  {
+   "bild": "native-flat:7"
+  },
+  {
+   "bild": "native-flat:8"
+  },
+  {
+   "bild": "native-flat:9"
+  },
+  {
+   "bild": "native-flat:10"
+  },
+  {
+   "bild": "native-flat:11"
+  },
+  {
+   "bild": "native-flat:12"
+  },
+  {
+   "bild": "native-flat:13"
+  },
+  {
+   "bild": "native-flat:14"
+  },
+  {
+   "bild": "native-flat:15"
+  },
+  {
+   "bild": "native-flat:16"
+  },
+  {
+   "bild": "native-flat:17"
+  },
+  {
+   "bild": "native-flat:18"
+  },
+  {
+   "bild": "native-flat:19"
+  },
+  {
+   "bild": "native-flat:20"
+  },
+  {
+   "bild": "native-flat:21"
+  },
+  {
+   "bild": "native-flat:22"
+  },
+  {
+   "bild": "native-flat:23"
+  },
+  {
+   "bild": "native-flat:24"
+  },
+  {
+   "bild": "native-flat:25"
+  },
+  {
+   "bild": "native-flat:26"
+  },
+  {
+   "bild": "native-flat:27"
+  },
+  {
+   "bild": "native-flat:28"
+  },
+  {
+   "bild": "native-flat:29"
+  },
+  {
+   "bild": "native-flat:30"
+  },
+  {
+   "bild": "native-flat:31"
+  },
+  {
+   "bild": "native-flat:32"
+  },
+  {
+   "bild": "native-flat:33"
+  },
+  {
+   "bild": "native-flat:34"
+  },
+  {
+   "bild": "native-flat:35"
+  },
+  {
+   "bild": "native-flat:36"
+  },
+  {
+   "bild": "native-flat:37"
+  },
+  {
+   "bild": "native-flat:38"
+  },
+  {
+   "bild": "native-flat:39"
+  },
+  {
+   "bild": "native-flat:40"
+  },
+  {
+   "bild": "native-flat:41"
+  },
+  {
+   "bild": "native-flat:42"
+  },
+  {
+   "bild": "native-flat:43"
+  },
+  {
+   "bild": "native-flat:44"
+  },
+  {
+   "bild": "native-flat:45"
+  }
+ ],
+ "flatViewSource": {
+  "exeSHA256": "0d3d0d0be90a41d0c07d02cb41e6edc3e399288d16039db5b666392660fbda34",
+  "groups": "0x00B44220",
+  "selection": "0x004E9845 / 0x004EBBC4"
  }
 }
