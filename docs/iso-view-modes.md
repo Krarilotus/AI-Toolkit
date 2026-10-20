@@ -7,6 +7,19 @@ engine-generated layers remain preferred when available. Without them, the
 saved directional artwork is reused; this does not regenerate engine-specific
 shorelines, cliff faces or directional sprites. No game process is started.
 
+Initial map loading respects the saved camera in section 1044, so its saved
+banks and terrain face the same direction as the scene. Refresh keeps the
+current camera. When historical engine captures are available, Space has a
+separate flat atlas for each of those four cameras; it no longer overlays the
+saved map's differently oriented graphics on every camera.
+
+Saved picture counters are also checked against native sea semantics:
+undecorated sea uses pictures 0–7 in each 246-picture `tile_sea_new_01` bank
+(`updateGfxLayer`, `0x0050CDBF`). Both the old compatibility table and an installed
+table can refer to valid terrain pictures while disagreeing by 21 pictures
+after GM slot 149. Prefer a completely valid table that satisfies those sea
+constraints; retain compatibility when the map supplies no such evidence.
+
 The old guard required those historical captures even after saved terrain loaded
 successfully. Its "wait or reload" message could therefore persist forever.
 Rotation now waits only for the atlas, and retains an actual map load error.

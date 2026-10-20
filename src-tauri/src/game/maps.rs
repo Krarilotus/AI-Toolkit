@@ -388,7 +388,42 @@ impl Files {
         Ok(&self.files[name])
     }
 }
-fn stock(gfx: &[u8], files: &mut Files, resources: &Path) -> Result<Stock> {
+fn shore_layout_errors(
+    stock: &Stock,
+    gfx: &[u8],
+    logic: &[u8],
+    misc: &[u8],
+    logic2: &[u8],
+) -> Option<usize> {
+    if gfx.len() != TILES * 2
+        || logic.len() != TILES * 4
+        || misc.len() != TILES * 2
+        || logic2.len() != TILES
+    {
+        return None;
+    }
+    let (mut checked, mut errors) = (0, 0);
+    for tile in 0..TILES {
+        // updateGfxLayer 0x50CDBF: eight plain sea pictures per lighting bank.
+        if u32le(logic, tile * 4).ok()? & 1 == 0
+            || u16le(misc, tile * 2).ok()? & 0x3c0 != 0
+            || logic2[tile] & 8 != 0
+        {
+            continue;
+        }
+        checked += 1;
+        if !stock
+            .picture(u16le(gfx, tile * 2).ok()?)
+            .is_some_and(|(name, index)| {
+                name == "tile_sea_new_01" && index < 1476 && index % 246 < 8
+            })
+        {
+            errors += 1;
+        }
+    }
+    (checked > 0).then_some(errors)
+}
+fn stock(gfx: &[u8], files: &mut Files, resources: &Path, map: &MapFile) -> Result<Stock> {
     let layout: Value =
         serde_json::from_slice(&read(&resources.join("config/map-picture-layout.json"))?)
             .map_err(|e| e.to_string())?;
@@ -424,7 +459,13 @@ fn stock(gfx: &[u8], files: &mut Files, resources: &Path) -> Result<Stock> {
             })
         })
     };
-    if valid(&original, files) {
+    let original_valid = valid(&original, files);
+    let logic = map.section(1003)?.unwrap_or_default();
+    let misc = map.section(1007)?.unwrap_or_default();
+    let logic2 = map.section(1037)?.unwrap_or_default();
+    if original_valid
+        && shore_layout_errors(&original, gfx, &logic, &misc, &logic2).unwrap_or(0) == 0
+    {
         return Ok(original);
     }
     let mut total = 0;
@@ -432,7 +473,12 @@ fn stock(gfx: &[u8], files: &mut Files, resources: &Path) -> Result<Stock> {
         .into_iter()
         .map(|mut e| {
             e.from = total;
-            e.count = files.file(&e.name).map_or(0, |g| g.entries.len());
+            let mut header = [0; 24];
+            e.count = fs::File::open(files.graphics.file(&e.name))
+                .and_then(|mut file| file.read_exact(&mut header))
+                .ok()
+                .and_then(|_| u32le(&header, 12).ok())
+                .unwrap_or(0) as usize;
             total += e.count;
             e
         })
@@ -441,7 +487,10 @@ fn stock(gfx: &[u8], files: &mut Files, resources: &Path) -> Result<Stock> {
         entries,
         layout: "installed",
     };
-    if valid(&installed, files) {
+    if valid(&installed, files)
+        && (!original_valid
+            || shore_layout_errors(&installed, gfx, &logic, &misc, &logic2) == Some(0))
+    {
         Ok(installed)
     } else {
         Ok(original)
@@ -809,7 +858,7 @@ fn extract_map_tiles(
             map.section(1045).ok().flatten().as_deref() == Some(capture.base_heights.as_slice())
         });
     let identity = format!(
-        "rust-map-atlas-8:{}:{}:{}",
+        "rust-map-atlas-9:{}:{}:{}",
         hash(&map.bytes),
         graphics.revision,
         capture.as_ref().map_or("saved", |c| c.revision.as_str())
@@ -840,7 +889,7 @@ fn extract_map_tiles(
         graphics,
         files: HashMap::new(),
     };
-    let mut stock = stock(&gfx, &mut files, resource_root)?;
+    let mut stock = stock(&gfx, &mut files, resource_root, &map)?;
     if capture.is_some() {
         let mut total = 0;
         for entry in &mut stock.entries {
@@ -863,6 +912,13 @@ fn extract_map_tiles(
         .ok_or("Game desert terrain graphics missing")?;
     let desert = (desert.from + 1) as u16;
     let flat_base = gfx.clone();
+    let flat_bases = capture.as_ref().map(|capture| {
+        capture
+            .cameras
+            .iter()
+            .map(|(gfx, _)| gfx.clone())
+            .collect::<Vec<_>>()
+    });
     let mut value = if let Some(capture) = capture {
         let mut cameras = Vec::new();
         for (mut camera, pillars) in capture.cameras {
@@ -901,18 +957,40 @@ fn extract_map_tiles(
         &resource_root.join("assets/aiv/iso/verzeichnis.json"),
     )?)
     .map_err(|e| e.to_string())?;
-    let flat = flat_graphics(&map, &flat_base, &stock, &rules)?;
-    value["flat"] = build_atlas(
-        &flat,
-        None,
-        None,
-        organisms.as_deref(),
-        &trees,
-        &stock,
-        &mut files,
-        &atlas_cache,
-        true,
-    )?;
+    let mut flat_cameras = Vec::new();
+    for base in flat_bases
+        .as_deref()
+        .unwrap_or(std::slice::from_ref(&flat_base))
+    {
+        let flat = flat_graphics(&map, base, &stock, &rules)?;
+        flat_cameras.push(build_atlas(
+            &flat,
+            None,
+            None,
+            organisms.as_deref(),
+            &trees,
+            &stock,
+            &mut files,
+            &atlas_cache,
+            true,
+        )?);
+    }
+    value["flat"] = flat_cameras[0].clone();
+    if flat_bases.is_some() {
+        value["flatCameras"] = json!(flat_cameras);
+    }
+    let orientation = map
+        .section(1044)?
+        .and_then(|bytes| {
+            if bytes.len() == 4 {
+                u32le(&bytes, 0).ok()
+            } else {
+                None
+            }
+        })
+        .filter(|v| [0, 2, 4, 6].contains(v))
+        .unwrap_or(0);
+    value["savedOrientation"] = json!(orientation);
     value = with_map_identity(value, &known, path);
     let mut flat_random = vec![0u16; EDGE * EDGE];
     if let Some(random) = map.section(1008)?.filter(|v| v.len() == TILES * 2) {
@@ -941,6 +1019,45 @@ fn extract_map_tiles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn plain_sea_disambiguates_shifted_picture_counters() {
+        let make = |from| Stock {
+            entries: vec![StockEntry {
+                gm_id: 166,
+                name: "tile_sea_new_01".into(),
+                count: 1536,
+                from,
+            }],
+            layout: "test",
+        };
+        let mut gfx = vec![0; TILES * 2];
+        let mut logic = vec![0; TILES * 4];
+        let misc = vec![0; TILES * 2];
+        let logic2 = vec![0; TILES];
+        gfx[..2].copy_from_slice(&22u16.to_le_bytes());
+        logic[..4].copy_from_slice(&1u32.to_le_bytes());
+        assert_eq!(
+            shore_layout_errors(&make(0), &gfx, &logic, &misc, &logic2),
+            Some(1)
+        );
+        assert_eq!(
+            shore_layout_errors(&make(21), &gfx, &logic, &misc, &logic2),
+            Some(0)
+        );
+        gfx[..2].copy_from_slice(&1u16.to_le_bytes());
+        assert_eq!(
+            shore_layout_errors(&make(0), &gfx, &logic, &misc, &logic2),
+            Some(0)
+        );
+        assert_eq!(
+            shore_layout_errors(&make(21), &gfx, &logic, &misc, &logic2),
+            Some(1)
+        );
+        assert_eq!(
+            shore_layout_errors(&make(0), &gfx, &[], &misc, &logic2),
+            None
+        );
+    }
     #[test]
     fn flat_trees_use_native_stumps_without_altering_saved_frames() {
         let mut bytes = vec![0; 20 * 156];

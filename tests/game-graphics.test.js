@@ -116,3 +116,18 @@ test('saved map layout switches only to a fully validated replacement layout', (
   assert.equal(choosePictureStock(Buffer.from([1,0]),[classic,pack],valid),classic,'ambiguous layouts preserve classic compatibility');
   assert.equal(choosePictureStock(Buffer.from([5,0]),[classic,pack],valid),classic,'a partially plausible table is not accepted');
 });
+
+test('plain sea topology disambiguates valid layouts shifted by 21 pictures', () => {
+  const {choosePictureStock,pictureStock,MAP_TILES}=require('../src/node/game-map').internals;
+  const classic=pictureStock([{gmId:166,name:'tile_sea_new_01',from:0,count:1536}],'classic');
+  const installed=pictureStock([{gmId:166,name:'tile_sea_new_01',from:21,count:1536}],'installed');
+  const gfx=Buffer.alloc(MAP_TILES*2),logic=Buffer.alloc(MAP_TILES*4),misc=Buffer.alloc(MAP_TILES*2),logic2=Buffer.alloc(MAP_TILES);
+  gfx.writeUInt16LE(22);logic.writeUInt32LE(1);
+  const layers={logic,misc,logic2};
+  assert.equal(choosePictureStock(gfx,[classic,installed],()=>true,layers),installed,'plain water cannot select a corner picture');
+  gfx.writeUInt16LE(1);
+  assert.equal(choosePictureStock(gfx,[classic,installed],()=>true,layers),classic,'old saved IDs remain supported');
+  gfx.writeUInt16LE(22);
+  assert.equal(choosePictureStock(gfx,[classic,installed],()=>true),classic,'no topology evidence retains compatibility');
+  assert.equal(choosePictureStock(gfx,[classic,installed],p=>p.index===21,layers),classic,'semantic evidence cannot admit invalid pictures');
+});
