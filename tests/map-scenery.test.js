@@ -5,6 +5,25 @@ const os = require('node:os');
 const path = require('node:path');
 const { internals: { upperTilePicture, packMapPictures } } = require('../src/node/game-map');
 
+test('Space resolves doors, linked grounds and partial decorations through saved building IDs',()=>{
+ const {flatMapGraphics,pictureStock,MAP_TILES}=require('../src/node/game-map').internals;
+ const types=Buffer.alloc(MAP_TILES),ids=Buffer.alloc(MAP_TILES*2),logic=Buffer.alloc(MAP_TILES*4),records=Buffer.alloc(6*812),random=Buffer.alloc(MAP_TILES*2),gfx=Buffer.alloc(MAP_TILES*2);
+ for(let t=0;t<7;t++){gfx.writeUInt16LE(700+t,t*2);random.writeUInt16LE(2,t*2);}
+ // Three standalone keep-door records have no BuildingWasLayer hint.
+ for(let id=1;id<=3;id++) {ids.writeUInt16LE(id,(id-1)*2);records.writeUInt16LE(70+id,id*812+210);}
+ ids.writeUInt16LE(4,6);types[3]=9;records.writeUInt16LE(57,4*812+210); // Barracks' linked ground.
+ records.writeUInt16LE(101,5*812+210); // Partial map shrine, two surviving cells.
+ ids.writeUInt16LE(5,8);ids.writeUInt16LE(5,10);types[6]=9; // Stale hint on an unowned cell.
+ const sections=[[1049,types],[1012,ids],[1013,records],[1003,logic]];
+ const header=Buffer.alloc(3036);let offset=0;
+ sections.forEach(([id,data],i)=>{header.writeUInt32LE(data.length,632+i*4);header.writeUInt32LE(id,1232+i*4);header.writeUInt32LE(offset,2432+i*4);offset+=data.length;});
+ const source={gfx,random,buffer:Buffer.concat([header,...sections.map(s=>s[1])]),directory:{offset:0,count:sections.length}};
+ const flat=flatMapGraphics(source,pictureStock([{name:'tile_flatties',from:1000,count:46}],'fixture'));
+ const values=Array.from({length:7},(_,t)=>flat.readUInt16LE(t*2));
+ assert.deepEqual(values,[1007,1003,1007,703,1015,1015,706]);
+ assert.equal(gfx.readUInt16LE(0),700,'normal terrain is unchanged');
+});
+
 test('map upper graphics retain GM1 lift, half-tile offset and transparent pixels', () => {
   const raw = Buffer.concat([Buffer.alloc(512), Buffer.from([0, 0xff, 0x7f, 0x80])]);
   const picture = upperTilePicture({ height: 2, lift: 40, direction: 3 }, raw);

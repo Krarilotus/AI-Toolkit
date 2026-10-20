@@ -20,7 +20,15 @@ for(const [id,entry] of Object.entries(catalogue.gegenstaende)) {
    if(building>0&&building<110)entry.flatBuilding={building,group:integer(0xb44220+building*4)};
   }
  }
- for(const plate of entry.platten||[])plate.flatBuilding={building:10,group:1};
+ // Linked buildings have their own runtime types (placeKeep/placeBarracks/
+ // placeEngineersguild/placeTunnelersguild/placeOilsmelter), not the parent's
+ // BuildingWasLayer value. Negative groups retain their native ground art.
+ const grounds={61:[55,10],86:[57,58,56],87:[57,58,56],88:[53],89:[59],180:[51]}[type];
+ for(const [index,plate] of (entry.platten||[]).entries()) {
+  const building=grounds?.[index];
+  if(!building)throw Error(`Missing native attached-ground type for ${type}/${index}`);
+  plate.flatBuilding={building,group:integer(0xb44220+building*4)};
+ }
 }
 catalogue.flatTiles=Array.from({length:46},(_,index)=>({bild:`native-flat:${index}`}));
 // Finished killing pits use the covered bank, pictures 9–16 (one-based).

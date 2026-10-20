@@ -13,7 +13,7 @@ function gameBuildingAssets(root, cacheRoot) {
   if(!root)return null;
   const graphics=resolveGameGraphics(root);
   const catalogue=JSON.parse(fs.readFileSync(cataloguePath,'utf8'));
-  const revision=require('node:crypto').createHash('sha256').update('5:'+graphics.revision+JSON.stringify(sourceParts)+JSON.stringify(wallSources)+JSON.stringify(catalogue)).digest('hex');
+  const revision=require('node:crypto').createHash('sha256').update('6:'+graphics.revision+JSON.stringify(sourceParts)+JSON.stringify(wallSources)+JSON.stringify(catalogue)).digest('hex');
   fs.mkdirSync(cacheRoot,{recursive:true});
   const cache=path.join(cacheRoot,`${revision}.json`),png=path.join(cacheRoot,`${revision}.png`);
   if(fs.existsSync(cache)&&fs.existsSync(png))return JSON.parse(fs.readFileSync(cache,'utf8'));
@@ -56,6 +56,7 @@ function gameBuildingAssets(root, cacheRoot) {
     const flat = /^native-flat:(\d+)$/.exec(value.bild || '');
     if (flat) source = {file:'tile_flatties', index:Number(flat[1])};
     if (source?.file === 'tile_farmland' || source?.file === 'tree_apple') value.flatField = true;
+    if (source?.file === 'tree_apple') value.flatHidden = true;
     if (source?.file === 'tile_land3') value.flatStair = [134,136].includes(source.index) ? 42 : 40;
     if (single) source = {file: single[1], index: Number(single[2])};
     if (Number.isInteger(value.nativePit)) source = {file:'killing_pits',index:value.nativePit};

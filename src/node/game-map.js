@@ -860,18 +860,24 @@ function readMapSource(filePath, gameRoot) {
 function flatMapGraphics(source, stock) {
   const rules = require('../../assets/aiv/iso/verzeichnis.json');
   const layer = number => { try { return readSection(source.buffer,source.directory,number); } catch { return null; } };
-  const types=layer(1049),ids=layer(1012),logic=layer(1003),misc=layer(1007),random=source.random;
+  const types=layer(1049),ids=layer(1012),records=layer(1013),logic=layer(1003),misc=layer(1007),random=source.random;
+  const runtimeTypes=ids?.length===MAP_TILES*2 && records?.length>=BUILDING_STRIDE && records.length%BUILDING_STRIDE===0;
   const result=Buffer.from(source.gfx), flat=stock.files.find(f=>f.name==='tile_flatties');
-  if (!flat || !types || !logic) return result;
+  if (!flat || (!types && !runtimeTypes) || !logic) return result;
   for(let tile=0;tile<MAP_TILES;tile++) {
-    const flags=logic.readUInt32LE(tile*4),type=types[tile],rng=random?.readUInt16LE(tile*2)||0;
+    const id=ids?.readUInt16LE(tile*2)||0;
+    // renderMap 0x4E98C7 reads Buildings[BuildingLayer[tile]].buildingType.
+    // BuildingWasLayer omits keep doors and some scenario decorations, and
+    // stores the parent type on linked training grounds.
+    const type=runtimeTypes ? (id>0&&(id+1)*BUILDING_STRIDE<=records.length ? records.readUInt16LE(id*BUILDING_STRIDE+BUILDING_TYPE_AT) : 0) : types?.[tile]||0;
+    const flags=logic.readUInt32LE(tile*4),rng=random?.readUInt16LE(tile*2)||0;
     let index=null, file=flat;
     if(type>0 && !(flags&0x40000000)) {
       const group=rules.flatViewGroups[type];
       if(group===3) {
         index=(({3:24,7:26,33:28})[type]??30)+Number(!!((misc?.readUInt16LE(tile*2)||0)&4));
       }
-      else if(group>=0) index=group*8+((ids?.readUInt16LE(tile*2)||0)&1)*4+(rng&3);
+      else if(group>=0) index=group*8+(id&1)*4+(rng&3);
     } else if(flags&0x100) {
       if(flags&0x800) {const source=pictureForValue(stock,result.readUInt16LE(tile*2));index=source?.name==='tile_land3'&&[134,136].includes(source.index)?42:40;}
       else if(flags&0x200) index=36+(rng&3);
@@ -980,7 +986,7 @@ async function readNativeMapTiles(filePath, gameRoot, cacheRoot) {
     const layerHash = nativeRendererInternals.sha(Buffer.concat([
       layers.heights, layers.baseHeights, ...layers.cameras.flatMap(camera => [camera.gfx, camera.pillars])
     ]));
-    return cachedAtlas(cacheRoot, ['flat-view-5', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
+    return cachedAtlas(cacheRoot, ['flat-view-6', parsed.root, parsed.known.path, layers.mapHash, layers.sourceHash, layerHash, graphics.revision],
       () => buildMapTiles(parsed, layers));
   });
 }

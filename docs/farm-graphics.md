@@ -35,6 +35,13 @@ layout order assumes a fresh castle; the running game supplies actual growth,
 animation and randomness. Orchard trees are complete tree sprites, not enlarged
 hut images. Farm parts currently use the default artwork view.
 
+Space retains the complete farmland parts, including the camera-specific dairy
+fence corners. Field cells have no BuildingLayer ID, so the native flat building
+substitution does not replace or crop them (`renderMap`, `0x004E98C7` and
+`0x004E9C23`). Cropping their last sixteen rows loses their joins and native
+origins. Orchard objects follow the apple-tree flat rule and disappear instead
+of leaving a strip of canopy (`0x004F26AB`).
+
 ## Drawbridges
 
 `checkDrawbridgePlacement` (`0x004FA2D0`) probes four edge strips from

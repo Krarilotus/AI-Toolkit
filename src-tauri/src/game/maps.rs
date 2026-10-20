@@ -586,18 +586,33 @@ fn flat_graphics(map: &MapFile, gfx: &[u8], stock: &Stock, rules: &Value) -> Res
     let Some(flat) = stock.entries.iter().find(|e| e.name == "tile_flatties") else {
         return Ok(result);
     };
-    let Some(types) = map.section(1049)?.filter(|v| v.len() == TILES) else {
-        return Ok(result);
-    };
+    let types = map.section(1049)?.filter(|v| v.len() == TILES);
     let Some(logic) = map.section(1003)?.filter(|v| v.len() == TILES * 4) else {
         return Ok(result);
     };
     let ids = map.section(1012)?.filter(|v| v.len() == TILES * 2);
+    let records = map
+        .section(1013)?
+        .filter(|v| v.len() >= 812 && v.len() % 812 == 0);
+    if types.is_none() && (ids.is_none() || records.is_none()) {
+        return Ok(result);
+    }
     let misc = map.section(1007)?.filter(|v| v.len() == TILES * 2);
     let random = map.section(1008)?.filter(|v| v.len() == TILES * 2);
     for tile in 0..TILES {
         let flags = u32le(&logic, tile * 4)?;
-        let typ = types[tile] as usize;
+        let id = ids.as_ref().map_or(0, |v| u16le(v, tile * 2).unwrap_or(0)) as usize;
+        // Native renderMap uses BuildingLayer -> Buildings[id].buildingType.
+        // BuildingWasLayer can be zero for doors/decorations or name a parent.
+        let typ = if let (Some(_), Some(records)) = (&ids, &records) {
+            if id > 0 && (id + 1) * 812 <= records.len() {
+                u16le(records, id * 812 + 210)? as usize
+            } else {
+                0
+            }
+        } else {
+            types.as_ref().map_or(0, |v| v[tile] as usize)
+        };
         let rng = random
             .as_ref()
             .map_or(0, |v| u16le(v, tile * 2).unwrap_or(0)) as usize;
@@ -617,8 +632,7 @@ fn flat_graphics(map: &MapFile, gfx: &[u8], stock: &Stock, rules: &Value) -> Res
                     index = Some(first + usize::from(symbol));
                 }
                 Some(group) if group >= 0 => {
-                    let id = ids.as_ref().map_or(0, |v| u16le(v, tile * 2).unwrap_or(0));
-                    index = Some(group as usize * 8 + (id as usize & 1) * 4 + (rng & 3));
+                    index = Some(group as usize * 8 + (id & 1) * 4 + (rng & 3));
                 }
                 _ => {}
             }
@@ -858,7 +872,7 @@ fn extract_map_tiles(
             map.section(1045).ok().flatten().as_deref() == Some(capture.base_heights.as_slice())
         });
     let identity = format!(
-        "rust-map-atlas-9:{}:{}:{}",
+        "rust-map-atlas-10:{}:{}:{}",
         hash(&map.bytes),
         graphics.revision,
         capture.as_ref().map_or("saved", |c| c.revision.as_str())
@@ -1019,6 +1033,74 @@ fn extract_map_tiles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn flat_buildings_follow_records_for_doors_grounds_and_partial_decorations() {
+        let mut types = vec![0; TILES];
+        let mut ids = vec![0; TILES * 2];
+        let mut records = vec![0; 6 * 812];
+        let mut gfx = vec![0; TILES * 2];
+        let mut random = vec![0; TILES * 2];
+        for t in 0..7 {
+            gfx[t * 2..t * 2 + 2].copy_from_slice(&(700 + t as u16).to_le_bytes());
+            random[t * 2..t * 2 + 2].copy_from_slice(&2u16.to_le_bytes());
+        }
+        for id in 1..=3 {
+            ids[(id - 1) * 2..id * 2].copy_from_slice(&(id as u16).to_le_bytes());
+            records[id * 812 + 210..id * 812 + 212]
+                .copy_from_slice(&(70 + id as u16).to_le_bytes());
+        }
+        ids[6..8].copy_from_slice(&4u16.to_le_bytes());
+        types[3] = 9;
+        records[4 * 812 + 210..4 * 812 + 212].copy_from_slice(&57u16.to_le_bytes());
+        ids[8..10].copy_from_slice(&5u16.to_le_bytes());
+        ids[10..12].copy_from_slice(&5u16.to_le_bytes());
+        records[5 * 812 + 210..5 * 812 + 212].copy_from_slice(&101u16.to_le_bytes());
+        types[6] = 9;
+        let sections = [
+            (1049, types),
+            (1012, ids),
+            (1013, records),
+            (1003, vec![0; TILES * 4]),
+            (1008, random),
+        ];
+        let mut bytes = vec![0; 3036];
+        let mut offset = 0u32;
+        for (i, (id, data)) in sections.iter().enumerate() {
+            for (at, value) in [
+                (632 + i * 4, data.len() as u32),
+                (1232 + i * 4, *id),
+                (2432 + i * 4, offset),
+            ] {
+                bytes[at..at + 4].copy_from_slice(&value.to_le_bytes());
+            }
+            bytes.extend(data);
+            offset += data.len() as u32;
+        }
+        let map = MapFile {
+            bytes,
+            directory: 0,
+            count: sections.len(),
+            preview: Vec::new(),
+        };
+        let stock = Stock {
+            entries: vec![StockEntry {
+                gm_id: 157,
+                name: "tile_flatties".into(),
+                from: 1000,
+                count: 46,
+            }],
+            layout: "test",
+        };
+        let mut groups = vec![0; 110];
+        groups[57] = -1;
+        groups[101] = 1;
+        let flat = flat_graphics(&map, &gfx, &stock, &json!({"flatViewGroups":groups})).unwrap();
+        let values = (0..7)
+            .map(|t| u16le(&flat, t * 2).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(values, [1007, 1003, 1007, 703, 1015, 1015, 706]);
+        assert_eq!(u16le(&gfx, 0).unwrap(), 700);
+    }
     #[test]
     fn plain_sea_disambiguates_shifted_picture_counters() {
         let make = |from| Stock {
