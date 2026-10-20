@@ -98,6 +98,21 @@ test('Space and held V dispatch only in a mounted 2.5D view and support custom b
   assert.deepEqual(h.calls,['flat','v','flat','j']);
 });
 
+test('new view defaults preserve cleared bindings and existing custom Space/V or camera keys', () => {
+  const saved={...shortcuts.defaults,select:['v'],groups:['space'],paste:['']};
+  delete saved.flatView; delete saved.peekView;
+  const result=shortcuts.upgrade(saved,[],false);
+  assert.deepEqual(result.select,['v']);
+  assert.deepEqual(result.groups,['space']);
+  assert.deepEqual(result.paste,['']);
+  assert.deepEqual(result.flatView,['']);
+  assert.deepEqual(result.peekView,['']);
+  const free={...shortcuts.defaults,paste:['']};
+  delete free.flatView; delete free.peekView;
+  assert.equal(shortcuts.upgrade(free,[],false).peekView[0],'v');
+  assert.equal(shortcuts.upgrade(free,['v'],false).peekView[0],'');
+});
+
 test('File/Edit menu labels use custom bindings without changing other workspaces', () => {
   const context = {castleShortcuts: shortcuts, sendToFocused() {}};
   vm.createContext(context);

@@ -680,7 +680,7 @@
     if (!img || !img.complete || !img.naturalWidth) return false;
     const hebung = bauHoehe(gx, gy, tiles);
     const rect = geo.spriteRect(variant, gx, gy, tiles, state.view, hebung);
-    if (sprite.mauer && !state.peekView) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, wallFootDepth(gx, gy), sprite.mauer.hoehe - 24);
+    if (sprite.mauer) drawWallFoot(ctx, img, variant, rect.x, rect.y, state.view.zoom, wallFootDepth(gx, gy), sprite.mauer.hoehe - 24);
     if (state.peekView) {
       const [, base] = geo.isoPoint(gx + tiles, gy + tiles, state.view);
       rect.y = base + (rect.y - base) * .2;

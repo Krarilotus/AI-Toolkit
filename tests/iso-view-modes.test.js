@@ -75,3 +75,18 @@ test('flat and peek heights share the same tile picking and keep the real height
     assert.equal(height[200*400+200],64);
   }
 });
+
+test('flat foundations emit image commands for the shared Canvas/GPU recorder and reuse their bitmap', () => {
+  const state={flatView:true,view:{zoom:1,panX:0,panY:0}},draws=[];
+  const context=vm.createContext({state,geo,document:{createElement:()=>({getContext:()=>({
+    beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){},stroke(){}
+  })})}});
+  vm.runInContext(source.slice(source.indexOf('  function drawSprite('),source.indexOf('  function wallFootDepth(')),context);
+  const recorder={drawImage:(...args)=>draws.push(args)};
+  context.drawSprite(recorder,{},43,43,7);
+  context.drawSprite(recorder,{},51,43,7);
+  assert.equal(draws.length,2);
+  assert.equal(draws[0][0],draws[1][0]);
+  assert.equal(draws[0][3],224);
+  assert.equal(draws[0][4],112);
+});
