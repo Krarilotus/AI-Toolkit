@@ -58,7 +58,7 @@ function gm1(count, pillar=false, color=0x7c00) {
 }
 test('building assets run in a worker, share concurrent loads and invalidate after a texture changes', async t => {
   const {root,write}=fixture(t), counts=new Map();
-  for(const s of [...sources,...walls,{file:'tile_sea8',index:332},{file:'killing_pits',index:0},{file:'pitch_ditches',index:3},...walls.filter(s=>s.pillar!==undefined).map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
+  for(const s of [...sources,...walls,{file:'tile_flatties',index:45},{file:'tile_sea8',index:332},{file:'killing_pits',index:0},{file:'pitch_ditches',index:3},...walls.filter(s=>s.pillar!==undefined).map(s=>({file:'tile_walls',index:s.pillar}))])counts.set(s.file,Math.max(counts.get(s.file)||0,s.index+1));
   for(const [name,count] of counts)write(`gm/${name}.gm1`,gm1(count,name==='tile_walls'));
   const cache=path.join(root,'cache');
   const first=loadGameBuildingAssets(root,cache);
@@ -69,6 +69,8 @@ test('building assets run in a worker, share concurrent loads and invalidate aft
   assert.deepEqual(pixelAtPart(part),[255,0,0,255]);
   assert.ok(fs.existsSync(fileURLToPath(part.bild)));
   assert.deepEqual(result.assetWarnings,[]);
+  assert.equal(result.flatTiles.length,46);
+  assert.ok(result.flatTiles.every(tile=>tile.bild===part.bild && tile.breite===30 && tile.hoehe===16));
   const again=await loadGameBuildingAssets(root,cache);
   assert.deepEqual(again,result);
   const moat=Object.values(result.gegenstaende[106].moatVariants);
