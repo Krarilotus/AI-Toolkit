@@ -3,6 +3,27 @@
 Windows x64, updated 20 October 2026. Native compilation/tests also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Lowered-view height and footprint correction: 70723269
+
+Snapshot source `707232695a52934851afdc4c964319f5abde76cb` replaces the
+whole-image 20% vertical scaling with the native quarter-height table. Ground
+and roof diamonds retain their shape, cliff/wall columns shorten, and troops
+follow the visible supports. See [height provenance](iso-view-modes.md).
+
+**111 focused rendering, geometry, shortcut and troop checks pass.** Packaged
+native comparison loaded the unchanged 998-step Gatekeeper/Kratoloros castle
+on GreekSea in normal, lowered, rotated and flat modes. Normal and restored
+viewport PNGs match the previous build byte-for-byte (SHA-256
+`d68bb8c88f79dcb73dc51ca933a63da629efb271c9fdd720a9017601e5260eab`).
+Lowered view no longer squashes complete tile/part images. V persistence,
+second-press/button deactivation, remount/detach/dock, unchanged castle contents,
+empty renderer-error collection and clean exit 0 were checked separately.
+
+Portable: **7,429,184 bytes**; Setup: **6,766,951 bytes**. All **123 packaged
+images** retain their original bytes. Portable SHA-256:
+`62d8b644529018965a62c5d25fe9172a49a47c243a61ddd2d25f8f4e4b4dfba1`.
+Full suites and performance benchmarks were not rerun.
+
 ## Screenshot-friendly lowered-view toggle: 03a097db
 
 Published `snapshot-native-03a097db` changes V to a toggle and adds a pressed
