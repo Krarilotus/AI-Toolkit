@@ -3,6 +3,33 @@
 Windows x64, updated 20 October 2026. Native compilation/tests also pass on
 Linux/macOS; their OS GUI and updater integration remain untested.
 
+## Permanent terrain construction warnings: ac357d88
+
+Published `snapshot-native-ac357d88` adds red footprint fills, outlines and
+crosses for permanent construction conflicts in both views and placement
+previews. Hover text explains the reason. Trees, bushes, animals and saved
+structures are excluded from the permanent mask. Per-building height rules,
+resource-building allowances and AI rock-clearance exceptions are documented in
+[construction warnings](construction-warnings.md).
+
+**129 focused JavaScript checks and four native map-reader checks pass.** A fresh
+packaged native profile loaded GreekSea terrain metadata version 5. Rust's full
+construction flag grid matched Node's byte-for-byte. Two Fletcher placements on
+river and rocky/uneven ground were marked; a third valid placement stayed clear.
+Hover explanations identified water and rock/height conflicts. Warnings were
+stable through camera rotation, Space and V, and hidden for future build steps.
+The document was unchanged, renderer error collection was empty, and the isolated
+app closed with exit code 0. The user's live profile was not changed.
+
+Portable: **7,428,866 bytes**; Setup: **6,767,184 bytes**. All **123 original
+packaged images** and all nine complete language catalogues passed packaging.
+Portable SHA-256:
+`b32df4f750ad752d0f3e120b71f6299bbfe0c261cb12f2220f0ba92c9ed4649e`.
+The published digest matches the tagged `D:\Downloads` copy. Full suites and
+performance benchmarks were not rerun. The changed map reader passes its direct
+rustfmt check; the broader repository formatting check still reports existing
+differences in `game/buildings.rs` and `game/units.rs` from the preview base.
+
 ## Saved-map rotation and Space/V camera modes: c45391d1
 
 Published `snapshot-native-c45391d1`, built from
