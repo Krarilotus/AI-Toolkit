@@ -1203,6 +1203,19 @@
         cache.set(key,command);
       }
       commands.push(command);
+      const sourceMarker=marker.ref?.startsWith('u:')
+        ? window.castleEditor?.getDocument?.()?.miscItems?.[Number(marker.ref.slice(2))] : null;
+      if(sourceMarker?.number>=10 && gx===marker.gx && gy===marker.gy) {
+        if(!state.extendedTroopBadge) {
+          const badge=document.createElement('canvas');badge.width=22;badge.height=14;
+          const badgeContext=badge.getContext('2d');
+          badgeContext.fillStyle='#173346';badgeContext.fillRect(0,0,22,14);
+          badgeContext.fillStyle='#ffe296';badgeContext.font='bold 10px sans-serif';badgeContext.textAlign='center';
+          badgeContext.fillText('DE',11,11);state.extendedTroopBadge=badge;
+        }
+        commands.push(...recordSceneCommands({gx:tile.gx,gy:tile.gy,tiles:1,layer:5},false,
+          recorder=>recorder.drawImage(state.extendedTroopBadge,x-11,y+2,22,14)));
+      }
     }
     return commands.sort((a,b)=>geo.renderOrder(a.order,b.order));
   }
