@@ -377,7 +377,18 @@
   }
 
   function renumberUnits(doc = state.document) {
-    if (state.format === 'aivjson') return;
+    if (state.format === 'aivjson') {
+      // Expanded guarding groups must be contiguous. Only compact groups that
+      // actually use extra slots after an edit; untouched JSON keeps its IDs.
+      const expanded = new Set((doc.miscItems || []).filter(item => item.number >= 10 && item.number < 30
+        && isUnitType(item.itemType) && Number(itemInfo(item.itemType).maxAmount)>10).map(item => item.itemType));
+      for (const type of expanded) {
+        const group = doc.miscItems.filter(item => item.itemType === type).sort((a,b)=>a.number-b.number);
+        if(group.some(item=>item.number>=30))continue;
+        group.forEach((item,number)=>{item.number=number;});
+      }
+      return;
+    }
     const nextNumber = new Map();
     for (const item of doc.miscItems || []) {
       const type = Number(item.itemType);
@@ -2171,6 +2182,7 @@
       : allowsMultiplePerStep(type) ? tr("castle:multiple_per_step") : tr("castle:single_per_step");
     const sizeLabel = type === geometry.KEEP_ITEM_TYPE ? tr('feedback:keep_footprint', {width:w,height:h}) : `${w}×${h}`;
     els.itemInfo.textContent = tr('feedback:placement_info', {name:itemName(type),id:type,kind,size:sizeLabel,overlap:tr('feedback:overlap_'+overlapMode(type),{defaultValue:overlapMode(type)}),maximum:max});
+    if (isUnitType(type) && Number(maximum)>10) els.itemInfo.textContent += ' · '+tr('feedback:extended_rally_points');
   }
 
   function getPaletteGroups() {
@@ -2281,6 +2293,12 @@
         : Number(id) === geometry.KEEP_ITEM_TYPE
         ? `${size[0]}×${size[1]} + SP`
         : `${size[0]}×${size[1]}`;
+      if (isUnitType(Number(id))) {
+        const count=countType(Number(id));
+        meta.textContent=`${count}/${maxAmount(Number(id))}${count>10?' DE':''}`;
+        if (Number(maxAmount(Number(id)))>10) row.title+=' · '+tr('feedback:extended_rally_points');
+        row.setAttribute('aria-label',row.title);
+      }
       row.append(thumb, name, meta);
       row.addEventListener('click', () => selectItem(Number(id)));
       items.appendChild(row);
@@ -2326,6 +2344,13 @@
 
   function renderBuildList(scrubbing = false) {
     if (!scrubbing) { updatePopulationPanel(); updateCostPanel(); }
+    if(!scrubbing)for(const row of els.palette?.querySelectorAll?.('.paletteItem') || []) {
+      const type=Number(row.dataset.itemType);
+      if(!isUnitType(type))continue;
+      const count=state.document.miscItems.filter(item=>Number(item.itemType)===type).length;
+      const meta=row.querySelector('.paletteItemMeta');
+      if(meta)meta.textContent=`${count}/${maxAmount(type)}${count>10?' DE':''}`;
+    }
     const activeStep = Number.isInteger(state.insertionFrameIndex) && state.insertionFrameIndex >= 0 && state.insertionFrameIndex < frames().length
       ? state.insertionFrameIndex
       : null;
@@ -2336,6 +2361,9 @@
     els.buildSliderValue.textContent = activeStep == null ? tr("interface:no_step_selected") : tr("castle:step_value", { value1: activeStep + 1 });
     const rallypointCount = state.document.miscItems.filter(item => isUnitType(item.itemType)).length;
     els.buildCount.textContent = tr('quantity:build_step',{count:frames().length});
+    const expanded=state.document.miscItems.some(item=>item.number>=10);
+    if(expanded)els.buildCount.textContent+=' · DE';
+    els.buildCount.title=expanded?tr('feedback:extended_rally_points'):'';
     // Scrubbing changes row state, not row content. Preserve the DOM, listeners,
     // scroll position and drag target until the actual document changes.
     if (state.buildListRevision === (state.documentRevision || 0)) {
@@ -3168,7 +3196,11 @@
       if(routes.length)return routes.map(r=>`${r.name || itemName(r.type)}: ${r.workers} worker(s) - ${r.reason || 'entrance, '+Math.round(r.distance)+tr("castle:tiles_to_delivery_point")}`).join('; ');
     }
     const ref = tile && topmostRefAtTile(tile);
-    const label=ref ? `${itemName(refType(ref))} [${refType(ref)}]` : '';
+    let label=ref ? `${itemName(refType(ref))} [${refType(ref)}]` : '';
+    if(String(ref).startsWith('u:')) {
+      const marker=state.document.miscItems[parseRef(ref).mi];
+      if(marker?.number>=10)label+=` #${unitDisplayNumber(marker.number)} · `+tr('feedback:extended_rally_points');
+    }
     if(tile && document.getElementById('castleShowRoutes')?.checked && analysisCache.walkability) {
       const flags=analysisCache.walkability[tile.y*GRID+tile.x];
       const access=flags===3?tr("castle:ground_passage_and_raised_walkway"):flags===2?tr("castle:raised_walkway"):flags===1?tr("castle:walkable_ground"):tr("castle:blocked_tile");
@@ -3358,7 +3390,9 @@
       const { x, y } = offsetToXY(off);
       const rect = screenRectForXY(stack.top.type, x, y);
       if (rect.x + rect.w < 0 || rect.y + rect.h < 0 || rect.x > state.canvasWidth || rect.y > state.canvasHeight) continue;
-      if (els.showUnitNumbers.checked) drawSkinLabel(`#${unitDisplayNumber(stack.top.number)}`, rect);
+      const extended=stack.top.number>=10;
+      if (els.showUnitNumbers.checked || extended) drawSkinLabel(
+        `${els.showUnitNumbers.checked?'#'+unitDisplayNumber(stack.top.number):''}${extended?' DE':''}`.trim(),rect);
       if (stack.count < 2) continue;
 
       ctx.save();
