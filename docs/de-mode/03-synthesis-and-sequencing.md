@@ -83,6 +83,18 @@ legacy adapters, leases and cache namespaces. Bind before initialization;
 capture context before queued work. Keep Classic algorithms intact and return
 unavailable DE capabilities rather than falling back to Classic.
 
+Startup policy after F1: an explicit saved default wins after fresh revalidation.
+An inactive migrated Classic candidate may bind only to that startup window when
+the unchanged legacy file's hash matches the recorded migration provenance,
+fresh detection resolves its saved path to a stored Classic profile, and that
+profile's identity still matches. This writes no preference. A changed/missing
+legacy source, missing candidate, ambiguous probe or unavailable root leaves a
+usable standalone window with a diagnostic and folder selection. Do not guess
+from an arbitrary sole profile. Inherited editors copy their caller's snapshot
+before initialization and receive a fresh window epoch; they never run startup
+preference selection again. F2 must test these paths and expose supported offline
+maintenance before live callers depend on the repository.
+
 **F3 — Startup, storage and staged mode switch (serialized after F2).** Namespace
 edition-sensitive domain state, preserve Classic migrations, implement switch
 freeze/drain/adopt/recovery and stale-result guards. Expose the toggle only
@@ -95,10 +107,35 @@ duplicates, arrays/tails and unchanged bytes; separate game-export validation
 from preservation. Integrate UI and existing castle paths only in a later
 serialized slice with explicit ownership.
 
+Later document routing keeps a document session's format, immutable source bytes,
+revision, explicit path and owning context together. Native/Electron transport
+must supply opaque bytes for DE documents; a parsed JSON object is insufficient.
+Recognition and target diagnostics remain distinct. A valid unknown JSON file
+can be preserved without being advertised as a playable LORDJSON/AIVJSON. A
+successful edition switch closes old document owners together only after the
+accepted Save/Discard/Cancel gate and successful adoption; cancellation retains
+their bytes, undo and destinations. Keeping both editions' open projects at once
+uses separate intentionally owned editor windows, never implicit conversion.
+
 **A1 — Authentic local DE provider.** First review a shipping extraction strategy
 and remaining idle/facing/building/mode contracts. Keep all pixels outside Git.
 Use source fingerprints and shared renderer DTOs; no generated art masquerading
 as DE assets, guessed frames or menu icons claimed as world compositions.
+
+**D2 — Ordered AIVJSON overlay (after D1 correction review).** Add a DE-specific
+overlay/validator over the lossless document API, leaving `castle-format.js` and
+the existing editor untouched until reviewed. Its source is the ordered frame
+program, not a final raster: preserve every offset occurrence, empty/missing/null
+distinction, pause, extension, unknown ID and sparse marker number. Keep typed
+shape, representability by the managed Int16 writer, known target capabilities
+and unverified gameplay semantics separate. Cover the 49-pause boundary,
+zero-type counted-record ambiguity, narrowing/count overflow, one-time high
+marker adjustment and vanilla versus configured Fixes indexing with asymmetric
+fixtures. A later D3 must supply reviewed structural JSON edits and explicit
+castle-editor operations; D1 scalar edits alone cannot create/delete frames or
+markers. Existing `castle-format.stringify` calls `JSON.stringify` and cannot
+serve as the DE lossless save path. No hidden converter or raster reconstruction
+may replace the original operation program.
 
 **P1 — Reversible vanilla package and optional loader adapters.** Manifest-first
 planning, exact file/media names and validation, collisions, owned-file hashes,

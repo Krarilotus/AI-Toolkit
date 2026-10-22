@@ -121,7 +121,7 @@
       "track": "rendering-contracts-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-rendering-contracts-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-rendering-contracts-20261022-r1",
-      "status": "completed; independent review pending",
+      "status": "completed; Review14 confirms bounded selectors and metadata with required reader corrections",
       "kind": "bounded static rendering follow-up; no recursive delegation",
       "ownedFiles": [
         "docs/de-mode/research/08-rendering-contracts.md"
@@ -182,7 +182,7 @@
       "track": "rendering-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-rendering-contracts-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-rendering-contracts-20261022-r1",
-      "status": "running",
+      "status": "completed; conditional GO for A1 metadata only",
       "kind": "independent review; no implementation changes",
       "ownedFiles": [
         "docs/de-mode/research/14-rendering-provider-review.md"
@@ -232,6 +232,18 @@
         "S:/Projects/UCP/de-research/isolation-harness-a (external scratch only)"
       ],
       "isolation": "shared; explicit disjoint ownership; no recursive delegation"
+    },
+    {
+      "track": "assets-core-a1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-assets-core-a1-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-assets-core-a1-20261022-r1",
+      "status": "running",
+      "kind": "implementation; metadata-only std Rust crate; no production integration or decoder",
+      "ownedFiles": [
+        "crates/de-assets-core/**",
+        "docs/de-mode/research/16-assets-core-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint crate and report; no recursive delegation"
     }
   ]
 }

@@ -17,7 +17,7 @@ desktop/game observations and recovery evidence.
 | 1. Establish evidence | Pinned repository catalogue, local game/editor hashes, format probes and ordered HD/DE difference ledger | Review primary code and reproduce central claims | Initial gate complete; targeted follow-ups continue |
 | 2. Separate edition mode | Edition detection, separate roots/settings/caches and capability model | Classic-only, DE-only, both-installed and mode-switch tests | In progress: F1 correction round 2 after Review 11 NO-GO |
 | 3. Implement DE data contracts | Lossless castle/lord/AI codecs, schema-driven UI and safe conversion | Round trips and game/editor/loader fixtures | In progress: D1 correction round 2 after Review 12 NO-GO |
-| 4. Replace DE placeholder art | Local asset extraction and verified DE rendering | Representative units/buildings/terrain and rotations/modes | Pending |
+| 4. Replace DE placeholder art | Local asset extraction and verified DE rendering | Representative units/buildings/terrain and rotations/modes | In progress: reviewed A1 metadata core |
 | 5. Deliver custom AI packages | Lord/media package creation and reversible game/loader installation | Real package discovery and isolated in-game loading | Pending |
 | 6. Finish compatibility | Acceptance matrix, classic regressions, failure recovery and user workflow checks | All required cases verified; no hidden unsupported paths | Pending |
 
@@ -83,11 +83,16 @@ This is not permission to merge unrelated repositories into the UCP game code.
   owns the same F1 files; a fresh review gates commit. The cross-process journal
   design and explicit offline abandoned-lock maintenance are accepted for this
   unexposed milestone. Window/context/cache/UI work remains F2/F3.
-- Rendering follow-up 08 is complete: Healer `640+d`, Camel Lancer `512+d`,
-  camera-corrected facing and outpost 106's 25 base tiles are source-pinned.
-  A direct v22 index matches UnityPy for 41 representative sprites. Review 14
-  now gates the narrow metadata reader and subsequent measured BC7/BC1 decoder
-  choice. Stockade compound and final flat/lowered rules remain open.
+- Rendering Review 14 gives conditional GO for A1 metadata only. It independently
+  matches every serialized field of 41 Sprites and all 41 Texture2Ds, corroborates
+  Healer/Camel stationary selectors and outpost base permutations, and corrects
+  the earlier scratch index's narrower name/path-ID comparison. An isolated
+  `crates/de-assets-core` implementer owns checked v22 parsing, exact metadata,
+  scoped names/references and read-only bounded streams with synthetic tests.
+  It adds no production dependency or decoder. DXT5/RGBA32/RGB24, inline/empty
+  textures and mip exceptions must survive metadata parsing; later BC1 decode
+  must test transparent mode. Stockade, flat/lowered, pixels and game views remain
+  open. Exact source/database provenance and notices stay distinct.
 - First DE package target: vanilla named Custom Lord plus matching-name
   `CustomMedia`, before optional SE/Fixes capabilities. The shipped media
   instructions and game source support this path; actual playback/loading is

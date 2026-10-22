@@ -144,6 +144,26 @@
       "snapshotManifest": "S:/Projects/UCP/de-research/isolation-boundary-review/docs-manifest.json",
       "evidence": "research/13-isolation-boundary-review.md",
       "evidenceStatus": "Versioned Unity docs reviewed with local metadata and19 managed call sites; actual startup paths remain unverified"
+    },
+    {
+      "id": "unitypy-reader-layout-oracle",
+      "url": "https://github.com/K0lb3/UnityPy",
+      "fileCommits": {
+        "UnityPy/files/SerializedFile.py": "807f3888b8a2ddaa6504fca0737481baab4d6a99",
+        "UnityPy/helpers/Tpk.py": "807f3888b8a2ddaa6504fca0737481baab4d6a99",
+        "UnityPy/files/ObjectReader.py": "578a1b2f13f341db079fd969706d36d915b0dc8d",
+        "UnityPy/resources/uncompressed.tpk": "3135aa937e46ec8a7e2c60e84fb2fbb51a9c95c8"
+      },
+      "databaseSha256": "3777edf16f1a57908640ef6d1e49fa51533e545424188b239c1b8e2ead3988da",
+      "evidence": "research/14-rendering-provider-review.md",
+      "evidenceStatus": "Independent full-field82-object oracle parity; per-file source pins rather than invented single release commit; database not redistributed and upstream dataset provenance remains separate"
+    },
+    {
+      "id": "texture2ddecoder-candidate",
+      "url": "https://github.com/K0lb3/texture2ddecoder-rs",
+      "commit": "551fcbfbe86c05424ccc2ff942525c0ec7171d65",
+      "evidence": "research/14-rendering-provider-review.md",
+      "evidenceStatus": "Candidate only; unselected and uninstalled. BC1 versus BC1a transparency and BGRA output require bounded oracle/performance/notice review before dependency selection"
     }
   ],
   "localGameEvidence": "local-evidence.json",
