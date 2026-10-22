@@ -1,12 +1,8 @@
 name: Native CI
 
 on:
-  push:
-    # Fork preview branches are checked by their upstream pull request.
-    branches: [main]
-    paths-ignore: ['**/*.md']
-  pull_request:
-    paths-ignore: ['**/*.md']
+  # This isolated DE research branch must not start CI automatically.
+  # Do not dispatch this workflow without a later explicit user instruction.
   workflow_dispatch:
 
 permissions:
