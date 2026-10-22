@@ -15,8 +15,8 @@ desktop/game observations and recovery evidence.
 | --- | --- | --- | --- |
 | 0. Isolate and preserve instructions | DE branch, no automatic CI, UCP sidebar continuation and persistent goal | Correct workspace binding; original checkout untouched | Complete |
 | 1. Establish evidence | Pinned repository catalogue, local game/editor hashes, format probes and ordered HD/DE difference ledger | Review primary code and reproduce central claims | Initial gate complete; targeted follow-ups continue |
-| 2. Separate edition mode | Edition detection, separate roots/settings/caches and capability model | Classic-only, DE-only, both-installed and mode-switch tests | In progress: unexposed F1 foundation |
-| 3. Implement DE data contracts | Lossless castle/lord/AI codecs, schema-driven UI and safe conversion | Round trips and game/editor/loader fixtures | In progress: unexposed D1 raw JSON/LORDJSON foundation |
+| 2. Separate edition mode | Edition detection, separate roots/settings/caches and capability model | Classic-only, DE-only, both-installed and mode-switch tests | In progress: F1 correction round 2 after Review 11 NO-GO |
+| 3. Implement DE data contracts | Lossless castle/lord/AI codecs, schema-driven UI and safe conversion | Round trips and game/editor/loader fixtures | In progress: D1 correction round 2 after Review 12 NO-GO |
 | 4. Replace DE placeholder art | Local asset extraction and verified DE rendering | Representative units/buildings/terrain and rotations/modes | Pending |
 | 5. Deliver custom AI packages | Lord/media package creation and reversible game/loader installation | Real package discovery and isolated in-game loading | Pending |
 | 6. Finish compatibility | Acceptance matrix, classic regressions, failure recovery and user workflow checks | All required cases verified; no hidden unsupported paths | Pending |
@@ -70,6 +70,24 @@ This is not permission to merge unrelated repositories into the UCP game code.
   package/game acceptance is inferred. Main/develop share relevant code blobs
   but have different SE provenance metadata; the native PE has 77 exports,
   not the baseline narrative's 78 including entry.
+- D1 returned seven new files and 73 passing focused tests, with no existing
+  integration changed. Independent code Review 12 gives NO-GO: partly frozen
+  schemas remain mutable, altered schemas can pass the pinned-contract checks,
+  and same-value edits can fail token limits. A Unicode fixture variant also
+  silently does nothing. Sol 6.1 correction round 2 owns the same seven files;
+  a fresh independent review must resolve the findings before commit/integration.
+- F1 returned equivalent Node/Rust modules and 41 Node + 19 native focused tests.
+  Independent Review 11 gives NO-GO: accepted deep/Unicode metadata can become
+  unreadable by Rust, Node accepts non-JSON inputs that change on disk, and
+  malformed CLR evidence can be recognized as DE. Sol 6.1 correction round 2
+  owns the same F1 files; a fresh review gates commit. The cross-process journal
+  design and explicit offline abandoned-lock maintenance are accepted for this
+  unexposed milestone. Window/context/cache/UI work remains F2/F3.
+- Rendering follow-up 08 is complete: Healer `640+d`, Camel Lancer `512+d`,
+  camera-corrected facing and outpost 106's 25 base tiles are source-pinned.
+  A direct v22 index matches UnityPy for 41 representative sprites. Review 14
+  now gates the narrow metadata reader and subsequent measured BC7/BC1 decoder
+  choice. Stockade compound and final flat/lowered rules remain open.
 - First DE package target: vanilla named Custom Lord plus matching-name
   `CustomMedia`, before optional SE/Fixes capabilities. The shipped media
   instructions and game source support this path; actual playback/loading is
@@ -79,12 +97,14 @@ This is not permission to merge unrelated repositories into the UCP game code.
   copy alone still uses the ordinary user's persistence paths. A bounded
   same-user isolation investigation is running before choosing a test-user/VM
   fallback or changing any profile.
-- Report 06 is complete: offline metadata/19-site managed path redirection and
-  the SE root prototype work; 14 original-profile Auto-Cloud rules and Steam
-  launch/Workshop/state paths still need a complete boundary. Independent
-  Review 13 now evaluates reversible supported Cloud/launch controls and a
-  restricted-token candidate against the actual preservation contract. No
-  game launch, original setting change or external prerequisite is assumed.
+- Review 13 selects design A conditionally: owned-copy identity/root redirects,
+  supported app Cloud policy and early Workshop/account-write suppression.
+  Its synthetic restricted-token candidate B allowed deletion and is rejected.
+  Startup stats migration, implicit persistence and leaderboard uploads are
+  included in the audit. A new bounded offline harness task owns report 15 and
+  external scratch only; it must demonstrate exact transforms/guards and expose
+  remaining native/Steam ordering gaps before a launch decision. No game launch,
+  Steam preference/ACL change or separate-account/VM prerequisite is assumed.
 - The supported Windows observation API was initialized read-only and its
   window inventory works. A pre-existing Toolkit window runs from
   `S:\Projects\UCP\Tools\AI Toolkit\AI Toolkit.exe`; it was not activated or
@@ -126,9 +146,16 @@ This is not permission to merge unrelated repositories into the UCP game code.
   passes **10/10** read-only map/asset/coordinate checks. These checks launch
   no game process. Baseline-generated tracked locale/theme files were restored
   after confirming their diffs contained no semantic changes.
+- With both unexposed F1/D1 modules present, `npm.cmd run check` passes
+  **767 tests, 0 failures/skips**, and the native library suite passes
+  **96 tests, 0 failures, 1 explicit ignore**. Logs are outside Git at
+  `S:\Projects\UCP\de-research\foundations-check-e6733ca.log` and
+  `foundations-native-e6733ca.log`. These regressions do not resolve independent
+  review findings or establish UI/game acceptance. `get_goal` again confirms
+  the full persistent objective is active with no token budget.
 - No game/editor launch, installed application update, game-directory write,
-  CI dispatch, PR or release has occurred. Next: synthesize research, reproduce
-  central claims and review the edition boundary before implementation.
+  CI dispatch, PR or release has occurred. Next: resolve code review findings,
+  prepare reviewed context/provider slices and the offline isolation harness.
 
 The previous Toolkit branch remains at 5ce3676. Its last published native app is
 `snapshot-native-b508953a`, with the 30-spot feature and documented DE limits.

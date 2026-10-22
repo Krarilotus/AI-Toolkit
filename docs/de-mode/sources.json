@@ -111,6 +111,39 @@
       "archiveSha256": "f881201b79da03e513bf97cdf39607ffa7f9e0d31a519b1aeeca8eb60f8309e7",
       "evidence": "research/06-profile-isolation.md",
       "evidenceStatus": "archive hash independently reproduced by coordinator; selected Cecil/preloader files used only for offline probes. Not installed, not a tested game loader selection."
+    },
+    {
+      "id": "microsoft-security-api-docs",
+      "url": "https://github.com/MicrosoftDocs/sdk-api",
+      "commit": "656e9656bfaef34dd29cd7ee9e1146aec17e924c",
+      "evidence": "research/13-isolation-boundary-review.md",
+      "localPath": "S:/Projects/UCP/de-research/isolation-boundary-review/ms-doc-source-pins.json",
+      "evidenceStatus": "Official source pin audited by independent isolation review; restricted-token candidate rejected by actual deletion probe"
+    },
+    {
+      "id": "microsoft-security-concept-docs",
+      "url": "https://github.com/MicrosoftDocs/win32",
+      "commit": "ca8274decead49403d70ceeed4af8d4ca74eaf11",
+      "evidence": "research/13-isolation-boundary-review.md",
+      "evidenceStatus": "Official source pin for access/process boundary audit; no runtime sandbox acceptance"
+    },
+    {
+      "id": "steamworks-isolation-controls",
+      "url": "https://partner.steamgames.com/doc/features/cloud?l=english",
+      "kind": "official-documentation",
+      "accessedAt": "2026-10-22",
+      "snapshotManifest": "S:/Projects/UCP/de-research/isolation-boundary-review/docs-manifest.json",
+      "evidence": "research/13-isolation-boundary-review.md",
+      "evidenceStatus": "Unversioned official Cloud/UGC/stats/API documentation captured and hashed; no invented upstream commit; no Steam setting changed"
+    },
+    {
+      "id": "unity-2021-persistence-docs",
+      "url": "https://docs.unity3d.com/2021.3/Documentation/ScriptReference/Application-persistentDataPath.html",
+      "kind": "official-documentation",
+      "accessedAt": "2026-10-22",
+      "snapshotManifest": "S:/Projects/UCP/de-research/isolation-boundary-review/docs-manifest.json",
+      "evidence": "research/13-isolation-boundary-review.md",
+      "evidenceStatus": "Versioned Unity docs reviewed with local metadata and19 managed call sites; actual startup paths remain unverified"
     }
   ],
   "localGameEvidence": "local-evidence.json",
@@ -119,5 +152,11 @@
     "native": "77 passed, 0 failed, 1 explicit installation-parity test ignored after building desktop bundle. Log: S:\\Projects\\UCP\\de-research\\baseline-native-818503d.log",
     "classicInstallation": "10 passed, 0 failed, 0 skipped; read-only checks against D:\\Games\\Stronghold Crusader KI-Liga. Log: S:\\Projects\\UCP\\de-research\\baseline-classic-game-818503d.log",
     "realGame": "not launched"
+  },
+  "foundationChecks": {
+    "snapshot": "e6733cabc81731f4c8f0b71013456caa201657fd plus uncommitted original F1/D1 modules before correction",
+    "javascript": "767 passed; 0 failed/skipped; syntax passed. S:/Projects/UCP/de-research/foundations-check-e6733ca.log",
+    "native": "96 passed; 0 failed; 1 explicit ignore. S:/Projects/UCP/de-research/foundations-native-e6733ca.log",
+    "acceptance": "Local regression evidence only. Reviews11/12 found blockers and corrections are pending; no GUI or game acceptance."
   }
 }

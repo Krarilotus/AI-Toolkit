@@ -94,7 +94,7 @@
       "track": "profile-foundation-f1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-profile-foundation-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-profile-foundation-20261022-r1",
-      "status": "running",
+      "status": "completed; Review11 NO-GO; correction round2 assigned",
       "kind": "implementation; additive unexposed modules only",
       "ownedFiles": [
         "src/node/game-profiles.js",
@@ -121,7 +121,7 @@
       "track": "rendering-contracts-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-rendering-contracts-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-rendering-contracts-20261022-r1",
-      "status": "running",
+      "status": "completed; independent review pending",
       "kind": "bounded static rendering follow-up; no recursive delegation",
       "ownedFiles": [
         "docs/de-mode/research/08-rendering-contracts.md"
@@ -132,7 +132,7 @@
       "track": "lossless-documents-d1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-lossless-documents-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-lossless-documents-20261022-r1",
-      "status": "running",
+      "status": "completed; Review12 NO-GO; correction round2 assigned",
       "kind": "implementation; new raw JSON/LORDJSON modules only",
       "ownedFiles": [
         "src/shared/lossless-json.js",
@@ -149,12 +149,89 @@
       "track": "isolation-boundary-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-boundary-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-boundary-20261022-r1",
-      "status": "running",
+      "status": "completed; conditional design A only; restricted token rejected",
       "kind": "independent isolation review and bounded offline probes",
       "ownedFiles": [
         "docs/de-mode/research/13-isolation-boundary-review.md"
       ],
       "isolation": "shared; disjoint report only"
+    },
+    {
+      "track": "lossless-documents-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-lossless-documents-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-lossless-documents-20261022-r1",
+      "status": "completed; NO-GO; four findings passed to correction",
+      "kind": "independent D1 code review; no implementation edits",
+      "ownedFiles": [
+        "docs/de-mode/research/12-lossless-document-review-r1.md"
+      ],
+      "isolation": "shared; disjoint review report only"
+    },
+    {
+      "track": "foundation-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-profile-foundation-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-profile-foundation-20261022-r1",
+      "status": "completed; NO-GO; three blockers passed to correction",
+      "kind": "independent review; no implementation changes",
+      "ownedFiles": [
+        "docs/de-mode/research/11-profile-foundation-review-r1.md"
+      ],
+      "isolation": "shared; disjoint report only"
+    },
+    {
+      "track": "rendering-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-rendering-contracts-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-rendering-contracts-20261022-r1",
+      "status": "running",
+      "kind": "independent review; no implementation changes",
+      "ownedFiles": [
+        "docs/de-mode/research/14-rendering-provider-review.md"
+      ],
+      "isolation": "shared; disjoint report only"
+    },
+    {
+      "track": "lossless-documents-fix-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-lossless-documents-20261022-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-lossless-documents-20261022-r2",
+      "status": "running",
+      "kind": "implementation; same D1 files only",
+      "ownedFiles": [
+        "src/shared/lossless-json.js",
+        "src/js/de-lord-format.js",
+        "config/de-lord-schema.json",
+        "tests/lossless-json.test.js",
+        "tests/de-lord-format.test.js",
+        "tests/fixtures/de-documents/complete-synthetic.lordjson",
+        "docs/de-mode/research/10-lossless-document-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation"
+    },
+    {
+      "track": "profile-foundation-fix-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r2",
+      "status": "running",
+      "kind": "implementation; same F1 files only",
+      "ownedFiles": [
+        "src/node/game-profiles.js",
+        "src-tauri/src/profiles.rs",
+        "tests/game-profiles.test.js",
+        "tests/fixtures/de-mode/foundation.json",
+        "docs/de-mode/research/09-profile-foundation-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation"
+    },
+    {
+      "track": "offline-isolation-harness-a-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-prepare-isolation-harness-a-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-prepare-isolation-harness-a-20261022-r1",
+      "status": "running",
+      "kind": "offline implementation; no game or Steam policy execution",
+      "ownedFiles": [
+        "docs/de-mode/research/15-offline-isolation-harness.md",
+        "S:/Projects/UCP/de-research/isolation-harness-a (external scratch only)"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation"
     }
   ]
 }
