@@ -91,3 +91,12 @@ bounded agents may challenge the brief itself with evidence, while the coordinat
 owns scope reconciliation and prioritizes complete user workflows. Review code
 health as well as correctness; preserve behavior during cleanup and avoid
 unnecessary abstraction, duplicated policies and unrelated refactoring.
+
+Architecture steering is explicit: keep Classic and DE responsibilities visibly
+separate, make reusable policies and contracts authoritative in one place, and
+avoid independently maintained implementations that drift across backends.
+Equivalent tests do not by themselves justify duplicate production policy.
+Invest in focused generation/build/validation tooling and refactor the relevant
+boundaries before adding more behavior when that prevents repeated rework.
+The user's wording is retained in `00-goal-verbatim.md`. Reviewers must assess
+these requirements as well as correctness before accepting new shared boundaries.

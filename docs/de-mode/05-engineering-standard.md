@@ -29,6 +29,24 @@ foundations may proceed in parallel where they serve these concrete consumers.
 | Package installer | Concrete file plan; collision checks; backups; version requirements; reversible owned writes | UI defaults, game authentication changes or codec normalization |
 | Acceptance tooling | Isolated observations and reproducible evidence outside the product | New shipping dependencies merely for research convenience |
 
+## Single source of truth
+
+Single source of truth is a design requirement. Separate Classic and DE adapters
+behind explicit contracts; share an algorithm only where its semantics match.
+Desktop transports should adapt a canonical implementation rather than each
+reimplementing detection, validation, persistence or DE decoding. Shared fixtures
+can detect drift but do not remove duplicated production ownership. Prefer
+generated bindings/manifests over manually synchronized contract inventories.
+Independent test oracles remain valuable and are not a second runtime policy.
+
+Before F2 grows live services, explicitly decide the authoritative core and thin
+adapter boundary. The current unexposed Node/Rust profile duplication and repeated
+cross-host parser discrepancies are concrete evidence to reconsider that design.
+Keep asset decoding in the one Rust core and lossless document logic in its one
+shared document implementation. Assess other boundaries on their actual consumers,
+portability, packaging and maintenance costs; do not replace the problem with a
+generic framework. Record an incremental migration preserving Classic behavior.
+
 ## Task briefs and critical agency
 
 Each agent gets the goal/contract links, intended user outcome, dependency inputs,

@@ -4,6 +4,16 @@ Read the [verbatim goal](00-goal-verbatim.md) and
 [working contract](01-working-contract.md). The coordinator owns this sequence;
 every delegated agent uses Sol 6.1, explicit paths and bounded file ownership.
 
+Latest user architecture steering supersedes the earlier assumption that matching
+Node/Rust implementations alone are an adequate long-term boundary. Keep Classic
+and DE visibly modular and give production policy one authoritative owner, with
+thin transports or generated contracts where appropriate. Report23 now compares
+concrete core/adapter designs and an incremental refactor before F2 acquires live
+callers. Existing corrected F1 work is reusable evidence/code, not permission to
+continue independently maintained policy. Do not silently remove either host or
+replace this with an unrelated framework rewrite. The first integrated LORDJSON
+workflow remains the immediate user-facing destination after this boundary.
+
 Current code-review state: original F1 and D1 implementations are unexposed and
 uncommitted. Reviews [11](research/11-profile-foundation-review-r1.md) and
 [12](research/12-lossless-document-review-r1.md) found correctness blockers;
