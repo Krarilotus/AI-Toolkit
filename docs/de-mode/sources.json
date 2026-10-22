@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "sources": [],
+  "seeds": [
+    "https://github.com/Serpens66/Stronghold-Crusader-DE-Mods/blob/develop/Findings/AIToolkitDE.md",
+    "https://github.com/Serpens66/Stronghold-Crusader-DE-Mods/tree/main/_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/knowledge"
+  ],
+  "notes": "Populate pinned commits and locally verified binary hashes. A seed link is not a verified finding."
+}
