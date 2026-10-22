@@ -7,8 +7,11 @@ every delegated agent uses Sol 6.1, explicit paths and bounded file ownership.
 Current code-review state: original F1 and D1 implementations are unexposed and
 uncommitted. Reviews [11](research/11-profile-foundation-review-r1.md) and
 [12](research/12-lossless-document-review-r1.md) found correctness blockers;
-separate correction round 2 tasks own their original disjoint files. Fresh
-independent reviews gate both commits. [Isolation Review 13](research/13-isolation-boundary-review.md)
+separate correction round 2 tasks have returned their original disjoint files.
+Fresh Review 18 closes all D1 findings and recommends its additive commit;
+Review 17 requires a final duplicate-metadata correction before F1 acceptance.
+Coordinator regressions pass 900 JavaScript tests and
+100 native tests with one explicit ignore after those corrections. [Isolation Review 13](research/13-isolation-boundary-review.md)
 selects offline design A conditionally and rejects the tested restricted token;
 the next task prepares exact transforms and denial evidence before a launch
 decision. These review rounds do not replace the full implementation queue.

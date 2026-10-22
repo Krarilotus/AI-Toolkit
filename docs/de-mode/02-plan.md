@@ -15,8 +15,8 @@ desktop/game observations and recovery evidence.
 | --- | --- | --- | --- |
 | 0. Isolate and preserve instructions | DE branch, no automatic CI, UCP sidebar continuation and persistent goal | Correct workspace binding; original checkout untouched | Complete |
 | 1. Establish evidence | Pinned repository catalogue, local game/editor hashes, format probes and ordered HD/DE difference ledger | Review primary code and reproduce central claims | Initial gate complete; targeted follow-ups continue |
-| 2. Separate edition mode | Edition detection, separate roots/settings/caches and capability model | Classic-only, DE-only, both-installed and mode-switch tests | In progress: F1 correction round 2 after Review 11 NO-GO |
-| 3. Implement DE data contracts | Lossless castle/lord/AI codecs, schema-driven UI and safe conversion | Round trips and game/editor/loader fixtures | In progress: D1 correction round 2 after Review 12 NO-GO |
+| 2. Separate edition mode | Edition detection, separate roots/settings/caches and capability model | Classic-only, DE-only, both-installed and mode-switch tests | In progress: F1 duplicate-metadata correction round 3 |
+| 3. Implement DE data contracts | Lossless castle/lord/AI codecs, schema-driven UI and safe conversion | Round trips and game/editor/loader fixtures | In progress: D1 accepted for additive commit; D2 castle overlay next |
 | 4. Replace DE placeholder art | Local asset extraction and verified DE rendering | Representative units/buildings/terrain and rotations/modes | In progress: reviewed A1 metadata core |
 | 5. Deliver custom AI packages | Lord/media package creation and reversible game/loader installation | Real package discovery and isolated in-game loading | Pending |
 | 6. Finish compatibility | Acceptance matrix, classic regressions, failure recovery and user workflow checks | All required cases verified; no hidden unsupported paths | Pending |
@@ -56,6 +56,13 @@ This is not permission to merge unrelated repositories into the UCP game code.
 
 ### Active continuation, 22 October 2026
 
+- Latest process steering requires critique at the appropriate abstraction and
+  ownership level. [Engineering standard](05-engineering-standard.md) records
+  the quality attributes, agent autonomy and responsibility boundaries. A bounded
+  independent architecture/code-health critique now owns report 21. The next
+  integrated demonstration should select DE, bind its window/profile, open/edit/
+  save/reopen a real LORDJSON without normalization and retain Classic behavior.
+  Parser/module tests remain intermediate evidence.
 - Latest user steering: every subagent uses Sol 6.1 with clear instructions.
   The coordinator owns planning, evidence synthesis, review and orchestration;
   implementation will be delegated in controlled, serialized stages.
@@ -76,6 +83,14 @@ This is not permission to merge unrelated repositories into the UCP game code.
   and same-value edits can fail token limits. A Unicode fixture variant also
   silently does nothing. Sol 6.1 correction round 2 owns the same seven files;
   a fresh independent review must resolve the findings before commit/integration.
+- D1 correction round 2 is complete: private schema snapshot plus exact pin
+  validation, no-op ordering and real Unicode fixture repairs report **180
+  focused tests** and four direct finding checks passing. Public APIs and the
+  schema JSON bytes are unchanged. Fresh independent Review 18 now owns the
+  closure decision. Review 18 now gives GO for the additive D1 commit: all four
+  findings independently closed, no new actionable findings. The coordinator
+  verified all seven reviewed file hashes before staging. Session/UI, AIV,
+  packages and game acceptance remain open; D2 ordered-castle work is next.
 - F1 returned equivalent Node/Rust modules and 41 Node + 19 native focused tests.
   Independent Review 11 gives NO-GO: accepted deep/Unicode metadata can become
   unreadable by Rust, Node accepts non-JSON inputs that change on disk, and
@@ -83,6 +98,17 @@ This is not permission to merge unrelated repositories into the UCP game code.
   owns the same F1 files; a fresh review gates commit. The cross-process journal
   design and explicit offline abandoned-lock maintenance are accepted for this
   unexposed milestone. Window/context/cache/UI work remains F2/F3.
+- F1 correction round 2 is complete: a common bounded JSON domain, strict Node
+  input validation and declared CLR/metadata bounds report **67 Node and 23
+  native focused tests** passing. The conservative suffix-junction false negative
+  is documented. Fresh independent Review 17 owns closure and additive commit
+  assessment; live integration remains separate.
+- Review 17 closes F1's strict-input and PE findings but gives NO-GO for the
+  remaining raw duplicate-member metadata discrepancy. Round 3 must reject
+  duplicate decoded names consistently in both hosts and preserve malformed
+  recovery evidence. One original contention test returned EPERM before the full
+  rerun and five focused runs passed; keep that unresolved low-priority anomaly
+  visible before integration rather than disguising it as a fully clean review.
 - Rendering Review 14 gives conditional GO for A1 metadata only. It independently
   matches every serialized field of 41 Sprites and all 41 Texture2Ds, corroborates
   Healer/Camel stationary selectors and outpost base permutations, and corrects
@@ -110,6 +136,16 @@ This is not permission to merge unrelated repositories into the UCP game code.
   external scratch only; it must demonstrate exact transforms/guards and expose
   remaining native/Steam ordering gaps before a launch decision. No game launch,
   Steam preference/ACL change or separate-account/VM prerequisite is assumed.
+- Offline harness 15 is now complete with exact transforms, unchanged licensing
+  evidence and 51 synthetic checks. Its launch permission remains false: it
+  does not contain early Unity/native/child or unrestricted Steam-client activity,
+  and path races remain. This is acceptance tooling outside the product. A real
+  launch still requires a proportionate concrete boundary and coordinator review.
+- Before the D1 commit, Git staging exposed CRLF normalization of the deliberate
+  lossless fixture. A narrow `.gitattributes` rule now retains its exact reviewed
+  5079 bytes and intentional trailing trivia. The staged code/tests/fixture match
+  reviewed bytes; only schema JSON receives ordinary Git newline normalization.
+  `S:\Projects\UCP\de-research\d1-stage-receipt.json` records both fingerprints.
 - The supported Windows observation API was initialized read-only and its
   window inventory works. A pre-existing Toolkit window runs from
   `S:\Projects\UCP\Tools\AI Toolkit\AI Toolkit.exe`; it was not activated or
@@ -158,6 +194,17 @@ This is not permission to merge unrelated repositories into the UCP game code.
   `foundations-native-e6733ca.log`. These regressions do not resolve independent
   review findings or establish UI/game acceptance. `get_goal` again confirms
   the full persistent objective is active with no token budget.
+- After both correction tasks completed, coordinator `npm.cmd run check` passes
+  **900 tests, 0 failures/skips**, including syntax checks. Log:
+  `S:\Projects\UCP\de-research\corrections-check-7f22728.log`. Fresh Reviews
+  17/18 still decide correctness closure; these regressions establish no GUI or
+  real-game acceptance. Do not repeat this suite without further changes or a
+  specific unresolved concern.
+- Coordinator full native library regression after the corrections passes
+  **100 tests, 0 failures, 1 explicit installation-parity ignore**. Log:
+  `S:\Projects\UCP\de-research\corrections-native-7f22728.log`. This includes
+  existing library/update/IPC tests plus corrected profile tests. No further
+  broad rerun is needed until new code or a specific concern justifies it.
 - No game/editor launch, installed application update, game-directory write,
   CI dispatch, PR or release has occurred. Next: resolve code review findings,
   prepare reviewed context/provider slices and the offline isolation harness.

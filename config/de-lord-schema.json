@@ -1,0 +1,1263 @@
+{
+  "id": "de-lord-game-bc8b6a39-v1",
+  "format": "de-lordjson",
+  "version": 1,
+  "provenance": {
+    "repository": "https://github.com/Serpens66/Stronghold-Crusader-DE-Mods",
+    "commit": "7e199e6f0818173794bdeeb0c4c32d74500b0eec",
+    "schemaSource": {
+      "path": "_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/managed/BC8B6A39/decompiled/CustomisationFileManager.cs",
+      "lines": [
+        157,
+        400
+      ],
+      "gitBlob": "9cd4c4ad0a601aab1217bb786e741ef15a39f1be"
+    },
+    "transferSource": {
+      "path": "_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/managed/BC8B6A39/decompiled/EngineInterface.cs",
+      "lines": [
+        4303,
+        4586
+      ],
+      "gitBlob": "97bf5fcabdd626a6e80c1e17e546f357fc2d4874"
+    },
+    "managedSha256": "bc8b6a395f01d48557db413600c8dd8d1fdfd3abdf97bfbbb68a3c56b04fd789",
+    "nativeSha256": "fbcb93195fc7efca9bdac5204852efdd76f9818f59a6711750d77c9cef2831e2",
+    "review": "docs/de-mode/research/07-domain-contract-review.md (independent round 1, 2026-10-22)",
+    "scope": "Game declarations and indexed transfer for this binary pair. Does not establish editor/SE equivalence, Unity deserialization defaults, or gameplay acceptance."
+  },
+  "fieldCount": 118,
+  "arrayCount": 14,
+  "transferredInt32Words": 279,
+  "targetPolicy": {
+    "id": "complete-canonical-v1",
+    "allFieldsRequired": true,
+    "exactArrayLengthsRequired": true,
+    "integerTokenPolicy": "decimal integer spelling only; -0 accepted; fraction/exponent typed behavior unverified",
+    "semantics": "unverified; no known-good template or enum substitutions"
+  },
+  "fields": [
+    {
+      "name": "opponent_type",
+      "type": "signedInt32",
+      "sourceLine": 165,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "opponent_type_for_speech",
+      "type": "signedInt32",
+      "sourceLine": 167,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "lord_gfx_type",
+      "type": "signedInt32",
+      "sourceLine": 169,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "flag_type",
+      "type": "signedInt32",
+      "sourceLine": 171,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "use_of_religion",
+      "type": "signedInt32",
+      "sourceLine": 173,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "use_of_ale",
+      "type": "signedInt32",
+      "sourceLine": 175,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "vlow_popularity",
+      "type": "signedInt32",
+      "sourceLine": 177,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "low_popularity",
+      "type": "signedInt32",
+      "sourceLine": 179,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "high_popularity",
+      "type": "signedInt32",
+      "sourceLine": 181,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "min_tax",
+      "type": "signedInt32",
+      "sourceLine": 183,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_tax",
+      "type": "signedInt32",
+      "sourceLine": 185,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "farm_types",
+      "type": "signedInt32Array",
+      "sourceLine": 187,
+      "length": 8,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 8,
+        "elementValue": 0,
+        "expression": "new int[8]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "people_to_farm_ratio",
+      "type": "signedInt32",
+      "sourceLine": 189,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "extract_wood_ratio",
+      "type": "signedInt32",
+      "sourceLine": 191,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "extract_stone_ratio",
+      "type": "signedInt32",
+      "sourceLine": 193,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "extract_iron_ratio",
+      "type": "signedInt32",
+      "sourceLine": 195,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "extract_pitch_ratio",
+      "type": "signedInt32",
+      "sourceLine": 197,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_quarries",
+      "type": "signedInt32",
+      "sourceLine": 199,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_mines",
+      "type": "signedInt32",
+      "sourceLine": 201,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_woodcutters",
+      "type": "signedInt32",
+      "sourceLine": 203,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_pitch_dugouts",
+      "type": "signedInt32",
+      "sourceLine": 205,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_farms",
+      "type": "signedInt32",
+      "sourceLine": 207,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "build_rate",
+      "type": "signedInt32",
+      "sourceLine": 209,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "crushed_building_delay",
+      "type": "signedInt32",
+      "sourceLine": 211,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "sell_food_at",
+      "type": "signedInt32",
+      "sourceLine": 213,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_apples_at",
+      "type": "signedInt32",
+      "sourceLine": 215,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_cheese_at",
+      "type": "signedInt32",
+      "sourceLine": 217,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_bread_at",
+      "type": "signedInt32",
+      "sourceLine": 219,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_wheat_at",
+      "type": "signedInt32",
+      "sourceLine": 221,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_hops_at",
+      "type": "signedInt32",
+      "sourceLine": 223,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_food_amount",
+      "type": "signedInt32",
+      "sourceLine": 225,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_weapons",
+      "type": "signedInt32",
+      "sourceLine": 227,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "pester_for_goods_delay",
+      "type": "signedInt32",
+      "sourceLine": 229,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "send_goods_margin",
+      "type": "signedInt32",
+      "sourceLine": 231,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "ration_boost",
+      "type": "signedInt32",
+      "sourceLine": 233,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_wood_at",
+      "type": "signedInt32",
+      "sourceLine": 235,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_stone_at",
+      "type": "signedInt32",
+      "sourceLine": 237,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_resources_at",
+      "type": "signedInt32",
+      "sourceLine": 239,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_flour_at",
+      "type": "signedInt32",
+      "sourceLine": 241,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_weapons_at",
+      "type": "signedInt32",
+      "sourceLine": 243,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_ale_at",
+      "type": "signedInt32",
+      "sourceLine": 245,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_pitch_at",
+      "type": "signedInt32",
+      "sourceLine": 247,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "trade_minimum",
+      "type": "signedInt32",
+      "sourceLine": 249,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "base_gold_reserves",
+      "type": "signedInt32",
+      "sourceLine": 251,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "blacksmiths_make",
+      "type": "signedInt32",
+      "sourceLine": 253,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "fletchers_make",
+      "type": "signedInt32",
+      "sourceLine": 255,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "poleturners_make",
+      "type": "signedInt32",
+      "sourceLine": 257,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "sell_all",
+      "type": "signedInt32Array",
+      "sourceLine": 259,
+      "length": 15,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 15,
+        "elementValue": 0,
+        "expression": "new int[15]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "move_mobile_defenders",
+      "type": "signedInt32",
+      "sourceLine": 261,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_mobile_groups",
+      "type": "signedInt32",
+      "sourceLine": 263,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_defense_machines_at",
+      "type": "signedInt32",
+      "sourceLine": 265,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "buy_defense_machines_delay",
+      "type": "signedInt32",
+      "sourceLine": 267,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "dog_release_timing",
+      "type": "signedInt32",
+      "sourceLine": 269,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "dog_points_count",
+      "type": "signedInt32",
+      "sourceLine": 271,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "chance_of_defensive",
+      "type": "signedInt32Array",
+      "sourceLine": 273,
+      "length": 3,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 3,
+        "elementValue": 0,
+        "expression": "new int[3]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "chance_of_harrasment",
+      "type": "signedInt32Array",
+      "sourceLine": 275,
+      "length": 3,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 3,
+        "elementValue": 0,
+        "expression": "new int[3]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "chance_of_seiging",
+      "type": "signedInt32Array",
+      "sourceLine": 277,
+      "length": 3,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 3,
+        "elementValue": 0,
+        "expression": "new int[3]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "economy_protection_number",
+      "type": "signedInt32",
+      "sourceLine": 279,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "economy_protection_type",
+      "type": "signedInt32",
+      "sourceLine": 281,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "bodyguard_number",
+      "type": "signedInt32",
+      "sourceLine": 283,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "bodyguard_type",
+      "type": "signedInt32",
+      "sourceLine": 285,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "moat_diggers",
+      "type": "signedInt32",
+      "sourceLine": 287,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "moat_digger_type",
+      "type": "signedInt32",
+      "sourceLine": 289,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "troop_production_rate",
+      "type": "signedInt32Array",
+      "sourceLine": 291,
+      "length": 3,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 3,
+        "elementValue": 0,
+        "expression": "new int[3]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "defense_patrol_trigger_level",
+      "type": "signedInt32",
+      "sourceLine": 293,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "defense_patrols",
+      "type": "signedInt32",
+      "sourceLine": 295,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "defense_patrol_style",
+      "type": "signedInt32",
+      "sourceLine": 297,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "defense_patrol_delay",
+      "type": "signedInt32",
+      "sourceLine": 299,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "defensive_trigger_level",
+      "type": "signedInt32",
+      "sourceLine": 301,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "defensive_troops",
+      "type": "signedInt32Array",
+      "sourceLine": 303,
+      "length": 8,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 8,
+        "elementValue": 0,
+        "expression": "new int[8]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "harrasment_trigger_level",
+      "type": "signedInt32",
+      "sourceLine": 305,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "harrasment_trigger_variance",
+      "type": "signedInt32",
+      "sourceLine": 307,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "harrasment_troops",
+      "type": "signedInt32Array",
+      "sourceLine": 309,
+      "length": 8,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 8,
+        "elementValue": 0,
+        "expression": "new int[8]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "harrasment_machines",
+      "type": "signedInt32Array",
+      "sourceLine": 311,
+      "length": 8,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 8,
+        "elementValue": 0,
+        "expression": "new int[8]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "max_harrasment_machines",
+      "type": "signedInt32",
+      "sourceLine": 313,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "harrass_delay",
+      "type": "signedInt32",
+      "sourceLine": 315,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_trigger_level",
+      "type": "signedInt32",
+      "sourceLine": 317,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_trigger_variance",
+      "type": "signedInt32",
+      "sourceLine": 319,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_troops_before_will_come_to_rescue",
+      "type": "signedInt32",
+      "sourceLine": 321,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_troops_on_site_percent",
+      "type": "signedInt32",
+      "sourceLine": 323,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_troops_at_home_percent",
+      "type": "signedInt32",
+      "sourceLine": 325,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_soften_up_delay",
+      "type": "signedInt32",
+      "sourceLine": 327,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_victory_delay",
+      "type": "signedInt32",
+      "sourceLine": 329,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "percent_chance_waiting_for_joint_attack",
+      "type": "signedInt32",
+      "sourceLine": 331,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_machines",
+      "type": "signedInt32Array",
+      "sourceLine": 333,
+      "length": 8,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 8,
+        "elementValue": 0,
+        "expression": "new int[8]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_cow_timer",
+      "type": "signedInt32",
+      "sourceLine": 335,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_eng_amount",
+      "type": "signedInt32",
+      "sourceLine": 337,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_moat_troop",
+      "type": "signedInt32",
+      "sourceLine": 339,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_moat_amount",
+      "type": "signedInt32",
+      "sourceLine": 341,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_herring_troop",
+      "type": "signedInt32",
+      "sourceLine": 343,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_herring_amount",
+      "type": "signedInt32",
+      "sourceLine": 345,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_assasin_amount",
+      "type": "signedInt32",
+      "sourceLine": 347,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_ladder_amount",
+      "type": "signedInt32",
+      "sourceLine": 349,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_tunnel_amount",
+      "type": "signedInt32",
+      "sourceLine": 351,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_storm_troop",
+      "type": "signedInt32",
+      "sourceLine": 353,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_storm_amount",
+      "type": "signedInt32",
+      "sourceLine": 355,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_storm_tribes",
+      "type": "signedInt32",
+      "sourceLine": 357,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_cover_troop",
+      "type": "signedInt32",
+      "sourceLine": 359,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_cover_amount",
+      "type": "signedInt32",
+      "sourceLine": 361,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_cover_tribes",
+      "type": "signedInt32",
+      "sourceLine": 363,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_shock_troop",
+      "type": "signedInt32",
+      "sourceLine": 365,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_shock_amount",
+      "type": "signedInt32",
+      "sourceLine": 367,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_reserve_troop",
+      "type": "signedInt32",
+      "sourceLine": 369,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_reserve_amount",
+      "type": "signedInt32",
+      "sourceLine": 371,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_reserve_tribes",
+      "type": "signedInt32",
+      "sourceLine": 373,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_wall_troops",
+      "type": "signedInt32Array",
+      "sourceLine": 375,
+      "length": 24,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 24,
+        "elementValue": 0,
+        "expression": "new int[24]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_wall_amount",
+      "type": "signedInt32",
+      "sourceLine": 377,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_wall_tribes",
+      "type": "signedInt32",
+      "sourceLine": 379,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "who_to_pick_on",
+      "type": "signedInt32",
+      "sourceLine": 381,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "use_improved_sieging",
+      "type": "signedInt32",
+      "sourceLine": 383,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "starting_troops_normal",
+      "type": "signedInt32Array",
+      "sourceLine": 385,
+      "length": 28,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 28,
+        "elementValue": 0,
+        "expression": "new int[28]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "starting_troops_deathmatch",
+      "type": "signedInt32Array",
+      "sourceLine": 387,
+      "length": 28,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 28,
+        "elementValue": 0,
+        "expression": "new int[28]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "starting_troops_crusader",
+      "type": "signedInt32Array",
+      "sourceLine": 389,
+      "length": 28,
+      "declarationInitializer": {
+        "kind": "allocated-zero-array",
+        "length": 28,
+        "elementValue": 0,
+        "expression": "new int[28]"
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "lord_power_display_level",
+      "type": "signedInt32",
+      "sourceLine": 391,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "lord_hps_percent",
+      "type": "signedInt32",
+      "sourceLine": 393,
+      "declarationInitializer": {
+        "kind": "implicit-zero",
+        "value": 0
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_max_troops",
+      "type": "signedInt32",
+      "sourceLine": 395,
+      "declarationInitializer": {
+        "kind": "explicit-scalar",
+        "value": 200
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_normal_wave_multiplier",
+      "type": "signedInt32",
+      "sourceLine": 397,
+      "declarationInitializer": {
+        "kind": "explicit-scalar",
+        "value": 5
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    },
+    {
+      "name": "siege_high_gold_wave_multiplier",
+      "type": "signedInt32",
+      "sourceLine": 399,
+      "declarationInitializer": {
+        "kind": "explicit-scalar",
+        "value": 7
+      },
+      "runtimeMissingFieldDefault": "unverified"
+    }
+  ]
+}
