@@ -78,3 +78,9 @@ Begin with independent tracks for DE file/lord/media contracts; real DE assets
 and rendering; native/managed engine differences and loaders; and existing
 Toolkit mode boundaries. Reuse verified shared logic, but do not assume x86/x64
 offset or format equivalence. No recursive uncontrolled agent fan-out.
+
+Confirmed orchestration preference (22 October 2026): use **Sol 6.1 for every
+subagent**, with clear bounded instructions. The coordinator focuses on planning,
+evidence synthesis, review and orchestration; implementation is delegated with
+explicit ownership and conflicting edits serialized. Current T3 selection is
+`codex/gpt-6.1-sol`, `reasoningEffort: ultra`, `serviceTier: default`.

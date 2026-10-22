@@ -1,0 +1,12 @@
+id,criterion,status,evidence,next_gate
+DE-01,Separate Classic and DE installation roots and settings,pending,04-architecture research assigned,Verified edition detection and isolated migration tests
+DE-02,Mode switch preserves unsaved project and uses separate caches,pending,04-architecture research assigned,Switch cancel/save/discard and cache identity checks
+DE-03,Authentic local DE buildings units terrain and views,pending,02-assets-rendering research assigned,Representative extraction and visual game-backed comparison
+DE-04,Lossless DE castles with unknown IDs fields timing and guarding slots,pending,Existing interchange feature is experimental,Primary-code review and asymmetric game/editor fixtures
+DE-05,Lossless LORDJSON without UCP normalization,pending,01-contracts research assigned,Raw preservation and game/editor schema round trips
+DE-06,Portrait dialogue voices and related media reach the game,pending,01-contracts and 03-runtime research assigned,Verified file layout and in-game media observations
+DE-07,Reversible version-aware custom lord installation,pending,03-runtime-loaders research assigned,Preflight backup install uninstall recovery in owned test setup
+DE-08,Representative exported custom AI loads and works in DE,pending,No process launched,Isolated real-game acceptance with logs and observations
+DE-09,Classic editing assets exports and game-backed regressions,in_progress,Baseline 653 JS plus 77 native plus 10 classic installation checks pass,Repeat relevant checks after implementation and representative runtime acceptance
+DE-10,Source-pinned ordered HD and DE difference ledger,in_progress,local-evidence.json identifies installed DE hashes,Primary source review and independent central findings audit
+DE-11,Current plan catalogue ownership and acceptance matrix,in_progress,Continuation and persistent goal verified active,Maintain through every reviewed milestone
