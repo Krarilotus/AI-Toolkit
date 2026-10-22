@@ -47,3 +47,5 @@ The user also wrote:
 > Create a linked UCP continuation
 
 > it needs to be in the sidebar
+
+> just make sure you always ever use Sol 6.1 subagents for any subagents you use and give them clear isntructions, and focus yourself on the planning and orchestration

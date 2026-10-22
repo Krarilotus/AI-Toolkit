@@ -1,9 +1,105 @@
 {
   "schemaVersion": 1,
-  "sources": [],
+  "updatedAt": "2026-10-22",
+  "policy": {
+    "updates": "Inventory and record dirty state before fetching. Never pull or overwrite existing research. Review remote changes at explicit commits; keep accepted pins until evidence and compatibility checks justify an update.",
+    "proprietaryData": "Binary and extracted asset contents remain outside Git. Commit hashes, probes, synthetic fixtures and analysis only."
+  },
   "seeds": [
     "https://github.com/Serpens66/Stronghold-Crusader-DE-Mods/blob/develop/Findings/AIToolkitDE.md",
     "https://github.com/Serpens66/Stronghold-Crusader-DE-Mods/tree/main/_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/knowledge"
   ],
-  "notes": "Populate pinned commits and locally verified binary hashes. A seed link is not a verified finding."
+  "sources": [
+    {
+      "id": "toolkit-baseline",
+      "url": "https://github.com/Krarilotus/AI-Toolkit",
+      "localPath": "S:\\Projects\\UCP\\AI-Toolkit-DE",
+      "commit": "818503dc40971defef3769ca883f82290405ab94",
+      "role": "Implementation branch base",
+      "evidenceStatus": "observed clean at continuation start"
+    },
+    {
+      "id": "serpens-handoff",
+      "url": "https://github.com/Serpens66/Stronghold-Crusader-DE-Mods",
+      "localPath": "S:\\Projects\\UCP\\de-research\\Serpens66-Stronghold-Crusader-DE-Mods",
+      "commit": "7e199e6f0818173794bdeeb0c4c32d74500b0eec",
+      "refAtInventory": "origin/develop",
+      "paths": [
+        "Findings/AIToolkitDE.md"
+      ],
+      "checkout": "no-checkout; use git show",
+      "evidenceStatus": "lead; each contract requires primary-code/local probe review"
+    },
+    {
+      "id": "serpens-native-knowledge",
+      "url": "https://github.com/Serpens66/Stronghold-Crusader-DE-Mods",
+      "localPath": "S:\\Projects\\UCP\\de-research\\Serpens66-Stronghold-Crusader-DE-Mods",
+      "commit": "a23aa1b32276d670ffbb2a7b641d23b500d8e298",
+      "refAtInventory": "origin/main",
+      "paths": [
+        "_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/knowledge"
+      ],
+      "evidenceStatus": "runtime track inspected pinned knowledge and source; static function/signature probes only, no gameplay claim"
+    },
+    {
+      "id": "script-extender",
+      "url": "https://gitlab.com/rawra-stronghold-crusader/shcde-script-extender",
+      "localPath": "S:\\Projects\\Harness\\ai-toolkit-setup\\research-shcde-script-extender",
+      "commit": "4014ca67c96974a5e6d697665baf5351cbfebde6",
+      "version": "2.14.3",
+      "evidenceStatus": "clean existing clone; contracts and runtime source reviewed, no installed-loader or gameplay claim"
+    },
+    {
+      "id": "shcde-fixes",
+      "url": "https://gitlab.com/rawra-stronghold-crusader/shcde-fixes",
+      "localPath": "S:\\Projects\\UCP\\de-research\\runtime-loaders\\shcde-fixes",
+      "commit": "a90f96c176e9c8981af83534f5a8bb444838ae0a",
+      "version": "1.28.1 reviewed source, not earliest supported release",
+      "remoteMainAtInventory": "29c9a5dd6b05b4bf62e24916c20e9bfc49ac5c6e",
+      "evidenceStatus": "seven reviewed signatures uniquely matched local native DLL; installation/hook execution unverified"
+    },
+    {
+      "id": "openshc-hd-baseline",
+      "url": "https://github.com/sourcehold/OpenSHC",
+      "localPath": "S:\\Projects\\UCP\\OpenSHC",
+      "commit": "126f25c9a53c14270ccd10c6a5db6f05bd143204",
+      "evidenceStatus": "clean existing clone; strict HD 1.41 target SHA256 matches the local Steam classic executable"
+    },
+    {
+      "id": "sourcehold-maps",
+      "url": "https://github.com/sourcehold/sourcehold-maps",
+      "localPath": "S:\\Projects\\UCP\\sourcehold-maps",
+      "commit": "4f54a802b622180aab99e2767d8f27b723429def",
+      "evidenceStatus": "clean existing clone inventoried; reference classic/AIV conversion source"
+    },
+    {
+      "id": "sourcehold-ai",
+      "url": "https://github.com/sourcehold/sourcehold-ai",
+      "localPath": "S:\\Projects\\UCP\\sourcehold-ai",
+      "commit": "e8b9de2f309116bf31e3908c497ed18495da06be",
+      "evidenceStatus": "clean existing clone inventoried; no new runtime claim"
+    },
+    {
+      "id": "sushi-converter",
+      "url": "https://codeberg.org/SuschisWorld/AIVConverter",
+      "localPath": "S:\\Projects\\Harness\\ai-toolkit-setup\\reference-aive-converter",
+      "commit": "25ec0c430029fda0ef268fe7420ccb4048c9f181",
+      "evidenceStatus": "clean existing clone; contracts track probed source versus bundled executable losses, not a lossless codec"
+    },
+    {
+      "id": "vanilla-custom-media-instructions",
+      "kind": "shipped-document",
+      "localPath": "D:\\SteamLibrary\\steamapps\\common\\Stronghold Crusader Definitive Edition\\Stronghold Crusader Definitive Edition_Data\\StreamingAssets\\CustomMediaExample\\ReadMe.txt",
+      "sha256": "7962a7cded30b14a2022d40011078d41631bb2e1b337bf521e134b975acdd2f9",
+      "steamBuildId": "24816905",
+      "evidenceStatus": "coordinator independently read and hashed; confirms vanilla matching-name CustomMedia route, playback unverified"
+    }
+  ],
+  "localGameEvidence": "local-evidence.json",
+  "baselineChecks": {
+    "javascript": "653 passed, 0 failed, 0 skipped; syntax passed. Log outside Git: S:\\Projects\\UCP\\de-research\\baseline-check-818503d.log",
+    "native": "77 passed, 0 failed, 1 explicit installation-parity test ignored after building desktop bundle. Log: S:\\Projects\\UCP\\de-research\\baseline-native-818503d.log",
+    "classicInstallation": "10 passed, 0 failed, 0 skipped; read-only checks against D:\\Games\\Stronghold Crusader KI-Liga. Log: S:\\Projects\\UCP\\de-research\\baseline-classic-game-818503d.log",
+    "realGame": "not launched"
+  }
 }

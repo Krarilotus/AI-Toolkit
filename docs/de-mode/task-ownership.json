@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "coordinatorThreadId": "mcp:24e1fd23-accc-4f55-8906-3de048c9a894",
+  "projectId": "2dd89517-2ea6-4ac0-898a-11e0c5076371",
+  "repository": "S:\\Projects\\UCP\\AI-Toolkit-DE",
+  "branch": "de/separate-game-mode",
+  "baselineCommit": "818503dc40971defef3769ca883f82290405ab94",
+  "providerInstanceId": "codex",
+  "model": "gpt-6.1-sol",
+  "options": {
+    "reasoningEffort": "ultra",
+    "serviceTier": "default"
+  },
+  "coordinatorOwns": [
+    "02-plan.md",
+    "sources.json",
+    "differences.csv",
+    "acceptance.csv",
+    "task-ownership.json",
+    "local-evidence.json"
+  ],
+  "tasks": [
+    {
+      "track": "contracts",
+      "status": "completed",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-contracts-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-contracts-20261022-r1",
+      "statusAtAssignment": "running",
+      "kind": "bounded research; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/01-contracts.md"
+      ],
+      "isolation": "shared; disjoint report ownership only"
+    },
+    {
+      "track": "assets",
+      "status": "completed",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-assets-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-assets-20261022-r1",
+      "statusAtAssignment": "running",
+      "kind": "bounded research; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/02-assets-rendering.md"
+      ],
+      "isolation": "shared; disjoint report ownership only"
+    },
+    {
+      "track": "runtime",
+      "status": "completed",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-runtime-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-runtime-20261022-r1",
+      "statusAtAssignment": "running",
+      "kind": "bounded research; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/03-runtime-loaders.md"
+      ],
+      "isolation": "shared; disjoint report ownership only"
+    },
+    {
+      "track": "architecture",
+      "status": "completed",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-architecture-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-architecture-20261022-r1",
+      "statusAtAssignment": "running",
+      "kind": "bounded research; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/04-architecture.md"
+      ],
+      "isolation": "shared; disjoint report ownership only"
+    },
+    {
+      "track": "edition-boundary-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-edition-boundary-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-edition-boundary-20261022-r1",
+      "status": "completed",
+      "kind": "independent review; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/05-edition-boundary-review.md"
+      ],
+      "isolation": "shared; disjoint report only"
+    },
+    {
+      "track": "profile-isolation-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-profile-isolation-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-profile-isolation-20261022-r1",
+      "status": "running",
+      "kind": "bounded follow-up research; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/06-profile-isolation.md"
+      ],
+      "isolation": "shared; disjoint report only"
+    },
+    {
+      "track": "profile-foundation-f1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-profile-foundation-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-profile-foundation-20261022-r1",
+      "status": "running",
+      "kind": "implementation; additive unexposed modules only",
+      "ownedFiles": [
+        "src/node/game-profiles.js",
+        "src-tauri/src/profiles.rs",
+        "src-tauri/src/lib.rs (module declaration only)",
+        "tests/game-profiles.test.js",
+        "tests/fixtures/de-mode/*",
+        "docs/de-mode/research/09-profile-foundation-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint file ownership; conflicting edits serialized"
+    },
+    {
+      "track": "domain-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-domain-contracts-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-domain-contracts-20261022-r1",
+      "status": "running",
+      "kind": "independent domain review; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/07-domain-contract-review.md"
+      ],
+      "isolation": "shared; explicit disjoint file ownership; conflicting edits serialized"
+    },
+    {
+      "track": "rendering-contracts-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-rendering-contracts-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-rendering-contracts-20261022-r1",
+      "status": "running",
+      "kind": "bounded static rendering follow-up; no recursive delegation",
+      "ownedFiles": [
+        "docs/de-mode/research/08-rendering-contracts.md"
+      ],
+      "isolation": "shared; explicit disjoint file ownership; conflicting edits serialized"
+    }
+  ]
+}

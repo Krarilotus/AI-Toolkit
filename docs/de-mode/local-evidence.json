@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-22T20:23:02.332Z",
+  "gameRoot": "D:\\SteamLibrary\\steamapps\\common\\Stronghold Crusader Definitive Edition",
+  "steam": {
+    "appId": "3024040",
+    "buildId": "24816905"
+  },
+  "files": [
+    {
+      "relativePath": "Stronghold Crusader Definitive Edition.exe",
+      "size": 887880,
+      "sha256": "8acea6d11af81cf26b035a479ba633bdb0d09513742055f3f46330d72b2f203a",
+      "pe": {
+        "machine": "0x8664",
+        "format": "PE32+",
+        "managed": false
+      }
+    },
+    {
+      "relativePath": "UnityPlayer.dll",
+      "size": 29438200,
+      "sha256": "fae6c04f23916263879196211ed241aee5f1f1b53ba4566bb99d4df8526cc105",
+      "pe": {
+        "machine": "0x8664",
+        "format": "PE32+",
+        "managed": false
+      }
+    },
+    {
+      "relativePath": "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll",
+      "size": 3693056,
+      "sha256": "bc8b6a395f01d48557db413600c8dd8d1fdfd3abdf97bfbbb68a3c56b04fd789",
+      "pe": {
+        "machine": "0x014c",
+        "format": "PE32",
+        "managed": true
+      }
+    },
+    {
+      "relativePath": "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll",
+      "size": 3451392,
+      "sha256": "fbcb93195fc7efca9bdac5204852efdd76f9818f59a6711750d77c9cef2831e2",
+      "pe": {
+        "machine": "0x8664",
+        "format": "PE32+",
+        "managed": false
+      }
+    }
+  ],
+  "classicBinaries": [
+    {
+      "path": "D:\\Games\\Stronghold Crusader KI-Liga\\Stronghold Crusader.exe",
+      "size": 8383664,
+      "sha256": "0d3d0d0be90a41d0c07d02cb41e6edc3e399288d16039db5b666392660fbda34",
+      "pe": {
+        "machine": "0x014c",
+        "format": "PE32",
+        "managed": false
+      }
+    },
+    {
+      "path": "D:\\SteamLibrary\\steamapps\\common\\Stronghold Crusader Extreme\\Stronghold Crusader.exe",
+      "size": 8376320,
+      "sha256": "3bb0a8c1e72331b3a30a5aa93ed94beca0081b476b04c1960e26d5b45387ac5a",
+      "pe": {
+        "machine": "0x014c",
+        "format": "PE32",
+        "managed": false
+      }
+    }
+  ],
+  "repositories": [
+    {
+      "id": "serpens",
+      "root": "S:\\Projects\\UCP\\de-research\\Serpens66-Stronghold-Crusader-DE-Mods",
+      "head": "a23aa1b32276d670ffbb2a7b641d23b500d8e298",
+      "refs": [
+        {
+          "ref": "refs/remotes/origin/develop",
+          "commit": "7e199e6f0818173794bdeeb0c4c32d74500b0eec"
+        },
+        {
+          "ref": "refs/remotes/origin/main",
+          "commit": "a23aa1b32276d670ffbb2a7b641d23b500d8e298"
+        }
+      ]
+    },
+    {
+      "id": "script-extender",
+      "root": "S:\\Projects\\Harness\\ai-toolkit-setup\\research-shcde-script-extender",
+      "head": "4014ca67c96974a5e6d697665baf5351cbfebde6",
+      "refs": [
+        {
+          "ref": "refs/remotes/origin/main",
+          "commit": "4014ca67c96974a5e6d697665baf5351cbfebde6"
+        }
+      ]
+    },
+    {
+      "id": "toolkit-classic",
+      "root": "S:\\Projects\\Harness\\ai-toolkit-setup\\source",
+      "head": "5ce3676af8ddb78a11f0148cc2311915eec0a0d8",
+      "refs": [
+        {
+          "ref": "refs/remotes/origin/main",
+          "commit": "0a12082582b63a7d531ae4683e7689382773f892"
+        }
+      ]
+    }
+  ]
+}
