@@ -15,8 +15,9 @@ D1 is committed at b4b319f after Review18 closed its findings. F1 round3
 corrections remain uncommitted; C1 now extracts their Rust implementation and
 removes independent Node policy. Independent review of the extracted core must
 close raw duplicate/recovery R4. Review24 found one A1 geometry cumulative-work/
-cancellation gap; a focused correction is running. Offline isolation harness15
-is under Review22; its synthetic results do not close the real-launch gate.
+cancellation gap; a focused correction is running. Review22 accepts the narrow
+offline isolation result and finite host preflight;
+its two guard defects are scoped and no real-launch evidence exists.
 Historical 900 JS/100 native regressions predate round3/C1. The current plan02
 and task ledger identify live owners.
 
@@ -86,16 +87,28 @@ not add window contexts, raw document writes or live UI. Independent review
 checks extracted policy and real transport adaptation; matching tests alone
 do not confer approval.
 
-**Schema generation (next disjoint tooling).** config/de-lord-schema.json is the
-maintained inventory. Generate its runtime guard while retaining D1 private
+**DS1 session and schema generation (running).** config/de-lord-schema.json is the
+maintained inventory. One owner generates its runtime guard and builds the shared
+lossless session with edit/undo/revision/save-receipt ownership. Retain D1 private
 snapshots, mutation rejection and independent reviewed test oracle. Check mode
-rejects stale output. No silent schema change or UI integration.
+rejects stale output. No silent schema change, host or UI integration.
 
 **F2 — Window context and service plumbing (after C1 review).** One
 owner handles both desktop boundaries, typed DTOs/generated bindings, windows,
 legacy adapters, leases and cache namespaces. Bind before initialization;
 capture context before queued work. Keep Classic algorithms intact and return
 unavailable DE capabilities rather than falling back to Classic.
+
+Frontend cutover must precede edition-specific script startup. At 757ba68,
+index.html statically starts character-editor, castle-editor, ucp-library and
+iso-view; they eagerly load Classic configuration, restore projects and read or
+write legacy browser preferences. A late mode label or API branch is insufficient.
+Bind the owned context first, then start the matching edition's controller and
+provider. Preserve Classic script order and behavior. Share chrome/i18n/theme
+where appropriate; do not clone the whole shell or monkeypatch localStorage.
+Legacy-key compatibility/migration belongs explicitly to Classic. Fresh owned
+DE windows can establish the first file workflow, but do not satisfy the later
+in-place toggle's freeze/drain/unsaved/adopt recovery gate.
 
 Startup policy after C1: an explicit saved default wins after fresh revalidation.
 An inactive migrated Classic candidate may bind only to that startup window when

@@ -37,7 +37,7 @@ advance independently; neither blocks the first lossless file workflow.
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
 | Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 geometry work/cancellation correction running after Review24; decoder/rendering remain open |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
-| Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | No game launch; isolation Review22 running |
+| Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
 | Complete acceptance | Every required CSV criterion has appropriate evidence | Open; foundations are not feature acceptance |
 
 ## Current task ownership
@@ -58,10 +58,14 @@ corrective move. Exact task IDs, file groups and statuses are in
   can multiply repeated index validation into 622 million visits. Raw metadata
   remains available; no parser duplication or host workaround. Independent
   closure follows the focused correction.
-- **Isolation independent Review22:** finite original-data/Steam preservation
-  contract and concrete remaining launch gates. No launch or preference changes.
-- **Schema generation:** next disjoint tooling slice makes schema JSON the only
-  maintained LORD inventory while retaining D1's reviewed mutation protections.
+- **DS1 document session and generation:** one owner builds the shared lossless
+  edit/undo/save-receipt session and generates the runtime guard from schema JSON.
+  No host/UI edits; existing D1 preservation and independent schema tests remain.
+- **Isolation Review22 complete:** accepts the narrow offline result and finite
+  direct-EXE vanilla single-player preflight. Fresh copy/roots, scoped backups,
+  Steam Cloud/queue evidence and startup/exit observations are still required.
+  The acceptance protocol records the coordinator decision and two scoped guard
+  defects. No game launch or preference change has occurred.
 - **Next consumer slice:** core contexts/leases and opaque byte I/O, shared
   document sessions, then thin desktop/UI wiring. Serialize overlapping edits.
   Scope this against the actual C1 API rather than invent a parallel service.
@@ -94,9 +98,11 @@ corrective move. Exact task IDs, file groups and statuses are in
   spots11-30 require verified SE/Fixes configuration and runtime observations.
   Classic30-spot export remains refused; Classic runtime expansion is not built.
 - Harness15 demonstrates exact offline transformations and51 synthetic checks.
-  launchAllowed is false. Review22 evaluates proportionate remaining early
-  Unity/native/client/Cloud/path obligations; a copied install alone does not
-  isolate saves. No original ACL, Steam preference or profile change has occurred.
+  launchAllowed is false. Review22 supports a finite host path after concrete
+  early Unity/native/client/Cloud/path checks, fresh roots and scoped backups.
+  A copied install alone does not isolate saves. Memory compression and dirty
+  pre-opened stream defects are scoped explicitly; no runtime acceptance closes.
+  No original ACL, Steam preference or profile change has occurred.
 - A pre-existing user editor runs from S:\Projects\UCP\Tools\AI Toolkit.
   Later desktop observations must use an owned build/profile and exact executable
   identity/window handle. No live editor has been activated or updated.

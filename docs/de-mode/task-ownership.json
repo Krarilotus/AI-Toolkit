@@ -319,7 +319,7 @@
       "track": "isolation-harness-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-harness-a-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-harness-a-20261022-r1",
-      "status": "running",
+      "status": "completed; offline result reproduced; conditional bounded direct-EXE vanilla path after finite preflight; two scoped guard defects; no launch",
       "kind": "independent offline isolation review against proportionate preservation contract",
       "ownedFiles": [
         "docs/de-mode/research/22-isolation-harness-review.md"
@@ -365,6 +365,24 @@
         "docs/de-mode/research/16-assets-core-handoff.md"
       ],
       "isolation": "shared; same crate corrections serialized after independent Review24; no recursive delegation"
+    },
+    {
+      "track": "document-session-ds1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-document-session-ds1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-document-session-ds1-20261023-r1",
+      "status": "running",
+      "kind": "implementation; shared lossless session and generated schema guard; no UI or hosts",
+      "ownedFiles": [
+        "scripts/generate-de-lord-schema.mjs",
+        "src/shared/generated/de-lord-pin.js",
+        "src/js/de-lord-format.js",
+        "src/shared/de-document-session.js",
+        "tests/de-lord-format.test.js",
+        "tests/de-lord-schema-generation.test.js",
+        "tests/de-document-session.test.js",
+        "docs/de-mode/research/26-document-session-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint domain files; no recursive delegation"
     }
   ]
 }

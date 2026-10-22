@@ -11,8 +11,8 @@ Read [the goal](00-goal-verbatim.md), [working contract](01-working-contract.md)
   the actual native/Electron user-data paths before invoking settings changes;
   a guessed command-line flag is insufficient isolation.
 - Use an owned physical DE installation copy and a demonstrated isolated game
-  profile. Report 06 and its independent review must establish all relevant
-  game/SE paths, Steam/cloud behavior and registry ownership before launch.
+  profile. Reports06/13/15 and independent Review22 establish the finite
+  preflight below; actual path, Steam and preservation evidence is still required.
   A copied EXE directory alone does not meet this condition.
 - Check current user input activity and relevant app/game processes immediately
   before real launches. Defer an interfering launch while the user is active.
@@ -48,6 +48,42 @@ uses `app.getPath('userData')` and has no corresponding early environment
 override in `main.js`; add/verify an owned test route before launching it.
 Keep the exact process environment and effective storage/WebView paths in the
 test manifest. These preparation checks do not authorize changing the live app.
+
+## Finite first-game preflight after Review22
+
+The coordinator accepts Review22's narrow offline result and proportionate host
+route. The existing harness remains launchAllowed:false. Do not turn that result
+into a generic sandbox project or a claim that the current package is runnable.
+The first run is vanilla single-player, direct copied EXE, with unchanged genuine
+authentication. SE/Fixes, multiplayer, browser/help and Workshop UI are separate.
+
+Before launch, one bounded preparation must produce a fresh sealed physical
+copy, fresh managed and engine identities, no link/reparse/namespace collisions,
+all dependency hashes and exact EXE/CWD/app-ID bytes. Make verified scoped backups
+of original profile, PlayerPrefs presence/key and Workshop/bookkeeping; inventories
+alone are insufficient. Record effective roots and native bridge arguments before
+forwarding, with required assertion failure stopping the owned run. Observe early
+Unity/native/child activity and compare preservation after startup/exit before
+expanding into the representative package case. Review22 supplies exact paths,
+source evidence, exclusions and restoration ordering.
+
+Establish Steam's app-specific Cloud-off state before association, with no active
+game, sync/conflict or pending app/Workshop install/update. The coordinator treats
+the user's standing isolated-test authority as covering a temporary reversible
+app-only Cloud UI change, with its exact prior state recorded and restoration
+verified after preservation passes. Initially off stays off. This covers no global
+toggle, VDF edit, stats reset, subscription change or client restart. Do not call
+SetCloudEnabledForApp as a substitute for the supported UI route. Unresolved queue
+state, a demanded original-library update or disruption to unrelated client work
+fails the host gate; use an independently writable test environment instead.
+
+Two reproduced guard defects remain scoped: memory-only DeflateStream writes are
+rejected, and inspecting a dirty pre-opened FileStream can flush before denial.
+Review22 identified no such protected dirty stream in the selected game workflow;
+its actual compression path is excluded from the first single-player exercise.
+Do not advertise general stream/multiplayer compatibility. No arbitrary inherited
+application-data handles are allowed. These findings and runtime observations
+remain separate from the Toolkit's production loader and document support.
 
 ## Application cases: DE-01, DE-02, DE-09
 
