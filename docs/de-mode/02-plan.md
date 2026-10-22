@@ -145,6 +145,12 @@ This is not permission to merge unrelated repositories into the UCP game code.
   instructions and game source support this path; actual playback/loading is
   still pending. The 118-field game LORDJSON schema must preserve the speech
   field omitted by the 117-field inspected editor/converter. See reports 01/03.
+- Reference candidates are now pinned individually in report19. The sampled AIC
+  export manifest names an older native build and does not establish adjacent
+  AIV provenance. Rat's small source can prove open/edit/save preservation while
+  honestly showing its missing speech field; playable export is a later gate.
+  Keep raw sources outside Git and record authored edits rather than auto-filling
+  absent game values.
 - Real game launches remain gated on demonstrated profile isolation. A physical
   copy alone still uses the ordinary user's persistence paths. A bounded
   same-user isolation investigation is running before choosing a test-user/VM
