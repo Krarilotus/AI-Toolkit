@@ -4,6 +4,15 @@ Read the [verbatim goal](00-goal-verbatim.md) and
 [working contract](01-working-contract.md). The coordinator owns this sequence;
 every delegated agent uses Sol 6.1, explicit paths and bounded file ownership.
 
+Current code-review state: original F1 and D1 implementations are unexposed and
+uncommitted. Reviews [11](research/11-profile-foundation-review-r1.md) and
+[12](research/12-lossless-document-review-r1.md) found correctness blockers;
+separate correction round 2 tasks own their original disjoint files. Fresh
+independent reviews gate both commits. [Isolation Review 13](research/13-isolation-boundary-review.md)
+selects offline design A conditionally and rejects the tested restricted token;
+the next task prepares exact transforms and denial evidence before a launch
+decision. These review rounds do not replace the full implementation queue.
+
 ## Evidence accepted for the first implementation boundary
 
 All four original research tracks are complete. Their conclusions are reviewed
