@@ -57,4 +57,14 @@ T3 currently offers no supported cross-project move for an existing thread.
 The user approved a linked normal top-level continuation in the UCP project.
 Create its persistent goal as its first action; do not leave a second active goal
 in the old Harness thread. Verify that the new thread is visible under UCP in
-the sidebar and bound to this checkout before delegating implementation.
+the sidebar before delegating implementation.
+
+The UCP project root is a multi-repository folder, not a Git checkout. T3 rejected
+an existing-worktree binding because this Toolkit worktree is not one of that
+project root's registered Git worktrees. The approved continuation therefore
+uses an explicit UCP-root binding, with this isolated nested checkout as its
+working repository. Every shell command that operates on Toolkit must set its
+working directory to `S:\Projects\UCP\AI-Toolkit-DE`; the sidebar's project root
+is not the Toolkit Git root. Shared research agents can use disjoint reports.
+Do not claim T3 worktree isolation where the app cannot provide it; serialize
+conflicting implementation changes or resolve workspace support explicitly.
