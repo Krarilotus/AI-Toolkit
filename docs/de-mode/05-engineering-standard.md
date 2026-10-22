@@ -47,6 +47,15 @@ shared document implementation. Assess other boundaries on their actual consumer
 portability, packaging and maintenance costs; do not replace the problem with a
 generic framework. Record an incremental migration preserving Classic behavior.
 
+The coordinator adopted report23: one host-independent Rust core linked by
+Tauri and used through a versioned private Electron helper. Shared JavaScript
+owns lossless document sessions. Rust DTOs and the declarative LORD schema
+generate their consumers. Extract corrected code before growing contexts;
+migrate existing Classic algorithms operation by operation and remove each
+replaced runtime path. Preserve both hosts, meaningful independent tests and
+honest packaging/performance evidence. This is a concrete ownership decision;
+existing duplication still needs the recorded migration.
+
 ## Task briefs and critical agency
 
 Each agent gets the goal/contract links, intended user outcome, dependency inputs,
