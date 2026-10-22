@@ -83,7 +83,7 @@
       "track": "profile-isolation-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-profile-isolation-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-research-profile-isolation-20261022-r1",
-      "status": "running",
+      "status": "completed",
       "kind": "bounded follow-up research; no recursive delegation",
       "ownedFiles": [
         "docs/de-mode/research/06-profile-isolation.md"
@@ -144,6 +144,17 @@
         "docs/de-mode/research/10-lossless-document-handoff.md"
       ],
       "isolation": "shared; disjoint new files from F1; integration serialized"
+    },
+    {
+      "track": "isolation-boundary-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-boundary-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-boundary-20261022-r1",
+      "status": "running",
+      "kind": "independent isolation review and bounded offline probes",
+      "ownedFiles": [
+        "docs/de-mode/research/13-isolation-boundary-review.md"
+      ],
+      "isolation": "shared; disjoint report only"
     }
   ]
 }

@@ -79,6 +79,17 @@ This is not permission to merge unrelated repositories into the UCP game code.
   copy alone still uses the ordinary user's persistence paths. A bounded
   same-user isolation investigation is running before choosing a test-user/VM
   fallback or changing any profile.
+- Report 06 is complete: offline metadata/19-site managed path redirection and
+  the SE root prototype work; 14 original-profile Auto-Cloud rules and Steam
+  launch/Workshop/state paths still need a complete boundary. Independent
+  Review 13 now evaluates reversible supported Cloud/launch controls and a
+  restricted-token candidate against the actual preservation contract. No
+  game launch, original setting change or external prerequisite is assumed.
+- The supported Windows observation API was initialized read-only and its
+  window inventory works. A pre-existing Toolkit window runs from
+  `S:\Projects\UCP\Tools\AI Toolkit\AI Toolkit.exe`; it was not activated or
+  changed. Later desktop tests must target a separately owned build by exact
+  executable identity and returned window handle, not just the shared title.
 
 - App thread `mcp:24e1fd23-accc-4f55-8906-3de048c9a894`, project UCP
   `2dd89517-2ea6-4ac0-898a-11e0c5076371`. It is a normal sidebar thread,
