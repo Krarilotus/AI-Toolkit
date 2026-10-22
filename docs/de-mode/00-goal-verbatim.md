@@ -49,3 +49,9 @@ The user also wrote:
 > it needs to be in the sidebar
 
 > just make sure you always ever use Sol 6.1 subagents for any subagents you use and give them clear isntructions, and focus yourself on the planning and orchestration
+
+## Architecture and code-health steering
+
+> make sure the code is properly modularized and not jsut hardcoded on top of the existing one, i want to be able to later distinguish what is for DE what is for non DE and make sure we follow single source of truth standards, no split brain methodology where thigns need to be recoded up agaian and again, just make sure the overall software stack is sound and proper, and take your time to rethink and refactor to make sure the existing code scales and grows responsibly. Better do a little tooling up front than clean up a bunch of mess later
+
+> (and don't get those directions lost!)

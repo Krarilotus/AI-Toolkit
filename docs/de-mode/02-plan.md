@@ -56,6 +56,13 @@ This is not permission to merge unrelated repositories into the UCP game code.
 
 ### Active continuation, 22 October 2026
 
+- Latest architecture steering is preserved verbatim in goal00 and made explicit
+  in contract01/standard05: modular Classic/DE providers, one authoritative policy
+  implementation, thin host adapters and focused tooling before growth. The
+  repeated Node/Rust profile discrepancies justify reassessing that duplication
+  before F2 wiring. A bounded report23 task compares concrete shared-core routes
+  and an incremental refactor; no backend is silently removed. Corrected F1 code
+  remains uncommitted while this ownership decision is resolved.
 - Latest process steering requires critique at the appropriate abstraction and
   ownership level. [Engineering standard](05-engineering-standard.md) records
   the quality attributes, agent autonomy and responsibility boundaries. A bounded
@@ -109,6 +116,20 @@ This is not permission to merge unrelated repositories into the UCP game code.
   recovery evidence. One original contention test returned EPERM before the full
   rerun and five focused runs passed; keep that unresolved low-priority anomaly
   visible before integration rather than disguising it as a fully clean review.
+- F1 round3 has returned duplicate decoded-name rejection in both parsers with
+  **97 Node/26 native focused tests**. Independent R4 closure remains pending;
+  reuse of the corrected logic will follow the single-source ownership decision
+  rather than immediately growing two implementations.
+- Architecture critique21 found no new serious foundation defect and recommends
+  explicit raw-byte transport, domain-owned sessions, dispatch-time window
+  authority and separate resource/configuration identities. Its earlier acceptance
+  of two host implementations does not settle the user's subsequent requirement
+  to avoid duplicate production policy. Preserve both hosts through thin adapters.
+- A1 metadata implementation is complete but uncommitted. It reports 29 synthetic
+  tests on Rust1.88/1.98 and full-field local parity for 86 objects. Independent
+  Review24 now owns correctness/code-health scrutiny. The unexercised privileged
+  file-symlink case and documented mutation limits remain explicit. No decoder or
+  rendering feature is accepted through this metadata evidence.
 - Rendering Review 14 gives conditional GO for A1 metadata only. It independently
   matches every serialized field of 41 Sprites and all 41 Texture2Ds, corroborates
   Healer/Camel stationary selectors and outpost base permutations, and corrects
@@ -141,6 +162,10 @@ This is not permission to merge unrelated repositories into the UCP game code.
   does not contain early Unity/native/child or unrestricted Steam-client activity,
   and path races remain. This is acceptance tooling outside the product. A real
   launch still requires a proportionate concrete boundary and coordinator review.
+- Independent Review22 now assesses the completed isolation tools against the
+  actual preservation contract, including which residuals require finite probes
+  or another environment. It must not invent a universal malicious-program
+  containment requirement or turn offline success into game acceptance.
 - Before the D1 commit, Git staging exposed CRLF normalization of the deliberate
   lossless fixture. A narrow `.gitattributes` rule now retains its exact reviewed
   5079 bytes and intentional trailing trivia. The staged code/tests/fixture match

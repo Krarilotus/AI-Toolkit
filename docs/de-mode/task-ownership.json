@@ -237,7 +237,7 @@
       "track": "assets-core-a1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-assets-core-a1-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-assets-core-a1-20261022-r1",
-      "status": "running",
+      "status": "completed;29 synthetic tests and86-object local parity; Review24 running",
       "kind": "implementation; metadata-only std Rust crate; no production integration or decoder",
       "ownedFiles": [
         "crates/de-assets-core/**",
@@ -271,7 +271,7 @@
       "track": "profile-foundation-fix-r3",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r3",
-      "status": "running",
+      "status": "completed;97 Node/26 native tests; independent closure pending canonical-core decision",
       "kind": "implementation; duplicate metadata correction only",
       "ownedFiles": [
         "src/node/game-profiles.js",
@@ -286,12 +286,45 @@
       "track": "architecture-quality-critique-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-architecture-quality-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-architecture-quality-20261022-r1",
-      "status": "running",
+      "status": "completed; no new serious defect; document/window/resource ownership and vertical-slice recommendations",
       "kind": "independent abstraction ownership and code-health critique",
       "ownedFiles": [
         "docs/de-mode/research/21-architecture-quality-critique.md"
       ],
       "isolation": "shared; explicit disjoint ownership; no recursive delegation"
+    },
+    {
+      "track": "single-source-architecture-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-design-single-source-architecture-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-design-single-source-architecture-20261022-r1",
+      "status": "running",
+      "kind": "bounded architecture decision and incremental refactor plan",
+      "ownedFiles": [
+        "docs/de-mode/research/23-single-source-architecture.md"
+      ],
+      "isolation": "shared; disjoint report only; no recursive delegation"
+    },
+    {
+      "track": "assets-core-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261022-r1",
+      "status": "running",
+      "kind": "independent A1 metadata correctness and code-health review",
+      "ownedFiles": [
+        "docs/de-mode/research/24-assets-core-review-r1.md"
+      ],
+      "isolation": "shared; disjoint report only; no recursive delegation"
+    },
+    {
+      "track": "isolation-harness-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-harness-a-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-isolation-harness-a-20261022-r1",
+      "status": "running",
+      "kind": "independent offline isolation review against proportionate preservation contract",
+      "ownedFiles": [
+        "docs/de-mode/research/22-isolation-harness-review.md"
+      ],
+      "isolation": "shared; disjoint report only; no recursive delegation"
     }
   ]
 }
