@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-22",
+  "updatedAt": "2026-10-23",
   "policy": {
     "updates": "Inventory and record dirty state before fetching. Never pull or overwrite existing research. Review remote changes at explicit commits; keep accepted pins until evidence and compatibility checks justify an update.",
     "proprietaryData": "Binary and extracted asset contents remain outside Git. Commit hashes, probes, synthetic fixtures and analysis only."
@@ -183,6 +183,19 @@
       "evidence": "research/19-acceptance-seed-inventory.md",
       "externalInventory": "S:/Projects/UCP/de-research/acceptance-seeds/inventory.json",
       "evidenceStatus": "Exact candidate bytes pinned outsideGit;117-field lords omit speech. AIC manifest is older than installed native baseline and does not establish adjacent AIV runtime provenance. No playable acceptance."
+    },
+    {
+      "id": "isolation-review22-docs",
+      "evidence": "research/22-isolation-harness-review.md",
+      "externalEvidence": "S:/Projects/UCP/de-research/review-isolation-harness/review-20261022T234610307/documentation/manifest.json",
+      "urls": [
+        "https://docs.unity3d.com/2021.3/Documentation/ScriptReference/Application-persistentDataPath.html",
+        "https://docs.unity3d.com/2021.3/Documentation/ScriptReference/PlayerPrefs.html",
+        "https://partner.steamgames.com/doc/features/cloud",
+        "https://partner.steamgames.com/doc/api/steam_api#SteamAPI_RestartAppIfNecessary",
+        "https://partner.steamgames.com/doc/features/workshop/implementation#ItemInstallation"
+      ],
+      "evidenceStatus": "Primary documentation captured and hashed by independent reviewer on2026-10-22; unversioned Valve pages. Supports finite preflight design only; no game launch or policy change."
     }
   ],
   "localGameEvidence": "local-evidence.json",
