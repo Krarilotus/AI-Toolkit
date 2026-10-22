@@ -237,7 +237,7 @@
       "track": "assets-core-a1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-assets-core-a1-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-assets-core-a1-20261022-r1",
-      "status": "completed;29 synthetic tests and86-object local parity; Review24 running",
+      "status": "completed;29 synthetic tests and86-object parity; Review24 one P2; correction r2 running",
       "kind": "implementation; metadata-only std Rust crate; no production integration or decoder",
       "ownedFiles": [
         "crates/de-assets-core/**",
@@ -297,7 +297,7 @@
       "track": "single-source-architecture-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-design-single-source-architecture-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-design-single-source-architecture-20261022-r1",
-      "status": "running",
+      "status": "completed; coordinator adopts one Rust core plus versioned Electron helper; C1 extraction running",
       "kind": "bounded architecture decision and incremental refactor plan",
       "ownedFiles": [
         "docs/de-mode/research/23-single-source-architecture.md"
@@ -308,7 +308,7 @@
       "track": "assets-core-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261022-r1",
-      "status": "running",
+      "status": "completed; NO-GO one P2 geometry cumulative work/cancellation finding; correction r2 assigned",
       "kind": "independent A1 metadata correctness and code-health review",
       "ownedFiles": [
         "docs/de-mode/research/24-assets-core-review-r1.md"
@@ -325,6 +325,46 @@
         "docs/de-mode/research/22-isolation-harness-review.md"
       ],
       "isolation": "shared; disjoint report only; no recursive delegation"
+    },
+    {
+      "track": "canonical-core-c1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-canonical-core-c1-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-canonical-core-c1-20261022-r1",
+      "status": "running",
+      "kind": "implementation; extract corrected Rust F1 and real Electron helper; no live wiring",
+      "ownedFiles": [
+        "crates/toolkit-core/**",
+        "crates/toolkit-host-helper/**",
+        "src-tauri/Cargo.toml",
+        "src-tauri/Cargo.lock",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/profiles.rs",
+        "src/node/game-profiles.js",
+        "src/node/core-client.js",
+        "tests/game-profiles.test.js",
+        "tests/fixtures/de-mode/foundation.json",
+        "tests/core-client.test.js",
+        "tests/core-helper.test.js",
+        "scripts/build-core.mjs",
+        "scripts/generate-core-contracts.mjs",
+        "src/desktop/generated/core/**",
+        "package.json",
+        "package-lock.json",
+        "docs/de-mode/research/25-canonical-core-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint files; no recursive delegation"
+    },
+    {
+      "track": "assets-core-fix-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-assets-core-a1-20261022-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-assets-core-a1-20261022-r2",
+      "status": "running",
+      "kind": "implementation; carry cumulative work/cancellation through usable geometry only",
+      "ownedFiles": [
+        "crates/de-assets-core/**",
+        "docs/de-mode/research/16-assets-core-handoff.md"
+      ],
+      "isolation": "shared; same crate corrections serialized after independent Review24; no recursive delegation"
     }
   ]
 }

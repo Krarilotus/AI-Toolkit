@@ -4,27 +4,21 @@ Read the [verbatim goal](00-goal-verbatim.md) and
 [working contract](01-working-contract.md). The coordinator owns this sequence;
 every delegated agent uses Sol 6.1, explicit paths and bounded file ownership.
 
-Latest user architecture steering supersedes the earlier assumption that matching
-Node/Rust implementations alone are an adequate long-term boundary. Keep Classic
-and DE visibly modular and give production policy one authoritative owner, with
-thin transports or generated contracts where appropriate. Report23 now compares
-concrete core/adapter designs and an incremental refactor before F2 acquires live
-callers. Existing corrected F1 work is reusable evidence/code, not permission to
-continue independently maintained policy. Do not silently remove either host or
-replace this with an unrelated framework rewrite. The first integrated LORDJSON
-workflow remains the immediate user-facing destination after this boundary.
+The coordinator adopts [architecture23](research/23-single-source-architecture.md):
+one Rust backend core linked by Tauri and used through a versioned private
+Electron helper, shared JavaScript document sessions, and generated schema/DTO
+contracts. Classic and DE remain explicit providers/formats. Existing Classic
+duplication migrates one operation at a time against preserved behavior; it is
+not a prerequisite for the first LORDJSON workflow.
 
-Current code-review state: original F1 and D1 implementations are unexposed and
-uncommitted. Reviews [11](research/11-profile-foundation-review-r1.md) and
-[12](research/12-lossless-document-review-r1.md) found correctness blockers;
-separate correction round 2 tasks have returned their original disjoint files.
-Fresh Review 18 closes all D1 findings and recommends its additive commit;
-Review 17 requires a final duplicate-metadata correction before F1 acceptance.
-Coordinator regressions pass 900 JavaScript tests and
-100 native tests with one explicit ignore after those corrections. [Isolation Review 13](research/13-isolation-boundary-review.md)
-selects offline design A conditionally and rejects the tested restricted token;
-the next task prepares exact transforms and denial evidence before a launch
-decision. These review rounds do not replace the full implementation queue.
+D1 is committed at b4b319f after Review18 closed its findings. F1 round3
+corrections remain uncommitted; C1 now extracts their Rust implementation and
+removes independent Node policy. Independent review of the extracted core must
+close raw duplicate/recovery R4. Review24 found one A1 geometry cumulative-work/
+cancellation gap; a focused correction is running. Offline isolation harness15
+is under Review22; its synthetic results do not close the real-launch gate.
+Historical 900 JS/100 native regressions predate round3/C1. The current plan02
+and task ledger identify live owners.
 
 ## Evidence accepted for the first implementation boundary
 
@@ -83,20 +77,27 @@ domain support. Further domain/asset evidence review remains separate.
 
 ## Bounded implementation queue
 
-**F1 — Detection and metadata repository (start now).** One implementer owns new
-Node/Rust profile modules, shared synthetic detection fixtures, meaningful
-profile recovery/CAS tests and the Rust module declaration. Implement F1/F2
-gates from Review 05; no live editor wiring or toggle. Resolve cross-process
-locking, atomic recovery and legacy-file preservation explicitly. Return code
-for independent review; coordinator commits accepted milestones with `[skip ci]`.
+**C1 — Canonical F1 core and transport (running).** One owner moves corrected
+Rust detection/metadata/recovery policy into toolkit-core, links Tauri to it,
+removes independent Node policy, and implements the bounded private Electron
+helper/client, generated Rust DTOs and local packaging build. Domain/crash
+fixtures and strict malformed metadata refusal must survive. This task does
+not add window contexts, raw document writes or live UI. Independent review
+checks extracted policy and real transport adaptation; matching tests alone
+do not confer approval.
 
-**F2 — Window context and service plumbing (serialized after F1 review).** One
+**Schema generation (next disjoint tooling).** config/de-lord-schema.json is the
+maintained inventory. Generate its runtime guard while retaining D1 private
+snapshots, mutation rejection and independent reviewed test oracle. Check mode
+rejects stale output. No silent schema change or UI integration.
+
+**F2 — Window context and service plumbing (after C1 review).** One
 owner handles both desktop boundaries, typed DTOs/generated bindings, windows,
 legacy adapters, leases and cache namespaces. Bind before initialization;
 capture context before queued work. Keep Classic algorithms intact and return
 unavailable DE capabilities rather than falling back to Classic.
 
-Startup policy after F1: an explicit saved default wins after fresh revalidation.
+Startup policy after C1: an explicit saved default wins after fresh revalidation.
 An inactive migrated Classic candidate may bind only to that startup window when
 the unchanged legacy file's hash matches the recorded migration provenance,
 fresh detection resolves its saved path to a stored Classic profile, and that
@@ -113,12 +114,11 @@ edition-sensitive domain state, preserve Classic migrations, implement switch
 freeze/drain/adopt/recovery and stale-result guards. Expose the toggle only
 after failure/cancel/mixed-window fixtures and isolated application checks.
 
-**D1 — Raw DE document foundation (after independent domain review).** A separate
-owner may add new token-preserving JSON/LORDJSON schema modules and synthetic
-tests without touching F1/F2 files. Preserve unknown large-number lexemes,
-duplicates, arrays/tails and unchanged bytes; separate game-export validation
-from preservation. Integrate UI and existing castle paths only in a later
-serialized slice with explicit ownership.
+**D1 — Raw DE document foundation (committed after Review18).** The shared
+token-preserving JSON/LORDJSON modules preserve unknown large-number lexemes,
+duplicates, arrays/tails and unchanged bytes, with separate target diagnostics.
+The next document owner adds a shared session over that implementation; desktop
+and UI routing are integrated through the canonical context/byte boundary.
 
 Later document routing keeps a document session's format, immutable source bytes,
 revision, explicit path and owning context together. Native/Electron transport
