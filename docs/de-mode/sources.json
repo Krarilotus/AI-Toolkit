@@ -101,6 +101,16 @@
       "sha256": "7962a7cded30b14a2022d40011078d41631bb2e1b337bf521e134b975acdd2f9",
       "steamBuildId": "24816905",
       "evidenceStatus": "coordinator independently read and hashed; confirms vanilla matching-name CustomMedia route, playback unverified"
+    },
+    {
+      "id": "bepinex-offline-isolation-tools",
+      "url": "https://github.com/BepInEx/BepInEx",
+      "commit": "02413dd28c9a1d090f0d1d6fbb3ee4b775daec72",
+      "version": "5.4.23.4",
+      "archivePath": "S:\\Projects\\UCP\\de-research\\profile-isolation\\BepInEx_win_x64_5.4.23.4.zip",
+      "archiveSha256": "f881201b79da03e513bf97cdf39607ffa7f9e0d31a519b1aeeca8eb60f8309e7",
+      "evidence": "research/06-profile-isolation.md",
+      "evidenceStatus": "archive hash independently reproduced by coordinator; selected Cecil/preloader files used only for offline probes. Not installed, not a tested game loader selection."
     }
   ],
   "localGameEvidence": "local-evidence.json",

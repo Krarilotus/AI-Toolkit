@@ -28,6 +28,15 @@ Read [the goal](00-goal-verbatim.md), [working contract](01-working-contract.md)
   Uninstall only unchanged files in the owned manifest; changed files and
   uncertain recovery remain visible instead of being deleted.
 
+The supported Windows observation route was initialized read-only using the
+bundled Computer Use skill (`node_repl` plus `@oai/sky`). `list_windows()`
+succeeded on 22 October 2026 and returned an existing user Toolkit window at
+`S:\Projects\UCP\Tools\AI Toolkit\AI Toolkit.exe`. No activation/input/state
+change was sent to it. Later test tasks must select the returned window for
+their owned executable path, with exactly one match, rather than using the
+shared display title `AI Toolkit`. Follow the skill's fresh observation/action
+workflow; do not mix direct PowerShell UI Automation with Computer Use.
+
 ## Application cases: DE-01, DE-02, DE-09
 
 | Case | Required observation |

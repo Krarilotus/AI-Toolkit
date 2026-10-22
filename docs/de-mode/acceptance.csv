@@ -5,7 +5,7 @@ DE-03,Authentic local DE buildings units terrain and views,in_progress,Report02 
 DE-04,Lossless DE castles with unknown IDs fields timing and guarding slots,pending,Existing interchange feature is experimental,Primary-code review and asymmetric game/editor fixtures
 DE-05,Lossless LORDJSON without UCP normalization,in_progress,Independent Review07 complete; unexposed D1 token-preserving modules delegated,Byte-preserving edits and target diagnostics followed by game/editor round trips
 DE-06,Portrait dialogue voices and related media reach the game,pending,Reports01/03 and shipped instructions confirm vanilla loading contracts,Verified package layout and actual in-game media observations
-DE-07,Reversible version-aware custom lord installation,pending,Report03 complete; same-user profile-isolation investigation06 live,Preflight backup install uninstall recovery in demonstrated isolated setup
+DE-07,Reversible version-aware custom lord installation,pending,Report06 proves offline path redirection; independent isolation-boundary review13 live,Preflight backup install uninstall recovery in demonstrated isolated setup
 DE-08,Representative exported custom AI loads and works in DE,pending,No process launched,Isolated real-game acceptance with logs and observations
 DE-09,Classic editing assets exports and game-backed regressions,in_progress,Baseline 653 JS plus 77 native plus 10 classic installation checks pass,Repeat relevant checks after implementation and representative runtime acceptance
 DE-10,Source-pinned ordered HD and DE difference ledger,in_progress,Twelve ordered rows and pinned source catalogue committed c7b88da; local HD and DE hashes verified,Maintain domain review corrections and implementation/runtime evidence per row
