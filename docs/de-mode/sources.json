@@ -39,6 +39,14 @@
       "paths": [
         "_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/knowledge"
       ],
+      "provenanceReview": {
+        "review": "research/07-domain-contract-review.md",
+        "mainIdentitySeCommit": "5908e1f12437deb7ef5f5b1dc2d64e301178fba3",
+        "developIdentitySeCommit": "10628df85cd432184742a50a1dee3969a66cf89e",
+        "separatelyReviewedSeCommit": "4014ca67c96974a5e6d697665baf5351cbfebde6",
+        "sharedCode": "Relevant game managed and native decompilation blobs are identical on the pinned main/develop refs. Knowledge/header/runtime provenance must still be checked individually.",
+        "nativeExports": "77 entries/names observed in PE; baseline narrative's 78 including entry is not propagated"
+      },
       "evidenceStatus": "runtime track inspected pinned knowledge and source; static function/signature probes only, no gameplay claim"
     },
     {

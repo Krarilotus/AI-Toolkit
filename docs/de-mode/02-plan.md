@@ -5,6 +5,8 @@ review permits an unexposed detection/profile foundation with required fixes.
 The [reviewed synthesis and queue](03-synthesis-and-sequencing.md) governs
 implementation. Profile-isolation and deeper rendering/domain investigations
 continue. Persistent goal active; full DE compatibility remains unverified.
+The [acceptance protocol](04-acceptance-protocol.md) specifies later isolated
+desktop/game observations and recovery evidence.
 [Goal](00-goal-verbatim.md) · [Contract](01-working-contract.md)
 
 ## Milestones
@@ -14,7 +16,7 @@ continue. Persistent goal active; full DE compatibility remains unverified.
 | 0. Isolate and preserve instructions | DE branch, no automatic CI, UCP sidebar continuation and persistent goal | Correct workspace binding; original checkout untouched | Complete |
 | 1. Establish evidence | Pinned repository catalogue, local game/editor hashes, format probes and ordered HD/DE difference ledger | Review primary code and reproduce central claims | Initial gate complete; targeted follow-ups continue |
 | 2. Separate edition mode | Edition detection, separate roots/settings/caches and capability model | Classic-only, DE-only, both-installed and mode-switch tests | In progress: unexposed F1 foundation |
-| 3. Implement DE data contracts | Lossless castle/lord/AI codecs, schema-driven UI and safe conversion | Round trips and game/editor/loader fixtures | Pending |
+| 3. Implement DE data contracts | Lossless castle/lord/AI codecs, schema-driven UI and safe conversion | Round trips and game/editor/loader fixtures | In progress: unexposed D1 raw JSON/LORDJSON foundation |
 | 4. Replace DE placeholder art | Local asset extraction and verified DE rendering | Representative units/buildings/terrain and rotations/modes | Pending |
 | 5. Deliver custom AI packages | Lord/media package creation and reversible game/loader installation | Real package discovery and isolated in-game loading | Pending |
 | 6. Finish compatibility | Acceptance matrix, classic regressions, failure recovery and user workflow checks | All required cases verified; no hidden unsupported paths | Pending |
@@ -61,6 +63,13 @@ This is not permission to merge unrelated repositories into the UCP game code.
   with no live services or toggle exposed. F1 is assigned one implementer;
   domain Review 07, isolation 06 and rendering follow-up 08 run with disjoint
   report ownership. Exact task IDs/files are in task-ownership.json.
+- Review 07 independently confirms the 118-field/14-array game schema and gives
+  conditional GO for D1 with byte/token preservation, duplicate ambiguity,
+  explicit UTF-8/BOM handling and separate target diagnostics. One D1 agent
+  owns only new document modules/schema/tests, disjoint from F1. No UI or
+  package/game acceptance is inferred. Main/develop share relevant code blobs
+  but have different SE provenance metadata; the native PE has 77 exports,
+  not the baseline narrative's 78 including entry.
 - First DE package target: vanilla named Custom Lord plus matching-name
   `CustomMedia`, before optional SE/Fixes capabilities. The shipped media
   instructions and game source support this path; actual playback/loading is

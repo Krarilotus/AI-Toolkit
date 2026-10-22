@@ -110,7 +110,7 @@
       "track": "domain-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-domain-contracts-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-domain-contracts-20261022-r1",
-      "status": "running",
+      "status": "completed",
       "kind": "independent domain review; no recursive delegation",
       "ownedFiles": [
         "docs/de-mode/research/07-domain-contract-review.md"
@@ -127,6 +127,23 @@
         "docs/de-mode/research/08-rendering-contracts.md"
       ],
       "isolation": "shared; explicit disjoint file ownership; conflicting edits serialized"
+    },
+    {
+      "track": "lossless-documents-d1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-lossless-documents-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-lossless-documents-20261022-r1",
+      "status": "running",
+      "kind": "implementation; new raw JSON/LORDJSON modules only",
+      "ownedFiles": [
+        "src/shared/lossless-json.js",
+        "src/js/de-lord-format.js",
+        "config/de-lord-schema.json",
+        "tests/lossless-json.test.js",
+        "tests/de-lord-format.test.js",
+        "tests/fixtures/de-documents/*",
+        "docs/de-mode/research/10-lossless-document-handoff.md"
+      ],
+      "isolation": "shared; disjoint new files from F1; integration serialized"
     }
   ]
 }
