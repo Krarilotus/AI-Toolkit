@@ -84,3 +84,10 @@ subagent**, with clear bounded instructions. The coordinator focuses on planning
 evidence synthesis, review and orchestration; implementation is delegated with
 explicit ownership and conflicting edits serialized. Current T3 selection is
 `codex/gpt-6.1-sol`, `reasoningEffort: ultra`, `serviceTier: default`.
+
+The user also requires continuing critique of intent, abstraction and ownership.
+The [engineering standard](05-engineering-standard.md) records this steering:
+bounded agents may challenge the brief itself with evidence, while the coordinator
+owns scope reconciliation and prioritizes complete user workflows. Review code
+health as well as correctness; preserve behavior during cleanup and avoid
+unnecessary abstraction, duplicated policies and unrelated refactoring.

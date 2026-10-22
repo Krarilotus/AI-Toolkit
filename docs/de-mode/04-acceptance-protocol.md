@@ -37,6 +37,18 @@ their owned executable path, with exactly one match, rather than using the
 shared display title `AI Toolkit`. Follow the skill's fresh observation/action
 workflow; do not mix direct PowerShell UI Automation with Computer Use.
 
+Read-only source inventory at `7f22728`: native `storage::user_data` already
+honors `AI_TOOLKIT_USER_DATA`, and editor creation explicitly places WebView2
+data under that directory's `WebView` child. The legacy-update helper also reads
+the override. This supplies a concrete owned-profile route to verify at launch;
+it is not yet an observation of a running test instance. Detached viewport
+creation does not explicitly set the data directory, so F2 and GUI acceptance
+must establish inheritance/ownership rather than assuming it. Electron currently
+uses `app.getPath('userData')` and has no corresponding early environment
+override in `main.js`; add/verify an owned test route before launching it.
+Keep the exact process environment and effective storage/WebView paths in the
+test manifest. These preparation checks do not authorize changing the live app.
+
 ## Application cases: DE-01, DE-02, DE-09
 
 | Case | Required observation |

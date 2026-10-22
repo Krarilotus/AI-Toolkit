@@ -94,7 +94,7 @@
       "track": "profile-foundation-f1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-profile-foundation-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-profile-foundation-20261022-r1",
-      "status": "completed; Review11 NO-GO; correction round2 assigned",
+      "status": "round3 duplicate metadata correction required before commit",
       "kind": "implementation; additive unexposed modules only",
       "ownedFiles": [
         "src/node/game-profiles.js",
@@ -132,7 +132,7 @@
       "track": "lossless-documents-d1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-lossless-documents-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-lossless-documents-20261022-r1",
-      "status": "completed; Review12 NO-GO; correction round2 assigned",
+      "status": "accepted after correction round2 and Review18; no UI or game acceptance",
       "kind": "implementation; new raw JSON/LORDJSON modules only",
       "ownedFiles": [
         "src/shared/lossless-json.js",
@@ -193,7 +193,7 @@
       "track": "lossless-documents-fix-r2",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-lossless-documents-20261022-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-lossless-documents-20261022-r2",
-      "status": "running",
+      "status": "completed; independently accepted by Review18",
       "kind": "implementation; same D1 files only",
       "ownedFiles": [
         "src/shared/lossless-json.js",
@@ -210,7 +210,7 @@
       "track": "profile-foundation-fix-r2",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r2",
-      "status": "running",
+      "status": "completed;67 Node and23 native focused tests; independent Review17 live",
       "kind": "implementation; same F1 files only",
       "ownedFiles": [
         "src/node/game-profiles.js",
@@ -225,7 +225,7 @@
       "track": "offline-isolation-harness-a-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-prepare-isolation-harness-a-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-prepare-isolation-harness-a-20261022-r1",
-      "status": "running",
+      "status": "completed;51 synthetic guard checks; launchAllowed false; no game acceptance",
       "kind": "offline implementation; no game or Steam policy execution",
       "ownedFiles": [
         "docs/de-mode/research/15-offline-isolation-harness.md",
@@ -244,6 +244,54 @@
         "docs/de-mode/research/16-assets-core-handoff.md"
       ],
       "isolation": "shared; explicit disjoint crate and report; no recursive delegation"
+    },
+    {
+      "track": "lossless-documents-review-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-lossless-documents-20261022-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-lossless-documents-20261022-r2",
+      "status": "completed; GO for additive D1 commit only; all four prior findings closed",
+      "kind": "fresh independent D1 correction review; no implementation edits",
+      "ownedFiles": [
+        "docs/de-mode/research/18-lossless-document-review-r2.md"
+      ],
+      "isolation": "shared; disjoint report only; no recursive delegation"
+    },
+    {
+      "track": "foundation-review-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-profile-foundation-20261022-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-profile-foundation-20261022-r2",
+      "status": "completed; NO-GO for raw duplicate metadata R4; R2/R3 closed; contention anomaly retained",
+      "kind": "fresh independent F1 correction review; no implementation edits",
+      "ownedFiles": [
+        "docs/de-mode/research/17-profile-foundation-review-r2.md"
+      ],
+      "isolation": "shared; disjoint report only; no recursive delegation"
+    },
+    {
+      "track": "profile-foundation-fix-r3",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-profile-foundation-20261022-r3",
+      "status": "running",
+      "kind": "implementation; duplicate metadata correction only",
+      "ownedFiles": [
+        "src/node/game-profiles.js",
+        "src-tauri/src/profiles.rs",
+        "tests/game-profiles.test.js",
+        "tests/fixtures/de-mode/foundation.json",
+        "docs/de-mode/research/09-profile-foundation-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation"
+    },
+    {
+      "track": "architecture-quality-critique-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-architecture-quality-20261022-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-architecture-quality-20261022-r1",
+      "status": "running",
+      "kind": "independent abstraction ownership and code-health critique",
+      "ownedFiles": [
+        "docs/de-mode/research/21-architecture-quality-critique.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation"
     }
   ]
 }
