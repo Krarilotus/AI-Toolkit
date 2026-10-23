@@ -1,0 +1,31 @@
+{
+  "protocolMajor": 1,
+  "protocolMinor": 1,
+  "schemaVersion": 1,
+  "maxFrameBytes": 12582912,
+  "maxRawBytes": 8388608,
+  "queueCapacity": 16,
+  "maxMetadataBytes": 8388608,
+  "maxMetadataResultBytes": 8389632,
+  "maxRequestId": 9007199254740991,
+  "maxWireDepth": 68,
+  "storeName": "game-profiles.v1.json",
+  "deData": "Stronghold Crusader Definitive Edition_Data",
+  "classicExes": [
+    "Stronghold Crusader.exe",
+    "Stronghold_Crusader_Extreme.exe"
+  ],
+  "deFiles": [
+    "Stronghold Crusader Definitive Edition.exe",
+    "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll",
+    "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll"
+  ],
+  "maxJsonDepth": 64,
+  "emptyStore": {
+    "schemaVersion": 1,
+    "revision": 0,
+    "defaultProfileId": null,
+    "selectedByEdition": {},
+    "profiles": {}
+  }
+}

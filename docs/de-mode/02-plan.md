@@ -37,7 +37,7 @@ advance independently; neither blocks the first lossless file workflow.
 | --- | --- | --- |
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
-| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Review36 closes final-size defect; facade correctionr4 complete; fresh Review39 running |
+| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Complete after Review39 closes C1-02; exact28source/staged-byte verification |
 | Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Next integrated slice; no live DE toggle yet |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
 | Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 committed61c2fa1 after independent Review34; Sprite reconstruction proof running |
@@ -58,15 +58,15 @@ and live global capacity; no uncontrolled fan-out.
   original F1 findings are independently closed. C1-02 remains at the actual
   packaged facade: it copies before admission and awaits before snapshotting.
   Correctionr4 now routes it through the one existing reservation lifecycle;
-  fresh Review39 checks actual packaged-facade closure before commit. No new
-  quota or Rust policy; canonical/generated sources remain unchanged.
+  Review39 closes actual packaged-facade behavior; the28source snapshot and
+  staged bytes are verified. No new quota or Rust policy. C1 is accepted.
 - **DS1 milestone:** Review32 closes both P2s and portability;205 tests pass.
   Shared session/schema generation committed atebff3b1, not UI acceptance.
 - **DE Lord panel:** Review35 reproduced P2 draft loss during refresh plus two
   P3 control/ARIA defects. All three are corrected in panel JS with an appended
   handoff33; Review38 closes all three and approves the additive component.
   Root43 closes the small clean-revision P3 with source inspection and fresh
-  17+6 browser checks. The exact component snapshot is staged for commit;
+  17+6 browser checks. The component is committed at29f2ef9;
   shared DS1 stays unchanged.
   Component handler timings do not establish paint/native-window performance.
 - **A1 milestone:** committed30215f2 after exact reviewed hashes. Metadata only.

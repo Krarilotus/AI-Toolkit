@@ -4,6 +4,7 @@ pub mod game;
 mod legacy_update;
 mod library;
 mod migration;
+mod profiles;
 mod storage;
 mod themes;
 mod updates;

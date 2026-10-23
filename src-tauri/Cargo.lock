@@ -48,6 +48,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
+ "toolkit-core",
  "ts-rs",
  "url",
  "walkdir",
@@ -4883,6 +4884,16 @@ name = "toml_writer"
 version = "1.1.2+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d56353a2a665ad0f41a421187180aab746c8c325620617ad883a99a1cbe66d2"
+
+[[package]]
+name = "toolkit-core"
+version = "0.1.0"
+dependencies = [
+ "dunce",
+ "serde",
+ "serde_json",
+ "sha2",
+]
 
 [[package]]
 name = "tower"
