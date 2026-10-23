@@ -65,8 +65,9 @@ and live global capacity; no uncontrolled fan-out.
 - **DE Lord panel:** Review35 reproduced P2 draft loss during refresh plus two
   P3 control/ARIA defects. All three are corrected in panel JS with an appended
   handoff33; Review38 closes all three and approves the additive component.
-  One nonblocking clean-revision P3 is being corrected before root stages it.
-  Root reviews that small delta directly; shared DS1 stays unchanged.
+  Root43 closes the small clean-revision P3 with source inspection and fresh
+  17+6 browser checks. The exact component snapshot is staged for commit;
+  shared DS1 stays unchanged.
   Component handler timings do not establish paint/native-window performance.
 - **A1 milestone:** committed30215f2 after exact reviewed hashes. Metadata only.
 - **PXL2 milestone:** committed61c2fa1 after Review34 approves the additive
@@ -74,7 +75,8 @@ and live global capacity; no uncontrolled fan-out.
   Exact38-file snapshot and staged bytes verified;51 tests on both Rust versions,
   independent crop/mip/source/budget/cancellation probes and14 real-crop parity.
   SPR1 matches41 base Sprites and16 raw masks plus209 vertices/127 triangles
-  against pinned extraction conventions; independent Review40 gates SPR2.
+  against pinned extraction conventions. Review40 conditionally approves SPR2
+  with a triangle-local raster P2 correction; bounded implementation42 is running.
   Host/renderer and actual Unity/game rasterization remain open.
 - **Performance:** preserved as an explicit regression requirement in standard05
   and contract01; existing worker/cache/invalidation rationale must be understood
