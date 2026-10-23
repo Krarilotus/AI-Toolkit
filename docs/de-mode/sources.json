@@ -161,7 +161,7 @@
       "evidence": "research/14-rendering-provider-review.md",
       "evidenceStatus": "Independent full-field82-object oracle parity; per-file source pins rather than invented single release commit; database not redistributed and upstream dataset provenance remains separate",
       "reconstructionEvidence": "research/37-sprite-reconstruction-contract.md",
-      "reconstructionEvidenceStatus": "Scratch41base16mask pixel and209vertex127triangle extraction-convention parity; independent Review40 running; no Unity/game rasterizer acceptance"
+      "reconstructionEvidenceStatus": "Review40 reproduces41bases16masks and geometry; conditional SPR2 GO requires triangle-local raster correction; no Unity/game rasterizer acceptance"
     },
     {
       "id": "texture2ddecoder-candidate",
@@ -217,7 +217,8 @@
         "src/_imaging.c"
       ],
       "evidence": "research/37-sprite-reconstruction-contract.md",
-      "evidenceStatus": "Pinned CPU scan/crop convention used for scratch reconstruction; HPND notice required if source-derived algorithm is promoted; review40 pending; not game rasterization"
+      "evidenceStatus": "Pinned CPU scan/crop convention reviewed40; exact notice calls itself MIT-CMU; preserve original text and Draw.c attribution; SPR2 must correct triangle-local rounding; not game rasterization",
+      "noticeSha256": "15181e7363dca9aed78b79bebebc7fde7f1814b8bd311ea3b87ae8ccadfc185b"
     }
   ],
   "localGameEvidence": "local-evidence.json",
@@ -264,6 +265,14 @@
       "sourceReceipt": "S:/Projects/UCP/de-research/pxl2-stage-receipt.json",
       "evidence": "51 tests on Rust1.88/1.98; independent15482 crop/mip cases and14 real crops; root exact38-file snapshot and staged-byte verification",
       "limits": "Unexposed bounded raw texture crops; Sprite meshes/masks, host/UI/scene/game acceptance open"
+    },
+    {
+      "id": "lord-panel-component",
+      "commit": "pending coordinator milestone commit",
+      "review": "research/38-lord-panel-review-r2.md and research/43-lord-panel-final-root-review.md",
+      "sourceReceipt": "S:/Projects/UCP/de-research/lord-panel-stage-receipt.json",
+      "evidence": "Review38 closes35 findings; root43 closes minor external-undo revision fix with17replayed and6independent browser checks;120owned/protected/evidence hashes",
+      "limits": "Unexposed component; authenticated contexts/filesystem integration and native/game acceptance open"
     }
   ],
   "acceptancePreparation": {

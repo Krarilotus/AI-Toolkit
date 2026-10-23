@@ -630,7 +630,7 @@
     },
     {
       "track": "sprite-contract-review-r1",
-      "status": "running; central Sprite pixel geometry and mask contract review before SPR2",
+      "status": "completed; conditional GO for SPR2; triangle-local P2 witness required before promotion; original57planes match",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-contract-spr1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-contract-spr1-20261023-r1",
       "kind": "bounded independent review; no children",
@@ -641,7 +641,7 @@
     },
     {
       "track": "lord-panel-fix-r3",
-      "status": "running; small clean-revision correction after Review38; root directly reviews narrow diff and evidence",
+      "status": "completed; root43 independently inspects small delta and replays17+6 browser checks; accepted for component commit",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-clean-revision-20261023-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-clean-revision-20261023-r3",
       "kind": "bounded correction; no children",
@@ -661,6 +661,18 @@
         "docs/de-mode/research/39-canonical-core-review-r3.md"
       ],
       "isolation": "shared; disjoint report ownership"
+    },
+    {
+      "track": "sprite-planes-spr2",
+      "status": "running; bounded Sprite reconstruction with Review40 P2 local-coordinate correction",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-sprite-planes-spr2-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-sprite-planes-spr2-20261023-r1",
+      "kind": "bounded implementation; no children",
+      "ownedFiles": [
+        "crates/de-assets-core/**",
+        "docs/de-mode/research/42-sprite-plane-handoff.md"
+      ],
+      "isolation": "shared; asset crate only; disjoint from backend/UI"
     }
   ],
   "pauseHistory": [

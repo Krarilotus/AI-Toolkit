@@ -1,0 +1,63 @@
+/* Opt-in only: every rule is scoped to this mountable DE view. */
+@layer components {
+  .deLordPanel {
+    color: var(--semantic-content-primary, var(--text-main, #e8eaf0));
+    background: var(--semantic-surface-panel, var(--surface-1, #20262e));
+    border: 1px solid var(--semantic-border-default, var(--line, #4b5665));
+    border-radius: 8px;
+    padding: clamp(16px, 3vw, 28px);
+    max-width: 960px;
+    margin-inline: auto;
+    font: 14px/1.5 var(--font-ui, system-ui, sans-serif);
+  }
+  .deLordPanel *, .deLordPanel *::before, .deLordPanel *::after { box-sizing: border-box; }
+  .deLordPanel h2 { margin: 0 0 16px; font-size: 1.5rem; }
+  .deLordPanel h3 { margin: 0 0 8px; font-size: 1rem; }
+  .deLordPanel p { margin: 8px 0; }
+  .deLordPanel__toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .deLordPanel button, .deLordPanel input, .deLordPanel select {
+    font: inherit;
+    min-height: 36px;
+    border: 1px solid var(--component-input-border, var(--line, #687487));
+    border-radius: 4px;
+    color: var(--component-input-content, var(--text-main, #e8eaf0));
+    background: var(--component-input-surface, var(--surface-2, #141a23));
+    padding: 6px 10px;
+  }
+  .deLordPanel button { cursor: pointer; color: var(--component-button-content, var(--text-main, #e8eaf0)); }
+  .deLordPanel button:hover:enabled { border-color: var(--semantic-action-selected, var(--accent, #b5c9f0)); }
+  .deLordPanel button:disabled { opacity: .55; cursor: default; }
+  .deLordPanel :is(button, input, select, summary):focus-visible {
+    outline: 2px solid var(--semantic-action-selected, var(--accent, #b5c9f0)); outline-offset: 3px;
+  }
+  .deLordPanel [hidden] { display: none; }
+  .deLordPanel__source { margin-top: 20px; display: grid; gap: 4px; min-width: 0; }
+  .deLordPanel__path { overflow-wrap: anywhere; unicode-bidi: isolate; }
+  .deLordPanel__eyebrow, .deLordPanel__hint {
+    color: var(--semantic-content-secondary, var(--text-soft, #bac4d3));
+  }
+  .deLordPanel__eyebrow { font-size: .85em; }
+  .deLordPanel__status { min-height: 1.5em; }
+  .deLordPanel__edit {
+    border-block: 1px solid var(--semantic-border-default, var(--line, #4b5665));
+    padding-block: 20px; margin-block: 20px;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px;
+  }
+  .deLordPanel__field { display: grid; gap: 6px; min-width: 0; }
+  .deLordPanel__field :is(input, select) { width: 100%; min-width: 0; }
+  .deLordPanel__token { display: grid; align-content: start; gap: 6px; min-width: 0; }
+  .deLordPanel__token code { overflow-wrap: anywhere; font-size: 1rem; max-height: 8rem; overflow-y: auto; }
+  .deLordPanel__edit > :is(p, .deLordPanel__toolbar) { grid-column: 1 / -1; }
+  .deLordPanel__notice:empty { display: none; }
+  .deLordPanel__notice[data-error="true"] { color: var(--semantic-status-danger, #ffb2ac); }
+  .deLordPanel__certification { margin-block: 20px; }
+  .deLordPanel__diagnostics { border-top: 1px solid var(--line, #4b5665); padding-top: 14px; }
+  .deLordPanel__diagnostics summary { cursor: pointer; }
+  .deLordPanel__diagnostics ul { padding-inline-start: 24px; max-height: 20rem; overflow-y: auto; }
+  .deLordPanel__diagnostics li { margin-block: 8px; overflow-wrap: anywhere; }
+  .deLordPanel__diagnosticPath { font-family: var(--font-mono, monospace); }
+  @media (max-width: 560px) {
+    .deLordPanel__edit { grid-template-columns: minmax(0, 1fr); }
+    .deLordPanel { border-radius: 0; }
+  }
+}
