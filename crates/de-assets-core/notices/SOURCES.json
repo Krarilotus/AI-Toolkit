@@ -1,0 +1,83 @@
+{
+  "reviewed_bundle_bytes": 60409,
+  "files": [
+    {
+      "file": "A1-THIRD-PARTY-NOTICES.txt",
+      "bytes": 1243,
+      "sha256": "22d10f6ab80bf7bc78efd51a2744a6e9bcbe9870a65c126dd9da35581550c220",
+      "source": "A1 reviewed notice, commit30215f2b567ca38b1b36d2e2907c0965a8503765; UnityPy 807f3888b8a2ddaa6504fca0737481baab4d6a99/LICENSE"
+    },
+    {
+      "file": "assetstudio-LICENSE",
+      "bytes": 1093,
+      "sha256": "f0822cd8a4200ba360f8e623e1fb5ad3496ca579f44d94665ac2d3cf344e6b76",
+      "source": "https://raw.githubusercontent.com/Perfare/AssetStudio/d158e864b556b5970709c2a52e47944d53aa98a2/LICENSE"
+    },
+    {
+      "file": "crunch-license.txt",
+      "bytes": 3249,
+      "sha256": "f46d74fe8d0c981a76a6eb837e52569adf8598faa9b8e761a763c642a43be66a",
+      "source": "https://raw.githubusercontent.com/BinomialLLC/crunch/36479bc697be19168daafbf15f47f3c60ccec004/license.txt"
+    },
+    {
+      "file": "FP16-LICENSE",
+      "bytes": 1157,
+      "sha256": "17e4f539024be2749ee729d1e2f01d24cef12ece8c9bf18e91a4349be29c80bf",
+      "source": "https://raw.githubusercontent.com/Maratyszcza/FP16/782eea126dc5c755827be751a099eb01826175cf/LICENSE"
+    },
+    {
+      "file": "mikunyan-LICENSE.txt",
+      "bytes": 1078,
+      "sha256": "9d4cfee9f1331c8413631b84b46248c4770daf4cb137f3b4df330087ebf3e3a3",
+      "source": "https://raw.githubusercontent.com/Ishotihadus/mikunyan/c32481cc135cc8c313682ab5562abbe6cae61f7e/LICENSE.txt"
+    },
+    {
+      "file": "paste-LICENSE-APACHE",
+      "bytes": 9723,
+      "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+      "source": "https://static.crates.io/crates/paste/paste-1.0.15.crate (member paste-1.0.15/LICENSE-APACHE)"
+    },
+    {
+      "file": "paste-LICENSE-MIT",
+      "bytes": 1023,
+      "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "source": "https://static.crates.io/crates/paste/paste-1.0.15.crate (member paste-1.0.15/LICENSE-MIT)"
+    },
+    {
+      "file": "README.txt",
+      "bytes": 1480,
+      "sha256": "fece0dfd9c3982273d877a55e9c3e673031ae5660ef5a2c272d11c47226c4990",
+      "source": "PXL1 authored notice treatment; full-notice-source-receipts.json"
+    },
+    {
+      "file": "texture2ddecoder-COPYRIGHT",
+      "bytes": 21522,
+      "sha256": "4a554dab7409db75d053ed551c3c6b3eb79e58e7f7c7376ae57dc4576f9541e5",
+      "source": "https://raw.githubusercontent.com/K0lb3/texture2ddecoder-rs/551fcbfbe86c05424ccc2ff942525c0ec7171d65/COPYRIGHT"
+    },
+    {
+      "file": "texture2ddecoder-LICENSE-APACHE",
+      "bytes": 9897,
+      "sha256": "7cde763ba32b3ec2a84eddd8beb0dcb895fd6436aeb18491ab9572a7eb8de996",
+      "source": "https://raw.githubusercontent.com/K0lb3/texture2ddecoder-rs/551fcbfbe86c05424ccc2ff942525c0ec7171d65/LICENSE-APACHE"
+    },
+    {
+      "file": "texture2ddecoder-LICENSE-MIT",
+      "bytes": 1044,
+      "sha256": "cdbd06e25b8c9c5d6019949d2de8123f56d29cee4166396423d2ba8c81700845",
+      "source": "https://raw.githubusercontent.com/K0lb3/texture2ddecoder-rs/551fcbfbe86c05424ccc2ff942525c0ec7171d65/LICENSE-MIT"
+    },
+    {
+      "file": "texture2ddecoder-README.md",
+      "bytes": 6930,
+      "sha256": "c1065ba5128b95c0faf261113a0bd333e7e73db8d1fb1ff8e989cb7d58733986",
+      "source": "https://raw.githubusercontent.com/K0lb3/texture2ddecoder-rs/551fcbfbe86c05424ccc2ff942525c0ec7171d65/README.md"
+    },
+    {
+      "file": "unity-crunch-license.txt",
+      "bytes": 970,
+      "sha256": "bbc49afbe103d3e4f792ce6609cfa18016073ade1416f87617661452d7c8b470",
+      "source": "https://raw.githubusercontent.com/Unity-Technologies/crunch/ea9b8d8c00c8329791256adafa8cf11e4e7942a2/license.txt"
+    }
+  ]
+}

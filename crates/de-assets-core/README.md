@@ -1,9 +1,10 @@
-# DE serialized metadata core (A1, unexposed)
+# DE assets core (A1 + PXL2, unexposed)
 
-Unpublished Rust 1.88 library; no dependencies. This crate is not in the
-application dependency graph. It does not decode, reconstruct or cache images,
-change settings, follow external files, select animation frames, or integrate
-with Classic GM1, Node, IPC or UI. Independent review gates any integration.
+Unpublished Rust 1.88 library, with one pinned texture decoder dependency. This
+crate is not in the application dependency graph. It reads metadata and checked
+raw texture crops. It does not reconstruct sprites, cache images, change settings,
+follow external files, select animation frames, or integrate with Classic GM1,
+Node, IPC or UI. Independent review gates any integration.
 
 The profile is Unity serialized v22, little endian, platform 19, version
 `2021.3.45f2`, no embedded trees, zero audited header reserved fields. All
@@ -47,7 +48,7 @@ authenticate bytes. See `PROVENANCE.md` and Review 14 for source evidence.
   DXT5/12, RGBA32/4 and RGB24/3 with checked rounded-up block arithmetic.
   Inline textures, six/twelve mips and the empty dynamic Font Texture are valid.
   Unknown formats retain metadata and report `UnsupportedFormat` for byte-size
-  validation. No format has a decoder in this crate.
+  validation. The separate crop operation decodes only DXT1/10 and BC7/25.
 - `StreamResolver::for_file` binds the original opened assets input.
   `validate(index, key, work)` re-reads the indexed Texture2D instead of trusting
   publicly mutable metadata. It returns an inline/stream `VerifiedRange` that
@@ -55,6 +56,24 @@ authenticate bytes. See `PROVENANCE.md` and Review 14 for source evidence.
   `read_relative` accepts only a relative offset and bounded output slice.
   `for_sources` is a no-filesystem virtual/test-input adapter; its caller must
   fulfill the `ReadAt` identity/mutation contract.
+- `StreamResolver::crop_texture(index, texture_key, mip, TextureRect,
+  &CropLimits, &mut Work)` rereads the owning indexed Texture2D and validates its
+  complete mip layout and actual source-bound range internally. It accepts no
+  metadata DTO, arbitrary range or path. Integer rectangle coordinates are in
+  the **selected mip**, measured from its lower-left corner; callers choose an
+  explicit rectangle for each mip. No implicit fractional Sprite rounding occurs.
+  `TextureCrop::rgba()` is immutable, tightly packed straight RGBA8 with top-left
+  output rows, width/height from `identity().source_rect`. No gamma conversion,
+  premultiplication, polygon clipping, masks, filtering or scene inference occurs.
+  `identity()` retains the scoped texture key, both source stamps, format, mip,
+  mip dimensions, original lower-left rectangle and decode-policy revision.
+
+DXT1 uses the dependency's BC1a entry (including transparent index 3 and equal
+endpoints). BC7 uses its block entry after rejecting reserved first-byte-zero
+prefixes as `Corrupt`. Microsoft's raw rule yields transparent zero texels;
+Pillow's reserved alpha differs. This deliberate product rejection is preserved
+instead of treating either oracle output as valid art. Every other format is
+`UnsupportedFormat`; no fallback art or whole-image entry is exposed.
 
 Errors distinguish unsupported layout/reference/packing/format, corruption,
 limit, cancellation, not-found, ambiguity, changed source and I/O. Metadata
@@ -72,7 +91,7 @@ have a separate 32 MiB cap. Fixed layouts require depth 7 (Sprite) or 4
 `Work::new(units)` is a caller-owned cumulative allowance, with cumulative
 selected-object accounting and an atomic cancellation handle. Reuse it across
 the entire operation. One unit pays for one byte read or one geometry scalar /
-loop visit. Geometry charges each finite scalar, shape/bone/submesh descriptor,
+loop visit or decoded 4x4 block. Geometry charges each finite scalar, shape/bone/submesh descriptor,
 channel visit/comparison, stream/span visit, vertex and index visit. Each range
 is charged on every traversal, including overlapping/repeated submesh spans;
 empty shapes and inactive channels also cost work. Secondary-reference visits
@@ -88,6 +107,32 @@ Raw metadata is unaffected by `Limit`/`Cancelled` from this separate usable gate
 The reader never allocates the entire serialized file or 1.4 GB stream. Index
 metadata is one capped allocation; target objects are individually capped.
 On an error, callers must discard partially filled output buffers.
+
+`CropLimits::default()` caps the original texture at 8192 per axis, one output
+at 16 MiB, decoded blocks at 262,144, and the temporary encoded row at 32 KiB.
+Output and row sizes use checked products/address-space conversions, with
+`try_reserve_exact` before zeroing. In addition to the final output, the pixel
+loop retains only one encoded block row and 64 bytes of stack block scratch.
+Normal A1 bounded metadata/object/mip allocations still apply; an inline payload
+is already part of that bounded object. These are not total-process RSS limits.
+An encoded row exceeding the index's `Limits.read_bytes` fails before pixel
+allocation rather than quietly raising the I/O cap. No full-atlas fallback runs.
+
+Each contiguous intersecting block row is read once on the retained checked
+range; no source is opened/validated per block. Every block charges/checks the
+same cumulative Work. Completion checks cancellation and both opened source
+stamps again, including mutations during the final block. A failed crop returns
+no partial pixels and leaves raw metadata available. Allocation/zeroing and one
+bounded OS read are not promised real-time cancellation points.
+
+Run crops as explicit background asset work, outside draw/input paths. Immutable
+output owns its pixels and survives source/operation disposal. It can be retained
+for repeated requests under the same index, source stamps, rectangle/mip and
+decode revision; no persistent cache or cross-process identity is implemented.
+SourceStamp is an observable-change identity, not a digest: closing the handles
+does not certify future disk contents. A future persistent cache must include a
+separately reviewed source hash/manifest and invalidation protocol. Cancellation
+belongs to the caller's operation; discarding a result never revokes other owners.
 
 ## Resolver and mutation contract
 

@@ -40,7 +40,7 @@ advance independently; neither blocks the first lossless file workflow.
 | Unify backend ownership | One canonical policy, generated contracts, both host consumers | Review30 closed R1/R4; final-result/admission corrections running |
 | Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Next integrated slice; no live DE toggle yet |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
-| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 implemented; independent Review34 running |
+| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 accepted by independent Review34; reviewed crop milestone staged |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
 | Complete acceptance | Every required CSV criterion has appropriate evidence | Open; foundations are not feature acceptance |
@@ -58,12 +58,16 @@ and live global capacity; no uncontrolled fan-out.
   Enforce common final-result budget before mutation and admission before
   serialization; focused r3 correction preserves prior closure.
 - **DS1 milestone:** Review32 closes both P2s and portability;205 tests pass.
-  Shared session/schema generation accepted for additive commit, not UI.
-- **DE Lord panel:** scoped view consumes the accepted session through injected
-  controller callbacks; actual context/host integration follows.
+  Shared session/schema generation committed atebff3b1, not UI acceptance.
+- **DE Lord panel:** implementation33 is complete; fresh independent Review35
+  checks lifecycle and controller ownership. The scoped view consumes DS1 through
+  injected callbacks; actual context/host integration follows. Component handler
+  timings do not establish paint/native-window performance.
 - **A1 milestone:** committed30215f2 after exact reviewed hashes. Metadata only.
-- **PXL2 Review34:** checked BC1a/BC7 crops are implemented with51 tests and
-  real-crop parity. Independent bounds/source/performance review gates commit.
+- **PXL2 milestone:** Review34 approves the additive BC1a/BC7 crop provider.
+  Exact38-file snapshot and staged bytes verified;51 tests on both Rust versions,
+  independent crop/mip/source/budget/cancellation probes and14 real-crop parity.
+  Sprite reconstruction and host/renderer integration remain separate gates.
 - **Performance:** preserved as an explicit regression requirement in standard05
   and contract01; existing worker/cache/invalidation rationale must be understood
   before alteration and affected interactive costs compared on owned builds.
@@ -91,8 +95,9 @@ and live global capacity; no uncontrolled fan-out.
 - A1 reports29 synthetic tests on Rust1.88/1.98 and 86-object full-field parity.
   Review24 found one P2 work/cancellation gap. Its correction reports35 tests
   and deterministic mid-loop cancellation. Review27 independently closes the P2.
-  The reviewed additive core is committed at30215f2. No pixel decoder, whole-building
-  rendering or cache contract is accepted. Privileged file-symlink creation was
+  The reviewed additive core is committed at30215f2. Review34 also accepts bounded
+  texture crops. Whole-building rendering, Sprite reconstruction and cache contracts
+  remain open. Privileged file-symlink creation was
   unavailable; junction rejection was exercised. Mutation limits are explicit.
 - Native/managed DE hashes match the pinned baseline; managed PE32 is not an
   x86-only process. Detection/layout evidence is not version compatibility.
@@ -133,7 +138,10 @@ upstream PR11. Push only fork/de/separate-game-mode.
 
 This is normal UCP sidebar thread mcp:24e1fd23-accc-4f55-8906-3de048c9a894,
 project2dd89517-2ea6-4ac0-898a-11e0c5076371. The persistent goal was created
-first and get_goal verifies active with the full objective and no token budget.
+first and originally verified active with the full objective and no token budget.
+After the requested overnight pause, the user explicitly resumed work; the native
+record still reports paused because its API exposes no resume mutation, as stated
+at the top of this plan. Do not create a duplicate or claim an active native flag.
 Original classic checkout S:\Projects\Harness\ai-toolkit-setup\source stays
 at5ce3676 on its own branch; the last published app remains separate.
 

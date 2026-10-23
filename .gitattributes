@@ -1,2 +1,5 @@
 # This lossless-codec fixture deliberately contains CRLF and trailing trivia.
 tests/fixtures/de-documents/complete-synthetic.lordjson -text whitespace=-blank-at-eol,cr-at-eol
+
+# Preserve the reviewed upstream notice verbatim, including its heading space.
+crates/de-assets-core/notices/texture2ddecoder-README.md whitespace=-blank-at-eol

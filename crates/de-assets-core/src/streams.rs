@@ -96,12 +96,29 @@ impl StreamResolver {
         key: ObjectKey,
         work: &mut Work,
     ) -> Result<TextureRange> {
+        let t = self.read_owned_texture(index, key, work)?;
+        self.resolve_texture(index, &t)
+    }
+    // Shared by validation and crops. Metadata comes only from the owning index;
+    // these internal methods are never a public mutable-DTO authority boundary.
+    pub(crate) fn read_owned_texture(
+        &self,
+        index: &SerializedIndex,
+        key: ObjectKey,
+        work: &mut Work,
+    ) -> Result<TextureMetadata> {
         if !Arc::ptr_eq(&self.assets, &index.source) || self.assets_stamp != index.stamp {
             return Err(Error::UnsupportedReference(
                 "resolver belongs to another opened input",
             ));
         }
-        let t = index.read_texture(key, work)?;
+        index.read_texture(key, work)
+    }
+    pub(crate) fn resolve_texture(
+        &self,
+        index: &SerializedIndex,
+        t: &TextureMetadata,
+    ) -> Result<TextureRange> {
         let mips = t.mip_ranges()?;
         let (source, stamp, start, length, inline): (Arc<dyn ReadAt>, SourceStamp, u64, u64, bool) =
             if t.stream.path.is_empty() {

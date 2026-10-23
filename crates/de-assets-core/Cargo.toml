@@ -9,3 +9,4 @@ description = "Unexposed, bounded reader for an audited DE Unity serialized prof
 [workspace]
 
 [dependencies]
+texture2ddecoder = { git = "https://github.com/K0lb3/texture2ddecoder-rs", rev = "551fcbfbe86c05424ccc2ff942525c0ec7171d65", version = "=0.1.2" }
