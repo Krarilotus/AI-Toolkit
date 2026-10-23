@@ -1,10 +1,11 @@
-//! Read-only metadata, not a decoder, renderer, provider or authenticity check.
+//! Read-only metadata and bounded texture crops; no renderer or authenticity check.
 //! See README.md for the audited profile and mutation/OS guarantees.
 mod cursor;
 mod metadata;
 mod reader;
 mod serialized;
 mod streams;
+mod texture_crop;
 
 pub use metadata::*;
 pub use reader::{BytesSource, FileSource, ReadAt, SourceStamp};
@@ -14,6 +15,7 @@ use std::sync::{
     Arc,
 };
 pub use streams::*;
+pub use texture_crop::*;
 
 #[derive(Debug)]
 pub enum Error {
@@ -85,8 +87,8 @@ impl Default for Limits {
     }
 }
 /// Caller-owned cumulative allowance: one unit per byte read and per geometry
-/// scalar/loop visit. Reuse across a whole operation, including validation.
-/// Cancellation is checked at reads, parse loops and every geometry charge.
+/// scalar/loop visit and decoded block. Reuse across a whole operation, including
+/// validation. Cancellation is checked at reads, loops and every decode charge.
 pub struct Work {
     remaining: u64,
     selected: u64,

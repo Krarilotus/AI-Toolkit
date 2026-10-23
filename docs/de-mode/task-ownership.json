@@ -374,7 +374,7 @@
       "track": "document-session-ds1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-document-session-ds1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-document-session-ds1-20261023-r1",
-      "status": "completed;197 tests and real-source simulations; fresh Review28 running",
+      "status": "completed; corrected and independently accepted Review32; committedebff3b1",
       "kind": "implementation; shared lossless session and generated schema guard; no UI or hosts",
       "ownedFiles": [
         "scripts/generate-de-lord-schema.mjs",
@@ -457,7 +457,7 @@
       "track": "document-session-fix-r2",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-document-session-ds1-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-document-session-ds1-20261023-r2",
-      "status": "completed; bounded32entry/16MiB history; one receipt outcome; portable tests;205checks; Review32 running",
+      "status": "completed; both P2 findings closed by Review32; committedebff3b1",
       "kind": "focused DS1 history/receipt correction plus portable generator tests",
       "ownedFiles": [
         "src/shared/de-document-session.js",
@@ -482,7 +482,7 @@
       "track": "pixels-implementation-pxl2",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-de-pixels-pxl2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-de-pixels-pxl2-20261023-r1",
-      "status": "completed;51tests bothRust;14crops/randomBC7 match; independent Review34 running",
+      "status": "completed; accepted Review34; root exact38-file plus handoff verification",
       "kind": "bounded Rust texture crop implementation",
       "ownedFiles": [
         "crates/de-assets-core/**",
@@ -505,7 +505,7 @@
       "track": "canonical-core-fix-r3",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r3",
-      "status": "running",
+      "status": "running; correction of final result budget and pre-serialization admission",
       "kind": "C1 final-result byte budget and pre-serialization admission correction",
       "ownedFiles": [
         "crates/toolkit-core/**",
@@ -536,7 +536,7 @@
       "track": "lord-panel-ui",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-lord-panel-ui-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-lord-panel-ui-20261023-r1",
-      "status": "running",
+      "status": "completed; browser component QA; independent Review35 running",
       "kind": "scoped DE LORDJSON view and owned browser QA",
       "ownedFiles": [
         "src/js/de-lord-panel.js",
@@ -549,12 +549,23 @@
       "track": "pixels-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-de-pixels-pxl2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-de-pixels-pxl2-20261023-r1",
-      "status": "running",
+      "status": "completed; GO; root38-file and staged-byte verification; additive crop milestone",
       "kind": "independent PXL2 crop/source/bounds/performance review",
       "ownedFiles": [
         "docs/de-mode/research/34-texture-crop-review-r1.md"
       ],
       "isolation": "shared; disjoint report; no children in current capacity"
+    },
+    {
+      "track": "lord-panel-review-r1",
+      "kind": "bounded independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/35-lord-panel-review-r1.md"
+      ],
+      "isolation": "shared; disjoint report ownership only",
+      "status": "running; independent component lifecycle and controller review",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r1"
     }
   ],
   "pauseHistory": [

@@ -7,7 +7,7 @@ No proprietary payload, upstream exported layout JSON or TPK is redistributed.
 The optional oracle harness uses locally installed UnityPy through its API.
 The conservative UnityPy MIT notice is retained in `THIRD-PARTY-NOTICES.txt`
 because its source and helpers informed the audit (including metadata framing
-and 16-byte vertex stream alignment). No decoder source was adapted or selected.
+and 16-byte vertex stream alignment). No decoder source is copied into this crate.
 
 Review 14's exact evidence is under
 `S:/Projects/UCP/de-research/rendering-provider-review`, exported layouts under
@@ -43,3 +43,36 @@ Pinned primary references:
 - [UnityPy ObjectReader](https://github.com/K0lb3/UnityPy/blob/578a1b2f13f341db079fd969706d36d915b0dc8d/UnityPy/files/ObjectReader.py)
 - [UnityPy Tpk](https://github.com/K0lb3/UnityPy/blob/807f3888b8a2ddaa6504fca0737481baab4d6a99/UnityPy/helpers/Tpk.py)
 - [UnityPy MIT license](https://github.com/K0lb3/UnityPy/blob/807f3888b8a2ddaa6504fca0737481baab4d6a99/LICENSE)
+
+## PXL2 decoder selection and notices
+
+The standalone manifest selects `texture2ddecoder` 0.1.2 from Git revision
+`551fcbfbe86c05424ccc2ff942525c0ec7171d65`, with its default `alloc` feature.
+The standalone lock pins its sole normal/build dependency, `paste` 1.0.15,
+archive SHA-256 `57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a`.
+Both declare MIT OR Apache-2.0. Paste is a build-time proc macro, not a runtime
+DLL. No app dependency graph is changed. The upstream no-default-feature build
+is broken at this pin and is deliberately not selected (report29 evidence).
+
+Only the fixed-size BC1a and BC7 block calls are used, behind private array-sized
+wrappers. The upstream unchecked whole-image functions and other codecs are not
+exposed. The 60,409-byte reviewed PXL1 notice bundle is preserved byte-for-byte
+in `notices/`, including complete candidate MIT/Apache/COPYRIGHT/README credits,
+paste's two licenses, AssetStudio's MIT notice and all other upstream codec
+notices named by the candidate (mikunyan, FP16, public-domain Binomial crunch,
+zlib Unity crunch), plus the original A1 UnityPy notice. `notices/SOURCES.json`
+records exact source pins, hashes and size for each copied file. The conservative
+additional codec snapshots do not claim historical derivation pins absent from
+upstream. Candidate COPYRIGHT references absent Rust/LLVM paths; retaining it
+does not assert an LLVM package dependency. No Toolkit license is invented.
+
+- [Pinned candidate](https://github.com/K0lb3/texture2ddecoder-rs/tree/551fcbfbe86c05424ccc2ff942525c0ec7171d65)
+- [Pinned paste archive](https://static.crates.io/crates/paste/paste-1.0.15.crate)
+- [AssetStudio notice](https://github.com/Perfare/AssetStudio/blob/d158e864b556b5970709c2a52e47944d53aa98a2/LICENSE)
+
+`tests/vectors/README.md` describes the promoted authored vectors and exact
+specification/generator provenance. No specification dataset, TPK, game pixels,
+compressed game blocks or research oracle package is redistributed. Fresh
+real-art comparisons and instrumentation remain external research under
+`S:/Projects/UCP/de-research/pixels-pxl2`; report31 records their source and result
+hashes. Their pixel agreement does not establish Sprite/scene/game acceptance.
