@@ -19,8 +19,8 @@ sessions. Classic and DE have explicit providers and formats; host adapters
 authenticate windows and carry requests rather than repeat game policy.
 
 The repeated Node/Rust profile discrepancies exposed a maintenance boundary that
-needed correction. C1 reuses corrected Rust F1, removes its independent Node policy,
-and provides a real helper client/build. It does not rewrite unrelated Classic
+needed correction. C1 is committed atf02d828: it reuses corrected Rust F1, removes its independent
+Node policy and provides a real helper client/build. It does not rewrite unrelated Classic
 services. Existing Classic duplication is tracked migration work: cut over one
 operation against existing behavior and retire its replaced implementation.
 
@@ -37,8 +37,8 @@ advance independently; neither blocks the first lossless file workflow.
 | --- | --- | --- |
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
-| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Complete after Review39 closes C1-02; exact28source/staged-byte verification |
-| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Next integrated slice; no live DE toggle yet |
+| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Committedf02d828 after Review39 and exact28source/staged-byte verification |
+| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | F2W1 implementing both-host context-owned LORDJSON workflow; no live toggle yet |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
 | Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 committed61c2fa1 after independent Review34; Sprite reconstruction proof running |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
@@ -59,7 +59,7 @@ and live global capacity; no uncontrolled fan-out.
   packaged facade: it copies before admission and awaits before snapshotting.
   Correctionr4 now routes it through the one existing reservation lifecycle;
   Review39 closes actual packaged-facade behavior; the28source snapshot and
-  staged bytes are verified. No new quota or Rust policy. C1 is accepted.
+  staged bytes are verified. Committedf02d828; no new quota or Rust policy.
 - **DS1 milestone:** Review32 closes both P2s and portability;205 tests pass.
   Shared session/schema generation committed atebff3b1, not UI acceptance.
 - **DE Lord panel:** Review35 reproduced P2 draft loss during refresh plus two
@@ -88,9 +88,12 @@ and live global capacity; no uncontrolled fan-out.
   defects. Report41 now records a verified physical copy and116 scoped backup
   files plus encrypted PlayerPrefs recovery. Fresh guarded roots, Steam policy
   and startup observations remain open. No game launch or preference change.
-- **Next consumer slice:** core contexts/leases and opaque byte I/O, shared
-  document sessions, then thin desktop/UI wiring. Serialize overlapping edits.
-  Scope this against the actual C1 API rather than invent a parallel service.
+- **F2W1 consumer slice running:** one canonical context/operation/file service,
+  thin adapters for both hosts, real DS1/panel controller and fresh DE routing
+  before Classic startup. The named open/edit/Save As/reopen workflow is the
+  outcome. One disjoint Sol6.1 child is permitted after contract/ownership is
+  explicit; assets remain separately owned. Root later observes owned native
+  builds. Full in-place switching and broader Classic service migration follow.
 
 ## Accepted evidence and unresolved limits
 
