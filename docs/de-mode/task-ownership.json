@@ -764,7 +764,7 @@
     },
     {
       "track": "desktop-core-correction-r2",
-      "status": "running; correct four Review49 findings and freeze canonical lifecycle for consumer54",
+      "status": "running; frozen1.3 lifecycle generated; four core/native finding corrections and tests; final builds await consumer freeze",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-desktop-core-f2w1-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-desktop-core-f2w1-20261023-r2",
       "kind": "bounded correction; no children",
@@ -776,19 +776,20 @@
     },
     {
       "track": "desktop-consumer-correction-r2",
-      "status": "running; independent Review50 corrections pass focused checks; waiting for canonical lifecycle interface",
+      "status": "production/test frozen after65focused checks; generated1.3 adoption lifecycle consumed; narrow transactional panel corrected; handoff54 pending and core53 owns final builds",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-consumer-f2w1-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-consumer-f2w1-20261023-r2",
       "kind": "bounded correction; no children",
       "ownedFiles": [
         "consumer/main/preload/controller/Node/game-map scoped source and tests",
-        "docs/de-mode/research/54-desktop-consumer-correction-r2.md"
+        "docs/de-mode/research/54-desktop-consumer-correction-r2.md",
+        "src/js/de-lord-panel.js narrow transactional setSession only (root-approved; preserve draft on synchronous render failure)"
       ],
       "isolation": "shared; explicit disjoint ownership; no original game/profile writes"
     },
     {
       "track": "configured-game-harness-review-r1",
-      "status": "running; review relocated offline artifacts and exact five-file reversible owned-copy plan",
+      "status": "completed; GO configured artifacts/five-file plan;37receipt15source9critical pins and31checks; startup/Steam/activity remain",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-configured-game-harness-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-configured-game-harness-20261023-r1",
       "kind": "fresh independent review; no children",
@@ -796,6 +797,18 @@
         "docs/de-mode/research/56-configured-game-harness-review.md"
       ],
       "isolation": "shared; explicit disjoint ownership; no original game/profile writes"
+    },
+    {
+      "track": "observed-game-startup-preparation-r2",
+      "status": "running; minimal diagnostic/observer/copy-executor preparation only; no actual install or game launch",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-prepare-observed-game-startup-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-prepare-observed-game-startup-20261023-r2",
+      "kind": "bounded acceptance-tooling implementation; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/57-observed-game-startup-preparation.md",
+        "S:/Projects/UCP/de-research/observed-game-startup-r2/**"
+      ],
+      "isolation": "shared; disjoint external tooling; reviewed R1 artifacts and owned physical copy immutable"
     }
   ],
   "pauseHistory": [

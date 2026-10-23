@@ -44,15 +44,18 @@ invalid evidence. At the later idle-time UI gate, foreground the selected window
 and verify a fresh screenshot matches before choosing any control; stop if the
 mismatch persists. Do not reuse old coordinates or infer a setting from a title.
 
-Read-only source inventory at `7f22728`: native `storage::user_data` already
+Historical read-only source inventory at `7f22728`: native `storage::user_data` already
 honors `AI_TOOLKIT_USER_DATA`, and editor creation explicitly places WebView2
 data under that directory's `WebView` child. The legacy-update helper also reads
 the override. This supplies a concrete owned-profile route to verify at launch;
 it is not yet an observation of a running test instance. Detached viewport
-creation does not explicitly set the data directory, so F2 and GUI acceptance
-must establish inheritance/ownership rather than assuming it. Electron currently
-uses `app.getPath('userData')` and has no corresponding early environment
-override in `main.js`; add/verify an owned test route before launching it.
+creation did not explicitly set the data directory, so F2 and GUI acceptance
+must establish inheritance/ownership rather than assuming it. Electron then
+used `app.getPath('userData')` without the corresponding early environment
+override. F2W1 now implements early owned userData in Electron and explicit native
+editor/detached WebView directories (reports44/45). That integrated slice is under
+correction53/54 after independent49/50; source changes are not observed runtime
+ownership. Verify the actual isolated build's effective paths before using it.
 Keep the exact process environment and effective storage/WebView paths in the
 test manifest. These preparation checks do not authorize changing the live app.
 
