@@ -163,7 +163,11 @@
       "url": "https://github.com/K0lb3/texture2ddecoder-rs",
       "commit": "551fcbfbe86c05424ccc2ff942525c0ec7171d65",
       "evidence": "research/14-rendering-provider-review.md",
-      "evidenceStatus": "Candidate only; unselected and uninstalled. BC1 versus BC1a transparency and BGRA output require bounded oracle/performance/notice review before dependency selection"
+      "evidenceStatus": "PXL1 valid BC1/BC7 blocks and14real crops agree with spec-derived/Pillow oracles; root selects exact pin/default alloc for PXL2; not yet integrated or feature accepted",
+      "evaluationEvidence": "research/29-pixel-decoder-evaluation.md",
+      "selectedFor": "bounded Rust BC1a/BC7 texture crop API",
+      "pasteVersion": "1.0.15",
+      "externalEvidence": "S:/Projects/UCP/de-research/pixels-pxl1/final-receipt.json"
     },
     {
       "id": "acceptance-reference-exports",
@@ -217,5 +221,15 @@
     "focusedNative": "F1 correction reports23 passed;0 failed/ignored; independent Review17 rerun pending",
     "acceptance": "Review18 closes D1. Review17 requires duplicate metadata correction for F1; all GUI/game acceptance remains open.",
     "native": "100 passed;0 failed;1 explicit installation-parity ignore. S:/Projects/UCP/de-research/corrections-native-7f22728.log"
-  }
+  },
+  "reviewedImplementationMilestones": [
+    {
+      "id": "a1-metadata",
+      "commit": "30215f2b567ca38b1b36d2e2907c0965a8503765",
+      "review": "research/27-assets-core-review-r2.md",
+      "sourceReceipt": "S:/Projects/UCP/de-research/a1-stage-receipt.json",
+      "evidence": "35 tests on Rust1.88/1.98; independent production budget/cancellation probes; root exact18-file plus handoff hash verification",
+      "limits": "Metadata only; no decoder/app/scene/game acceptance"
+    }
+  ]
 }

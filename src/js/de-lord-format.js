@@ -1,11 +1,12 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('../shared/lossless-json'), require('../../config/de-lord-schema.json'));
-  } else root.deLordFormat = factory(root.losslessJson);
-})(typeof globalThis !== 'undefined' ? globalThis : this, (json, defaultSchema) => {
+    module.exports = factory(require('../shared/lossless-json'), require('../shared/generated/de-lord-pin'), require('../../config/de-lord-schema.json'));
+  } else root.deLordFormat = factory(root.losslessJson, root.deLordPin, root.deLordPin && root.deLordPin.schema);
+})(typeof globalThis !== 'undefined' ? globalThis : this, (json, pin, defaultSchema) => {
   'use strict';
 
-  // Browser callers load the pinned JSON themselves and call create(schema).
+  // Browser load order: lossless-json, generated/de-lord-pin, then this module.
+  // create(schema) still accepts separately loaded JSON and retains its private copy.
   // This additive overlay has no file-extension, Classic, AIV or converter path.
   function freeze(value) {
     if (value && typeof value === 'object') {
@@ -15,51 +16,9 @@
     return value;
   }
 
-  // Independent of the caller's JSON (also in the browser). This is a pinned
-  // shape/provenance check for accidental drift, not an authenticity signature.
-  const pinnedNames = `opponent_type opponent_type_for_speech lord_gfx_type flag_type use_of_religion use_of_ale
-vlow_popularity low_popularity high_popularity min_tax max_tax farm_types people_to_farm_ratio extract_wood_ratio
-extract_stone_ratio extract_iron_ratio extract_pitch_ratio max_quarries max_mines max_woodcutters max_pitch_dugouts
-max_farms build_rate crushed_building_delay sell_food_at buy_apples_at buy_cheese_at buy_bread_at buy_wheat_at
-buy_hops_at buy_food_amount buy_weapons pester_for_goods_delay send_goods_margin ration_boost trade_wood_at
-trade_stone_at trade_resources_at trade_flour_at trade_weapons_at trade_ale_at trade_pitch_at trade_minimum
-base_gold_reserves blacksmiths_make fletchers_make poleturners_make sell_all move_mobile_defenders max_mobile_groups
-buy_defense_machines_at buy_defense_machines_delay dog_release_timing dog_points_count chance_of_defensive
-chance_of_harrasment chance_of_seiging economy_protection_number economy_protection_type bodyguard_number bodyguard_type
-moat_diggers moat_digger_type troop_production_rate defense_patrol_trigger_level defense_patrols defense_patrol_style
-defense_patrol_delay defensive_trigger_level defensive_troops harrasment_trigger_level harrasment_trigger_variance
-harrasment_troops harrasment_machines max_harrasment_machines harrass_delay siege_trigger_level siege_trigger_variance
-siege_troops_before_will_come_to_rescue siege_troops_on_site_percent siege_troops_at_home_percent siege_soften_up_delay
-siege_victory_delay percent_chance_waiting_for_joint_attack siege_machines siege_cow_timer siege_eng_amount siege_moat_troop
-siege_moat_amount siege_herring_troop siege_herring_amount siege_assasin_amount siege_ladder_amount siege_tunnel_amount
-siege_storm_troop siege_storm_amount siege_storm_tribes siege_cover_troop siege_cover_amount siege_cover_tribes siege_shock_troop
-siege_shock_amount siege_reserve_troop siege_reserve_amount siege_reserve_tribes siege_wall_troops siege_wall_amount siege_wall_tribes
-who_to_pick_on use_improved_sieging starting_troops_normal starting_troops_deathmatch starting_troops_crusader
-lord_power_display_level lord_hps_percent siege_max_troops siege_normal_wave_multiplier siege_high_gold_wave_multiplier`.split(/\s+/);
-  const pinnedArrays = new Map([
-    ['farm_types', 8], ['sell_all', 15], ['chance_of_defensive', 3], ['chance_of_harrasment', 3], ['chance_of_seiging', 3],
-    ['troop_production_rate', 3], ['defensive_troops', 8], ['harrasment_troops', 8], ['harrasment_machines', 8],
-    ['siege_machines', 8], ['siege_wall_troops', 24], ['starting_troops_normal', 28], ['starting_troops_deathmatch', 28],
-    ['starting_troops_crusader', 28],
-  ]);
-  const sourceBase = '_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/managed/BC8B6A39/decompiled/';
-  const pinnedMetadata = freeze({
-    id: 'de-lord-game-bc8b6a39-v1', format: 'de-lordjson', version: 1,
-    fieldCount: 118, arrayCount: 14, transferredInt32Words: 279,
-    provenance: {
-      repository: 'https://github.com/Serpens66/Stronghold-Crusader-DE-Mods',
-      commit: '7e199e6f0818173794bdeeb0c4c32d74500b0eec',
-      schemaSource: { path: sourceBase + 'CustomisationFileManager.cs', lines: [157, 400], gitBlob: '9cd4c4ad0a601aab1217bb786e741ef15a39f1be' },
-      transferSource: { path: sourceBase + 'EngineInterface.cs', lines: [4303, 4586], gitBlob: '97bf5fcabdd626a6e80c1e17e546f357fc2d4874' },
-      managedSha256: 'bc8b6a395f01d48557db413600c8dd8d1fdfd3abdf97bfbbb68a3c56b04fd789',
-      nativeSha256: 'fbcb93195fc7efca9bdac5204852efdd76f9818f59a6711750d77c9cef2831e2',
-    },
-    targetPolicy: {
-      id: 'complete-canonical-v1', allFieldsRequired: true, exactArrayLengthsRequired: true,
-      integerTokenPolicy: 'decimal integer spelling only; -0 accepted; fraction/exponent typed behavior unverified',
-      semantics: 'unverified; no known-good template or enum substitutions',
-    },
-  });
+  if (!pin) throw new Error('Generated deLordPin must be loaded before deLordFormat');
+  const { fields: pinnedFields, ...pinnedMetadata } = pin.schema;
+  const pinnedByName = new Map(pinnedFields.map(field => [field.name, field]));
   function schemaError(path, message) {
     throw new TypeError(`Invalid pinned LORD schema at ${path}: ${message}`);
   }
@@ -95,23 +54,22 @@ lord_power_display_level lord_hps_percent siege_max_troops siege_normal_wave_mul
   }
   function validateSchema(schema) {
     requireSchema(schema, pinnedMetadata, 'schema');
-    if (!Array.isArray(schema.fields) || schema.fields.length !== 118) schemaError('schema.fields', 'expected 118 fields');
+    if (!Array.isArray(schema.fields) || schema.fields.length !== pinnedFields.length) {
+      schemaError('schema.fields', `expected ${pinnedFields.length} fields`);
+    }
     const names = new Set();
     for (const [i, field] of schema.fields.entries()) {
-      const path = `schema.fields.${i}`, index = field && pinnedNames.indexOf(field.name);
-      if (index == null || index < 0 || names.has(field.name)) schemaError(path, 'unknown or duplicate pinned field name');
+      const path = `schema.fields.${i}`, expected = field && pinnedByName.get(field.name);
+      if (!expected || names.has(field.name)) schemaError(path, 'unknown or duplicate pinned field name');
       names.add(field.name);
-      const length = pinnedArrays.get(field.name);
-      const initializer = length ? { kind: 'allocated-zero-array', length, elementValue: 0, expression: `new int[${length}]` } :
-        index >= 115 ? { kind: 'explicit-scalar', value: [200, 5, 7][index - 115] } : { kind: 'implicit-zero', value: 0 };
-      requireSchema(field, { name: pinnedNames[index], type: length ? 'signedInt32Array' : 'signedInt32', sourceLine: 165 + index * 2,
-        declarationInitializer: initializer, runtimeMissingFieldDefault: 'unverified' }, path);
-      if (length) requireSchema(field.length, length, `${path}.length`);
-      else if (Object.hasOwn(field, 'length')) schemaError(`${path}.length`, 'scalar fields have no array length');
+      requireSchema(field, expected, path);
+      if (!Object.hasOwn(expected, 'length') && Object.hasOwn(field, 'length')) {
+        schemaError(`${path}.length`, 'scalar fields have no array length');
+      }
     }
-    if (schema.fields.filter(field => field.type === 'signedInt32Array').length !== 14 ||
-        schema.fields.reduce((n, field) => n + (field.type === 'signedInt32Array' ? field.length : 1), 0) !== 279) {
-      schemaError('schema.fields', 'expected 14 arrays and 279 transferred Int32 words');
+    if (schema.fields.filter(field => field.type === 'signedInt32Array').length !== pin.schema.arrayCount ||
+        schema.fields.reduce((n, field) => n + (field.type === 'signedInt32Array' ? field.length : 1), 0) !== pin.schema.transferredInt32Words) {
+      schemaError('schema.fields', `expected ${pin.schema.arrayCount} arrays and ${pin.schema.transferredInt32Words} transferred Int32 words`);
     }
   }
   function create(inputSchema) {

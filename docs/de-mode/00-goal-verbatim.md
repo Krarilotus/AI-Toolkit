@@ -59,3 +59,7 @@ The user also wrote:
 ## Resumption and bounded delegation
 
 > Please continue, full force ahead you can let your subagents have a limit of 3 subagents each even if necessary, just make sure to work thorough and with good DRY coding practices, on the right abstraction levels, as already stated
+
+## Preserve existing performance
+
+> make sure not to destroy any performance optimizatiosn inthe app, we have optimized it to feel smooth so always udnerstand the changes you make first and why the code was there inthe first place if you change thigns

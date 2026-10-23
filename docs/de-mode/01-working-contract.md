@@ -105,3 +105,10 @@ On explicit resumption the user permits each subagent at most three children
 when necessary. This is a ceiling, not a required fan-out: respect live global
 capacity, use Sol6.1 only, give every child the goal/contract and bounded ownership,
 and serialize conflicting edits. Root retains central review and acceptance.
+
+Smoothness is an explicit regression requirement. Before changing optimized
+paths, understand their comments, Git history and original measured purpose.
+Preserve workers, batching, caches, invalidation and latest-only queues. Compare
+affected interactive workloads against an isolated baseline; functional tests
+and helper microbenchmarks alone do not establish UI performance. See standard05
+and docs/iso-scrub-performance.md for existing rationale and evidence.
