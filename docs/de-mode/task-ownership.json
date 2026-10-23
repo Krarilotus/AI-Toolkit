@@ -563,7 +563,7 @@
         "docs/de-mode/research/35-lord-panel-review-r1.md"
       ],
       "isolation": "shared; disjoint report ownership only",
-      "status": "completed; NO-GO P2 draft loss on refresh plus two P3 control/ARIA defects; correctionr2 running",
+      "status": "completed; all three findings independently closed by Review38",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r1"
     },
@@ -585,13 +585,13 @@
         "docs/de-mode/research/37-sprite-reconstruction-contract.md"
       ],
       "isolation": "shared; disjoint ownership only; no recursive delegation",
-      "status": "running",
+      "status": "completed;41bases16masks209vertices127triangles; fresh independent Review40 running",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-probe-sprite-reconstruction-spr1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-probe-sprite-reconstruction-spr1-20261023-r1"
     },
     {
       "track": "lord-panel-fix-r2",
-      "status": "running; correct all three Review35 findings within panel ownership",
+      "status": "completed; all three findings independently closed by Review38; separate pre-existing clean-revision P3 under correctionr3",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-ui-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-ui-20261023-r2",
       "kind": "bounded correction; no children",
@@ -603,7 +603,7 @@
     },
     {
       "track": "canonical-core-fix-r4",
-      "status": "running; close only packaged facade C1-02; canonical Rust and prior closures frozen",
+      "status": "completed; actual facade admission and call-time snapshot corrected;103transport per helper9packaging; fresh Review39 running",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r4",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r4",
       "kind": "bounded correction; no children",
@@ -616,6 +616,51 @@
         "docs/de-mode/research/25-canonical-core-handoff.md (append only)"
       ],
       "isolation": "shared; disjoint ownership; Rust/domain/panel/assets unchanged"
+    },
+    {
+      "track": "lord-panel-review-r2",
+      "status": "completed; GO additive component; all35 findings closed; nonblocking P3 external undo revision under narrow correctionr3",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r2",
+      "kind": "bounded independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/38-lord-panel-review-r2.md"
+      ],
+      "isolation": "shared; disjoint report ownership"
+    },
+    {
+      "track": "sprite-contract-review-r1",
+      "status": "running; central Sprite pixel geometry and mask contract review before SPR2",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-contract-spr1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-contract-spr1-20261023-r1",
+      "kind": "bounded independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/40-sprite-contract-review.md"
+      ],
+      "isolation": "shared; disjoint report ownership"
+    },
+    {
+      "track": "lord-panel-fix-r3",
+      "status": "running; small clean-revision correction after Review38; root directly reviews narrow diff and evidence",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-clean-revision-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-clean-revision-20261023-r3",
+      "kind": "bounded correction; no children",
+      "ownedFiles": [
+        "src/js/de-lord-panel.js",
+        "docs/de-mode/research/33-lord-panel-handoff.md (append only)"
+      ],
+      "isolation": "shared; disjoint ownership"
+    },
+    {
+      "track": "canonical-core-review-r3",
+      "status": "running; independent actual-facade closure of C1-02; prior canonical Rust/F1 findings remain closed",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r3",
+      "kind": "bounded independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/39-canonical-core-review-r3.md"
+      ],
+      "isolation": "shared; disjoint report ownership"
     }
   ],
   "pauseHistory": [
@@ -631,7 +676,7 @@
     "requestedBy": "user",
     "at": "2026-10-23T14:27:54Z",
     "instruction": "Continue full force; at most3 nested agents each if necessary; Sol6.1 and DRY ownership standards retained",
-    "nativeGoalFlag": "paused at last get_goal; no exposed resume mutation",
+    "nativeGoalFlag": "active verified by get_goal on2026-10-23 with full objective and no token budget",
     "execution": "authorized and running"
   }
 }

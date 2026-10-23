@@ -1,9 +1,9 @@
 # DE mode plan and progress
 
-**Resumed on the user's explicit instruction.** The prior
+**Active and resumed on the user's explicit instruction.** The prior
 [pause checkpoint](06-resume-checkpoint.md) remains historical evidence. Native
-get_goal still reports paused and exposes no resume mutation; implementation is
-authorized and continuing while that UI-controlled flag awaits reactivation.
+get_goal now verifies active again with the full objective and no token budget
+(23 October 2026). The earlier stale paused flag is resolved.
 
 The full objective is retained. Research has established the first contracts; full DE
 support is not yet usable or accepted. [Goal](00-goal-verbatim.md),
@@ -37,7 +37,7 @@ advance independently; neither blocks the first lossless file workflow.
 | --- | --- | --- |
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
-| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Review36 closes final-size defect; facade admission/snapshot correctionr4 running |
+| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Review36 closes final-size defect; facade correctionr4 complete; fresh Review39 running |
 | Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Next integrated slice; no live DE toggle yet |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
 | Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 committed61c2fa1 after independent Review34; Sprite reconstruction proof running |
@@ -57,21 +57,25 @@ and live global capacity; no uncontrolled fan-out.
 - **C1 correction after Review36:** canonical final-result budget C1-01 and
   original F1 findings are independently closed. C1-02 remains at the actual
   packaged facade: it copies before admission and awaits before snapshotting.
-  Correctionr4 moves that path through the one existing reservation lifecycle;
-  fresh facade-level review gates the C1 commit. No new quota or Rust policy.
+  Correctionr4 now routes it through the one existing reservation lifecycle;
+  fresh Review39 checks actual packaged-facade closure before commit. No new
+  quota or Rust policy; canonical/generated sources remain unchanged.
 - **DS1 milestone:** Review32 closes both P2s and portability;205 tests pass.
   Shared session/schema generation committed atebff3b1, not UI acceptance.
 - **DE Lord panel:** Review35 reproduced P2 draft loss during refresh plus two
-  P3 control/ARIA defects. A bounded correction owns panel JS and an appended
-  handoff33 only; shared DS1 stays unchanged. Fresh closure gates integration.
+  P3 control/ARIA defects. All three are corrected in panel JS with an appended
+  handoff33; Review38 closes all three and approves the additive component.
+  One nonblocking clean-revision P3 is being corrected before root stages it.
+  Root reviews that small delta directly; shared DS1 stays unchanged.
   Component handler timings do not establish paint/native-window performance.
 - **A1 milestone:** committed30215f2 after exact reviewed hashes. Metadata only.
 - **PXL2 milestone:** committed61c2fa1 after Review34 approves the additive
   BC1a/BC7 crop provider.
   Exact38-file snapshot and staged bytes verified;51 tests on both Rust versions,
   independent crop/mip/source/budget/cancellation probes and14 real-crop parity.
-  Scratch-only SPR1 now checks41 unpacked Sprite meshes/fractional geometry and
-  paired masks against pinned oracles. Host/renderer integration remains open.
+  SPR1 matches41 base Sprites and16 raw masks plus209 vertices/127 triangles
+  against pinned extraction conventions; independent Review40 gates SPR2.
+  Host/renderer and actual Unity/game rasterization remain open.
 - **Performance:** preserved as an explicit regression requirement in standard05
   and contract01; existing worker/cache/invalidation rationale must be understood
   before alteration and affected interactive costs compared on owned builds.
@@ -79,7 +83,9 @@ and live global capacity; no uncontrolled fan-out.
   direct-EXE vanilla single-player preflight. Fresh copy/roots, scoped backups,
   Steam Cloud/queue evidence and startup/exit observations are still required.
   The acceptance protocol records the coordinator decision and two scoped guard
-  defects. No game launch or preference change has occurred.
+  defects. Report41 now records a verified physical copy and116 scoped backup
+  files plus encrypted PlayerPrefs recovery. Fresh guarded roots, Steam policy
+  and startup observations remain open. No game launch or preference change.
 - **Next consumer slice:** core contexts/leases and opaque byte I/O, shared
   document sessions, then thin desktop/UI wiring. Serialize overlapping edits.
   Scope this against the actual C1 API rather than invent a parallel service.
@@ -143,9 +149,9 @@ upstream PR11. Push only fork/de/separate-game-mode.
 This is normal UCP sidebar thread mcp:24e1fd23-accc-4f55-8906-3de048c9a894,
 project2dd89517-2ea6-4ac0-898a-11e0c5076371. The persistent goal was created
 first and originally verified active with the full objective and no token budget.
-After the requested overnight pause, the user explicitly resumed work; the native
-record still reports paused because its API exposes no resume mutation, as stated
-at the top of this plan. Do not create a duplicate or claim an active native flag.
+After the requested overnight pause, the user explicitly resumed work. The native
+record subsequently resumed too: get_goal now verifies active with the unchanged
+full objective. No duplicate goal was created.
 Original classic checkout S:\Projects\Harness\ai-toolkit-setup\source stays
 at5ce3676 on its own branch; the last published app remains separate.
 
