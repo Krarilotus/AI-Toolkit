@@ -312,6 +312,14 @@
       "report": "research/56-configured-game-harness-review.md",
       "workingSha256": "41b87f71a61eb840660e33a2815ffd2414bdeddff9a9701ab79e25e4ad1810e3",
       "disposition": "GO offline artifacts/copy plan; not launch ready; root57 preparing finite startup observations and executor"
+    },
+    "observationScopeDecision": {
+      "report": "research/63-startup-tooling-and-scope-review.md",
+      "reportSha256": "613413bdd3afc60cccc69cb6d20e19776997b983ec340b7f532aeeb3368b8080",
+      "decision": "Root adopts conditional ordinary-user scoped preservation route after63-01..04 and run-adapter checks; no complete kernel/file-read trace requirement; ETW denial retained without retry",
+      "correctionTask": "startup-tooling-correction-r3",
+      "artifactsInstalled": false,
+      "launchAllowed": false
     }
   },
   "toolingMaintenance": {
@@ -324,6 +332,30 @@
       "rootReceiptSha256": "7698086e76518a2cbb2a6243312b47dd4c6873948ec61ddf7eb79c4b32e12043",
       "evidence": "5 root ownership tests; baseline plus8 actual final protocol cases; all12 tool contracts equal; real heavy EOF0.705s and no owned leftovers",
       "limits": "Host-held channels/forced termination are separate; historical directory deletion blocked before execution; no UI/game acceptance"
+    }
+  },
+  "pendingDesktopIntegration": {
+    "coreReview": "research/59-desktop-core-review-r2.md",
+    "consumerCloseReview": "research/62-close-commit-root-review.md",
+    "finalArtifactsTask": "desktop-artifact-refresh-r3",
+    "state": "67 GO exact61 artifact identity; actual first-run screen rejected;69 correcting typed selection/readable errors and staged route readiness; no successful native LORD workflow yet",
+    "finalArtifactReport": "research/61-desktop-artifact-refresh-r3.md",
+    "finalArtifactReportSha256": "6bc6f263d920c9b895722bd759e5fe712502b5cd03a25da6050d68f0702849e0",
+    "artifactReview": "research/67-desktop-artifact-review-r3.md",
+    "integratedJavaScript": {
+      "tests": 998,
+      "fail": 0,
+      "skip": 0,
+      "receipt": "S:\\Projects\\UCP\\de-research\\root-desktop-observation-r3/integrated-verification.json",
+      "sha256": "18b2b3798928519f2e5fee10df45aa4925c58132c898b496f20017999911e43e",
+      "sourcePins": 75,
+      "limits": "No actual F2 native UI or interactive-performance acceptance"
+    },
+    "artifactReviewSha256": "ec5160b74e966eedc15897138094d87ace30b7edc99791cef33c78594549e724",
+    "firstRunInterface": {
+      "file": "S:/Projects/UCP/de-research/first-run-desktop-correction-r4/interface-r4.txt",
+      "sha256": "abfee3b83a8bc797b1b2ae25438d8336f8e26af0c9b24c4ea67c74eacd779f13",
+      "status": "Frozen proposed contract; implementation/review pending"
     }
   }
 }

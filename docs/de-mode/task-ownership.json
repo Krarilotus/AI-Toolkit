@@ -764,7 +764,7 @@
     },
     {
       "track": "desktop-core-correction-r2",
-      "status": "running; frozen1.3 lifecycle generated; four core/native finding corrections and tests; final builds await consumer freeze",
+      "status": "completed53; independently accepted59; final artifact refresh61 is separate tracked remainder",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-desktop-core-f2w1-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-desktop-core-f2w1-20261023-r2",
       "kind": "bounded correction; no children",
@@ -776,7 +776,7 @@
     },
     {
       "track": "desktop-consumer-correction-r2",
-      "status": "production/test frozen after65focused checks; generated1.3 adoption lifecycle consumed; narrow transactional panel corrected; handoff54 pending and core53 owns final builds",
+      "status": "completed/frozen54;65focused checks and strictTS pass; corrected9source/test pins; fresh independent58 running",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-consumer-f2w1-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-consumer-f2w1-20261023-r2",
       "kind": "bounded correction; no children",
@@ -800,7 +800,7 @@
     },
     {
       "track": "observed-game-startup-preparation-r2",
-      "status": "running; minimal diagnostic/observer/copy-executor preparation only; no actual install or game launch",
+      "status": "completed57; reviewed63 identifies four concrete tooling defects; fresh64 correction running; no installation or launch",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-prepare-observed-game-startup-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-prepare-observed-game-startup-20261023-r2",
       "kind": "bounded acceptance-tooling implementation; no children",
@@ -809,6 +809,126 @@
         "S:/Projects/UCP/de-research/observed-game-startup-r2/**"
       ],
       "isolation": "shared; disjoint external tooling; reviewed R1 artifacts and owned physical copy immutable"
+    },
+    {
+      "track": "desktop-consumer-review-r2",
+      "status": "completed58; prior50 findings closed; newP2 finalClose edit race in actualNode/browser component; narrow60 correction running",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-consumer-f2w1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-consumer-f2w1-20261023-r2",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/58-desktop-consumer-review-r2.md"
+      ],
+      "isolation": "shared; report only; scratch component probes allowed with bounded owned cleanup"
+    },
+    {
+      "track": "desktop-close-commit-correction-r3",
+      "status": "completed/frozen60; root62 independently closes F2-CONSUMER-04; final payload/native gates open",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-close-f2w1-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-close-f2w1-20261023-r3",
+      "kind": "bounded single-finding correction; no children",
+      "ownedFiles": [
+        "src/js/de-lord-controller.js",
+        "src/js/de-lord-panel.js",
+        "minimal src/desktop/de-editor.js wiring if needed",
+        "focused controller/panel tests",
+        "docs/de-mode/research/60-close-commit-correction-r3.md"
+      ],
+      "isolation": "shared; disjoint from frozen core/native; no final build/generation"
+    },
+    {
+      "track": "desktop-core-review-r2",
+      "status": "completed59; GO exact core/native; all four49 findings closed; no final consumer/package/UI acceptance",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-desktop-core-f2w1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-desktop-core-f2w1-20261023-r2",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/59-desktop-core-review-r2.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; original game/profile/live editor unchanged"
+    },
+    {
+      "track": "desktop-artifact-refresh-r3",
+      "status": "completed61; final default/override Electron and native EXE/ZIP plus both packaged workflows; independent67 and actual desktop gates open",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-refresh-desktop-artifacts-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-refresh-desktop-artifacts-20261023-r3",
+      "kind": "bounded implementation/build; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/61-desktop-artifact-refresh-r3.md",
+        "owned final artifacts and external receipts"
+      ],
+      "isolation": "shared; explicit disjoint ownership; original game/profile/live editor unchanged"
+    },
+    {
+      "track": "startup-tooling-scope-review-r2",
+      "status": "completed63; four concrete tooling findings; ordinary-user scoped preservation route supported conditionally",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-startup-tooling-scope-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-startup-tooling-scope-20261023-r2",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/63-startup-tooling-and-scope-review.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; original game/profile/live editor unchanged"
+    },
+    {
+      "track": "startup-tooling-correction-r3",
+      "status": "running64; path fidelity/recovery/watch continuity/module assertions and scoped run adapter; no actual install/launch",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-startup-tooling-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-startup-tooling-20261023-r3",
+      "kind": "bounded implementation/build; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/64-startup-tooling-correction-r3.md",
+        "S:/Projects/UCP/de-research/observed-game-startup-r3/**"
+      ],
+      "isolation": "shared; explicit disjoint ownership; original game/profile/live editor unchanged"
+    },
+    {
+      "track": "de-castle-program-contract-d2",
+      "status": "completed66; ordered source contract and bounded session/format handoff; fresh70 review pending",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-research-castle-program-d2-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-research-castle-program-d2-20261023-r1",
+      "kind": "bounded next-feature research; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/66-de-castle-program-contract.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; original game/profile/live editor unchanged"
+    },
+    {
+      "track": "desktop-artifact-review-r3",
+      "status": "completed67; GO exact61 identity only; actual first-run UX rejected;69 correction required",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-artifacts-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-artifacts-20261023-r3",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/67-desktop-artifact-review-r3.md"
+      ],
+      "isolation": "shared; disjoint report ownership; no physical app/game launch"
+    },
+    {
+      "track": "first-run-desktop-correction-r4",
+      "status": "running69; retained path/readable errors/generated selection DTO/staged activation and route readiness; no UI or app build",
+      "kind": "bounded coherent implementation; no children",
+      "ownedFiles": [
+        "canonical activation staging and generated InstallationSelection DTO/exporter/tests",
+        "minimal native/Electron selection readiness adapters",
+        "shared pure error extraction and existing translated legacy consumer",
+        "first-run page/bootstrap/scoped CSS and narrow ready bridges",
+        "docs/de-mode/research/69-first-run-desktop-correction.md"
+      ],
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-run-desktop-20261023-r4",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-run-desktop-20261023-r4",
+      "isolation": "shared; explicit disjoint ownership; no desktop/game launch"
+    },
+    {
+      "track": "de-castle-contract-review-d2",
+      "status": "running70; independent ordered castle source/fixture/ownership contract review; no implementation",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/70-de-castle-contract-review.md"
+      ],
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-castle-contract-d2-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-castle-contract-d2-20261023-r1",
+      "isolation": "shared; explicit disjoint ownership; no desktop/game launch"
     }
   ],
   "pauseHistory": [
@@ -826,5 +946,30 @@
     "instruction": "Continue full force; at most3 nested agents each if necessary; Sol6.1 and DRY ownership standards retained",
     "nativeGoalFlag": "active verified by get_goal on2026-10-23 with full objective and no token budget",
     "execution": "authorized and running"
+  },
+  "finalArtifactRefresh": {
+    "status": "61/67 exact R3 artifact identity GO; root native observation rejects first-run UX;69 requires a fresh reviewed refresh",
+    "requires": [
+      "default and override Electron packages with exact runtime payload/helper identity",
+      "native executable and portable ZIP policy",
+      "final exact-source packaged Rat/8MiB/lost-ack/save/reconcile checks",
+      "owned process cleanup and independent/root artifact acceptance"
+    ],
+    "existingArtifacts": "53 consumer54 artifacts superseded; old native cache EXE overwritten, hash/receipt only; other9 payloads preserved; final61 copies independently retained",
+    "trackingTask": "desktop-artifact-refresh-r3"
+  },
+  "coordinatorReviews": [
+    {
+      "report": "research/62-close-commit-root-review.md",
+      "status": "GO exact narrow R3 source/component correction; six independent Chromium cases; no physical native or final package acceptance",
+      "receipt": "S:/Projects/UCP/de-research/root-close-review-r3/verification.json",
+      "receiptSha256": "efc2c6ca68af9cee48315d11396862b02da88139bad97a843f0b08d3d76e71c0"
+    }
+  ],
+  "currentDesktopControl": {
+    "status": "stopped; owned native process tree reaped and node_repl/ComputerUse runtime reset",
+    "receipt": "S:/Projects/UCP/de-research/root-desktop-observation-r3/native-observation-stop.json",
+    "sha256": "e54f43e8b22f6bdf78b8c29006fb02160c57e9f57ac521341c3b951a3f81c59b",
+    "policy": "Do not hold desktop control during coding/delegation; prepare short focused observation and prefer supported code-driven controls where available"
   }
 }

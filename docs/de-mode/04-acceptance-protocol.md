@@ -53,9 +53,10 @@ creation did not explicitly set the data directory, so F2 and GUI acceptance
 must establish inheritance/ownership rather than assuming it. Electron then
 used `app.getPath('userData')` without the corresponding early environment
 override. F2W1 now implements early owned userData in Electron and explicit native
-editor/detached WebView directories (reports44/45). That integrated slice is under
-correction53/54 after independent49/50; source changes are not observed runtime
-ownership. Verify the actual isolated build's effective paths before using it.
+editor/detached WebView directories (reports44/45). Core59 and root62 accept the
+corrected source boundary, and61 supplies final source-matched packages under
+independent67 review. These changes are not observed runtime ownership. Verify
+the actual isolated build's effective paths before using it.
 Keep the exact process environment and effective storage/WebView paths in the
 test manifest. These preparation checks do not authorize changing the live app.
 
@@ -102,6 +103,31 @@ its actual compression path is excluded from the first single-player exercise.
 Do not advertise general stream/multiplayer compatibility. No arbitrary inherited
 application-data handles are allowed. These findings and runtime observations
 remain separate from the Toolkit's production loader and document support.
+
+### Scoped observation decision after Review63
+
+The coordinator adopts Review63's conditional ordinary-user route for this first
+instrumented vanilla startup/exit. Complete kernel tracing and file-read tracing
+are not original preservation requirements. The denied ETW request remains
+recorded; do not retry it with elevation or change system security. This decision
+does not make the prepared harness launch-ready.
+
+Correction64 must first close the demonstrated MP path separator, per-operation
+rollback, root-replacement/shutdown-tail notification and module-enumeration
+defects. Fresh65 reviews the corrected artifacts and finite run adapter. Use63's
+branch(a) entry/exit conditions as the detailed execution authority: fresh scoped
+backups, app-only Steam Cloud/queue evidence, stable root/parent identities,
+continuous original-target notifications, exact final tree/registry comparison,
+bounded owned process/child handles and required runtime path/image assertions.
+Any unexplained original-target event or lost observation interval fails the
+preservation case. Notifications detect changes; they do not prevent them.
+
+Ordinary authentication, playtime/presence, client logs and OS graphics caches
+outside protected data are outside this preservation claim. A cache overlapping
+original saves/mods/settings fails. If an essential source, destination, observer
+or Steam policy condition cannot be established, use63's concrete branch(b)
+fallback; do not broaden the accepted claim or launch to test a known gap.
+No owned-copy installation, Steam policy change or game launch has occurred.
 
 ## Application cases: DE-01, DE-02, DE-09
 

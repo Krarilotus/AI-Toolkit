@@ -38,8 +38,8 @@ advance independently; neither blocks the first lossless file workflow.
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
 | Unify backend ownership | One canonical policy, generated contracts, both host consumers | Committedf02d828 after Review39 and exact28source/staged-byte verification |
-| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Initial F2W1 rejected by49/50; bounded core53/consumer54 corrections running; actual desktop observation pending |
-| Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
+| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Core59/root62 source and67 artifact-identity GO; actual first-run UI rejected;69 correcting typed selection and staged route readiness before new desktop acceptance |
+| Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Contract66 complete and under independent70 review; reuse one document/session policy and never reconstruct from a final raster |
 | Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1/PXL2 accepted; SPR2 committed657dbb3 after Review51 and exact45-file/staged-byte verification; renderer integration/composition pending |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
@@ -107,7 +107,7 @@ and live global capacity; no uncontrolled fan-out.
   prepares successful-path/early-runtime observations and a copy-only executor;
   its changed diagnostic artifacts require review before actual installation.
   No game launch, artifact installation or preference change.
-- **F2W1 corrections53/54 running after independent NO-GO49/50:** one canonical context/operation/file service,
+- **F2W1 source corrections accepted after independent NO-GO49/50:** one canonical context/operation/file service,
   thin adapters for both hosts, real DS1/panel controller and fresh DE routing
   before Classic startup. The named open/edit/Save As/reopen workflow is the
   outcome. Parent and its one disjoint Sol6.1 child are complete (reports44/45);
@@ -121,7 +121,43 @@ and live global capacity; no uncontrolled fan-out.
   amendment uses one transient candidate and a bounded persisted adoption record;
   old session/draft survive uncertain acknowledgements and exact status/recovery
   never rebinds defaults. Rust generates the shared contract for both hosts.
-  Fresh independent closure and real desktop observation remain required.
+  Consumer54 is complete/frozen with65 focused checks. Independent58 closes the
+  prior three consumer findings and verifies real-browser adoption rollback, but
+  finds a final Close commit-phase edit race. Narrow60 freezes only that final
+  phase before authority retirement; prompt editing must remain available.
+  Core/native53 reports43 current/43MSRV plus native6 and real helper witnesses;
+  independent59 closes all four backend findings. Root62 closes the final
+  consumer Close race with six fresh Chromium cases at the frozen60 bytes.
+  Final refresh61 supplies source-matched default/override Electron directories,
+  native EXE/ZIP and actual packaged Rat/8MiB/adoption-loss/unknown-save checks.
+  Independent67 accepts that exact artifact layer. Root68 records998 passing
+  integrated JS tests at75 unchanged inputs, then the first actual native run.
+  Its owned WebView profile and cancellation were observed, but the new first-run
+  screen hides selected paths and renders structured errors as `[object Object]`.
+  The user correctly rejected it. A DE default persisted without an observed
+  visible DE window; mixed picker input prevents attributing the exact cause.
+  Bounded69 corrects the canonical staged activation/host readiness ordering,
+  generated selection result and shared error boundary, plus the setup UI.
+  Old default bytes must survive failed routes; source69 needs fresh review and
+  artifacts. No full native LORD workflow/Close or smoothness gate is accepted.
+  Root stopped the owned app/descendants and reset Computer Use at the user's
+  request. Keep foreground control off during coding and prepare a short script
+  before later observation. The live editor and original Classic remain untouched.
+  The coherent F2 source slice stays uncommitted until these corrections pass.
+  The old53 native build-cache EXE was overwritten without a separate snapshot;
+  its hash/receipt remain, but the old binary is not claimed preserved. Future
+  evidence payloads must be retained outside mutable build caches before reuse.
+- **Startup preservation scope:** independent63 verifies the diagnostic delta
+  and finds four concrete defects in path fidelity, per-file rollback, watcher
+  continuity/shutdown drain and module enumeration. Bounded64 corrects them
+  outside the product. Root adopts the conditional ordinary-user preservation
+  route: complete kernel/file-read tracing was not an original requirement.
+  The denied ETW request is retained without elevation or retry. Fresh65 review,
+  Steam Cloud/queue evidence, fresh backups and activity checks still precede
+  any owned-copy installation or real launch. Nothing is installed or launched.
+- **Next feature:**66 pins the ordered DE castle-program contract and the
+  smallest shared-session/domain change; fresh70 reviews it. Preserve program order,
+  unknown data and timing; a final raster is not a substitute for that program.
 
 ## Accepted evidence and unresolved limits
 
