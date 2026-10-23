@@ -34,8 +34,13 @@
     "build:locales": "node scripts/build-locales.js",
     "check:locales": "node scripts/build-locales.js --check --strict",
     "package:native": "node scripts/package-native.mjs",
-    "package:electron": "npm run check && electron-builder --dir",
-    "dist:electron": "npm run check && electron-builder --win portable"
+    "package:electron": "node scripts/build-core.mjs --package=dir",
+    "dist:electron": "node scripts/build-core.mjs --package=portable",
+    "generate:core": "node scripts/generate-core-contracts.mjs",
+    "check:core-contracts": "node scripts/generate-core-contracts.mjs --check",
+    "build:core": "node scripts/build-core.mjs",
+    "prestart:electron": "npm run build:core",
+    "predev:electron": "npm run build:core"
   },
   "devDependencies": {
     "@electron/asar": "3.4.1",

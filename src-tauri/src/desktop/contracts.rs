@@ -299,6 +299,45 @@ mod tests {
     use serde_json::json;
     use ts_rs::TS;
 
+    fn binding_inventory(
+        folder: &std::path::Path,
+    ) -> std::collections::BTreeSet<std::path::PathBuf> {
+        walkdir::WalkDir::new(folder)
+            .min_depth(1)
+            .into_iter()
+            // Core has its own Rust generator and stale/obsolete-output check.
+            .filter_entry(|entry| {
+                !(entry.depth() == 1 && entry.file_type().is_dir() && entry.file_name() == "core")
+            })
+            .map(|entry| entry.unwrap())
+            .filter(|entry| entry.file_type().is_file())
+            .map(|entry| entry.path().strip_prefix(folder).unwrap().to_path_buf())
+            .collect()
+    }
+
+    #[test]
+    fn generated_inventory_excludes_only_top_level_core_directory() {
+        let directory =
+            std::env::temp_dir().join(format!("toolkit-contract-inventory-{}", std::process::id()));
+        std::fs::create_dir(&directory).unwrap();
+        for name in ["core/owned.ts", "other/core/obsolete.ts", "obsolete.ts"] {
+            let file = directory.join(name);
+            std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+            std::fs::write(file, "synthetic").unwrap();
+        }
+        assert_eq!(
+            binding_inventory(&directory),
+            ["obsolete.ts", "other/core/obsolete.ts"]
+                .into_iter()
+                .map(std::path::PathBuf::from)
+                .collect()
+        );
+        std::fs::remove_dir_all(directory.join("core")).unwrap();
+        std::fs::write(directory.join("core"), "synthetic").unwrap();
+        assert!(binding_inventory(&directory).contains(std::path::Path::new("core")));
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
     #[test]
     fn generated_bindings_match_rust_contracts() {
         let committed =
@@ -335,18 +374,9 @@ mod tests {
                 "Regenerate IPC types with UPDATE_DESKTOP_BINDINGS=1 cargo test desktop::contracts"
             );
         }
-        let names = |folder: &std::path::Path| -> std::collections::BTreeSet<_> {
-            walkdir::WalkDir::new(folder)
-                .min_depth(1)
-                .into_iter()
-                .map(|entry| entry.unwrap())
-                .filter(|entry| entry.file_type().is_file())
-                .map(|entry| entry.path().strip_prefix(folder).unwrap().to_path_buf())
-                .collect()
-        };
         assert_eq!(
-            names(&committed),
-            names(&generated),
+            binding_inventory(&committed),
+            binding_inventory(&generated),
             "Remove obsolete generated IPC types"
         );
         std::fs::remove_dir_all(generated).unwrap();

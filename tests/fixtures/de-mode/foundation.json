@@ -1,0 +1,582 @@
+{
+  "description": "Synthetic PE/CLR byte fixtures and layout cases; no game binaries or assets.",
+  "binaries": {
+    "native32": {
+      "base64": "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQRQAATAEBAAAAAAAAAAAAAAAAAOAAIiALAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC50ZXh0AAAAAAIAAAAQAAAAAgAAAAIAAAAAAAAAAAAAAAAAACAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "expected": {
+        "machine": 332,
+        "magic": 267,
+        "managed": false,
+        "ilOnly": false,
+        "requires32Bit": false
+      }
+    },
+    "native64": {
+      "base64": "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQRQAAZIYBAAAAAAAAAAAAAAAAAPAAIiALAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAudGV4dAAAAAACAAAAEAAAAAIAAAACAAAAAAAAAAAAAAAAAAAgAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "expected": {
+        "machine": 34404,
+        "magic": 523,
+        "managed": false,
+        "ilOnly": false,
+        "requires32Bit": false
+      }
+    },
+    "managed": {
+      "base64": "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQRQAATAEBAAAAAAAAAAAAAAAAAOAAIiALAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAEgAAAAAAAAAAAAAAC50ZXh0AAAAAAIAAAAQAAAAAgAAAAIAAAAAAAAAAAAAAAAAACAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABIAAAAAgAFAFAQAAAgAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJTSkIBAAEAAAAAAAwAAAB2NC4wLjMwMzE5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "expected": {
+        "machine": 332,
+        "magic": 267,
+        "managed": true,
+        "ilOnly": true,
+        "requires32Bit": false
+      }
+    },
+    "required32": {
+      "base64": "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQRQAATAEBAAAAAAAAAAAAAAAAAOAAIiALAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAEgAAAAAAAAAAAAAAC50ZXh0AAAAAAIAAAAQAAAAAgAAAAIAAAAAAAAAAAAAAAAAACAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABIAAAAAgAFAFAQAAAgAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJTSkIBAAEAAAAAAAwAAAB2NC4wLjMwMzE5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "expected": {
+        "machine": 332,
+        "magic": 267,
+        "managed": true,
+        "ilOnly": true,
+        "requires32Bit": true
+      }
+    },
+    "badClr": {
+      "base64": "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQRQAATAEBAAAAAAAAAAAAAAAAAOAAIiALAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmZmZmUgAAAAAAAAAAAAAAC50ZXh0AAAAAAIAAAAQAAAAAgAAAAIAAAAAAAAAAAAAAAAAACAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABIAAAAAgAFAFAQAAAgAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJTSkIBAAEAAAAAAAwAAAB2NC4wLjMwMzE5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "expected": null
+    },
+    "truncated": {
+      "base64": "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQRQAATAEBAAAAAAAAAAAAAAAAAOAAIiALAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAgAAAAAAAA==",
+      "expected": null
+    }
+  },
+  "cases": [
+    {
+      "name": "classic-plain",
+      "entries": {
+        "Stronghold Crusader.exe": "native32",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory"
+      },
+      "status": "recognized",
+      "edition": "classic",
+      "ucp": false
+    },
+    {
+      "name": "classic-ucp",
+      "entries": {
+        "Stronghold Crusader.exe": "native32",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory",
+        "ucp/plugins/": "directory"
+      },
+      "status": "recognized",
+      "edition": "classic",
+      "ucp": true
+    },
+    {
+      "name": "classic-extreme",
+      "entries": {
+        "Stronghold_Crusader_Extreme.exe": "native32",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory"
+      },
+      "status": "recognized",
+      "edition": "classic",
+      "ucp": false
+    },
+    {
+      "name": "classic-both-exes",
+      "entries": {
+        "Stronghold Crusader.exe": "native32",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory",
+        "Stronghold_Crusader_Extreme.exe": "native32"
+      },
+      "status": "recognized",
+      "edition": "classic",
+      "ucp": false
+    },
+    {
+      "name": "de-only",
+      "entries": {
+        "Stronghold Crusader Definitive Edition.exe": "native64",
+        "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll": "managed",
+        "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll": "native64"
+      },
+      "status": "recognized",
+      "edition": "de",
+      "ucp": false
+    },
+    {
+      "name": "de-ucp-does-not-grant-library",
+      "entries": {
+        "Stronghold Crusader Definitive Edition.exe": "native64",
+        "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll": "managed",
+        "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll": "native64",
+        "ucp/plugins/": "directory"
+      },
+      "status": "recognized",
+      "edition": "de",
+      "ucp": false
+    },
+    {
+      "name": "mixed",
+      "entries": {
+        "Stronghold Crusader.exe": "native32",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory",
+        "Stronghold Crusader Definitive Edition.exe": "native64",
+        "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll": "managed",
+        "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll": "native64"
+      },
+      "status": "ambiguous"
+    },
+    {
+      "name": "mixed-incomplete-de",
+      "entries": {
+        "Stronghold Crusader.exe": "native32",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory",
+        "Stronghold Crusader Definitive Edition_Data/": "directory"
+      },
+      "status": "ambiguous"
+    },
+    {
+      "name": "de-incomplete",
+      "entries": {
+        "Stronghold Crusader Definitive Edition.exe": "native64"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "classic-incomplete",
+      "entries": {
+        "Stronghold Crusader.exe": "native32"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "classic-assets-empty",
+      "entries": {
+        "Stronghold Crusader.exe": "native32",
+        "gm/": "directory",
+        "aiv/": "directory"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "classic-x64-is-not-classic",
+      "entries": {
+        "Stronghold Crusader.exe": "native64",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "classic-bad-pe",
+      "entries": {
+        "Stronghold Crusader.exe": "truncated",
+        "gm/sample.gm1": "text",
+        "aiv/": "directory"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "de-managed-must-be-managed",
+      "entries": {
+        "Stronghold Crusader Definitive Edition.exe": "native64",
+        "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll": "native32",
+        "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll": "native64"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "de-managed-cannot-require-x86",
+      "entries": {
+        "Stronghold Crusader Definitive Edition.exe": "native64",
+        "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll": "required32",
+        "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll": "native64"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "de-invalid-clr-rva",
+      "entries": {
+        "Stronghold Crusader Definitive Edition.exe": "native64",
+        "Stronghold Crusader Definitive Edition_Data/Managed/Assembly-CSharp.dll": "badClr",
+        "Stronghold Crusader Definitive Edition_Data/Plugins/x86_64/CrusaderDE.dll": "native64"
+      },
+      "status": "incomplete"
+    },
+    {
+      "name": "ucp-only",
+      "entries": {
+        "ucp/plugins/": "directory"
+      },
+      "status": "unknown"
+    },
+    {
+      "name": "unknown-x64",
+      "entries": {
+        "other.exe": "native64"
+      },
+      "status": "unknown"
+    },
+    {
+      "name": "empty",
+      "entries": {},
+      "status": "unknown"
+    }
+  ],
+  "store": {
+    "schemaVersion": 1,
+    "revision": 7,
+    "defaultProfileId": "gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234",
+    "selectedByEdition": {
+      "classic": "gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234"
+    },
+    "profiles": {
+      "gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234": {
+        "id": "gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234",
+        "edition": "classic",
+        "canonicalRoot": "/synthetic/Classic",
+        "displayRoot": "/display/Classic",
+        "futureProfile": {
+          "array": [
+            1,
+            "value",
+            null
+          ]
+        }
+      }
+    },
+    "futureStore": {
+      "keep": true,
+      "integer": 9007199254740991
+    }
+  },
+  "managedMutations": [
+    {
+      "name": "directory-out-of-file",
+      "offset": 364,
+      "value": 4294967280,
+      "width": 4
+    },
+    {
+      "name": "directory-past-section",
+      "offset": 364,
+      "value": 513,
+      "width": 4
+    },
+    {
+      "name": "directory-too-short",
+      "offset": 364,
+      "value": 71,
+      "width": 4
+    },
+    {
+      "name": "directory-zero",
+      "offset": 364,
+      "value": 0,
+      "width": 4
+    },
+    {
+      "name": "cb-out-of-file",
+      "offset": 512,
+      "value": 4294967280,
+      "width": 4
+    },
+    {
+      "name": "cb-past-directory",
+      "offset": 512,
+      "value": 73,
+      "width": 4
+    },
+    {
+      "name": "cb-too-short",
+      "offset": 512,
+      "value": 71,
+      "width": 4
+    },
+    {
+      "name": "metadata-rva-out-of-file",
+      "offset": 520,
+      "value": 4294967280,
+      "width": 4
+    },
+    {
+      "name": "metadata-rva-zero",
+      "offset": 520,
+      "value": 0,
+      "width": 4
+    },
+    {
+      "name": "metadata-straddles-section",
+      "offset": 520,
+      "value": 4592,
+      "width": 4
+    },
+    {
+      "name": "metadata-size-out-of-file",
+      "offset": 524,
+      "value": 4294967280,
+      "width": 4
+    },
+    {
+      "name": "metadata-size-zero",
+      "offset": 524,
+      "value": 0,
+      "width": 4
+    },
+    {
+      "name": "metadata-size-signature-only",
+      "offset": 524,
+      "value": 4,
+      "width": 4
+    },
+    {
+      "name": "metadata-root-too-short",
+      "offset": 524,
+      "value": 23,
+      "width": 4
+    },
+    {
+      "name": "metadata-missing-BSJB",
+      "offset": 592,
+      "value": 0,
+      "width": 4
+    },
+    {
+      "name": "version-size-zero",
+      "offset": 604,
+      "value": 0,
+      "width": 4
+    },
+    {
+      "name": "version-size-past-metadata",
+      "offset": 604,
+      "value": 256,
+      "width": 4
+    },
+    {
+      "name": "version-size-misaligned",
+      "offset": 604,
+      "value": 11,
+      "width": 4
+    },
+    {
+      "name": "version-unterminated",
+      "offset": 616,
+      "value": 1094795585,
+      "width": 4
+    },
+    {
+      "name": "version-invalid-utf8",
+      "offset": 608,
+      "value": 255,
+      "width": 1
+    },
+    {
+      "name": "stream-count-past-root",
+      "offset": 622,
+      "value": 1,
+      "width": 2
+    },
+    {
+      "name": "metadata-outside-virtual-section",
+      "offset": 384,
+      "value": 72,
+      "width": 4
+    }
+  ],
+  "metadataDomain": {
+    "maxContainerDepth": 64,
+    "jsonCases": [
+      {
+        "name": "Unicode scalar strings and keys",
+        "source": "{\"\ud83d\ude00\":\"Gr\u00fc\u00dfe \u65e5\u672c\u8a9e \ud83d\ude00\"}",
+        "valid": true
+      },
+      {
+        "name": "escaped surrogate pair",
+        "source": "{\"s\":\"\\ud83d\\ude00\"}",
+        "valid": true
+      },
+      {
+        "name": "embedded BOM string",
+        "source": "{\"s\":\"\ufeff\"}",
+        "valid": true
+      },
+      {
+        "name": "lone high surrogate",
+        "source": "{\"s\":\"\\ud800\"}",
+        "valid": false
+      },
+      {
+        "name": "lone low surrogate",
+        "source": "{\"s\":\"\\udc00\"}",
+        "valid": false
+      },
+      {
+        "name": "reversed surrogate pair",
+        "source": "{\"s\":\"\\udc00\\ud800\"}",
+        "valid": false
+      },
+      {
+        "name": "unpaired surrogate key",
+        "source": "{\"\\ud800\":1}",
+        "valid": false
+      },
+      {
+        "name": "leading UTF-8 BOM",
+        "source": "\ufeff{}",
+        "valid": false
+      },
+      {
+        "name": "BOM after whitespace",
+        "source": " \ufeff{}",
+        "valid": false
+      }
+    ],
+    "duplicateMemberPolicy": "reject-decoded-object-member-names-at-every-level",
+    "rawStoreCases": [
+      {
+        "name": "ordinary valid duplicate values are rejected",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":1,\"extension\":2}",
+        "valid": false
+      },
+      {
+        "name": "identical duplicate values are rejected",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":null,\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "escaped-equivalent root names",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":1,\"\\u0065xtension\":2}",
+        "valid": false
+      },
+      {
+        "name": "duplicate required root member",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"revision\":0}",
+        "valid": false
+      },
+      {
+        "name": "escaped-equivalent required root member",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"\\u0072evision\":0}",
+        "valid": false
+      },
+      {
+        "name": "overshadowed lone high surrogate",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":\"\\ud800\",\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "overshadowed lone low surrogate",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":\"\\udc00\",\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "overshadowed unpaired surrogate key",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"\\ud800\":null},\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "overshadowed 65-container object",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":null}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}},\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "overshadowed 65-container array",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[null]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "overshadowed 130-container object",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":{\"child\":null}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}},\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "overshadowed 130-container array",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[null]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"extension\":null}",
+        "valid": false
+      },
+      {
+        "name": "duplicate profile member",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\":{\"id\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\",\"edition\":\"classic\",\"canonicalRoot\":\"/synthetic/Classic\",\"displayRoot\":\"/display/Classic\",\"edition\":\"classic\"}}}",
+        "valid": false
+      },
+      {
+        "name": "escaped-equivalent profile member",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\":{\"id\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\",\"edition\":\"classic\",\"canonicalRoot\":\"/synthetic/Classic\",\"displayRoot\":\"/display/Classic\",\"\\u0065dition\":\"classic\"}}}",
+        "valid": false
+      },
+      {
+        "name": "duplicate profile-map identity",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\":{\"id\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\",\"edition\":\"classic\",\"canonicalRoot\":\"/synthetic/Classic\",\"displayRoot\":\"/display/Classic\"},\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\":{\"id\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\",\"edition\":\"classic\",\"canonicalRoot\":\"/synthetic/Classic\",\"displayRoot\":\"/display/Classic\"}}}",
+        "valid": false
+      },
+      {
+        "name": "escaped-equivalent selection member",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{\"classic\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\",\"cl\\u0061ssic\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\"},\"profiles\":{\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\":{\"id\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\",\"edition\":\"classic\",\"canonicalRoot\":\"/synthetic/Classic\",\"displayRoot\":\"/display/Classic\"}}}",
+        "valid": false
+      },
+      {
+        "name": "duplicate nested unknown extension member",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"keep\":1,\"keep\":2}}",
+        "valid": false
+      },
+      {
+        "name": "escaped-equivalent extension member inside array",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":[{\"keep\":1,\"\\u006beep\":2}]}",
+        "valid": false
+      },
+      {
+        "name": "duplicate nested profile extension member",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\":{\"id\":\"gp1-bca4be08a1572850a4f5db06dd61cedb77a1c2ecfdb19647ad2c0f7da9236234\",\"edition\":\"classic\",\"canonicalRoot\":\"/synthetic/Classic\",\"displayRoot\":\"/display/Classic\",\"extension\":{\"n\":null,\"n\":null}}}}",
+        "valid": false
+      },
+      {
+        "name": "literal and escaped surrogate-pair names",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"\ud83d\ude00\":1,\"\\ud83d\\ude00\":2}}",
+        "valid": false
+      },
+      {
+        "name": "duplicate empty member name",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"\":1,\"\":2}}",
+        "valid": false
+      },
+      {
+        "name": "duplicate prototype-shaped member name",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"__proto__\":1,\"__proto__\":2}}",
+        "valid": false
+      },
+      {
+        "name": "escaped-equivalent quote and backslash names",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"quote\\\"\\\\\":1,\"quote\\u0022\\u005c\":2}}",
+        "valid": false
+      },
+      {
+        "name": "repeated array values remain valid",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":[1,1,null,null,{\"keep\":1},{\"keep\":1}]}",
+        "valid": true
+      },
+      {
+        "name": "same names in separate object scopes remain valid",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"left\":{\"keep\":1},\"right\":{\"keep\":2}}}",
+        "valid": true
+      },
+      {
+        "name": "member-like text in string values remains valid",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":[\"{\\\"keep\\\":1,\\\"keep\\\":2}\",\"[]{}:,\\\\\",{\"keep\":\"keep\"}]}",
+        "valid": true
+      },
+      {
+        "name": "case and Unicode normalization remain distinct",
+        "source": "{\"schemaVersion\":1,\"revision\":0,\"defaultProfileId\":null,\"selectedByEdition\":{},\"profiles\":{},\"extension\":{\"A\":1,\"a\":2,\"\u00e9\":3,\"e\u0301\":4}}",
+        "valid": true
+      }
+    ]
+  }
+}

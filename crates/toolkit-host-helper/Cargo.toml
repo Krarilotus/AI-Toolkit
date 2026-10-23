@@ -1,0 +1,17 @@
+[package]
+name = "toolkit-host-helper"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Private stdio adapter for toolkit-core"
+
+[dependencies]
+toolkit-core = { path = "../toolkit-core" }
+serde_json = { version = "=1.0.151", features = ["preserve_order"] }
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

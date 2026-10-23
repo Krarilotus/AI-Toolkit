@@ -603,7 +603,7 @@
     },
     {
       "track": "canonical-core-fix-r4",
-      "status": "completed; actual facade admission and call-time snapshot corrected;103transport per helper9packaging; fresh Review39 running",
+      "status": "completed; independently accepted Review39; one admission owner and call-time snapshots",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r4",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r4",
       "kind": "bounded correction; no children",
@@ -641,7 +641,7 @@
     },
     {
       "track": "lord-panel-fix-r3",
-      "status": "completed; root43 independently inspects small delta and replays17+6 browser checks; accepted for component commit",
+      "status": "completed; root43 accepted; component committed29f2ef9",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-clean-revision-20261023-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-clean-revision-20261023-r3",
       "kind": "bounded correction; no children",
@@ -653,7 +653,7 @@
     },
     {
       "track": "canonical-core-review-r3",
-      "status": "running; independent actual-facade closure of C1-02; prior canonical Rust/F1 findings remain closed",
+      "status": "completed; GO additive C1; C1-02 closed;28source hashes and both packaged identities; root stage verified",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r3",
       "kind": "bounded independent review; no children",

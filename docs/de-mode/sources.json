@@ -268,11 +268,19 @@
     },
     {
       "id": "lord-panel-component",
-      "commit": "pending coordinator milestone commit",
+      "commit": "29f2ef97e734016b15fd5df145f4dd28fe0eaa49",
       "review": "research/38-lord-panel-review-r2.md and research/43-lord-panel-final-root-review.md",
       "sourceReceipt": "S:/Projects/UCP/de-research/lord-panel-stage-receipt.json",
       "evidence": "Review38 closes35 findings; root43 closes minor external-undo revision fix with17replayed and6independent browser checks;120owned/protected/evidence hashes",
       "limits": "Unexposed component; authenticated contexts/filesystem integration and native/game acceptance open"
+    },
+    {
+      "id": "c1-canonical-core",
+      "commit": "pending coordinator milestone commit",
+      "review": "research/39-canonical-core-review-r3.md",
+      "sourceReceipt": "S:/Projects/UCP/de-research/c1-stage-receipt.json",
+      "evidence": "28source hashes;103fresh transport/profile plus9packaging tests; both actual directory packages verified; prior29Rust/F1 and C1-01 closures preserved",
+      "limits": "Unexposed canonical backend/helper; live contexts/raw documents/host workflow and game acceptance open"
     }
   ],
   "acceptancePreparation": {
