@@ -112,3 +112,10 @@ Preserve workers, batching, caches, invalidation and latest-only queues. Compare
 affected interactive workloads against an isolated baseline; functional tests
 and helper microbenchmarks alone do not establish UI performance. See standard05
 and docs/iso-scrub-performance.md for existing rationale and evidence.
+
+The user also requires process cleanup. Own each spawned helper/server and its
+descendants, record its purpose and handle/PID identity, bound waits, and clean
+up/reap on success, failure, timeout and cancellation. Check actual process/port
+state before a task reports shutdown. Persistent MCP clients must defer expensive
+optional state until needed and release it when the client lifecycle ends.
+Never terminate unrelated processes by broad executable name. See standard05.

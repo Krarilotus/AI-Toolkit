@@ -585,7 +585,7 @@
         "docs/de-mode/research/37-sprite-reconstruction-contract.md"
       ],
       "isolation": "shared; disjoint ownership only; no recursive delegation",
-      "status": "completed;41bases16masks209vertices127triangles; fresh independent Review40 running",
+      "status": "completed;41bases16masks209vertices127triangles; Review40 conditional GO and local-coordinate P2 fed into SPR2",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-probe-sprite-reconstruction-spr1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-probe-sprite-reconstruction-spr1-20261023-r1"
     },
@@ -664,7 +664,7 @@
     },
     {
       "track": "sprite-planes-spr2",
-      "status": "running; bounded Sprite reconstruction with Review40 P2 local-coordinate correction",
+      "status": "completed;64tests/57real512synthetic; independent implementation Review51 running",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-sprite-planes-spr2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-sprite-planes-spr2-20261023-r1",
       "kind": "bounded implementation; no children",
@@ -676,7 +676,7 @@
     },
     {
       "track": "first-desktop-workflow-f2w1",
-      "status": "running; implement first context-owned raw LORDJSON desktop open/edit/SaveAs/reopen in both hosts",
+      "status": "completed; reports44/45; independent backend49 and consumer50 reviews running; desktop observation pending",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-first-desktop-workflow-f2w1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-first-desktop-workflow-f2w1-20261023-r1",
       "kind": "bounded vertical implementation; at most one live Sol6.1 child and no grandchildren within global4slots",
@@ -692,7 +692,75 @@
         "optional child45-desktop-host-consumer-handoff.md"
       ],
       "isolation": "shared; disjoint from asset crate; explicit internal ownership split before child edits",
-      "protected": "No asset-crate edit; no rewrite of Classic rendering; no domain/parser/session algorithm fork; root owns central records"
+      "protected": "No asset-crate edit; no rewrite of Classic rendering; no domain/parser/session algorithm fork; root owns central records",
+      "child": {
+        "childThreadId": "thread:delegated-task:command%3Amcp%3A542f4da2-47c2-4a8c-a32f-565878d5e80e%3Adelegate-task%3Af2w1-consumer-20261023-r1",
+        "model": "gpt-6.1-sol",
+        "options": {
+          "reasoningEffort": "ultra",
+          "serviceTier": "default"
+        },
+        "verified": "Sol6.1 ultra/default returned and configuration verified; completed report45; independent Review50 running",
+        "owns": "Electron and shared LORD consumer; report45",
+        "taskId": "node:delegated-task:command%3Amcp%3A542f4da2-47c2-4a8c-a32f-565878d5e80e%3Adelegate-task%3Af2w1-consumer-20261023-r1"
+      }
+    },
+    {
+      "track": "process-lifecycle-fix",
+      "status": "completed; accepted root52 after independent full protocol/EOF replay; local launcher lazy and source-only ~60MiB; host-retained channels remain explicit",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-openshc-process-lifecycle-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-openshc-process-lifecycle-20261023-r1",
+      "kind": "bounded tooling implementation; no children",
+      "ownedFiles": [
+        "S:/Projects/Harness/tools/openshc-mcp/launch.py",
+        "focused local lifecycle tests",
+        "docs/de-mode/research/48-process-lifecycle-fix.md"
+      ],
+      "isolation": "shared; disjoint external tooling; no global config or old-directory deletion"
+    },
+    {
+      "track": "process-cleanup-hardening-r2",
+      "status": "completed; exact handle fallback and outside-Job witness;5 fresh root unit checks plus full ordinary replay pass",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-harden-process-probe-cleanup-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-harden-process-probe-cleanup-20261023-r2",
+      "kind": "bounded test-harness correction; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/48-process-lifecycle-fix.md (append only)"
+      ],
+      "isolation": "shared; disjoint report ownership; no production edits in review"
+    },
+    {
+      "track": "first-desktop-core-review-r1",
+      "status": "running; canonical context/raw file authority and both backend adapters",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-desktop-core-f2w1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-desktop-core-f2w1-20261023-r1",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/49-desktop-core-review-r1.md"
+      ],
+      "isolation": "shared; disjoint report ownership; no production edits in review"
+    },
+    {
+      "track": "desktop-consumer-review-r1",
+      "status": "running; shared controller/Electron authority/shipping consumers",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-consumer-f2w1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-consumer-f2w1-20261023-r1",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/50-desktop-consumer-review-r1.md"
+      ],
+      "isolation": "shared; disjoint report ownership; no production edits in review"
+    },
+    {
+      "track": "sprite-plane-review-r1",
+      "status": "running; bounded source-owned SPR2 implementation; Review40 witness and inherited A1/PXL2 boundaries",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-planes-spr2-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-planes-spr2-20261023-r1",
+      "kind": "fresh independent implementation review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/51-sprite-plane-review-r1.md"
+      ],
+      "isolation": "shared; disjoint report only; no production edits"
     }
   ],
   "pauseHistory": [

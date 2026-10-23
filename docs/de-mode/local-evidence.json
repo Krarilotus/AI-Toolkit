@@ -122,6 +122,17 @@
     "originalWrites": 0,
     "launchAllowed": false,
     "gameLaunched": false,
-    "remaining": "Fresh guarded run roots/artifacts; Steam policy/queue; actual activity and startup/exit preservation gate"
+    "remaining": "Configured artifacts uninstalled; independent configured review; finite native/child/path observers; exact owned install plan; fresh app-only Steam policy/queue, activity and startup/exit preservation gate",
+    "relocatedReport": "research/46-relocated-harness-preparation.md",
+    "configuredReceiptSha256": "9abb447bf233b0d1f7cd71be31c1aa24e4355c25b881bcb7a974cb950668e036"
+  },
+  "processMaintenance": {
+    "report": "research/52-process-lifecycle-root-review.md",
+    "externalReceipt": "S:/Projects/UCP/de-research/root-openshc-lifecycle-review-r1/verification.json",
+    "externalReceiptSha256": "7698086e76518a2cbb2a6243312b47dd4c6873948ec61ddf7eb79c4b32e12043",
+    "runtimeSha256": "78a8a297d4095e0f9fc86a9ae4339efd9c2268016333064138da086e0925e5df",
+    "oldHeavyHelpersCleared": true,
+    "historicalCopiesDeleted": false,
+    "activeChannelLimit": "Host-owned live lightweight channels are preserved; last root audit contains no loaded JVM"
   }
 }

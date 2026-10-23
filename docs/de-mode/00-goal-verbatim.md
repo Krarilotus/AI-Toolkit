@@ -63,3 +63,10 @@ The user also wrote:
 ## Preserve existing performance
 
 > make sure not to destroy any performance optimizatiosn inthe app, we have optimized it to feel smooth so always udnerstand the changes you make first and why the code was there inthe first place if you change thigns
+
+## 23 October process-cleanup steering
+
+> Not sure if its by you but it seems liek there is some leak where stale python processes are started that don't actualyl do anything ,can you make sure such leaks don'T happen or clean up aftter youself?
+
+This adds resource/lifecycle ownership to the continuing task; it does not
+replace the full Classic/DE objective or authorize stopping unrelated user work.

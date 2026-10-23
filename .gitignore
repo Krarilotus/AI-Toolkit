@@ -3,6 +3,9 @@ node_modules/
 src/vendor/pixi/
 src/vendor/i18next/
 src/js/desktop-api.js
+src/js/de-start.js
+src/js/de-editor.js
+src/js/de-classic.js
 desktop-dist/
 src-tauri/target/
 src-tauri/gen/
