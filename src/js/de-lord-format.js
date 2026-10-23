@@ -198,6 +198,12 @@
         diagnostics,
       });
     }
+    function classifyDocument(document) {
+      const assessment = inspect(document);
+      const status = assessment.interpretation.status;
+      const kind = assessment.interpretation.lordSpan ? 'de-lordjson' : status === 'ambiguous' ? 'ambiguous-lordjson' : 'generic-json';
+      return Object.freeze({ kind, document, assessment });
+    }
     function classify(input, options) {
       let document;
       try { document = json.parse(input, options); }
@@ -206,12 +212,9 @@
         // No binary format detection by size/magic/extension is attempted here.
         return Object.freeze({ kind: 'unparsed', error });
       }
-      const assessment = inspect(document);
-      const status = assessment.interpretation.status;
-      const kind = assessment.interpretation.lordSpan ? 'de-lordjson' : status === 'ambiguous' ? 'ambiguous-lordjson' : 'generic-json';
-      return Object.freeze({ kind, document, assessment });
+      return classifyDocument(document);
     }
-    return Object.freeze({ schema, inspect, classify, parse: json.parse, patch: json.patch });
+    return Object.freeze({ schema, inspect, classify, classifyDocument, parse: json.parse, patch: json.patch });
   }
   return Object.freeze({ create, ...(defaultSchema ? create(defaultSchema) : {}) });
 });

@@ -7,6 +7,7 @@ import { generate, run, root, scratch } from './generate-core-contracts.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const packagedSources = ['src/node/core-client.js', 'src/node/game-profiles.js', 'src/node/core-build-paths.js',
+  'src/shared/document-session.js',
   'src/desktop/generated/core/types.ts', 'src/desktop/generated/core/contract.json'];
 export function build() {
   const generated = generate(true);

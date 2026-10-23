@@ -14,7 +14,7 @@ const buffer = raw => Buffer.from(raw);
 const scalar = ['lord', 'opponent_type'];
 function browser(crypto = webcrypto) {
   const context = vm.createContext({ TextEncoder, TextDecoder, Uint8Array, ArrayBuffer, crypto });
-  for (const file of ['../src/shared/lossless-json', '../src/shared/generated/de-lord-pin', '../src/js/de-lord-format', '../src/shared/de-document-session']) {
+  for (const file of ['../src/shared/lossless-json', '../src/shared/document-session', '../src/shared/generated/de-lord-pin', '../src/js/de-lord-format', '../src/shared/de-document-session']) {
     vm.runInContext(fs.readFileSync(require.resolve(file), 'utf8'), context);
   }
   return { api: context.deDocumentSession, json: context.losslessJson };
