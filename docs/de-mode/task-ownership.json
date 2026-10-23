@@ -653,7 +653,7 @@
     },
     {
       "track": "canonical-core-review-r3",
-      "status": "completed; GO additive C1; C1-02 closed;28source hashes and both packaged identities; root stage verified",
+      "status": "completed; GO; exact reviewed canonical core/helper committedf02d828",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r3",
       "kind": "bounded independent review; no children",
@@ -673,6 +673,26 @@
         "docs/de-mode/research/42-sprite-plane-handoff.md"
       ],
       "isolation": "shared; asset crate only; disjoint from backend/UI"
+    },
+    {
+      "track": "first-desktop-workflow-f2w1",
+      "status": "running; implement first context-owned raw LORDJSON desktop open/edit/SaveAs/reopen in both hosts",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-first-desktop-workflow-f2w1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-first-desktop-workflow-f2w1-20261023-r1",
+      "kind": "bounded vertical implementation; at most one live Sol6.1 child and no grandchildren within global4slots",
+      "ownedFiles": [
+        "crates/toolkit-core/**",
+        "crates/toolkit-host-helper/**",
+        "canonical client and narrow Node adapters",
+        "thin Tauri desktop/storage/window adapters and generated contracts",
+        "Electron main/preload and shared desktop/DE bootstrap/controller",
+        "scoped edition/DE UI entry and build/package hooks",
+        "focused affected tests",
+        "docs/de-mode/research/44-first-desktop-workflow-handoff.md",
+        "optional child45-desktop-host-consumer-handoff.md"
+      ],
+      "isolation": "shared; disjoint from asset crate; explicit internal ownership split before child edits",
+      "protected": "No asset-crate edit; no rewrite of Classic rendering; no domain/parser/session algorithm fork; root owns central records"
     }
   ],
   "pauseHistory": [

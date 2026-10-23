@@ -276,7 +276,7 @@
     },
     {
       "id": "c1-canonical-core",
-      "commit": "pending coordinator milestone commit",
+      "commit": "f02d828a457fd94c786a53fe69055321c5a89318",
       "review": "research/39-canonical-core-review-r3.md",
       "sourceReceipt": "S:/Projects/UCP/de-research/c1-stage-receipt.json",
       "evidence": "28source hashes;103fresh transport/profile plus9packaging tests; both actual directory packages verified; prior29Rust/F1 and C1-01 closures preserved",
