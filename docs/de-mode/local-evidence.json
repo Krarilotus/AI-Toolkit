@@ -141,5 +141,13 @@
     "oldHeavyHelpersCleared": true,
     "historicalCopiesDeleted": false,
     "activeChannelLimit": "Host-owned live lightweight channels are preserved; last root audit contains no loaded JVM"
+  },
+  "uiPreparation": {
+    "atUtc": "2026-10-23T18:18:28.4245097Z",
+    "activityIdleMilliseconds": 2016,
+    "gameProcesses": 0,
+    "inputActions": 0,
+    "steamSettingChanges": 0,
+    "scope": "Read-only app inventory and Win32 last-input observation; PC active; no reliable Steam Cloud/queue evidence or app/game launch"
   }
 }
