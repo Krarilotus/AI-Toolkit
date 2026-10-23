@@ -1,0 +1,24 @@
+﻿{
+  "note":"Selbst verfasst – Grüße 🏰",
+  "pauseDelayAmount":137,
+  "frames":[
+    {"itemType":61,"tilePositionOfsets":[5739],"shouldPause":false,"keepExtra":{"raw":1e400}},
+    {"itemType":25,"tilePositionOfsets":[2113,2114,2113],"shouldPause":true},
+    {"itemType":144,"tilePositionOfsets":[3427],"shouldPause":false},
+    {"itemType":145,"tilePositionOfsets":[6831],"shouldPause":false},
+    {"itemType":25,"tilePositionOfsets":[],"shouldPause":true,"emptyExtension":[]},
+    {"itemType":0,"tilePositionOfsets":[2113],"shouldPause":false},
+    {"itemType":46,"tilePositionOfsets":[2113],"shouldPause":true},
+    {"itemType":32767,"tilePositionOfsets":[9999,0],"shouldPause":false,"future":{"z":-0}}
+  ],
+  "miscItems":[
+    {"positionOfset":927,"itemType":6,"number":9,"extra":"ä🦊"},
+    {"positionOfset":713,"itemType":6,"number":10},
+    {"positionOfset":1137,"itemType":7,"number":0},
+    {"positionOfset":3827,"itemType":9022,"number":29},
+    {"positionOfset":6729,"itemType":22,"number":30},
+    {"positionOfset":5923,"itemType":29,"number":10}
+  ],
+  "unknown":9007199254740993,"unknown":1e400,
+  "numericTokens":[-0,1e-9999,1.2300E+02],"future":[{},[],null]
+}
