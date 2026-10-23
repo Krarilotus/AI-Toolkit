@@ -37,6 +37,13 @@ their owned executable path, with exactly one match, rather than using the
 shared display title `AI Toolkit`. Follow the skill's fresh observation/action
 workflow; do not mix direct PowerShell UI Automation with Computer Use.
 
+On 23 October, read-only background captures of two exactly selected Steam
+windows returned non-target visual content and only disabled-pane accessibility.
+They establish no Cloud/queue state. No input was sent and those captures are
+invalid evidence. At the later idle-time UI gate, foreground the selected window
+and verify a fresh screenshot matches before choosing any control; stop if the
+mismatch persists. Do not reuse old coordinates or infer a setting from a title.
+
 Read-only source inventory at `7f22728`: native `storage::user_data` already
 honors `AI_TOOLKIT_USER_DATA`, and editor creation explicitly places WebView2
 data under that directory's `WebView` child. The legacy-update helper also reads

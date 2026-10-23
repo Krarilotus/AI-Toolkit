@@ -15,7 +15,7 @@ D1 is committed at b4b319f after Review18 closed its findings. F1 round3
 corrections remain uncommitted; C1 now extracts their Rust implementation and
 removes independent Node policy. Independent review of the extracted core must
 close raw duplicate/recovery R4. Review24 found one A1 geometry cumulative-work/
-cancellation gap; a focused correction is running. Review22 accepts the narrow
+cancellation gap; the correction reports35 tests and is under fresh Review27. Review22 accepts the narrow
 offline isolation result and finite host preflight;
 its two guard defects are scoped and no real-launch evidence exists.
 Historical 900 JS/100 native regressions predate round3/C1. The current plan02

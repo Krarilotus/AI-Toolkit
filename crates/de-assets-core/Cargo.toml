@@ -1,0 +1,11 @@
+[package]
+name = "de-assets-core"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.88"
+publish = false
+description = "Unexposed, bounded reader for an audited DE Unity serialized profile"
+
+[workspace]
+
+[dependencies]
