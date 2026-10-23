@@ -15,7 +15,7 @@ D1 is committed at b4b319f after Review18 closed its findings. F1 round3
 corrections remain uncommitted; C1 now extracts their Rust implementation and
 removes independent Node policy. Independent review of the extracted core must
 close raw duplicate/recovery R4. Review24 found one A1 geometry cumulative-work/
-cancellation gap; the correction reports35 tests and is under fresh Review27. Review22 accepts the narrow
+cancellation gap; Review27 closed it and A1 is committed at30215f2. Review22 accepts the narrow
 offline isolation result and finite host preflight;
 its two guard defects are scoped and no real-launch evidence exists.
 Historical 900 JS/100 native regressions predate round3/C1. The current plan02
@@ -132,6 +132,15 @@ token-preserving JSON/LORDJSON modules preserve unknown large-number lexemes,
 duplicates, arrays/tails and unchanged bytes, with separate target diagnostics.
 The next document owner adds a shared session over that implementation; desktop
 and UI routing are integrated through the canonical context/byte boundary.
+
+DS1 receipt integration contract: the canonical core supplies the opaque
+document-context identity passed as session ownerId; each host passes it through
+rather than deriving a competing identity. Keep this distinct from transport
+epochs/operation leases. A backend failure retains the JS session and undo until
+explicit original-context recovery; recreating a session from bytes would discard
+history. Receipts correlate the exact submitted snapshot, including its destination
+string; canonical filesystem identity may be an additional backend field, never
+a reason to weaken snapshot matching. These remain integration gates.
 
 Later document routing keeps a document session's format, immutable source bytes,
 revision, explicit path and owning context together. Native/Electron transport

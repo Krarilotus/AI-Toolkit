@@ -37,10 +37,10 @@ advance independently; neither blocks the first lossless file workflow.
 | --- | --- | --- |
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
-| Unify backend ownership | One canonical policy, generated contracts, both host consumers | C1 final-source validation/package checks resume before independent review |
+| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Review30 closed R1/R4; final-result/admission corrections running |
 | Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Next integrated slice; no live DE toggle yet |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
-| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | Review27 GO additive metadata; pixel evaluation follows its commit |
+| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 implemented; independent Review34 running |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
 | Complete acceptance | Every required CSV criterion has appropriate evidence | Open; foundations are not feature acceptance |
@@ -54,16 +54,19 @@ corrective move. Exact task IDs, file groups and statuses are in
 [task-ownership.json](task-ownership.json). Nested agents are capped at3 per owner
 and live global capacity; no uncontrolled fan-out.
 
-- **C1 finalization:** one owner verifies the final portable resolver, cross-volume
-  packaging, current helper identity, MSRV/transport checks and measurements.
-  Independent core review follows; no live contexts/UI are added in this task.
-- **DS1 independent Review28:** checks shared session save/undo/receipt boundaries
-  and generated schema guards against the unchanged D1 preservation contract.
-- **A1 milestone:** Review27 gives GO and root matches all18 source hashes and
-  handoff16. Commit only this reviewed metadata crate; pixels remain unaccepted.
-- **PXL1 scratch evaluation:** report29 owns decoder/spec/oracle comparisons,
-  BC1 alpha/BC7 modes, bounded crop/resource measurements and pinned notices.
-  It selects a narrow next implementation without changing product dependencies.
+- **C1 correction after Review30:** original R1/R4 independently closed.
+  Enforce common final-result budget before mutation and admission before
+  serialization; focused r3 correction preserves prior closure.
+- **DS1 milestone:** Review32 closes both P2s and portability;205 tests pass.
+  Shared session/schema generation accepted for additive commit, not UI.
+- **DE Lord panel:** scoped view consumes the accepted session through injected
+  controller callbacks; actual context/host integration follows.
+- **A1 milestone:** committed30215f2 after exact reviewed hashes. Metadata only.
+- **PXL2 Review34:** checked BC1a/BC7 crops are implemented with51 tests and
+  real-crop parity. Independent bounds/source/performance review gates commit.
+- **Performance:** preserved as an explicit regression requirement in standard05
+  and contract01; existing worker/cache/invalidation rationale must be understood
+  before alteration and affected interactive costs compared on owned builds.
 - **Isolation Review22 complete:** accepts the narrow offline result and finite
   direct-EXE vanilla single-player preflight. Fresh copy/roots, scoped backups,
   Steam Cloud/queue evidence and startup/exit observations are still required.
@@ -88,7 +91,7 @@ and live global capacity; no uncontrolled fan-out.
 - A1 reports29 synthetic tests on Rust1.88/1.98 and 86-object full-field parity.
   Review24 found one P2 work/cancellation gap. Its correction reports35 tests
   and deterministic mid-loop cancellation. Review27 independently closes the P2.
-  The reviewed additive core is staged separately. No pixel decoder, whole-building
+  The reviewed additive core is committed at30215f2. No pixel decoder, whole-building
   rendering or cache contract is accepted. Privileged file-symlink creation was
   unavailable; junction rejection was exercised. Mutation limits are explicit.
 - Native/managed DE hashes match the pinned baseline; managed PE32 is not an

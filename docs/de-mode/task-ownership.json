@@ -392,7 +392,7 @@
       "track": "assets-core-review-r2",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261023-r2",
-      "status": "completed; GO for exact additive A1; root verified18 file hashes plus handoff; milestone staged separately",
+      "status": "completed; GO accepted and exact18 sources committed30215f2; no rendering/integration claim",
       "kind": "fresh independent correction review; cumulative geometry budget and cancellation",
       "ownedFiles": [
         "docs/de-mode/research/27-assets-core-review-r2.md"
@@ -403,7 +403,7 @@
       "track": "canonical-core-finalize-r2",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-finish-canonical-core-c1-20261023-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-finish-canonical-core-c1-20261023-r2",
-      "status": "running",
+      "status": "completed;26core/MSRV90transport35Classic2inventory; fresh cross-volume packages; independent Review30 running",
       "kind": "C1 final-source validation and packaging",
       "ownedFiles": [
         "crates/toolkit-core/**",
@@ -434,7 +434,7 @@
       "track": "document-session-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-document-session-ds1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-document-session-ds1-20261023-r1",
-      "status": "running",
+      "status": "completed; NO-GO two P2 findings: unbounded history and receipt status reread; D1 protections intact",
       "kind": "Fresh independent DS1 review",
       "ownedFiles": [
         "docs/de-mode/research/28-document-session-review-r1.md"
@@ -445,13 +445,116 @@
       "track": "pixels-evaluation-pxl1",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-evaluate-de-pixels-pxl1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-evaluate-de-pixels-pxl1-20261023-r1",
-      "status": "running",
+      "status": "completed; pinned decoder recommended after specs/oracles/14real crops; root selects bounded PXL2",
       "kind": "Scratch-only decoder evaluation",
       "ownedFiles": [
         "docs/de-mode/research/29-pixel-decoder-evaluation.md",
         "S:/Projects/UCP/de-research/pixels-pxl1 (external scratch)"
       ],
       "isolation": "shared; explicit disjoint ownership; no recursive delegation during current global allocation"
+    },
+    {
+      "track": "document-session-fix-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-document-session-ds1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-document-session-ds1-20261023-r2",
+      "status": "completed; bounded32entry/16MiB history; one receipt outcome; portable tests;205checks; Review32 running",
+      "kind": "focused DS1 history/receipt correction plus portable generator tests",
+      "ownedFiles": [
+        "src/shared/de-document-session.js",
+        "tests/de-document-session.test.js",
+        "tests/de-lord-schema-generation.test.js",
+        "docs/de-mode/research/26-document-session-handoff.md"
+      ],
+      "isolation": "shared; disjoint domain files; no children in current global allocation"
+    },
+    {
+      "track": "canonical-core-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r1",
+      "status": "completed; original R1/R4 closed; NO-GO P1 result budget and P2 pre-admission copies; r3 correction running",
+      "kind": "independent C1/R4/transport/package review",
+      "ownedFiles": [
+        "docs/de-mode/research/30-canonical-core-review-r1.md"
+      ],
+      "isolation": "shared; explicit disjoint files; no nested work in current global allocation"
+    },
+    {
+      "track": "pixels-implementation-pxl2",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-de-pixels-pxl2-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-de-pixels-pxl2-20261023-r1",
+      "status": "completed;51tests bothRust;14crops/randomBC7 match; independent Review34 running",
+      "kind": "bounded Rust texture crop implementation",
+      "ownedFiles": [
+        "crates/de-assets-core/**",
+        "docs/de-mode/research/31-texture-crop-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint files; no nested work in current global allocation"
+    },
+    {
+      "track": "document-session-review-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-document-session-ds1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-document-session-ds1-20261023-r2",
+      "status": "completed; GO additive DS1; root14-file fingerprint check; milestone commit",
+      "kind": "fresh independent DS1 correction review",
+      "ownedFiles": [
+        "docs/de-mode/research/32-document-session-review-r2.md"
+      ],
+      "isolation": "shared; explicit disjoint files; no nested work in current global allocation"
+    },
+    {
+      "track": "canonical-core-fix-r3",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r3",
+      "status": "running",
+      "kind": "C1 final-result byte budget and pre-serialization admission correction",
+      "ownedFiles": [
+        "crates/toolkit-core/**",
+        "crates/toolkit-host-helper/**",
+        "src-tauri/Cargo.toml",
+        "src-tauri/Cargo.lock",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/profiles.rs",
+        "src/node/game-profiles.js",
+        "src/node/core-client.js",
+        "tests/game-profiles.test.js",
+        "tests/fixtures/de-mode/foundation.json",
+        "tests/core-client.test.js",
+        "tests/core-helper.test.js",
+        "scripts/build-core.mjs",
+        "scripts/generate-core-contracts.mjs",
+        "src/desktop/generated/core/**",
+        "package.json",
+        "package-lock.json",
+        "docs/de-mode/research/25-canonical-core-handoff.md",
+        "src-tauri/src/desktop/contracts.rs",
+        "src/node/core-build-paths.js",
+        "tests/core-build-paths.test.js"
+      ],
+      "isolation": "shared; explicit disjoint files; no nested work in current global allocation"
+    },
+    {
+      "track": "lord-panel-ui",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-lord-panel-ui-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-lord-panel-ui-20261023-r1",
+      "status": "running",
+      "kind": "scoped DE LORDJSON view and owned browser QA",
+      "ownedFiles": [
+        "src/js/de-lord-panel.js",
+        "src/css/de-lord-panel.css",
+        "docs/de-mode/research/33-lord-panel-handoff.md"
+      ],
+      "isolation": "shared; explicit disjoint files; no nested work in current global allocation"
+    },
+    {
+      "track": "pixels-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-de-pixels-pxl2-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-de-pixels-pxl2-20261023-r1",
+      "status": "running",
+      "kind": "independent PXL2 crop/source/bounds/performance review",
+      "ownedFiles": [
+        "docs/de-mode/research/34-texture-crop-review-r1.md"
+      ],
+      "isolation": "shared; disjoint report; no children in current capacity"
     }
   ],
   "pauseHistory": [

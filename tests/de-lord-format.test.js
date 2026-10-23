@@ -14,6 +14,7 @@ const text = raw => Buffer.from(raw).toString('utf8');
 function browserOverlay() {
   const context = vm.createContext({ TextEncoder, TextDecoder, Uint8Array, ArrayBuffer });
   vm.runInContext(fs.readFileSync(require.resolve('../src/shared/lossless-json'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(require.resolve('../src/shared/generated/de-lord-pin'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(require.resolve('../src/js/de-lord-format'), 'utf8'), context);
   return context.deLordFormat;
 }

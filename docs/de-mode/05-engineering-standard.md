@@ -69,6 +69,28 @@ evidence, affected contract, proposed structural move and smallest next step.
 Do useful work within ownership; report necessary cross-owner changes before
 editing them. The coordinator reconciles the interfaces and serializes conflicts.
 
+## Preserve smoothness
+
+Read [existing performance rationale](../iso-scrub-performance.md) and relevant
+[native parity/cache contracts](../native-parity.md) before touching hot paths.
+Understand comments and Git history before removing or simplifying an optimization.
+These are historical baselines and design reasons, not current DE measurements.
+
+Preserve worker-owned retained WebGL/2D scenes, latest-only pending frames, texture
+and geometry reuse, spatial terrain-command indexing and stable painter merges,
+dirty-region invalidation, visible-row updates and deferred population/cost work.
+Intentional Canvas and fire-mask paths retain their roles. Previously rejected
+whole-scene bitmap transfers and union-clip changes cannot be revived merely to
+make an edition adapter easier; they need measured evidence.
+
+Keep profile probes, large hashes, extraction/decoding and IPC out of per-frame
+paths. Batch/cache at the proper owner, avoid reserializing complete histories
+just to count their cost, and retain warm-cache identity and latest-result reuse.
+Changes affecting smoothness need an owned before/after workload with equal
+scene/camera/cache conditions: input/frame intervals, CPU/allocation/memory and
+pixel/behavior checks as relevant. Report percentile/peak costs and remaining
+limits; no invented universal FPS threshold or microbenchmark-as-UI claim.
+
 ## Quality and review
 
 Review correctness, readability, architecture, preservation/security and measured
