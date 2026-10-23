@@ -286,6 +286,23 @@
   "acceptancePreparation": {
     "evidence": "research/41-game-preflight-preparation.md",
     "externalReceipt": "S:/Projects/UCP/de-research/game-acceptance-preflight-20261023-r1-prepared/receipt.json",
-    "status": "Physical copy4702files and116scoped backup files verified; encrypted PlayerPrefs digest verified; launchAllowedfalse; fresh guarded artifacts and actual Steam/activity gate remain"
+    "status": "Physical copy4702files/116scoped backups verified; offline relocated artifacts and17guard checks verified, uninstalled; launchAllowedfalse; independent configured review and Steam/activity/startup gates remain",
+    "relocatedReport": "research/46-relocated-harness-preparation.md",
+    "configuredReceipt": {
+      "path": "S:/Projects/UCP/de-research/game-acceptance-preflight-20261023-r1-prepared/relocated-harness-r1/configured-receipt.json",
+      "sha256": "9abb447bf233b0d1f7cd71be31c1aa24e4355c25b881bcb7a974cb950668e036"
+    }
+  },
+  "toolingMaintenance": {
+    "openShcMcp": {
+      "report": "research/48-process-lifecycle-fix.md",
+      "independentReview": "research/52-process-lifecycle-root-review.md",
+      "runtimeOwner": "S:/Projects/Harness/tools/openshc-mcp/launch.py",
+      "sha256": "78a8a297d4095e0f9fc86a9ae4339efd9c2268016333064138da086e0925e5df",
+      "rootReceipt": "S:/Projects/UCP/de-research/root-openshc-lifecycle-review-r1/verification.json",
+      "rootReceiptSha256": "7698086e76518a2cbb2a6243312b47dd4c6873948ec61ddf7eb79c4b32e12043",
+      "evidence": "5 root ownership tests; baseline plus8 actual final protocol cases; all12 tool contracts equal; real heavy EOF0.705s and no owned leftovers",
+      "limits": "Host-held channels/forced termination are separate; historical directory deletion blocked before execution; no UI/game acceptance"
+    }
   }
 }

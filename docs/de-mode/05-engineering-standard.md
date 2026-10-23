@@ -93,6 +93,20 @@ limits; no invented universal FPS threshold or microbenchmark-as-UI claim.
 
 ## Quality and review
 
+Process lifetime is owned work, including research tooling. Track launched
+sessions/PIDs with creation identity and purpose; bounded waits and finally
+cleanup must cover descendants, pipes and temporary resources on errors and
+cancellation as well as success. A finished parent command does not prove its
+children exited. Recheck process/port state and report any known live services.
+Tests must also reap their own helper/shim descendants after timeout.
+
+Keep expensive optional state lazy. Tool discovery or a source-only request
+must not create a full Ghidra database per idle MCP client. Verify actual
+initialize/list-tools/EOF behavior and preserved tool signatures; distinguish a
+legitimate live client from a failed startup or abandoned task. Cleanup targets
+must be positively attributed by PID/creation/command/owner, with safe temporary
+root checks. Do not kill all Python processes or delete ambiguous user data.
+
 Review correctness, readability, architecture, preservation/security and measured
 resource use. Ask whether the behavior advances the original goal, whether the
 owning layer is correct and whether the abstraction earns its complexity. Prefer

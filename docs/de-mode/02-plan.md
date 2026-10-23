@@ -38,9 +38,9 @@ advance independently; neither blocks the first lossless file workflow.
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
 | Unify backend ownership | One canonical policy, generated contracts, both host consumers | Committedf02d828 after Review39 and exact28source/staged-byte verification |
-| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | F2W1 implementing both-host context-owned LORDJSON workflow; no live toggle yet |
+| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | F2W1 implementation complete; independent backend49/consumer50 reviews running; actual desktop observation pending |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
-| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 committed61c2fa1 after independent Review34; Sprite reconstruction proof running |
+| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL2 committed61c2fa1; SPR2 implemented with57 real planes; independent implementation review next |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
 | Complete acceptance | Every required CSV criterion has appropriate evidence | Open; foundations are not feature acceptance |
@@ -75,9 +75,18 @@ and live global capacity; no uncontrolled fan-out.
   Exact38-file snapshot and staged bytes verified;51 tests on both Rust versions,
   independent crop/mip/source/budget/cancellation probes and14 real-crop parity.
   SPR1 matches41 base Sprites and16 raw masks plus209 vertices/127 triangles
-  against pinned extraction conventions. Review40 conditionally approves SPR2
-  with a triangle-local raster P2 correction; bounded implementation42 is running.
+  against pinned extraction conventions. SPR2 implementation42 is complete with
+  the triangle-local P2 correction,64tests and57real/512synthetic plane parity.
+  Fresh independent implementation Review51 is running after the process fix.
   Host/renderer and actual Unity/game rasterization remain open.
+- **Process cleanup:** Report47 records cleared unused OpenSHC Python helpers.
+  Report48 implements lazy Ghidra startup and actual EOF/descendant tests;
+  root52 accepts the local fix after five fresh ownership tests, all12 unchanged
+  tool contracts and the baseline/eight-case protocol replay. Real heavy EOF
+  exits naturally in0.705s. Active host-held channels remain light and lazy;
+  their retirement and forced-termination limits remain explicit.
+  Old temporary-copy deletion was blocked before execution; do not retry through
+  another tool. This tooling fix does not change the app renderer.
 - **Performance:** preserved as an explicit regression requirement in standard05
   and contract01; existing worker/cache/invalidation rationale must be understood
   before alteration and affected interactive costs compared on owned builds.
@@ -87,13 +96,19 @@ and live global capacity; no uncontrolled fan-out.
   The acceptance protocol records the coordinator decision and two scoped guard
   defects. Report41 now records a verified physical copy and116 scoped backup
   files plus encrypted PlayerPrefs recovery. Fresh guarded roots, Steam policy
-  and startup observations remain open. No game launch or preference change.
-- **F2W1 consumer slice running:** one canonical context/operation/file service,
+  and startup observations remain open. Report46 adds configured offline
+  artifacts and17 relocated-guard checks, still uninstalled and launch-disabled.
+  No game launch or preference change.
+- **F2W1 implementation complete; independent reviews49/50 running:** one canonical context/operation/file service,
   thin adapters for both hosts, real DS1/panel controller and fresh DE routing
   before Classic startup. The named open/edit/Save As/reopen workflow is the
-  outcome. One disjoint Sol6.1 child is permitted after contract/ownership is
-  explicit; assets remain separately owned. Root later observes owned native
+  outcome. Parent and its one disjoint Sol6.1 child are complete (reports44/45);
+  assets remain separately owned. Root later observes owned native
   builds. Full in-place switching and broader Classic service migration follow.
+  Fresh independent reviews have reproduced preservation, document-lifetime,
+  admission and host/controller race defects in this uncommitted integration.
+  Core/file, context lifetime, native ingress and shared controller corrections
+  must close before the integrated desktop milestone or runtime observation.
 
 ## Accepted evidence and unresolved limits
 
