@@ -124,7 +124,14 @@
     "gameLaunched": false,
     "remaining": "Configured artifacts uninstalled; independent configured review; finite native/child/path observers; exact owned install plan; fresh app-only Steam policy/queue, activity and startup/exit preservation gate",
     "relocatedReport": "research/46-relocated-harness-preparation.md",
-    "configuredReceiptSha256": "9abb447bf233b0d1f7cd71be31c1aa24e4355c25b881bcb7a974cb950668e036"
+    "configuredReceiptSha256": "9abb447bf233b0d1f7cd71be31c1aa24e4355c25b881bcb7a974cb950668e036",
+    "ownedInstallPlan": {
+      "path": "S:/Projects/UCP/de-research/game-acceptance-preflight-20261023-r1-prepared/relocated-harness-r1/owned-install-plan-r1.json",
+      "sha256": "6bf3c6380c38f7ce8381292f1decd4a5f8637d1d3b011056c91c6cdb5565cf2b",
+      "verifiedConfiguredFiles": 37,
+      "operations": 5,
+      "installed": false
+    }
   },
   "processMaintenance": {
     "report": "research/52-process-lifecycle-root-review.md",
