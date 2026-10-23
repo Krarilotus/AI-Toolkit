@@ -872,7 +872,7 @@
     },
     {
       "track": "startup-tooling-correction-r3",
-      "status": "running64; path fidelity/recovery/watch continuity/module assertions and scoped run adapter; no actual install/launch",
+      "status": "completed64; four corrections and scoped adapter frozen; independent65 pending; no actual install or launch",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-startup-tooling-20261023-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-startup-tooling-20261023-r3",
       "kind": "bounded implementation/build; no children",
@@ -906,7 +906,7 @@
     },
     {
       "track": "first-run-desktop-correction-r4",
-      "status": "running69; retained path/readable errors/generated selection DTO/staged activation and route readiness; no UI or app build",
+      "status": "completed69 frozen;74 finds two P2s; bounded77 correction active",
       "kind": "bounded coherent implementation; no children",
       "ownedFiles": [
         "canonical activation staging and generated InstallationSelection DTO/exporter/tests",
@@ -921,7 +921,7 @@
     },
     {
       "track": "de-castle-contract-review-d2",
-      "status": "running70; independent ordered castle source/fixture/ownership contract review; no implementation",
+      "status": "completed70; GO bounded D2A; class29 source fallback resolved; no implementation or game acceptance",
       "kind": "fresh independent review; no children",
       "ownedFiles": [
         "docs/de-mode/research/70-de-castle-contract-review.md"
@@ -929,6 +929,96 @@
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-castle-contract-d2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-castle-contract-d2-20261023-r1",
       "isolation": "shared; explicit disjoint ownership; no desktop/game launch"
+    },
+    {
+      "track": "startup-tooling-review-r3",
+      "status": "completed65; NO-GO existing protected files miss in-place content notifications;63-01/02/04 closed",
+      "ownedFiles": [
+        "docs/de-mode/research/65-startup-tooling-review-r3.md"
+      ],
+      "isolation": "shared; disjoint report; original game/profile unchanged",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-startup-tooling-20261023-r3",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-startup-tooling-20261023-r3",
+      "kind": "bounded Sol6.1 ultra/default; no children"
+    },
+    {
+      "track": "de-castle-domain-d2a",
+      "status": "completed71;76 GO domain only; root main inventory/load-order/integration remains pending",
+      "ownedFiles": [
+        "src/shared/document-session.js",
+        "src/shared/de-document-session.js",
+        "src/shared/de-castle-session.js",
+        "src/js/de-castle-format.js",
+        "focused domain tests and self-authored fixtures",
+        "docs/de-mode/research/71-de-castle-domain-handoff.md"
+      ],
+      "isolation": "real manually created Git worktree; T3 remains UCP-root shared metadata",
+      "worktree": "S:/Projects/UCP/AI-Toolkit-DE-D2A",
+      "branch": "de/castle-domain-d2a",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-castle-domain-d2a-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-castle-domain-d2a-20261023-r1",
+      "kind": "bounded Sol6.1 ultra/default; no children"
+    },
+    {
+      "track": "protected-file-watch-correction-r4",
+      "status": "completed72;73 independently closes correction; no real installation or launch",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-protected-file-watch-20261023-r4",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-protected-file-watch-20261023-r4",
+      "kind": "bounded Sol6.1 ultra/default implementation; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/72-protected-file-watch-correction.md",
+        "S:/Projects/UCP/de-research/observed-game-startup-r4/**"
+      ],
+      "isolation": "shared; disjoint external artifacts/report only"
+    },
+    {
+      "track": "first-run-desktop-review-r4",
+      "status": "completed74 NO-GO; two P2 commit retirement/deadline findings; correction77 active; no native UI acceptance",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-run-desktop-20261023-r4",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-run-desktop-20261023-r4",
+      "kind": "fresh independent Sol6.1 ultra/default review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/74-first-run-desktop-review-r4.md"
+      ],
+      "isolation": "shared disjoint report ownership; actual reviewed source paths explicit"
+    },
+    {
+      "track": "de-castle-domain-review-d2a",
+      "status": "completed76 GO exact unexposed domain;232 tests and14 independent groups2082 assertions; main integration pending",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-castle-domain-d2a-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-castle-domain-d2a-20261023-r1",
+      "kind": "fresh independent Sol6.1 ultra/default review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/76-de-castle-domain-review.md"
+      ],
+      "isolation": "shared disjoint report ownership; actual reviewed source paths explicit"
+    },
+    {
+      "track": "protected-file-watch-review-r4",
+      "status": "completed73 GO closes65-01; documentation-only mask label correction; real startup gates unperformed",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-protected-file-watch-20261023-r4",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-protected-file-watch-20261023-r4",
+      "kind": "fresh independent Sol6.1 ultra/default review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/73-protected-file-watch-review.md"
+      ],
+      "isolation": "shared disjoint report ownership; actual reviewed source paths explicit"
+    },
+    {
+      "track": "first-run-lifecycle-correction-r5",
+      "status": "running77; existing opening/deadline owner and generated truthful Closed result; independent review and artifacts still required",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-run-lifecycle-20261023-r5",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-run-lifecycle-20261023-r5",
+      "kind": "bounded Sol6.1 ultra/default implementation; no children",
+      "ownedFiles": [
+        "main.js opening/deadline lifecycle",
+        "src/node/desktop-context.js retirement identity",
+        "native windows/de_context activation lifecycle",
+        "canonical generated InstallationSelection and minimal presentation consumers",
+        "focused boundary tests",
+        "docs/de-mode/research/77-first-run-lifecycle-correction-r5.md"
+      ],
+      "isolation": "shared serialized production; no simultaneous D2A integration"
     }
   ],
   "pauseHistory": [
@@ -948,7 +1038,7 @@
     "execution": "authorized and running"
   },
   "finalArtifactRefresh": {
-    "status": "61/67 exact R3 artifact identity GO; root native observation rejects first-run UX;69 requires a fresh reviewed refresh",
+    "status": "61/67 old1.3 identity retained;74 rejects69 completion/deadline;77 correction before fresh source-matched artifacts",
     "requires": [
       "default and override Electron packages with exact runtime payload/helper identity",
       "native executable and portable ZIP policy",
@@ -971,5 +1061,20 @@
     "receipt": "S:/Projects/UCP/de-research/root-desktop-observation-r3/native-observation-stop.json",
     "sha256": "e54f43e8b22f6bdf78b8c29006fb02160c57e9f57ac521341c3b951a3f81c59b",
     "policy": "Do not hold desktop control during coding/delegation; prepare short focused observation and prefer supported code-driven controls where available"
+  },
+  "manualWorktree": {
+    "path": "S:/Projects/UCP/AI-Toolkit-DE-D2A",
+    "branch": "de/castle-domain-d2a",
+    "base": "9f9ef7b5fcc1731ab43a4f70fa81f61a1a8bd90a",
+    "receipt": "S:/Projects/UCP/de-research/root-desktop-observation-r3/domain-worktree-baseline.json",
+    "sha256": "6512d5439c1663d19c6172aadd7def219a7964d0b6c40514f5c16c9dd0139fcb",
+    "binding": "T3 remains UCP-root; manual Git isolation verified",
+    "dependencies": "read-only-use node_modules junction; no install/update/removal"
+  },
+  "resourceContainment": {
+    "report": "research/75-open-shc-client-retention.md",
+    "status": "initial46 idle OpenSHC Python;40 exact-owned stopped and6 natural exits;zero after fresh agent startup",
+    "config": "optional openshc MCP disabled after private backup; CLI effective enabled=false; general host retirement unclaimed",
+    "receipt": "S:/Projects/UCP/de-research/root-desktop-observation-r3/python-idle-cleanup-r4.json"
   }
 }

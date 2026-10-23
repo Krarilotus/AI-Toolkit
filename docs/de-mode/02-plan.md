@@ -38,8 +38,8 @@ advance independently; neither blocks the first lossless file workflow.
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
 | Unify backend ownership | One canonical policy, generated contracts, both host consumers | Committedf02d828 after Review39 and exact28source/staged-byte verification |
-| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Core59/root62 source and67 artifact-identity GO; actual first-run UI rejected;69 correcting typed selection and staged route readiness before new desktop acceptance |
-| Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Contract66 complete and under independent70 review; reuse one document/session policy and never reconstruct from a final raster |
+| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Core59/root62 and old67 identity GO;74 finds two first-run completion/deadline P2s in69; bounded77 correction active before fresh artifacts/desktop acceptance |
+| Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Independent76 approves71's exact shared-session/ordered scalar domain in its separate Git worktree; main inventory/load-order/integration gates precede commit and broader edits/UI/game acceptance |
 | Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1/PXL2 accepted; SPR2 committed657dbb3 after Review51 and exact45-file/staged-byte verification; renderer integration/composition pending |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
@@ -87,7 +87,12 @@ and live global capacity; no uncontrolled fan-out.
   root52 accepts the local fix after five fresh ownership tests, all12 unchanged
   tool contracts and the baseline/eight-case protocol replay. Real heavy EOF
   exits naturally in0.705s. Active host-held channels remain light and lazy;
-  their retirement and forced-termination limits remain explicit.
+  their retirement and forced-termination limits remain explicit. The repeated
+  user report exposed accumulation despite the per-client improvement: root75
+  identifies46 idle Python processes, stops40 exact-owned processes after six
+  exit naturally, and verifies zero remaining. The optional global OpenSHC MCP
+  entry is backed up and disabled; a fresh correction agent starts without
+  recreating Python clients. General host retirement is not claimed fixed.
   Old temporary-copy deletion was blocked before execution; do not retry through
   another tool. This tooling fix does not change the app renderer.
 - **Performance:** preserved as an explicit regression requirement in standard05
@@ -136,10 +141,20 @@ and live global capacity; no uncontrolled fan-out.
   screen hides selected paths and renders structured errors as `[object Object]`.
   The user correctly rejected it. A DE default persisted without an observed
   visible DE window; mixed picker input prevents attributing the exact cause.
-  Bounded69 corrects the canonical staged activation/host readiness ordering,
-  generated selection result and shared error boundary, plus the setup UI.
-  Old default bytes must survive failed routes; source69 needs fresh review and
-  artifacts. No full native LORD workflow/Close or smoothness gate is accepted.
+  69 freezes the canonical staged activation/host readiness correction,
+  generated1.4 selection result and shared error boundary, plus the setup UI.
+  Fresh74 rejects completion/retirement and timeout classification in those
+  27 affected paths. Correction77 owns the existing opening/deadline lifecycle;
+  it adds a canonical known-committed-but-closed result, freezes uncertain timeout
+  outcomes, and retains the full-snapshot stale Close guard. Root's frozen-bundle
+  headless component cases show retained paths/edition/readable errors and an
+  honest uncertain-result state at800px; that synthetic transport supplies no
+  native activation evidence.
+  Known build/load/show and canonical commit refusals preserve old defaults.
+  A submitted commit with lost acknowledgement/status is explicitly unknown;
+  it cannot truthfully claim an unchanged default or be replayed. Source77 needs
+  fresh independent review/artifacts. No full native LORD workflow/Close or smoothness gate
+  is accepted.
   Root stopped the owned app/descendants and reset Computer Use at the user's
   request. Keep foreground control off during coding and prepare a short script
   before later observation. The live editor and original Classic remain untouched.
@@ -149,15 +164,27 @@ and live global capacity; no uncontrolled fan-out.
   evidence payloads must be retained outside mutable build caches before reuse.
 - **Startup preservation scope:** independent63 verifies the diagnostic delta
   and finds four concrete defects in path fidelity, per-file rollback, watcher
-  continuity/shutdown drain and module enumeration. Bounded64 corrects them
-  outside the product. Root adopts the conditional ordinary-user preservation
+  continuity/shutdown drain and module enumeration.64 implements the corrections
+  and concrete ordinary-user adapter outside the product.65 independently closes
+  three corrections but rejects existing-file content notification coverage:
+  a protected ACF can be changed/restored without an event.72 freezes that
+  FileScope target-kind correction in fresh external artifacts after23 focused
+  cases;73 independently closes it. Its mask287 label is SECURITY, not CREATION;
+  no code widening is needed. Root adopts the conditional ordinary-user preservation
   route: complete kernel/file-read tracing was not an original requirement.
-  The denied ETW request is retained without elevation or retry. Fresh65 review,
+  The denied ETW request is retained without elevation or retry. Actual current
   Steam Cloud/queue evidence, fresh backups and activity checks still precede
   any owned-copy installation or real launch. Nothing is installed or launched.
-- **Next feature:**66 pins the ordered DE castle-program contract and the
-  smallest shared-session/domain change; fresh70 reviews it. Preserve program order,
-  unknown data and timing; a final raster is not a substitute for that program.
+- **Next feature:**70 approves66's ordered castle-program contract and smallest
+  shared-session/domain change.71 freezes implemented D2A after232 focused tests;
+  fresh76 approves its exact unexposed domain code in the real manually created
+  `S:\Projects\UCP\AI-Toolkit-DE-D2A` worktree on `de/castle-domain-d2a`, based
+  on9f9ef7b. T3 remains UCP-root bound; actual Git file isolation and explicit cwd
+  are verified separately. Its shared dependencies are used read-only. Preserve
+  program order/unknown data/timing, one history/save owner and the LORD API.
+  D2B array insertion/removal/reorder, actual castle UI and game behavior follow.
+  Review70 also resolves class29: this Fixes pin takes vanilla fallback, not
+  expanded assignment. Source and target/runtime acceptance remain separate.
 
 ## Accepted evidence and unresolved limits
 
