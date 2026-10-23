@@ -1,6 +1,11 @@
 # DE mode plan and progress
 
-Persistent goal: **active**. Research has established the first contracts; full DE
+**Resumed on the user's explicit instruction.** The prior
+[pause checkpoint](06-resume-checkpoint.md) remains historical evidence. Native
+get_goal still reports paused and exposes no resume mutation; implementation is
+authorized and continuing while that UI-controlled flag awaits reactivation.
+
+The full objective is retained. Research has established the first contracts; full DE
 support is not yet usable or accepted. [Goal](00-goal-verbatim.md),
 [contract](01-working-contract.md), [engineering standard](05-engineering-standard.md)
 and [acceptance protocol](04-acceptance-protocol.md) remain authoritative.
@@ -32,10 +37,10 @@ advance independently; neither blocks the first lossless file workflow.
 | --- | --- | --- |
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
-| Unify backend ownership | One canonical policy, generated contracts, both host consumers | C1 implementation running; uncommitted F1 is its input |
+| Unify backend ownership | One canonical policy, generated contracts, both host consumers | C1 final-source validation/package checks resume before independent review |
 | Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Next integrated slice; no live DE toggle yet |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
-| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 geometry work/cancellation correction running after Review24; decoder/rendering remain open |
+| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | Review27 GO additive metadata; pixel evaluation follows its commit |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
 | Complete acceptance | Every required CSV criterion has appropriate evidence | Open; foundations are not feature acceptance |
@@ -46,21 +51,19 @@ Every subagent is Sol6.1 with ultra reasoning and default service tier. The
 coordinator owns scope, interfaces, review resolution, acceptance and commits.
 Agents may challenge a premise or ownership decision with evidence and a smaller
 corrective move. Exact task IDs, file groups and statuses are in
-[task-ownership.json](task-ownership.json). No recursive fan-out.
+[task-ownership.json](task-ownership.json). Nested agents are capped at3 per owner
+and live global capacity; no uncontrolled fan-out.
 
-- **C1 canonical core/helper:** one owner extracts corrected Rust F1, adapts its
-  meaningful tests, removes the Node policy, and implements the bounded helper,
-  private client, generated Rust DTOs and local build/package wiring. No live
-  consumers, contexts, asset decoding or document UI in that task. Independent
-  review must close remaining F1 R4/recovery evidence in the extracted code.
-- **A1 correction after Review24:** one owner carries cumulative work and
-  cancellation through usable geometry. Review found a small serialized record
-  can multiply repeated index validation into 622 million visits. Raw metadata
-  remains available; no parser duplication or host workaround. Independent
-  closure follows the focused correction.
-- **DS1 document session and generation:** one owner builds the shared lossless
-  edit/undo/save-receipt session and generates the runtime guard from schema JSON.
-  No host/UI edits; existing D1 preservation and independent schema tests remain.
+- **C1 finalization:** one owner verifies the final portable resolver, cross-volume
+  packaging, current helper identity, MSRV/transport checks and measurements.
+  Independent core review follows; no live contexts/UI are added in this task.
+- **DS1 independent Review28:** checks shared session save/undo/receipt boundaries
+  and generated schema guards against the unchanged D1 preservation contract.
+- **A1 milestone:** Review27 gives GO and root matches all18 source hashes and
+  handoff16. Commit only this reviewed metadata crate; pixels remain unaccepted.
+- **PXL1 scratch evaluation:** report29 owns decoder/spec/oracle comparisons,
+  BC1 alpha/BC7 modes, bounded crop/resource measurements and pinned notices.
+  It selects a narrow next implementation without changing product dependencies.
 - **Isolation Review22 complete:** accepts the narrow offline result and finite
   direct-EXE vanilla single-player preflight. Fresh copy/roots, scoped backups,
   Steam Cloud/queue evidence and startup/exit observations are still required.
@@ -83,8 +86,9 @@ corrective move. Exact task IDs, file groups and statuses are in
   and handoff09 retain prior findings/responses. Earlier contention EPERM did
   not recur; its root cause remains unknown, not silently reclassified as busy.
 - A1 reports29 synthetic tests on Rust1.88/1.98 and 86-object full-field parity.
-  Review24 found one P2 work/cancellation gap; its focused correction is running.
-  Code remains uncommitted. No pixel decoder, whole-building
+  Review24 found one P2 work/cancellation gap. Its correction reports35 tests
+  and deterministic mid-loop cancellation. Review27 independently closes the P2.
+  The reviewed additive core is staged separately. No pixel decoder, whole-building
   rendering or cache contract is accepted. Privileged file-symlink creation was
   unavailable; junction rejection was exercised. Mutation limits are explicit.
 - Native/managed DE hashes match the pinned baseline; managed PE32 is not an

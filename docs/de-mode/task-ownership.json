@@ -330,7 +330,7 @@
       "track": "canonical-core-c1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-canonical-core-c1-20261022-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-canonical-core-c1-20261022-r1",
-      "status": "running",
+      "status": "completed safe stop at user pause; checkpoint25; final portability checks and fresh package pending",
       "kind": "implementation; extract corrected Rust F1 and real Electron helper; no live wiring",
       "ownedFiles": [
         "crates/toolkit-core/**",
@@ -350,15 +350,19 @@
         "src/desktop/generated/core/**",
         "package.json",
         "package-lock.json",
-        "docs/de-mode/research/25-canonical-core-handoff.md"
+        "docs/de-mode/research/25-canonical-core-handoff.md",
+        "src-tauri/src/desktop/contracts.rs",
+        "src/node/core-build-paths.js",
+        "tests/core-build-paths.test.js"
       ],
-      "isolation": "shared; explicit disjoint files; no recursive delegation"
+      "isolation": "shared; explicit disjoint files; no recursive delegation",
+      "scopeNotes": "Existing desktop/contracts.rs inventory scope only; portable build paths and focused test authorized before pause."
     },
     {
       "track": "assets-core-fix-r2",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-assets-core-a1-20261022-r2",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-fix-assets-core-a1-20261022-r2",
-      "status": "running",
+      "status": "completed; Review27 independently closed sole P2; reviewed metadata source unchanged",
       "kind": "implementation; carry cumulative work/cancellation through usable geometry only",
       "ownedFiles": [
         "crates/de-assets-core/**",
@@ -370,7 +374,7 @@
       "track": "document-session-ds1",
       "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-document-session-ds1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-implement-document-session-ds1-20261023-r1",
-      "status": "running",
+      "status": "completed;197 tests and real-source simulations; fresh Review28 running",
       "kind": "implementation; shared lossless session and generated schema guard; no UI or hosts",
       "ownedFiles": [
         "scripts/generate-de-lord-schema.mjs",
@@ -383,6 +387,87 @@
         "docs/de-mode/research/26-document-session-handoff.md"
       ],
       "isolation": "shared; explicit disjoint domain files; no recursive delegation"
+    },
+    {
+      "track": "assets-core-review-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A41b8aa7e-ec5e-477c-93f3-a12b4199a126%3Adelegate-task%3Ade-review-assets-core-a1-20261023-r2",
+      "status": "completed; GO for exact additive A1; root verified18 file hashes plus handoff; milestone staged separately",
+      "kind": "fresh independent correction review; cumulative geometry budget and cancellation",
+      "ownedFiles": [
+        "docs/de-mode/research/27-assets-core-review-r2.md"
+      ],
+      "isolation": "shared; disjoint report only; no recursive delegation"
+    },
+    {
+      "track": "canonical-core-finalize-r2",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-finish-canonical-core-c1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-finish-canonical-core-c1-20261023-r2",
+      "status": "running",
+      "kind": "C1 final-source validation and packaging",
+      "ownedFiles": [
+        "crates/toolkit-core/**",
+        "crates/toolkit-host-helper/**",
+        "src-tauri/Cargo.toml",
+        "src-tauri/Cargo.lock",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/profiles.rs",
+        "src/node/game-profiles.js",
+        "src/node/core-client.js",
+        "tests/game-profiles.test.js",
+        "tests/fixtures/de-mode/foundation.json",
+        "tests/core-client.test.js",
+        "tests/core-helper.test.js",
+        "scripts/build-core.mjs",
+        "scripts/generate-core-contracts.mjs",
+        "src/desktop/generated/core/**",
+        "package.json",
+        "package-lock.json",
+        "docs/de-mode/research/25-canonical-core-handoff.md",
+        "src-tauri/src/desktop/contracts.rs",
+        "src/node/core-build-paths.js",
+        "tests/core-build-paths.test.js"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation during current global allocation"
+    },
+    {
+      "track": "document-session-review-r1",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-document-session-ds1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-document-session-ds1-20261023-r1",
+      "status": "running",
+      "kind": "Fresh independent DS1 review",
+      "ownedFiles": [
+        "docs/de-mode/research/28-document-session-review-r1.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation during current global allocation"
+    },
+    {
+      "track": "pixels-evaluation-pxl1",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-evaluate-de-pixels-pxl1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-evaluate-de-pixels-pxl1-20261023-r1",
+      "status": "running",
+      "kind": "Scratch-only decoder evaluation",
+      "ownedFiles": [
+        "docs/de-mode/research/29-pixel-decoder-evaluation.md",
+        "S:/Projects/UCP/de-research/pixels-pxl1 (external scratch)"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no recursive delegation during current global allocation"
     }
-  ]
+  ],
+  "pauseHistory": [
+    {
+      "requestedBy": "user",
+      "date": "2026-10-23",
+      "resume": "Explicit user instruction only; async completion is not resumption",
+      "checkpoint": "06-resume-checkpoint.md",
+      "agents": "All three final task handles completed; no pending child runs/questions/approvals"
+    }
+  ],
+  "resume": {
+    "requestedBy": "user",
+    "at": "2026-10-23T14:27:54Z",
+    "instruction": "Continue full force; at most3 nested agents each if necessary; Sol6.1 and DRY ownership standards retained",
+    "nativeGoalFlag": "paused at last get_goal; no exposed resume mutation",
+    "execution": "authorized and running"
+  }
 }

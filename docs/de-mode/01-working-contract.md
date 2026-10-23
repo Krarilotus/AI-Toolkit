@@ -100,3 +100,8 @@ Invest in focused generation/build/validation tooling and refactor the relevant
 boundaries before adding more behavior when that prevents repeated rework.
 The user's wording is retained in `00-goal-verbatim.md`. Reviewers must assess
 these requirements as well as correctness before accepting new shared boundaries.
+
+On explicit resumption the user permits each subagent at most three children
+when necessary. This is a ceiling, not a required fan-out: respect live global
+capacity, use Sol6.1 only, give every child the goal/contract and bounded ownership,
+and serialize conflicting edits. Root retains central review and acceptance.
