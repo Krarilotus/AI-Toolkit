@@ -28,3 +28,10 @@ PXL2: Complete additional upstream notices and codec credits are retained in
 notices/ (60,409-byte reviewed PXL1 bundle, plus SOURCES.json receipts).
 See PROVENANCE.md for the exact selected Git revision and dependency graph.
 This notice does not assign or infer a license for the Toolkit itself.
+
+SPR2: Source-derived fixed-triangle scan conversion adapts Pillow Draw.c.
+Copyright (c) 1996-2006 by Fredrik Lundh
+Copyright (c) 1997-2006 by Secret Labs AB.
+The full, verbatim MIT-CMU notice is in notices/Pillow-LICENSE.
+UnityPy SpriteHelper/MeshHelper extraction conventions informed this adaptation;
+its MIT notice above remains applicable. See PROVENANCE.md for exact pins.

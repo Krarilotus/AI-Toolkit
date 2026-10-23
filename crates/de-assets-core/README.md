@@ -1,8 +1,8 @@
-# DE assets core (A1 + PXL2, unexposed)
+# DE assets core (A1 + PXL2 + SPR2, unexposed)
 
 Unpublished Rust 1.88 library, with one pinned texture decoder dependency. This
 crate is not in the application dependency graph. It reads metadata and checked
-raw texture crops. It does not reconstruct sprites, cache images, change settings,
+raw texture crops and bounded unpacked Sprite planes. It does not cache images, change settings,
 follow external files, select animation frames, or integrate with Classic GM1,
 Node, IPC or UI. Independent review gates any integration.
 
@@ -76,8 +76,69 @@ instead of treating either oracle output as valid art. Every other format is
 `UnsupportedFormat`; no fallback art or whole-image entry is exposed.
 
 Errors distinguish unsupported layout/reference/packing/format, corruption,
-limit, cancellation, not-found, ambiguity, changed source and I/O. Metadata
+limit, cancellation, not-found, ambiguity, explicitly unmasked families, changed source and I/O. Metadata
 parsing success is independent of geometry/reference/format support.
+
+## Unpacked Sprite planes
+
+```rust,ignore
+// Prepare once in a background operation, then reuse for the finite selection.
+let provider = resolver.prepare_sprite_planes(&index, &mut work)?;
+let pixels = provider.reconstruct_sprite_plane(
+    sprite_key, SpritePlane::Base, &SpriteLimits::default(), &mut work,
+)?;
+```
+
+Preparation batches five exact Texture2D/28 names into one bounded index pass.
+Every visited object is charged before class filtering; no per-plane name scan
+occurs. The small source-family catalogue proves only `body15Sprites` and
+`body16Sprites` paired with their respective `_m` Texture2Ds, and `AllTileSprites`
+explicitly unmasked. Known absent/duplicate names fail with NotFound/Ambiguous;
+cross-class collisions are excluded. Unknown families are `UnknownFamily`, never
+guessed by suffix. A paired request on an explicitly unmasked family returns
+`UnmaskedFamily`; an unknown pairing returns `UnsupportedReference`.
+
+Each reconstruction internally rereads and validates the source-owned Sprite and
+textures, using scoped signed keys. It accepts no mutable DTO/path/range authority.
+One private float32 stream helper serves both A1 validation and reconstruction;
+all original per-index visits and cumulative Work remain. Supported extraction is
+mip0, one XY triangle submesh, baseVertex/firstVertex zero, unrotated/unpacked,
+downscale1, and either zero-UV polygon masking or rounded integer UV translation.
+Affine/packed/rotated/atlas/external/alpha/secondary/unreviewed cases fail explicitly.
+There is no rectangle fallback, new raster dependency, animation/GM selector,
+player-colour/shader, facing, flat/lowered or world-composition policy.
+
+The named `SPRITE_EXTRACTION_CONVENTION` pins the audited UnityPy/Pillow CPU
+extraction convention. Python ties-to-even rounding and ImageDraw truncation,
+float32 scan intersections/corner rules and exclusive triangle crop maxima are
+preserved. In the UV branch each triangle scans in its own local coordinates;
+only coverage writes are translated. One enclosing PXL2 crop is decoded, with
+no per-triangle texture reads or temporary images. Uncovered pixels clear all
+RGBA channels. Straight RGBA8 output has top-left rows. `SpriteLocalMapping`
+keeps continuous mesh edges/origin separate from pixel-row reversal (`H-1-y`).
+Original Sprite/base/selected-mask metadata stays available through immutable
+accessors; identity retains both SourceStamps, source crop, mip/format/decode
+revision and extraction convention. These are local geometry origins, not
+certified world anchors or persistent content hashes.
+
+`SpriteLimits` defaults to8192 axes,16MiB output,64MiB combined scratch and64Mi
+raster visits, plus unchanged `CropLimits`. Before any pixel allocation or I/O,
+checked planning covers crop RGBA + coverage + result (**9WH**, not4WH), encoded
+row, points, raw geometry buffers and2KiB fixed scratch. It conservatively counts
+the encoded row even though it is freed before coverage/result coexist. Existing
+bounded index/object/other metadata and allocator overhead remain separate from
+this scratch cap. New variable buffers reserve fallibly. Zeroing charges bytes
+in bounded4096-byte chunks; geometry, scan/edge/coverage and copy visits charge
+the caller's same Work. The raster cap is per-plane; Work/selected-byte allowance
+is cumulative across preparation and every plane. No reset or partial-success
+output is supplied. Both assets and chosen pixel sources are rechecked after
+the last reconstruction visit. The ordinary SourceStamp/NTFS/ReadAt limitations
+below remain; this is no new containment or cryptographic snapshot promise.
+
+Run preparation/extraction in background asset work and retain results at the
+future provider/cache owner. No product draw/input/worker path is changed here.
+CPU extraction-convention parity does not establish Unity/game raster, sampling,
+shader/gamma/blending, scene appearance, host/UI performance or feature acceptance.
 
 ## Limits and cancellation
 

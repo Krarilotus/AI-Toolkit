@@ -107,12 +107,16 @@ impl StreamResolver {
         key: ObjectKey,
         work: &mut Work,
     ) -> Result<TextureMetadata> {
+        self.check_index(index)?;
+        index.read_texture(key, work)
+    }
+    pub(crate) fn check_index(&self, index: &SerializedIndex) -> Result<()> {
         if !Arc::ptr_eq(&self.assets, &index.source) || self.assets_stamp != index.stamp {
             return Err(Error::UnsupportedReference(
                 "resolver belongs to another opened input",
             ));
         }
-        index.read_texture(key, work)
+        Ok(())
     }
     pub(crate) fn resolve_texture(
         &self,

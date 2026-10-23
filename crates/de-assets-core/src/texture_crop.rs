@@ -67,14 +67,14 @@ impl TextureCrop {
     }
 }
 
-struct Plan {
+pub(crate) struct Plan {
     first_x: u64,
     first_y: u64,
     columns: u64,
     rows: u64,
     stride: u64,
-    row_bytes: usize,
-    output_bytes: usize,
+    pub(crate) row_bytes: usize,
+    pub(crate) output_bytes: usize,
     end_x: u64,
     end_y: u64,
 }
@@ -129,12 +129,30 @@ impl Plan {
     }
 }
 
-fn zeroed(n: usize) -> Result<Vec<u8>> {
+pub(crate) fn zeroed(n: usize, mut work: Option<&mut Work>) -> Result<Vec<u8>> {
+    if let Some(w) = work.as_deref_mut() {
+        w.check()?;
+    }
     let mut bytes = Vec::new();
     bytes
         .try_reserve_exact(n)
         .map_err(|_| Error::Limit("crop allocation"))?;
-    bytes.resize(n, 0);
+    if work.is_none() {
+        // Preserve PXL2's single bulk zero for ordinary texture crops. Sprite
+        // work alone opts into byte accounting and bounded cancellation chunks.
+        bytes.resize(n, 0);
+        return Ok(bytes);
+    }
+    while bytes.len() < n {
+        let end = bytes.len().saturating_add(4096).min(n);
+        if let Some(w) = work.as_deref_mut() {
+            w.charge((end - bytes.len()) as u64)?;
+        }
+        bytes.resize(end, 0);
+    }
+    if let Some(w) = work {
+        w.check()?;
+    }
     Ok(bytes)
 }
 
@@ -167,6 +185,18 @@ impl StreamResolver {
         limits: &CropLimits,
         work: &mut Work,
     ) -> Result<TextureCrop> {
+        self.prepare_crop(index, texture, mip, rect, limits, work)?
+            .decode(index, work)
+    }
+    pub(crate) fn prepare_crop(
+        &self,
+        index: &SerializedIndex,
+        texture: ObjectKey,
+        mip: u32,
+        rect: TextureRect,
+        limits: &CropLimits,
+        work: &mut Work,
+    ) -> Result<PreparedCrop> {
         work.check()?;
         let t = self.read_owned_texture(index, texture, work)?;
         let block_bytes = match t.format {
@@ -192,14 +222,77 @@ impl StreamResolver {
             return Err(Error::Limit("range request"));
         }
         let range = self.resolve_texture(index, &t)?;
+        let identity = TextureCropIdentity {
+            texture,
+            assets: index.stamp.clone(),
+            pixels: range.range().source_stamp().clone(),
+            mip,
+            source_rect: rect,
+            format: t.format,
+            mip_width: mip_range.width,
+            mip_height: mip_range.height,
+            decode_revision: 1,
+        };
         work.check()?;
-        let mut rgba = zeroed(plan.output_bytes)?;
-        let mut row = zeroed(plan.row_bytes)?;
+        Ok(PreparedCrop {
+            plan,
+            range,
+            identity,
+            block_bytes,
+        })
+    }
+}
+
+/// Retain the source range through any later Sprite raster/copy work, so its
+/// completion check observes both inputs after the final output visit.
+pub(crate) struct PreparedCrop {
+    pub(crate) plan: Plan,
+    range: TextureRange,
+    identity: TextureCropIdentity,
+    block_bytes: u64,
+}
+impl PreparedCrop {
+    pub(crate) fn finish(&self, index: &SerializedIndex, work: &mut Work) -> Result<()> {
+        self.range.range().read_relative(0, &mut [], work)?;
+        if index.source.stamp()? != index.stamp {
+            return Err(Error::ChangedSource);
+        }
+        work.check()
+    }
+    pub(crate) fn decode(&self, index: &SerializedIndex, work: &mut Work) -> Result<TextureCrop> {
+        self.decode_inner(index, work, false)
+    }
+    pub(crate) fn decode_sprite(
+        &self,
+        index: &SerializedIndex,
+        work: &mut Work,
+    ) -> Result<TextureCrop> {
+        self.decode_inner(index, work, true)
+    }
+    fn decode_inner(
+        &self,
+        index: &SerializedIndex,
+        work: &mut Work,
+        charge_zero: bool,
+    ) -> Result<TextureCrop> {
+        let plan = &self.plan;
+        let range = &self.range;
+        let rect = self.identity.source_rect;
+        let block_bytes = self.block_bytes;
+        work.check()?;
+        let mut rgba = zeroed(
+            plan.output_bytes,
+            if charge_zero { Some(&mut *work) } else { None },
+        )?;
+        let mut row = zeroed(
+            plan.row_bytes,
+            if charge_zero { Some(&mut *work) } else { None },
+        )?;
         let mut pixels = [0u32; 16];
         for row_index in 0..plan.rows {
             let block_y = add(plan.first_y, row_index)?;
             let offset = add(
-                mip_range.range.start,
+                range.range().mips()[self.identity.mip as usize].range.start,
                 add(mul(block_y, plan.stride)?, mul(plan.first_x, block_bytes)?)?,
             )?;
             // One checked I/O per contiguous block row; the source is opened and
@@ -208,7 +301,7 @@ impl StreamResolver {
             for column in 0..plan.columns {
                 work.charge(1)?;
                 let b = usize_of(mul(column, block_bytes)?)?;
-                if t.format == 10 {
+                if self.identity.format == 10 {
                     bc1(
                         row[b..b + 8].try_into().expect("planned BC1 block"),
                         &mut pixels,
@@ -243,26 +336,9 @@ impl StreamResolver {
                 }
             }
         }
-        work.check()?;
-        // A mutation during the last decode/copy must not publish a success.
-        // A zero-byte checked read preserves the same A1 source guarantees.
-        range.range().read_relative(0, &mut [], work)?;
-        if index.source.stamp()? != index.stamp {
-            return Err(Error::ChangedSource);
-        }
-        work.check()?;
+        self.finish(index, work)?;
         Ok(TextureCrop {
-            identity: TextureCropIdentity {
-                texture,
-                assets: index.stamp.clone(),
-                pixels: range.range().source_stamp().clone(),
-                mip,
-                source_rect: rect,
-                format: t.format,
-                mip_width: mip_range.width,
-                mip_height: mip_range.height,
-                decode_revision: 1,
-            },
+            identity: self.identity.clone(),
             rgba,
         })
     }

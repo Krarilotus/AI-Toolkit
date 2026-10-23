@@ -280,6 +280,12 @@ impl SpriteMetadata {
     /// Checks usable geometry with the operation's shared allowance. Raw
     /// metadata remains available even when this returns Limit or Cancelled.
     pub fn validate_geometry(&self, work: &mut Work) -> Result<()> {
+        self.validated_geometry(work).map(|_| ())
+    }
+    pub(crate) fn validated_geometry(
+        &self,
+        work: &mut Work,
+    ) -> Result<crate::geometry::FloatStreams> {
         work.check()?;
         fn finite(v: &[F32], work: &mut Work) -> Result<()> {
             for f in v {
@@ -330,73 +336,7 @@ impl SpriteMetadata {
             finite(&[b.length], work)?;
         }
         let v = &self.render.vertices;
-        // Initial usable geometry supports float32 streams, with Unity's
-        // 16-byte alignment between streams. Other encodings remain metadata.
-        // Unknown encodings are metadata-valid but not usable by this validator.
-        let mut streams = std::collections::BTreeMap::<u8, (u64, u64)>::new();
-        let mut channel_spans = Vec::new();
-        for c in &v.channels {
-            work.charge(1)?;
-            if c.dimension == 0 {
-                continue;
-            }
-            if c.format != 0 || c.stream > 15 || c.dimension > 4 {
-                return Err(Error::UnsupportedLayout("vertex encoding/stream"));
-            }
-            let entry = streams.entry(c.stream).or_default();
-            let end = add(u64::from(c.offset), mul(u64::from(c.dimension), 4)?)?;
-            for &(stream, start, stop) in &channel_spans {
-                work.charge(1)?;
-                if stream == c.stream && u64::from(c.offset) < stop && end > start {
-                    return Err(Error::Corrupt("overlapping vertex channels"));
-                }
-            }
-            channel_spans.push((c.stream, u64::from(c.offset), end));
-            entry.0 = add(entry.0, mul(u64::from(c.dimension), 4)?)?;
-        }
-        if v.vertex_count > 0 && streams.is_empty() {
-            return Err(Error::Corrupt("vertices without channels"));
-        }
-        let mut stream_end = 0;
-        for (expected, (stream, (stride, offset))) in streams.iter_mut().enumerate() {
-            work.charge(1)?;
-            if usize::from(*stream) != expected {
-                return Err(Error::UnsupportedLayout("noncontiguous vertex streams"));
-            }
-            *offset = add(stream_end, (16 - stream_end % 16) % 16)?;
-            stream_end = add(*offset, mul(*stride, u64::from(v.vertex_count))?)?;
-            if stream_end > v.data.len() as u64 {
-                return Err(Error::Corrupt("vertex stream range"));
-            }
-        }
-        for &(stream, _, end) in &channel_spans {
-            work.charge(1)?;
-            if end > streams[&stream].0 {
-                return Err(Error::Corrupt("channel exceeds stream stride"));
-            }
-        }
-        for c in &v.channels {
-            work.charge(1)?;
-            if c.dimension == 0 {
-                continue;
-            }
-            for i in 0..v.vertex_count {
-                work.charge(1)?;
-                let (stride, offset) = streams[&c.stream];
-                let start = add(
-                    offset,
-                    add(mul(u64::from(i), stride)?, u64::from(c.offset))?,
-                )?;
-                for j in 0..c.dimension {
-                    let p = usize_of(add(start, mul(u64::from(j), 4)?)?)?;
-                    let b = v
-                        .data
-                        .get(p..p.checked_add(4).ok_or(Error::Corrupt("vertex end"))?)
-                        .ok_or(Error::Corrupt("vertex channel range"))?;
-                    finite(&[F32(u32::from_le_bytes(b.try_into().unwrap()))], work)?;
-                }
-            }
-        }
+        let streams = crate::geometry::FloatStreams::validate(v, work)?;
         if !self.render.index_buffer.len().is_multiple_of(2) {
             return Err(Error::Corrupt("odd 16-bit index bytes"));
         }
@@ -438,7 +378,8 @@ impl SpriteMetadata {
                 }
             }
         }
-        work.check()
+        work.check()?;
+        Ok(streams)
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
