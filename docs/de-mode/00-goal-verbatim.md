@@ -90,3 +90,10 @@ Use after the last instruction; desktop control must not stay active during
 background planning/coding. Prefer code-driven web-control interaction when the
 actual test app exposes a supported connection, retaining native-dialog and
 physical-window evidence as separate observations.
+
+## Repeated process-retention steering
+
+> are all these python processes from you? Why are there so many and are they still leaking python left overs or are they doing sth
+
+Reducing one research client's memory does not establish a bound on retained
+clients. The root audit and containment are recorded in research75.

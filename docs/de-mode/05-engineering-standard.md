@@ -115,6 +115,12 @@ legitimate live client from a failed startup or abandoned task. Cleanup targets
 must be positively attributed by PID/creation/command/owner, with safe temporary
 root checks. Do not kill all Python processes or delete ambiguous user data.
 
+Lazy initialization bounds one client's optional state, not the number of idle
+host-held clients. Root75 found that distinction after repeated user reports.
+Keep unused optional OpenSHC MCP startup disabled, with a reversible config
+backup; enable it deliberately for needed research and check actual retirement.
+This containment does not establish a general fix to the host's thread lifecycle.
+
 Review correctness, readability, architecture, preservation/security and measured
 resource use. Ask whether the behavior advances the original goal, whether the
 owning layer is correct and whether the abstraction earns its complexity. Prefer

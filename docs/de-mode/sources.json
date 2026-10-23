@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-23T16:24:18.373600+00:00",
+  "updatedAt": "2026-10-23T20:55:39.681Z",
   "policy": {
     "updates": "Inventory and record dirty state before fetching. Never pull or overwrite existing research. Review remote changes at explicit commits; keep accepted pins until evidence and compatibility checks justify an update.",
     "proprietaryData": "Binary and extracted asset contents remain outside Git. Commit hashes, probes, synthetic fixtures and analysis only."
@@ -294,7 +294,7 @@
   "acceptancePreparation": {
     "evidence": "research/41-game-preflight-preparation.md",
     "externalReceipt": "S:/Projects/UCP/de-research/game-acceptance-preflight-20261023-r1-prepared/receipt.json",
-    "status": "Physical copy4702files/116scoped backups verified; offline relocated artifacts and17guard checks verified, uninstalled; launchAllowedfalse; independent configured review and Steam/activity/startup gates remain",
+    "status": "73 GO exact external correction72;65 historical NO-GO retained; no real approval receipt installation or launch",
     "relocatedReport": "research/46-relocated-harness-preparation.md",
     "configuredReceipt": {
       "path": "S:/Projects/UCP/de-research/game-acceptance-preflight-20261023-r1-prepared/relocated-harness-r1/configured-receipt.json",
@@ -320,6 +320,32 @@
       "correctionTask": "startup-tooling-correction-r3",
       "artifactsInstalled": false,
       "launchAllowed": false
+    },
+    "startupCorrection": {
+      "report": "research/64-startup-tooling-correction-r3.md",
+      "sha256": "958dee6d5a1b2b989178b9190bbd0c98f6a926859fece81ae150121d2d57acd3",
+      "index": "S:/Projects/UCP/de-research/observed-game-startup-r3/handoff-index.json",
+      "indexSha256": "8a4e415c68d5a0633bd124d52ebee41d0b8ac5b299cf23e9656080b9db6b6c3d",
+      "review": "research/65-startup-tooling-review-r3.md",
+      "launchAllowed": false,
+      "artifactsInstalled": false,
+      "gameLaunched": false,
+      "reviewSha256": "8ae531c6a7e1bfe8b7212d6429ad25a3978fcca5c7fa801f6d7ba82f0a59e451",
+      "verdict": "NO-GO current adapter; existing-file transient write-and-restore escapes mask; three other corrections closed",
+      "correctionTask": "protected-file-watch-correction-r4",
+      "nextReview": "73 closes corrected72;65 remains historical NO-GO"
+    },
+    "existingFileCorrection": {
+      "report": "research/72-protected-file-watch-correction.md",
+      "sha256": "1a13ecedf6f1cc1b59f5a06322369180def8759a2368a730030850401d497484",
+      "index": "S:/Projects/UCP/de-research/observed-game-startup-r4/handoff-index.json",
+      "indexSha256": "1d1e9907c489a8998d7e03e54be2b740f8f7516a547ced2dac3a81fc7019b898",
+      "review": "research/73-protected-file-watch-review.md",
+      "launchAllowed": false,
+      "artifactsInstalled": false,
+      "gameLaunched": false,
+      "reviewSha256": "938c716f3ebb00e9892fe22366ffa577e118b8d2c4be3a57653b9e7aa8997fba",
+      "verdict": "GO correction65-01;mask287 final bit SECURITY not CREATION;actual Steam/backup/activity gates remain"
     }
   },
   "toolingMaintenance": {
@@ -331,14 +357,22 @@
       "rootReceipt": "S:/Projects/UCP/de-research/root-openshc-lifecycle-review-r1/verification.json",
       "rootReceiptSha256": "7698086e76518a2cbb2a6243312b47dd4c6873948ec61ddf7eb79c4b32e12043",
       "evidence": "5 root ownership tests; baseline plus8 actual final protocol cases; all12 tool contracts equal; real heavy EOF0.705s and no owned leftovers",
-      "limits": "Host-held channels/forced termination are separate; historical directory deletion blocked before execution; no UI/game acceptance"
+      "limits": "Host-held channels/forced termination are separate; historical directory deletion blocked before execution; no UI/game acceptance",
+      "clientRetention": {
+        "report": "research/75-open-shc-client-retention.md",
+        "sha256": "33fb18d6fec1214968c4655ca17bdab4897c686344d26cd958efa8acd25373cf",
+        "cleanup": "S:/Projects/UCP/de-research/root-desktop-observation-r3/python-idle-cleanup-r4.json",
+        "cleanupSha256": "d5209977676c142a77ffa47e3034ebef0ae9a4f09debf804dc873c0920fe0e15",
+        "configReceipt": "S:/Projects/UCP/de-research/root-desktop-observation-r3/openshc-disabled-config-receipt.json",
+        "status": "zero after cleanup and next agent startup;optional MCP enabled=false;general host retirement not fixed"
+      }
     }
   },
   "pendingDesktopIntegration": {
     "coreReview": "research/59-desktop-core-review-r2.md",
     "consumerCloseReview": "research/62-close-commit-root-review.md",
     "finalArtifactsTask": "desktop-artifact-refresh-r3",
-    "state": "67 GO exact61 artifact identity; actual first-run screen rejected;69 correcting typed selection/readable errors and staged route readiness; no successful native LORD workflow yet",
+    "state": "74 source-only NO-GO two P2s;77 correction active;native1.4 workflow/artifacts unverified",
     "finalArtifactReport": "research/61-desktop-artifact-refresh-r3.md",
     "finalArtifactReportSha256": "6bc6f263d920c9b895722bd759e5fe712502b5cd03a25da6050d68f0702849e0",
     "artifactReview": "research/67-desktop-artifact-review-r3.md",
@@ -354,8 +388,45 @@
     "artifactReviewSha256": "ec5160b74e966eedc15897138094d87ace30b7edc99791cef33c78594549e724",
     "firstRunInterface": {
       "file": "S:/Projects/UCP/de-research/first-run-desktop-correction-r4/interface-r4.txt",
-      "sha256": "abfee3b83a8bc797b1b2ae25438d8336f8e26af0c9b24c4ea67c74eacd779f13",
-      "status": "Frozen proposed contract; implementation/review pending"
+      "status": "frozen69 original plus labeled amendments;74 NO-GO two lifecycle/deadline P2s",
+      "initialContractSha256": "abfee3b83a8bc797b1b2ae25438d8336f8e26af0c9b24c4ea67c74eacd779f13",
+      "currentAmendedSha256": "abfee3b83a8bc797b1b2ae25438d8336f8e26af0c9b24c4ea67c74eacd779f13"
+    },
+    "firstRunCorrection": {
+      "report": "research/69-first-run-desktop-correction.md",
+      "sha256": "2e8a3b8ef803153697f1d33c7b8cd62e3c3e83fa95099a84530d9468f8f3c879",
+      "pins": "S:/Projects/UCP/de-research/first-run-desktop-correction-r4/affected-source-pins.json",
+      "pinsSha256": "29af99a2a60695dd732a211fa6b49ffd799376c6bcd304910116ec19f970013d",
+      "reportCorrection": "S:/Projects/UCP/de-research/first-run-desktop-correction-r4/report-correction-verification.json",
+      "review": "research/74-first-run-desktop-review-r4.md",
+      "protocol": "1.4",
+      "reviewSha256": "ecd4c935c47a6ceb8ca54fec0e47c8dd70c0eb932deba0025828f818d7b146cb",
+      "verdict": "NO-GO late committed retirement and unbounded deadline cleanup/misclassification"
+    },
+    "lifecycleCorrection": {
+      "task": "first-run-lifecycle-correction-r5",
+      "report": "research/77-first-run-lifecycle-correction-r5.md (in progress)",
+      "interface": "S:/Projects/UCP/de-research/first-run-lifecycle-correction-r5/interface-r5.txt",
+      "interfaceSha256": "2676e415a25572d1fe2cf03f780f3f818ea837b95d0c6a271214b1ca048637f8",
+      "decision": "one canonical Closed result for known committed retired window;unknown frozen at deadline;no replay or default compensation"
+    }
+  },
+  "deCastleProgram": {
+    "contract": "research/66-de-castle-program-contract.md",
+    "contractSha256": "f98098986e9178e4cefbfab60865bef700e2d19d4175f7f4679ef4311d759896",
+    "review": "research/70-de-castle-contract-review.md",
+    "reviewSha256": "ee2fd9bb6e3951b893c3ab44eff043d30b69e83d072c65760782f2f95cb5bd6c",
+    "decision": "GO for bounded D2A; one shared session and ordered CST overlay; no array-splice/UI/game acceptance",
+    "implementationTask": "de-castle-domain-d2a",
+    "worktree": "S:/Projects/UCP/AI-Toolkit-DE-D2A",
+    "class29": "Fixesa90f96c176e9c8981af83534f5a8bb444838ae0a takes original vanilla hooks; runtime behavior unverified",
+    "implementation": {
+      "report": "S:/Projects/UCP/AI-Toolkit-DE-D2A/docs/de-mode/research/71-de-castle-domain-handoff.md",
+      "sha256": "e21d579f88bebd39b9a3d720228ccf58b55e30ee8361c22188c8a2389b8c9104",
+      "worktree": "S:/Projects/UCP/AI-Toolkit-DE-D2A",
+      "state": "76 GO exact unexposed domain;232 tests;main inventory/load-order/current F2 integration pending;not desktop/game accepted",
+      "review": "research/76-de-castle-domain-review.md",
+      "reviewSha256": "7198e19c1a3257497ffd1533148901aef54e8b6e5c5f0e3b27c923612c1440c8"
     }
   }
 }
