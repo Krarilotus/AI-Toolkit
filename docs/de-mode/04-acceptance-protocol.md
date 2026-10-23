@@ -64,6 +64,14 @@ into a generic sandbox project or a claim that the current package is runnable.
 The first run is vanilla single-player, direct copied EXE, with unchanged genuine
 authentication. SE/Fixes, multiplayer, browser/help and Workshop UI are separate.
 
+Preparation status on23 October is recorded in
+[Report41](research/41-game-preflight-preparation.md): an unmodified physical
+copy and116 scoped recovery-file copies are hash-verified, and encrypted
+PlayerPrefs recovery was decrypted only in memory to verify its digest. This
+copy has no fresh isolation transforms yet and remains launchAllowed:false.
+The preparation backup is not an atomic or current-at-launch preservation
+baseline; refresh it and the required inventories before actual policy/launch.
+
 Before launch, one bounded preparation must produce a fresh sealed physical
 copy, fresh managed and engine identities, no link/reparse/namespace collisions,
 all dependency hashes and exact EXE/CWD/app-ID bytes. Make verified scoped backups

@@ -108,5 +108,20 @@
         }
       ]
     }
-  ]
+  ],
+  "acceptancePreparation": {
+    "date": "2026-10-23",
+    "report": "research/41-game-preflight-preparation.md",
+    "externalReceipt": "S:\\Projects\\UCP\\de-research\\game-acceptance-preflight-20261023-r1-prepared\\receipt.json",
+    "externalReceiptSha256": "ae091d0399c8e73ab0eca5ea517ff94ee4f42aad0816a77c805613fc8ccb572d",
+    "physicalCopyFiles": 4702,
+    "physicalCopyBytes": 6730673704,
+    "verifiedScopedBackupFiles": 116,
+    "verifiedScopedBackupBytes": 234511705,
+    "registryBackup": "DPAPI sealed and in-memory digest verified; no restoration performed",
+    "originalWrites": 0,
+    "launchAllowed": false,
+    "gameLaunched": false,
+    "remaining": "Fresh guarded run roots/artifacts; Steam policy/queue; actual activity and startup/exit preservation gate"
+  }
 }
