@@ -79,5 +79,12 @@
       "sha256": "bbc49afbe103d3e4f792ce6609cfa18016073ade1416f87617661452d7c8b470",
       "source": "https://raw.githubusercontent.com/Unity-Technologies/crunch/ea9b8d8c00c8329791256adafa8cf11e4e7942a2/license.txt"
     }
-  ]
+  ],
+  "sprite_notice": {
+    "file": "Pillow-LICENSE",
+    "bytes": 1457,
+    "sha256": "15181e7363dca9aed78b79bebebc7fde7f1814b8bd311ea3b87ae8ccadfc185b",
+    "source": "https://raw.githubusercontent.com/python-pillow/Pillow/293218ad059d994baf1777d882911bed6a49704a/LICENSE",
+    "treatment": "verbatim MIT-CMU; original 60409-byte bundle unchanged"
+  }
 }

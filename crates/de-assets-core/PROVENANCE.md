@@ -76,3 +76,42 @@ compressed game blocks or research oracle package is redistributed. Fresh
 real-art comparisons and instrumentation remain external research under
 `S:/Projects/UCP/de-research/pixels-pxl2`; report31 records their source and result
 hashes. Their pixel agreement does not establish Sprite/scene/game acceptance.
+
+## SPR2 extraction and fixed-triangle adaptation
+
+`sprite_pixels.rs` follows the limited unpacked branches of UnityPy
+[SpriteHelper.py](https://github.com/K0lb3/UnityPy/blob/807f3888b8a2ddaa6504fca0737481baab4d6a99/UnityPy/export/SpriteHelper.py)
+and [MeshHelper.py](https://github.com/K0lb3/UnityPy/blob/807f3888b8a2ddaa6504fca0737481baab4d6a99/UnityPy/helpers/MeshHelper.py).
+The private shared float32 stream helper factors the already accepted A1 policy;
+there is no new parser or copied serialized/schema dataset. The existing UnityPy
+MIT notice remains intact. Source LF-normalized SHA-256 pins are respectively
+`e077830c860e04c75bcbe38c1df0c23a1a0c919613c8b5d30ca115e8666f4017`
+and `c957123af5a1e6a28586c7227c3b4b470a2f39dd22fcb6c19bfd6da1566ee76d`.
+
+`sprite_raster.rs` adapts the fixed-triangle, binary-mask portions of Pillow
+[Draw.c](https://github.com/python-pillow/Pillow/blob/293218ad059d994baf1777d882911bed6a49704a/src/libImaging/Draw.c)
+at `293218ad059d994baf1777d882911bed6a49704a`, SHA-256
+`5aefa0c335e8e6c3a30c9e61a4e5aa790d72544aa9be0f41704b184e503b2e0d`.
+Draw.c attribution is Copyright (c)1996-2006 Fredrik Lundh and
+Copyright (c)1997-2006 Secret Labs AB. The relevant source is `add_edge`,
+`polygon_generic`, horizontal clipping and ROUND_UP/DOWN, with coordinate
+truncation confirmed in
+[_imaging.c](https://github.com/python-pillow/Pillow/blob/293218ad059d994baf1777d882911bed6a49704a/src/_imaging.c)
+(SHA-256 `3145c84174cf30d0eedf2ef946f821f230b07ecf258d30c58dd301e0ade07053`).
+This adaptation uses fixed stack edges/intersections, existing Work, one shared
+coverage canvas and triangle-local UV-copy scans (Review40 P2 correction).
+It includes no Pillow library/dependency or general affine renderer.
+
+The exact upstream1457-byte notice is preserved in `notices/Pillow-LICENSE`,
+SHA-256 `15181e7363dca9aed78b79bebebc7fde7f1814b8bd311ea3b87ae8ccadfc185b`.
+Its actual text calls the license **MIT-CMU**. The crate-local attributes file
+prevents newline conversion of this notice. Existing decoder/UnityPy notices
+remain unchanged. No proprietary pixels, oracle package or schema dataset ships.
+
+`sprite_catalogue.rs` owns only the source-proven family-pairing contract from
+[spriteLoader.cs](https://github.com/Serpens66/Stronghold-Crusader-DE-Mods/blob/7e199e6f0818173794bdeeb0c4c32d74500b0eec/_inspect/CrusaderDE-Native-Baseline/sem/FBCB9319/managed/BC8B6A39/decompiled/spriteLoader.cs),
+Git blob SHA-256 `24e57447e342a45fdf0eee0da844bc466e4132619f94508784c19e33ed3bb59a`.
+No sample path IDs, animation/GM selectors, shader colours or scene rules enter
+the geometry/raster owner. Source and tool/oracle receipts,57 real planes and
+authored source-bound comparison artifacts stay outside Git under
+`S:/Projects/UCP/de-research/sprite-planes-spr2`; report42 records exact evidence.

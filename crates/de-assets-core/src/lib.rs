@@ -1,15 +1,21 @@
-//! Read-only metadata and bounded texture crops; no renderer or authenticity check.
+//! Read-only metadata, bounded crops and unpacked Sprite planes; no scene renderer.
 //! See README.md for the audited profile and mutation/OS guarantees.
 mod cursor;
+mod geometry;
 mod metadata;
 mod reader;
 mod serialized;
+mod sprite_catalogue;
+mod sprite_pixels;
+mod sprite_raster;
 mod streams;
 mod texture_crop;
 
 pub use metadata::*;
 pub use reader::{BytesSource, FileSource, ReadAt, SourceStamp};
 pub use serialized::*;
+pub use sprite_catalogue::*;
+pub use sprite_pixels::*;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -27,6 +33,8 @@ pub enum Error {
     Limit(&'static str),
     NotFound,
     Ambiguous,
+    /// A source-proven resource family deliberately has no raw team mask.
+    UnmaskedFamily,
     ChangedSource,
     Cancelled,
     Io(std::io::Error),
@@ -87,8 +95,9 @@ impl Default for Limits {
     }
 }
 /// Caller-owned cumulative allowance: one unit per byte read and per geometry
-/// scalar/loop visit and decoded block. Reuse across a whole operation, including
-/// validation. Cancellation is checked at reads, loops and every decode charge.
+/// scalar/loop visit, decoded block and Sprite buffer byte zeroed. Reuse across a
+/// whole operation, including preparation/validation. Reads, loops, zero chunks
+/// and decode charges check cancellation; completion checks the last visit.
 pub struct Work {
     remaining: u64,
     selected: u64,

@@ -287,6 +287,7 @@ impl SerializedIndex {
         let mut keys: BTreeMap<String, Vec<ObjectKey>> = BTreeMap::new();
         let mut query_bytes = 0;
         for name in names {
+            work.charge(1)?;
             if name.len() > self.limits.string_bytes {
                 return Err(Error::Limit("query name"));
             }
@@ -297,8 +298,11 @@ impl SerializedIndex {
             keys.entry((*name).to_owned()).or_default();
         }
         let mut total = 0;
-        for o in self.objects.values().filter(|o| o.class_id == class) {
-            work.check()?;
+        for o in self.objects.values() {
+            work.charge(1)?;
+            if o.class_id != class {
+                continue;
+            }
             self.typed(o.key, class)?;
             let length = o.range.end - o.range.start;
             if length < 4 {
@@ -340,22 +344,27 @@ impl SerializedIndex {
             let s =
                 std::str::from_utf8(&bytes).map_err(|_| Error::Corrupt("invalid UTF-8 name"))?;
             if let Some(v) = keys.get_mut(s) {
+                v.try_reserve(1)
+                    .map_err(|_| Error::Limit("name allocation"))?;
                 v.push(o.key);
             }
         }
-        Ok(keys
+        let matches = keys
             .into_iter()
             .map(|(name, keys)| {
-                (
+                work.charge(1)?;
+                Ok((
                     name,
                     match keys.len() {
                         0 => NameMatch::Zero,
                         1 => NameMatch::One(keys[0]),
                         _ => NameMatch::Many(keys),
                     },
-                )
+                ))
             })
-            .collect())
+            .collect::<Result<BTreeMap<_, _>>>()?;
+        work.check()?;
+        Ok(matches)
     }
     pub(crate) fn object_bytes(
         &self,
@@ -414,6 +423,13 @@ impl SerializedIndex {
     /// Checks references, geometry and atlas bounds; does not certify rendering.
     /// Parse separately first if unsupported geometry/reference must be retained.
     pub fn validate_sprite(&self, key: ObjectKey, work: &mut Work) -> Result<SpriteMetadata> {
+        self.validated_sprite_geometry(key, work).map(|(s, _)| s)
+    }
+    pub(crate) fn validated_sprite_geometry(
+        &self,
+        key: ObjectKey,
+        work: &mut Work,
+    ) -> Result<(SpriteMetadata, crate::geometry::FloatStreams)> {
         let s = self.read_sprite(key, work)?;
         let atlas = self.resolve_pointer(s.sprite_atlas, 687)?;
         if atlas.is_some() || !s.atlas_tags.is_empty() {
@@ -432,7 +448,7 @@ impl SerializedIndex {
                 "alpha/secondary sprite textures",
             ));
         }
-        s.validate_geometry(work)?;
+        let geometry = s.validated_geometry(work)?;
         s.packing().audited()?;
         let t = self.read_texture(texture, work)?;
         let r = s.render.texture_rect.map(F32::value);
@@ -443,6 +459,7 @@ impl SerializedIndex {
         {
             return Err(Error::Corrupt("sprite rectangle outside texture"));
         }
-        Ok(s)
+        work.check()?;
+        Ok((s, geometry))
     }
 }
