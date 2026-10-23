@@ -143,11 +143,28 @@
     "activeChannelLimit": "Host-owned live lightweight channels are preserved; last root audit contains no loaded JVM"
   },
   "uiPreparation": {
-    "atUtc": "2026-10-23T18:18:28.4245097Z",
-    "activityIdleMilliseconds": 2016,
-    "gameProcesses": 0,
+    "atUtc": "2026-10-23T19:20:10.4864976Z",
+    "activityIdleMilliseconds": 31,
     "inputActions": 0,
     "steamSettingChanges": 0,
-    "scope": "Read-only app inventory and Win32 last-input observation; PC active; no reliable Steam Cloud/queue evidence or app/game launch"
+    "scope": "Current desktop active; physical F2/game launch deferred; finite installer test subprocesses are not F2 UI acceptance"
+  },
+  "integratedJavaScriptR3": {
+    "receipt": "S:\\Projects\\UCP\\de-research\\root-desktop-observation-r3/integrated-verification.json",
+    "sha256": "18b2b3798928519f2e5fee10df45aa4925c58132c898b496f20017999911e43e",
+    "tests": 998,
+    "fail": 0,
+    "skip": 0,
+    "sourcePins": 75,
+    "liveOwnedProcesses": []
+  },
+  "firstNativeObservationR3": {
+    "report": "research/68-integrated-regression-and-desktop-gate.md",
+    "receipt": "S:\\Projects\\UCP\\de-research\\root-desktop-observation-r3/native-observation-stop.json",
+    "sha256": "e54f43e8b22f6bdf78b8c29006fb02160c57e9f57ac521341c3b951a3f81c59b",
+    "scope": "Actual native startup/profile/cancellation observed; rejected UX/activation incomplete; forced owned shutdown; ComputerUse reset",
+    "ownedLive": 0,
+    "originalProfileDrift": 0,
+    "classicCheckoutDrift": 0
   }
 }

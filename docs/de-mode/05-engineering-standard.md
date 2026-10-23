@@ -100,6 +100,14 @@ cancellation as well as success. A finished parent command does not prove its
 children exited. Recheck process/port state and report any known live services.
 Tests must also reap their own helper/shim descendants after timeout.
 
+Desktop observation must have a short concrete script ready before taking the
+foreground. Release Computer Use while reading, coding or delegating. Prefer
+supported code-driven web controls for efficiency where available, and native
+automation for native dialogs/windows; do not present synthetic/browser checks
+as physical-host acceptance. Selected installation paths, detection outcomes and
+actionable failures belong in the setup UI. Internal store/debug status and raw
+serialized error objects do not substitute for useful user-facing state.
+
 Keep expensive optional state lazy. Tool discovery or a source-only request
 must not create a full Ghidra database per idle MCP client. Verify actual
 initialize/list-tools/EOF behavior and preserved tool signatures; distinguish a
@@ -131,6 +139,11 @@ bounded primitive does not bound a facade that copies before calling it, and a
 snapshot taken after a wrapper's await is not a call-time snapshot. Reviews and
 regressions must cover those wrappers as well as the owning primitive. Review36
 demonstrates this gap; fixing it requires one admission owner, not a second quota.
+
+Keep retained evidence payloads outside mutable compiler/package caches before
+reusing those caches. A hash or build receipt preserves identity, not an overwritten
+binary. Report61 records that distinction for the superseded53 cached native EXE;
+future comparisons must use independently retained copies.
 
 The coordinator checks reviewed hashes, the actual staged diff and commit scope.
 Byte-sensitive fixtures retain their exact bytes in Git. Run focused checks for

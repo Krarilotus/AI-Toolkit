@@ -70,3 +70,23 @@ The user also wrote:
 
 This adds resource/lifecycle ownership to the continuing task; it does not
 replace the full Classic/DE objective or authorize stopping unrelated user work.
+
+## 23 October desktop test and first-run quality steering
+
+> The desktop is free now
+
+> you can also use the computer use skill if you want or set of an agent on gamerGrill to use it there
+
+> but you may as well be faster by navigating the app through code style clicking the javascript elements or be swift at that emulating as if you did a click
+
+> this screen is a bit inadequat was it like this before already? Can you check because it seems like not showign the path, did you change this?
+
+> your computeruse is still on while i don'T see you doing anything -.-
+
+The criticized first-run screen is newly introduced in this isolated branch,
+not the prior editor's setup screen. Keep the selected path and useful detection/
+failure state visible. Root stopped the owned test instance and reset Computer
+Use after the last instruction; desktop control must not stay active during
+background planning/coding. Prefer code-driven web-control interaction when the
+actual test app exposes a supported connection, retaining native-dialog and
+physical-window evidence as separate observations.
