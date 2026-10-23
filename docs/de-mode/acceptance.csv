@@ -1,9 +1,9 @@
 id,criterion,status,evidence,next_gate
-DE-01,Separate Classic and DE installation roots and settings,in_progress,Review30 closes R1/R4; C1 result-budget and admission fixes running,Fresh C1 correction review then window contexts and first-run integration
+DE-01,Separate Classic and DE installation roots and settings,in_progress,Review36 closes C1-01 and preserves F1 closure; C1-02 facade admission and call-time snapshot correctionr4 running,Fresh actual-facade correction review then window contexts and first desktop workflow
 DE-02,Mode switch preserves unsaved project and uses separate caches,pending,Review05 specifies window ownership and switch recovery gates,Switch cancel/save/discard and cache identity checks after F1/F2 integration
 DE-03,Authentic local DE buildings units terrain and views,in_progress,A1 committed30215f2; PXL2 accepted Review34;51tests and independent crop mip source budget cancellation parity; exact38-file snapshot verified,Sprite mesh mask and renderer integration then game-backed views
 DE-04,Lossless DE castles with unknown IDs fields timing and guarding slots,pending,Existing interchange feature is experimental,Primary-code review and asymmetric game/editor fixtures
-DE-05,Lossless LORDJSON without UCP normalization,in_progress,D1 and corrected DS1 committedebff3b1;205tests and14source hashes verified; panel33 implemented under independent Review35,Context-bound desktop integration and observations
+DE-05,Lossless LORDJSON without UCP normalization,in_progress,D1 and corrected DS1 committedebff3b1;205tests; panel Review35 found draft loss and two control defects; local correction running,Context-bound desktop integration and observations
 DE-06,Portrait dialogue voices and related media reach the game,pending,Reports01/03 and shipped instructions confirm vanilla loading contracts,Verified package layout and actual in-game media observations
 DE-07,Reversible version-aware custom lord installation,in_progress,Review22 accepts narrow offline result with two scoped guard defects; finite host preflight allowed; launchAllowed still false,Fresh sealed run and scoped backups plus Steam Cloud queue and startup preservation evidence before package installation
 DE-08,Representative exported custom AI loads and works in DE,pending,No process launched,Isolated real-game acceptance with logs and observations

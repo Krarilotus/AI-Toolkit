@@ -37,10 +37,10 @@ advance independently; neither blocks the first lossless file workflow.
 | --- | --- | --- |
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
-| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Review30 closed R1/R4; final-result/admission corrections running |
+| Unify backend ownership | One canonical policy, generated contracts, both host consumers | Review36 closes final-size defect; facade admission/snapshot correctionr4 running |
 | Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Next integrated slice; no live DE toggle yet |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
-| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 accepted by independent Review34; reviewed crop milestone staged |
+| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL1 selection accepted; PXL2 committed61c2fa1 after independent Review34; Sprite reconstruction proof running |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
 | Complete acceptance | Every required CSV criterion has appropriate evidence | Open; foundations are not feature acceptance |
@@ -54,20 +54,24 @@ corrective move. Exact task IDs, file groups and statuses are in
 [task-ownership.json](task-ownership.json). Nested agents are capped at3 per owner
 and live global capacity; no uncontrolled fan-out.
 
-- **C1 correction after Review30:** original R1/R4 independently closed.
-  Enforce common final-result budget before mutation and admission before
-  serialization; focused r3 correction preserves prior closure.
+- **C1 correction after Review36:** canonical final-result budget C1-01 and
+  original F1 findings are independently closed. C1-02 remains at the actual
+  packaged facade: it copies before admission and awaits before snapshotting.
+  Correctionr4 moves that path through the one existing reservation lifecycle;
+  fresh facade-level review gates the C1 commit. No new quota or Rust policy.
 - **DS1 milestone:** Review32 closes both P2s and portability;205 tests pass.
   Shared session/schema generation committed atebff3b1, not UI acceptance.
-- **DE Lord panel:** implementation33 is complete; fresh independent Review35
-  checks lifecycle and controller ownership. The scoped view consumes DS1 through
-  injected callbacks; actual context/host integration follows. Component handler
-  timings do not establish paint/native-window performance.
+- **DE Lord panel:** Review35 reproduced P2 draft loss during refresh plus two
+  P3 control/ARIA defects. A bounded correction owns panel JS and an appended
+  handoff33 only; shared DS1 stays unchanged. Fresh closure gates integration.
+  Component handler timings do not establish paint/native-window performance.
 - **A1 milestone:** committed30215f2 after exact reviewed hashes. Metadata only.
-- **PXL2 milestone:** Review34 approves the additive BC1a/BC7 crop provider.
+- **PXL2 milestone:** committed61c2fa1 after Review34 approves the additive
+  BC1a/BC7 crop provider.
   Exact38-file snapshot and staged bytes verified;51 tests on both Rust versions,
   independent crop/mip/source/budget/cancellation probes and14 real-crop parity.
-  Sprite reconstruction and host/renderer integration remain separate gates.
+  Scratch-only SPR1 now checks41 unpacked Sprite meshes/fractional geometry and
+  paired masks against pinned oracles. Host/renderer integration remains open.
 - **Performance:** preserved as an explicit regression requirement in standard05
   and contract01; existing worker/cache/invalidation rationale must be understood
   before alteration and affected interactive costs compared on owned builds.

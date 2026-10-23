@@ -482,7 +482,7 @@
       "track": "pixels-implementation-pxl2",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-de-pixels-pxl2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-de-pixels-pxl2-20261023-r1",
-      "status": "completed; accepted Review34; root exact38-file plus handoff verification",
+      "status": "completed; Review34 accepted; exact reviewed crop provider committed61c2fa1",
       "kind": "bounded Rust texture crop implementation",
       "ownedFiles": [
         "crates/de-assets-core/**",
@@ -505,7 +505,7 @@
       "track": "canonical-core-fix-r3",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r3",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r3",
-      "status": "running; correction of final result budget and pre-serialization admission",
+      "status": "completed; canonical size limit and direct-client admission accepted; facade remains under correctionr4",
       "kind": "C1 final-result byte budget and pre-serialization admission correction",
       "ownedFiles": [
         "crates/toolkit-core/**",
@@ -536,7 +536,7 @@
       "track": "lord-panel-ui",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-lord-panel-ui-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-lord-panel-ui-20261023-r1",
-      "status": "completed; browser component QA; independent Review35 running",
+      "status": "completed; Review35 requires local draft state correction; protected domain unchanged",
       "kind": "scoped DE LORDJSON view and owned browser QA",
       "ownedFiles": [
         "src/js/de-lord-panel.js",
@@ -549,7 +549,7 @@
       "track": "pixels-review-r1",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-de-pixels-pxl2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-de-pixels-pxl2-20261023-r1",
-      "status": "completed; GO; root38-file and staged-byte verification; additive crop milestone",
+      "status": "completed; Review34 accepted; exact reviewed crop provider committed61c2fa1",
       "kind": "independent PXL2 crop/source/bounds/performance review",
       "ownedFiles": [
         "docs/de-mode/research/34-texture-crop-review-r1.md"
@@ -563,9 +563,59 @@
         "docs/de-mode/research/35-lord-panel-review-r1.md"
       ],
       "isolation": "shared; disjoint report ownership only",
-      "status": "running; independent component lifecycle and controller review",
+      "status": "completed; NO-GO P2 draft loss on refresh plus two P3 control/ARIA defects; correctionr2 running",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-lord-panel-ui-20261023-r1"
+    },
+    {
+      "track": "canonical-core-review-r2",
+      "kind": "bounded independent review",
+      "ownedFiles": [
+        "docs/de-mode/research/36-canonical-core-review-r2.md"
+      ],
+      "isolation": "shared; disjoint ownership only; no recursive delegation",
+      "status": "completed; C1-01 closed; NO-GO C1-02 packaged facade bypass of admission and call-time snapshot; correctionr4 running",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-canonical-core-c1-20261023-r2"
+    },
+    {
+      "track": "sprite-contract-spr1",
+      "kind": "bounded scratch-only reconstruction proof",
+      "ownedFiles": [
+        "docs/de-mode/research/37-sprite-reconstruction-contract.md"
+      ],
+      "isolation": "shared; disjoint ownership only; no recursive delegation",
+      "status": "running",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-probe-sprite-reconstruction-spr1-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-probe-sprite-reconstruction-spr1-20261023-r1"
+    },
+    {
+      "track": "lord-panel-fix-r2",
+      "status": "running; correct all three Review35 findings within panel ownership",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-ui-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-lord-panel-ui-20261023-r2",
+      "kind": "bounded correction; no children",
+      "ownedFiles": [
+        "src/js/de-lord-panel.js",
+        "docs/de-mode/research/33-lord-panel-handoff.md (append only)"
+      ],
+      "isolation": "shared; disjoint ownership; CSS/domain/backend unchanged"
+    },
+    {
+      "track": "canonical-core-fix-r4",
+      "status": "running; close only packaged facade C1-02; canonical Rust and prior closures frozen",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r4",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-canonical-core-c1-20261023-r4",
+      "kind": "bounded correction; no children",
+      "ownedFiles": [
+        "src/node/game-profiles.js",
+        "src/node/core-client.js",
+        "tests/game-profiles.test.js",
+        "tests/core-client.test.js",
+        "tests/core-helper.test.js",
+        "docs/de-mode/research/25-canonical-core-handoff.md (append only)"
+      ],
+      "isolation": "shared; disjoint ownership; Rust/domain/panel/assets unchanged"
     }
   ],
   "pauseHistory": [

@@ -112,6 +112,12 @@ or truthful support claims block the affected milestone. Optional style changes
 must not become endless correctness gates. A real design flaw gets a proposed
 move with an owner, not only a complaint about complexity.
 
+Trace cross-layer guarantees through their actual shipping entry points. A
+bounded primitive does not bound a facade that copies before calling it, and a
+snapshot taken after a wrapper's await is not a call-time snapshot. Reviews and
+regressions must cover those wrappers as well as the owning primitive. Review36
+demonstrates this gap; fixing it requires one admission owner, not a second quota.
+
 The coordinator checks reviewed hashes, the actual staged diff and commit scope.
 Byte-sensitive fixtures retain their exact bytes in Git. Run focused checks for
 the change and broader checks when integration or changed code justifies them.
