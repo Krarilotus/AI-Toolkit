@@ -664,7 +664,7 @@
     },
     {
       "track": "sprite-planes-spr2",
-      "status": "completed;64tests/57real512synthetic; independent implementation Review51 running",
+      "status": "completed; independently accepted51; exact45crate+2reports verified and committed657dbb3",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-sprite-planes-spr2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-sprite-planes-spr2-20261023-r1",
       "kind": "bounded implementation; no children",
@@ -676,7 +676,7 @@
     },
     {
       "track": "first-desktop-workflow-f2w1",
-      "status": "completed; reports44/45; independent backend49 and consumer50 reviews running; desktop observation pending",
+      "status": "completed initial44/45; independent49/50 found defects; corrective53/54 running; not accepted/exposed",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-first-desktop-workflow-f2w1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-implement-first-desktop-workflow-f2w1-20261023-r1",
       "kind": "bounded vertical implementation; at most one live Sol6.1 child and no grandchildren within global4slots",
@@ -731,7 +731,7 @@
     },
     {
       "track": "first-desktop-core-review-r1",
-      "status": "running; canonical context/raw file authority and both backend adapters",
+      "status": "completed; NO-GO four actionable findings; frozen49 source pins; correction53 running",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-desktop-core-f2w1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-first-desktop-core-f2w1-20261023-r1",
       "kind": "fresh independent review; no children",
@@ -742,7 +742,7 @@
     },
     {
       "track": "desktop-consumer-review-r1",
-      "status": "running; shared controller/Electron authority/shipping consumers",
+      "status": "completed; NO-GO twoP2/oneP3; frozen50 source pins; correction54 running",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-consumer-f2w1-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-desktop-consumer-f2w1-20261023-r1",
       "kind": "fresh independent review; no children",
@@ -753,7 +753,7 @@
     },
     {
       "track": "sprite-plane-review-r1",
-      "status": "running; bounded source-owned SPR2 implementation; Review40 witness and inherited A1/PXL2 boundaries",
+      "status": "completed; GO additive SPR2;64tests bothRust,721independent synthetic/nine realplanes; no runtime acceptance",
       "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-planes-spr2-20261023-r1",
       "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-sprite-planes-spr2-20261023-r1",
       "kind": "fresh independent implementation review; no children",
@@ -761,6 +761,41 @@
         "docs/de-mode/research/51-sprite-plane-review-r1.md"
       ],
       "isolation": "shared; disjoint report only; no production edits"
+    },
+    {
+      "track": "desktop-core-correction-r2",
+      "status": "running; correct four Review49 findings and freeze canonical lifecycle for consumer54",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-desktop-core-f2w1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-first-desktop-core-f2w1-20261023-r2",
+      "kind": "bounded correction; no children",
+      "ownedFiles": [
+        "canonical toolkit-core/helper and thin native adapters; generated core contracts/build integration",
+        "docs/de-mode/research/53-desktop-core-correction-r2.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no original game/profile writes"
+    },
+    {
+      "track": "desktop-consumer-correction-r2",
+      "status": "running; independent Review50 corrections pass focused checks; waiting for canonical lifecycle interface",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-consumer-f2w1-20261023-r2",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-fix-desktop-consumer-f2w1-20261023-r2",
+      "kind": "bounded correction; no children",
+      "ownedFiles": [
+        "consumer/main/preload/controller/Node/game-map scoped source and tests",
+        "docs/de-mode/research/54-desktop-consumer-correction-r2.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no original game/profile writes"
+    },
+    {
+      "track": "configured-game-harness-review-r1",
+      "status": "running; review relocated offline artifacts and exact five-file reversible owned-copy plan",
+      "taskId": "node:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-configured-game-harness-20261023-r1",
+      "childThreadId": "thread:delegated-task:command%3Amcp%3A3f8d4b12-6f1b-47c7-897e-9907e8197b18%3Adelegate-task%3Ade-review-configured-game-harness-20261023-r1",
+      "kind": "fresh independent review; no children",
+      "ownedFiles": [
+        "docs/de-mode/research/56-configured-game-harness-review.md"
+      ],
+      "isolation": "shared; explicit disjoint ownership; no original game/profile writes"
     }
   ],
   "pauseHistory": [

@@ -281,6 +281,14 @@
       "sourceReceipt": "S:/Projects/UCP/de-research/c1-stage-receipt.json",
       "evidence": "28source hashes;103fresh transport/profile plus9packaging tests; both actual directory packages verified; prior29Rust/F1 and C1-01 closures preserved",
       "limits": "Unexposed canonical backend/helper; live contexts/raw documents/host workflow and game acceptance open"
+    },
+    {
+      "id": "spr2-sprite-planes",
+      "commit": "657dbb339d439629cffa50d47567e1d24c7a6649",
+      "review": "research/51-sprite-plane-review-r1.md",
+      "sourceReceipt": "S:/Projects/UCP/de-research/spr2-stage-receipt.json",
+      "evidence": "45crate+2reports exact hashes/staged bytes;64tests bothRust;721fresh independent synthetic/nine realplanes;480receipts unchanged; prior roundingP2 closed",
+      "limits": "Additive CPU extraction API only; shader/world placement/facing/composition/cache/host/UI/game acceptance open"
     }
   ],
   "acceptancePreparation": {
@@ -291,6 +299,14 @@
     "configuredReceipt": {
       "path": "S:/Projects/UCP/de-research/game-acceptance-preflight-20261023-r1-prepared/relocated-harness-r1/configured-receipt.json",
       "sha256": "9abb447bf233b0d1f7cd71be31c1aa24e4355c25b881bcb7a974cb950668e036"
+    },
+    "ownedInstallPlan": {
+      "report": "research/55-owned-game-install-plan.md",
+      "path": "S:/Projects/UCP/de-research/game-acceptance-preflight-20261023-r1-prepared/relocated-harness-r1/owned-install-plan-r1.json",
+      "sha256": "6bf3c6380c38f7ce8381292f1decd4a5f8637d1d3b011056c91c6cdb5565cf2b",
+      "operations": 5,
+      "installed": false,
+      "launchAllowed": false
     }
   },
   "toolingMaintenance": {

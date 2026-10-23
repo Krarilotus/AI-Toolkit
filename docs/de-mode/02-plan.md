@@ -38,9 +38,9 @@ advance independently; neither blocks the first lossless file workflow.
 | Preserve work and intent | Correct nested checkout, active sidebar goal, Classic untouched, no CI | Complete; continuing constraints below |
 | Establish contracts | Pinned sources and independently reproduced central claims | Initial research/review complete; targeted gaps remain |
 | Unify backend ownership | One canonical policy, generated contracts, both host consumers | Committedf02d828 after Review39 and exact28source/staged-byte verification |
-| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | F2W1 implementation complete; independent backend49/consumer50 reviews running; actual desktop observation pending |
+| Separate editions and deliver first document workflow | Owned roots/contexts, lossless open/edit/save/reopen, Classic regression | Initial F2W1 rejected by49/50; bounded core53/consumer54 corrections running; actual desktop observation pending |
 | Support DE castle programs | Lossless ordered AIVJSON and explicit editing operations | Pending; never reconstruct from a final raster |
-| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1 committed30215f2; PXL2 committed61c2fa1; SPR2 implemented with57 real planes; independent implementation review next |
+| Render authentic DE assets | Local pixels, composition, camera and flat/lowered evidence | A1/PXL2 accepted; SPR2 committed657dbb3 after Review51 and exact45-file/staged-byte verification; renderer integration/composition pending |
 | Deliver packages and optional loaders | Versioned manifest, media validation, reversible owned writes | Vanilla-first contract established; implementation pending |
 | Verify actual game behavior | Isolated load/construction/media, expanded features and Classic checks | Review22 supports finite host preflight; no game launch |
 | Complete acceptance | Every required CSV criterion has appropriate evidence | Open; foundations are not feature acceptance |
@@ -77,7 +77,10 @@ and live global capacity; no uncontrolled fan-out.
   SPR1 matches41 base Sprites and16 raw masks plus209 vertices/127 triangles
   against pinned extraction conventions. SPR2 implementation42 is complete with
   the triangle-local P2 correction,64tests and57real/512synthetic plane parity.
-  Fresh independent implementation Review51 is running after the process fix.
+  Review51 closes the P2 and accepts the exact additive provider:64 tests on both
+  Rust versions plus721 independent synthetic/nine fresh real planes. Root verified
+  all45 crate files and both reports, including exact Pillow notice/staged bytes.
+  Committed657dbb3; extraction convention is not Unity/game appearance acceptance.
   Host/renderer and actual Unity/game rasterization remain open.
 - **Process cleanup:** Report47 records cleared unused OpenSHC Python helpers.
   Report48 implements lazy Ghidra startup and actual EOF/descendant tests;
@@ -98,17 +101,24 @@ and live global capacity; no uncontrolled fan-out.
   files plus encrypted PlayerPrefs recovery. Fresh guarded roots, Steam policy
   and startup observations remain open. Report46 adds configured offline
   artifacts and17 relocated-guard checks, still uninstalled and launch-disabled.
-  No game launch or preference change.
-- **F2W1 implementation complete; independent reviews49/50 running:** one canonical context/operation/file service,
+  Root55 adds an exact five-file owned-copy install/rollback plan after rehashing
+  all37 configured receipt entries. Independent configured review56 is running.
+  No game launch, artifact installation or preference change.
+- **F2W1 corrections53/54 running after independent NO-GO49/50:** one canonical context/operation/file service,
   thin adapters for both hosts, real DS1/panel controller and fresh DE routing
   before Classic startup. The named open/edit/Save As/reopen workflow is the
   outcome. Parent and its one disjoint Sol6.1 child are complete (reports44/45);
   assets remain separately owned. Root later observes owned native
   builds. Full in-place switching and broader Classic service migration follow.
-  Fresh independent reviews have reproduced preservation, document-lifetime,
-  admission and host/controller race defects in this uncommitted integration.
-  Core/file, context lifetime, native ingress and shared controller corrections
-  must close before the integrated desktop milestone or runtime observation.
+  Review49 reproduces failed-save collision deletion, nonretiring registrations,
+  rejected queued payload retention and mutable native legacy-root redirection.
+  Review50 reproduces Close/save authorization, missing-root Classic fallback and
+  late new-window cleanup defects. Corrections stay with their core/file, context,
+  native ingress, controller and existing resolver owners. The frozen lifecycle
+  amendment uses one transient candidate and a bounded persisted adoption record;
+  old session/draft survive uncertain acknowledgements and exact status/recovery
+  never rebinds defaults. Rust generates the shared contract for both hosts.
+  Fresh independent closure and real desktop observation remain required.
 
 ## Accepted evidence and unresolved limits
 
