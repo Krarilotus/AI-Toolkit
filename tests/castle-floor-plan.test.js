@@ -24,19 +24,20 @@ test('different colours keep their original values even when they are close', ()
   assert.deepEqual(result.get('c')(0), [126, 94, 66], 'no shared colours, so no shift');
 });
 
-test('only kinds that share a base colour move apart, in whole gaps around it', () => {
+test('kinds sharing a base colour spread in whole gaps; others only avoid exact clashes', () => {
   const groups = [
     {key: 'fletcher', base: [120, 90, 60], count: 4},
     {key: 'poleturner', base: [120, 90, 60], count: 3},
+    {key: 'armourer', base: [120, 90, 60], count: 2},
     {key: 'tanner', base: [121, 91, 61], count: 2},
   ];
   const result = assignColours(groups);
   assert.deepEqual(result.get('fletcher')(0), [120, 90, 60]);
-  assert.deepEqual(result.get('poleturner')(0), [140, 110, 80], 'one gap brighter first');
-  assert.deepEqual(result.get('tanner')(0), [101, 71, 41], 'then one gap darker');
-  const all = groups.map(group => colours(result.get(group.key), group.count));
-  for (let a = 0; a < all.length; a++) for (let b = a + 1; b < all.length; b++)
-    for (const first of all[a]) for (const second of all[b]) assert.ok(distance(first, second) >= floorPlan.MIN_DISTANCE);
+  assert.deepEqual(result.get('poleturner')(0), [130, 100, 70], 'one gap brighter first');
+  assert.deepEqual(result.get('armourer')(0), [110, 80, 50], 'then one gap darker');
+  assert.deepEqual(result.get('tanner')(0), [123, 93, 63], 'a different colour moves only past the shared levels');
+  const all = groups.map(group => colours(result.get(group.key), group.count).map(String));
+  assert.equal(new Set(all.flat()).size, all.flat().length, 'no colour is shared between buildings');
 });
 
 test('bands stay inside the byte range with every instance distinct', () => {

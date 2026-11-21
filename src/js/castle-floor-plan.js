@@ -3,17 +3,15 @@
 // Each region keeps the average colour of its rendered sprite. Instances of a
 // region step one brightness level around that colour (0, +1, -1, +2, ...), so
 // a low tolerance picks one building and a higher one every building of that
-// kind. Only kinds that would otherwise share the same colours are moved apart
-// by TYPE_GAP levels; distinct colours are already distinct for the picker.
+// kind. Only kinds with the same base colour are moved apart, by TYPE_GAP
+// levels; other colours are already distinct for the picker and only avoid
+// sharing an exact colour.
 (function (root, factory) {
   const floorPlan = factory();
   if (typeof module === 'object' && module.exports) module.exports = floorPlan;
   else root.castleFloorPlan = floorPlan;
 })(typeof globalThis !== 'undefined' ? globalThis : this, () => {
-  const TYPE_GAP = 20;
-  // Nearest colours of two different kinds must differ by at least this much,
-  // so a tolerance of 1 never picks both.
-  const MIN_DISTANCE = 2;
+  const TYPE_GAP = 10;
   const KEEP = 61, STOCKPILE = 52;
 
   // Building block and forecourt plates, from assets/aiv/iso/verzeichnis.json
@@ -86,32 +84,35 @@
   const moved = (band, shift) => ({...band, centre: band.centre.map(value => value + shift)});
 
   // groups: [{key, base: [r, g, b], count, area}] -> Map(key -> index => [r, g, b]).
-  // Groups covering more tiles keep their own colour first, so the keep wins
-  // over a pair of small huts that look alike; a later group only moves when
-  // it would share colours with one already placed, preferring whole gaps of
-  // TYPE_GAP levels around its own colour.
+  // Groups covering more tiles keep their own colour first. Kinds with the
+  // same base colour (all workshops, all forecourts) are spread in steps of
+  // TYPE_GAP around it: 0, +gap, -gap, +2 gap, ... Any other kind stays as
+  // close to its own colour as possible and only moves the few levels needed
+  // not to share an exact colour with another kind.
   function assignColours(groups, gap = TYPE_GAP) {
-    const placed = [], colours = new Map();
+    const placed = [], colours = new Map(), half = Math.max(1, Math.floor(gap / 2));
+    const sameBase = (a, b) => a.every((value, c) => value === b[c]);
     const ordered = [...groups].sort((a, b) => (b.area ?? b.count) - (a.area ?? a.count) || b.count - a.count || String(a.key).localeCompare(String(b.key)));
     for (const group of ordered) {
-      const band = fitBand(group.base, group.count);
+      const base = group.base.map(Math.round), band = fitBand(base, group.count);
       const lowest = -(Math.min(...band.centre) + band.low), highest = 255 - (Math.max(...band.centre) + band.high);
-      const shifts = [0];
-      for (let step = gap; step <= 255; step += gap) shifts.push(step, -step);
-      for (let step = 1; step <= 255; step++) if (step % gap) shifts.push(step, -step);
-      let chosen = 0, chosenDistance = -1;
+      const shifts = [];
+      for (let step = 0; step * gap <= 255 + half; step++) for (const sign of step ? [1, -1] : [1])
+        for (let fine = 0; fine < half; fine++) for (const nudge of fine ? [1, -1] : [1]) shifts.push(sign * step * gap + nudge * fine);
+      let chosen = 0, fewest = Infinity;
       for (const shift of shifts) {
         if (shift < lowest || shift > highest) continue;
-        const distance = Math.min(Infinity, ...placed.map(other => bandDistance(moved(band, shift), other)));
-        if (distance > chosenDistance) { chosen = shift; chosenDistance = distance; }
-        if (distance >= MIN_DISTANCE) break;
+        const candidate = moved(band, shift);
+        const clashes = placed.filter(other => bandDistance(candidate, other) < (sameBase(base, other.base) ? half : 1)).length;
+        if (clashes < fewest) { chosen = shift; fewest = clashes; }
+        if (!clashes) break;
       }
-      const final = moved(band, chosen);
+      const final = {...moved(band, chosen), base};
       placed.push(final);
       colours.set(String(group.key), index => final.centre.map(value => value + offset(index % final.length)));
     }
     return colours;
   }
 
-  return {TYPE_GAP, MIN_DISTANCE, FORECOURTS, regions, offset, assignColours, bandDistance, fitBand};
+  return {TYPE_GAP, FORECOURTS, regions, offset, assignColours, bandDistance, fitBand};
 });

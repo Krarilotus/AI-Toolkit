@@ -73,7 +73,7 @@ test('uniform floor plans fill whole footprints with one colour per building', (
   assert.equal(first32[3], 255);
   assert.deepEqual(second32.map((value, i) => value - first32[i]), [1, 1, 1, 0], 'neighbouring instances differ by one level');
   assert.deepEqual(pixel(10, 10), pixel(11, 10), 'single-tile pieces share their type colour');
-  assert.ok(Math.max(...[0, 1, 2].map(c => Math.abs(pixel(10, 10)[c] - first32[c]))) >= 20, 'types stay apart');
+  assert.ok(Math.max(...[0, 1, 2].map(c => Math.abs(pixel(10, 10)[c] - first32[c]))) >= 10, 'types sharing a colour stay apart');
   assert.deepEqual(pixel(50, 50), [0, 0, 0, 0], 'empty ground stays transparent');
 });
 test('floor plans draw every building on transparent ground without troops or overlays', () => {
