@@ -1234,6 +1234,8 @@ export type TranslationKey =
   | "interface:picture_size"
   | "interface:full_resolution"
   | "interface:floor_plan_100x100_1_px_per_tile"
+  | "interface:uniform_building_colours"
+  | "interface:uniform_building_colours_hint"
   | "interface:merge_placements_by_item_type"
   | "interface:merge"
   | "interface:replace_selected_items"
