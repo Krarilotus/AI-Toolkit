@@ -4285,27 +4285,29 @@
     return plan;
   }
 
-  // A uniform floor plan paints each building's whole footprint, including
-  // open ground in front of it, in one flat colour. The type's base colour is
-  // the average of its rendered sprites; castleFloorPlan spaces instances one
-  // brightness level apart and different types further apart. Single-tile
-  // pieces such as walls stay one colour per type.
+  // A uniform floor plan paints each building in one flat colour: its own
+  // average sprite colour, with forecourts (keep courtyard and entrance,
+  // training grounds, oil smelter camp) as separate regions. castleFloorPlan
+  // spreads instances one brightness level around that colour and only moves
+  // kinds that would otherwise share colours. Single-tile pieces such as walls
+  // stay one colour per type.
   function uniformFloorPlanPixels(picture, cell) {
     const source = picture.getContext('2d'), plan = document.createElement('canvas');
     plan.width = plan.height = GRID;
-    const planCtx = plan.getContext('2d'), pixels = planCtx.createImageData(GRID, GRID);
+    const planCtx = plan.getContext('2d'), pixels = planCtx.createImageData(GRID, GRID), floorPlan = window.castleFloorPlan;
     const clip = rect => ({left: Math.max(0, rect.left), right: Math.min(GRID - 1, rect.right), bottom: Math.max(0, rect.bottom), top: Math.min(GRID - 1, rect.top)});
-    const buildings = placementRefs().filter(p => p.kind !== 'unit')
-      .map(p => ({type: Number(p.type), rects: footprintRects(p.type, p.off).map(clip).filter(r => r.left <= r.right && r.bottom <= r.top)}));
+    const regions = placementRefs().filter(p => p.kind !== 'unit').flatMap(p => {
+      const [w, h] = itemSize(p.type), flat = Number(p.type) !== geometry.KEEP_ITEM_TYPE && w * h <= 1;
+      return floorPlan.regions(p.type, footprintRects(p.type, p.off)).map(region => ({key: region.key, flat,
+        rects: region.rects.map(clip).filter(r => r.left <= r.right && r.bottom <= r.top)}));
+    });
     const groups = new Map();
-    for (const {type, rects} of buildings) {
-      if (!groups.has(type)) {
-        const [w, h] = itemSize(type);
-        groups.set(type, {type, sum: [0, 0, 0, 0], count: 0, flat: type !== geometry.KEEP_ITEM_TYPE && w * h <= 1});
-      }
-      const group = groups.get(type);
+    for (const {key, flat, rects} of regions) {
+      if (!groups.has(key)) groups.set(key, {key, sum: [0, 0, 0, 0], count: 0, area: 0, flat});
+      const group = groups.get(key);
       group.count++;
       for (const r of rects) {
+        group.area += (r.right - r.left + 1) * (r.top - r.bottom + 1);
         const data = source.getImageData(r.left * cell, (GRID - 1 - r.top) * cell, (r.right - r.left + 1) * cell, (r.top - r.bottom + 1) * cell).data;
         for (let i = 0; i < data.length; i += 4) {
           const alpha = data[i + 3];
@@ -4313,15 +4315,15 @@
         }
       }
     }
-    const colours = window.castleFloorPlan.assignColours([...groups.values()].map(group => ({
-      type: group.type, count: group.flat ? 1 : group.count,
+    const colours = floorPlan.assignColours([...groups.values()].map(group => ({
+      key: group.key, count: group.flat ? 1 : group.count, area: group.area,
       base: group.sum[3] ? group.sum.slice(0, 3).map(value => value / group.sum[3]) : [128, 128, 128]
     })));
     const seen = new Map();
-    for (const {type, rects} of buildings) {
-      const index = groups.get(type).flat ? 0 : (seen.get(type) || 0);
-      seen.set(type, index + 1);
-      const colour = colours.get(type)(index);
+    for (const {key, flat, rects} of regions) {
+      const index = flat ? 0 : (seen.get(key) || 0);
+      seen.set(key, index + 1);
+      const colour = colours.get(key)(index);
       for (const r of rects) for (let y = r.bottom; y <= r.top; y++) for (let x = r.left; x <= r.right; x++) {
         const out = ((GRID - 1 - y) * GRID + x) * 4;
         pixels.data[out] = colour[0]; pixels.data[out + 1] = colour[1]; pixels.data[out + 2] = colour[2]; pixels.data[out + 3] = 255;
