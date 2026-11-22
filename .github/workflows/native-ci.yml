@@ -17,8 +17,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  scope:
+    # scripts/ci-scope.mjs is shared with the local pre-push check
+    # (npm run verify): renderer-only changes skip the native build, and the
+    # native matrix runs only for files the Rust crate builds, embeds or tests.
+    name: Select checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      shared: ${{ steps.scope.outputs.shared || 'true' }}
+      native: ${{ steps.scope.outputs.native || 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        if: github.event_name == 'pull_request'
+        with:
+          node-version: 22.12
+      - id: scope
+        # Pushes to main and manual runs always check everything.
+        if: github.event_name == 'pull_request'
+        run: node scripts/ci-scope.mjs "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
   shared:
     name: Shared editor checks
+    needs: scope
+    if: needs.scope.outputs.shared == 'true'
     runs-on: windows-latest
     timeout-minutes: 15
     defaults:
@@ -38,6 +64,8 @@ jobs:
           npx tsc --project tsconfig.desktop.json --noEmit
       - name: Check shared editor syntax and behavior
         run: npm run check
+      - name: Build the embedded frontend
+        run: node scripts/build-desktop.mjs
       - name: Render the shared editor in the existing smoke-test host
         run: npx electron scripts/render-smoke.cjs
       - uses: actions/upload-artifact@v4
@@ -50,7 +78,8 @@ jobs:
 
   check:
     name: Native (${{ matrix.os }})
-    needs: shared
+    needs: [scope, shared]
+    if: needs.scope.outputs.native == 'true'
     strategy:
       fail-fast: false
       matrix:

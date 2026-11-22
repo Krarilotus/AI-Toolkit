@@ -33,6 +33,7 @@
     "build:themes": "node scripts/build-themes.mjs",
     "build:locales": "node scripts/build-locales.js",
     "check:locales": "node scripts/build-locales.js --check --strict",
+    "verify": "node scripts/verify.mjs",
     "package:native": "node scripts/package-native.mjs",
     "package:electron": "npm run check && electron-builder --dir",
     "dist:electron": "npm run check && electron-builder --win portable"

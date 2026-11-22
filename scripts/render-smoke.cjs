@@ -21,7 +21,9 @@ updates.createReleaseChecker = installed => releaseChecker(installed, async url 
   return {ok:true,json:async()=>[]};
 });
 const loaded = new Promise(resolve => app.once('browser-window-created',(_event,win) => {
-  if (isolated) { win.setFocusable(false); win.hide(); }
+  // A hidden window gets no animation frames unless throttling is off, and the
+  // castle editor applies build-step scrubbing in requestAnimationFrame.
+  if (isolated) { win.setFocusable(false); win.hide(); win.webContents.setBackgroundThrottling(false); }
   win.webContents.once('did-finish-load',()=>resolve(win));
 }));
 const timer = setTimeout(()=>{console.error('Renderer smoke check timed out.');app.exit(1);},45000);
